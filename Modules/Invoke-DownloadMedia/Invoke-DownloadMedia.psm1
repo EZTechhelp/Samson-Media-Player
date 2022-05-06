@@ -104,7 +104,7 @@ function Invoke-DownloadMedia{
     }
     try{
       $UID = (Get-Random)
-      Update-Notifications -id $UID -Level 'Info' -Message "Downloading $($Media.Title)" -VerboseLog -Message_color "Red" -thisApp $thisApp -synchash $synchash -Open_Flyout
+      Update-Notifications -id $UID -Level 'INFO' -Message "Downloading $($Media.Title)" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout
     }catch{
       write-ezlogs "An exception occurred adding items to notifications grid" -showtime -catcherror $_
     }
@@ -143,7 +143,7 @@ function Invoke-DownloadMedia{
     }   
     if($yt_dlp_start_timer -ge 120){
       write-ezlogs "Timed out waiting for Download to begin!" -showtime -warning
-      Update-Notifications -id $UID -Level 'ERROR' -Message "Timed out waiting for Download to begin!" -VerboseLog -Message_color "Red" -thisApp $thisApp -synchash $synchash -clear -Open_Flyout
+      Update-Notifications -id $UID -Level 'WARNING' -Message "Timed out waiting for Download to begin!" -VerboseLog -Message_color "Orange" -thisApp $thisApp -synchash $synchash -clear -Open_Flyout
     }else{
       While ($(Get-Job -State Running).count -gt 0 -or (get-process yt-dlp -ErrorAction SilentlyContinue))
       {
@@ -245,7 +245,7 @@ function Invoke-DownloadMedia{
     if(![System.IO.File]::Exists($downloaded_File)){
       write-ezlogs "Unable to verify successful download of media file $downloaded_File" -showtime -warning
       $message = "[WARNING] Unable to verify successful download of media file $downloaded_File"
-      Update-Notifications -id $UID -Level 'WARNING' -Message $message -VerboseLog -Message_color "Red" -thisApp $thisApp -synchash $synchash -clear -Open_Flyout
+      Update-Notifications -id $UID -Level 'WARNING' -Message $message -VerboseLog -Message_color "Orange" -thisApp $thisApp -synchash $synchash -clear -Open_Flyout
     } 
     if([System.IO.File]::Exists($downloaded_File)){
       write-ezlogs ">>>> Checking if file was downloaded to existing local media directory" -showtime -color cyan
@@ -259,13 +259,16 @@ function Invoke-DownloadMedia{
     }           
     if($Show_notification){
       try{
-        $startapp = Get-startapps *vlc
+        $startapp = Get-startapps "*$($thisApp.Config.App_name)*"
         if($startapp){
           $appid = $startapp.AppID | select -last 1
-        }else{
-          $startapp = Get-startapps 'Windows Media Player'
+        }elseif(Get-startapps VLC*){
+          $startapp = Get-startapps VLC*
           $appid = $startapp.AppID | select -last 1
-        } 
+        }else{
+          $startapp = Get-startapps '*Windows Media Player'
+          $appid = $startapp.AppID | select -last 1
+        }
         if(-not [string]::IsNullOrEmpty($Media.thumbnail))
         {
           $image = $($Media.thumbnail | select -First 1)

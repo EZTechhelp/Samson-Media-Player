@@ -35,6 +35,7 @@ function Get-Spotify
     [string]$MediaName,
     [switch]$Import_Profile,
     $thisApp,
+    $log,
     $all_installed_apps,
     [switch]$Refresh_Global_Profile,
     [switch]$Startup,
@@ -59,34 +60,34 @@ function Get-Spotify
   $AllSpotify_Media_Profile_File_Path = [System.IO.Path]::Combine($AllSpotify_Media_Profile_Directory_Path,"All-Spotify_Media-Profile.xml")
   
   if($Import_Profile -and (Test-path $AllSpotify_Media_Profile_File_Path -PathType Leaf)){ 
-    if($Verboselog){write-ezlogs " | Importing Spotify Media Profile: $AllSpotify_Media_Profile_File_Path" -showtime -enablelogs}
+    if($Verboselog){write-ezlogs " | Importing Spotify Media Profile: $AllSpotify_Media_Profile_File_Path" -showtime -enablelogs -logfile:$log}
     $Available_Spotify_Media = Import-CliXml -Path $AllSpotify_Media_Profile_File_Path
     return $Available_Spotify_Media    
   }else{
-    if($Verboselog){write-ezlogs " | Spotify Media Profile to import not found at $AllSpotify_Media_Profile_File_Path....Attempting to build new profile" -showtime -enablelogs}
+    if($Verboselog){write-ezlogs " | Spotify Media Profile to import not found at $AllSpotify_Media_Profile_File_Path....Attempting to build new profile" -showtime -enablelogs -logfile:$log}
   }  
   try{
     $Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name
   }catch{
-    write-ezlogs "An exception occurred in Get-SpotifyApplication" -showtime -catcherror $_
+    write-ezlogs "An exception occurred in Get-SpotifyApplication" -showtime -catcherror $_ -logfile:$log
   }   
   if(!$Spotify_Auth_app){
-    write-ezlogs "Unable to get Spotify authentication, starting spotify authentication setup process" -showtime -warning  
+    write-ezlogs "Unable to get Spotify authentication, starting spotify authentication setup process" -showtime -warning -logfile:$log  
     $APIXML = "$($thisApp.Config.Current_folder)\\Resources\API\Spotify-API-Config.xml"
-    write-ezlogs "Importing API XML $APIXML" -showtime
+    write-ezlogs "Importing API XML $APIXML" -showtime -logfile:$log
     if([System.IO.File]::Exists($APIXML)){
       $Spotify_API = Import-Clixml $APIXML
       $client_ID = $Spotify_API.ClientID
       $client_secret = $Spotify_API.ClientSecret      
     }
     if($Spotify_API -and $client_ID -and $client_secret){
-      write-ezlogs "Creating new Spotify Application '$($thisApp.config.App_Name)'" -showtime
+      write-ezlogs "Creating new Spotify Application '$($thisApp.config.App_Name)'" -showtime -logfile:$log
       #$client_secret = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR((($Spotify_API.ClientSecret | ConvertTo-SecureString))))
       #$client_ID = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR((($Spotify_API.ClientID | ConvertTo-SecureString))))    
       New-SpotifyApplication -ClientId $client_ID -ClientSecret $client_secret -Name $thisApp.config.App_Name -RedirectUri $Spotify_API.Redirect_URLs
       $Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name
     }else{
-      write-ezlogs "Unable to authenticate with Spotify API -- cannot continue" -showtime -warning
+      write-ezlogs "Unable to authenticate with Spotify API -- cannot continue" -showtime -warning -logfile:$log
       return
     }
   }
@@ -99,35 +100,35 @@ function Get-Spotify
   #$devices = Invoke-WebRequest -Method $Method -Headers $Header -Uri $Uri | Convertfrom-json
   $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
   if([System.IO.File]::Exists("$($env:APPDATA)\\Spotify\\Spotify.exe")){
-    write-ezlogs ">>>> Checking for spotify at  $($env:APPDATA)\\Spotify\\Spotify.exe" -showtime 
+    write-ezlogs ">>>> Checking for spotify at  $($env:APPDATA)\\Spotify\\Spotify.exe" -showtime -logfile:$log
     $Spotify_Install_Path = $("$($env:APPDATA)\\Spotify\\Spotify.exe") | Split-Path -parent
     $Spotify_Launch_Path = $("$($env:APPDATA)\\Spotify\\Spotify.exe")
   }
 
   if(!$Spotify_Install_Path){
-    write-ezlogs ">>>> Could find Spotify, checking using Get-InstalledApplications" -showtime 
+    write-ezlogs ">>>> Could find Spotify, checking using Get-InstalledApplications" -showtime -logfile:$log
     $installed_apps = Get-InstalledApplications
     $Spotify_app = $installed_apps | where {$_.'Display Name' -eq 'Spotify'} | select -Unique
     $Spotify_Install_Path = $Spotify_app.'Install Location'
     $Spotify_Launch_Path = "$($Spotify_app.'Install Location')\\Spotify.exe"    
   }
   if([System.IO.File]::Exists($Spotify_Launch_Path)){
-    write-ezlogs " | Spotify is installed at $Spotify_Launch_Path" -showtime 
+    write-ezlogs " | Spotify is installed at $Spotify_Launch_Path" -showtime -logfile:$log
     #$devices = Get-AvailableDevices   
   }else{
-    write-ezlogs "Unable to find Spotify installed at path $Spotify_Launch_Path, installing via chocolatey" -showtime -Warning
+    write-ezlogs "Unable to find Spotify installed at path $Spotify_Launch_Path, installing via chocolatey" -showtime -Warning -logfile:$log
     choco upgrade spotify -confirm -force --acceptlicense   
     $installed_apps = Get-InstalledApplications -verboselog
     $Spotify_app = $installed_apps | where {$_.'Display Name' -eq 'Spotify'} | select -Unique    
     $Spotify_Install_Path = $Spotify_app.'Install Location'
     $Spotify_Launch_Path = "$($Spotify_app.'Install Location')\\Spotify.exe"       
     if([System.IO.File]::Exists($Spotify_Launch_Path)){
-      write-ezlogs "[SUCCESS] Spotify installed successfully" -showtime
+      write-ezlogs "[SUCCESS] Spotify installed successfully" -showtime -logfile:$log
       #Start $Spotify_Launch_Path -NoNewWindow 
       #wait for spotify to launch
       #start-sleep 2     
     }else{
-      write-ezlogs "Spotify did not appear to install or unable to find, cannot continue" -showtime -warning
+      write-ezlogs "Spotify did not appear to install or unable to find, cannot continue" -showtime -warning -logfile:$log
       return
     }
   }
@@ -160,10 +161,10 @@ function Get-Spotify
       $href = $playlist.href
       $playlist_id = $playlist.id
       $description = $playlist.description     
-      write-ezlogs ">>>> Found Spotify Playlist $name" -showtime 
-      write-ezlogs " | Type $($type)" -showtime
-      write-ezlogs " | ID $($playlist_id)" -showtime
-      write-ezlogs " | Track Total $($Tracks_Total)" -showtime
+      write-ezlogs ">>>> Found Spotify Playlist $name" -showtime -logfile:$log 
+      write-ezlogs " | Type $($type)" -showtime -logfile:$log
+      write-ezlogs " | ID $($playlist_id)" -showtime -logfile:$log
+      write-ezlogs " | Track Total $($Tracks_Total)" -showtime -logfile:$log
       if($url -and $Available_Spotify_Media.id -notcontains $playlist_id){
         $encodedTitle = $Null  
         $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($name)-SpotifyPlaylist")
@@ -191,17 +192,17 @@ function Get-Spotify
         }
         $null = $Available_Spotify_Media.Add($newRow)           
       }else{
-        write-ezlogs "Playlist ($name) with id $($playlist_id) already added" -showtime -enablelogs -warning
+        write-ezlogs "Playlist ($name) with id $($playlist_id) already added" -showtime -enablelogs -warning -logfile:$log
       }      
     }
     if($export_profile -and $AllSpotify_Media_Profile_File_Path -and $Available_Spotify_Media){
       $Available_Spotify_Media | Export-Clixml $AllSpotify_Media_Profile_File_Path -Force
     }
-    if($Verboselog){write-ezlogs " | Number of Spotify Playlists found: $($Available_Spotify_Media.Count)" -showtime -enablelogs}
+    if($Verboselog){write-ezlogs " | Number of Spotify Playlists found: $($Available_Spotify_Media.Count)" -showtime -enablelogs -logfile:$log}
     return $Available_Spotify_Media   
    
   }else{
-    write-ezlogs "Unable to Authenticate with Spotify, cannot continue" -showtime -warning
+    write-ezlogs "Unable to Authenticate with Spotify, cannot continue" -showtime -warning -logfile:$log
     return
   }
 }

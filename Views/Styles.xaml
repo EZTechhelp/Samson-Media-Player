@@ -16,6 +16,7 @@ xmlns:vsm="clr-namespace:System.Windows;assembly=System.Windows"
 xmlns:AttachedBehavior="clr-namespace:ScrollAnimateBehavior.AttachedBehaviors"
 xmlns:Dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
 xmlns:aero="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
+xmlns:system="clr-namespace:System;assembly=mscorlib"
   >
             <ResourceDictionary.MergedDictionaries>
 			<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.GridSplitter.xaml"  />
@@ -44,6 +45,10 @@ xmlns:aero="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramewor
         <Style x:Key="DefaultComboBoxStyle" TargetType="{x:Type ComboBox}">
             <Setter Property="ItemContainerStyle" Value="{DynamicResource MetroComboBoxItem}" />
         </Style>
+   <LinearGradientBrush x:Key="MainGridGradient" PresentationOptions:Freeze="True"  EndPoint="0.5,1" StartPoint="0.5,0">
+		<GradientStop Color="Black"/>
+	   <GradientStop Color="#FF282829" Offset="0.06"/>
+	</LinearGradientBrush>		
     <Style x:Key="MahApps.Styles.GridSplitter" TargetType="{x:Type GridSplitter}">
         <Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Gray8}" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -51,6 +56,46 @@ xmlns:aero="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramewor
         <Setter Property="ShowsPreview" Value="True" />
         <Setter Property="VerticalAlignment" Value="Stretch" />
     </Style>
+	<Style x:Key="VideoViewCodiconsStyle" TargetType="iconPacks:PackIconCodicons">
+		<Setter Property="Foreground" Value="#ECD9DBDC"/>
+		<Style.Triggers>
+			<Trigger Property = "IsMouseOver" Value="True">	
+				<Setter Property="Foreground" Value="White" /> 	
+			</Trigger>	
+		</Style.Triggers>	
+    </Style>
+	<Style x:Key="VideoViewIconStyle" TargetType="iconPacks:PackIconMaterial">
+		<Setter Property="Foreground" Value="#ECD9DBDC"/>
+		<Style.Triggers>
+			<Trigger Property = "IsMouseOver" Value="True">	
+				<Setter Property="Foreground" Value="White" /> 	
+			</Trigger>	
+		</Style.Triggers>	
+    </Style>	
+	<Style x:Key="VideoViewButtonStyle" TargetType="Button">
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="Margin" Value="5"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Name="border" 
+                        BorderThickness="1"
+                        Padding="4,2" 
+                        BorderBrush="Transparent" 
+                        CornerRadius="3" 
+						PresentationOptions:Freeze="True"
+                        Background="{TemplateBinding Background}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                           <Setter TargetName="border" Property="BorderBrush" Value="Transparent" /> 
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>	
 	<Style x:Key="FilterButtonStyle" TargetType="Button">
         <Setter Property="OverridesDefaultStyle" Value="True"/>
         <Setter Property="Margin" Value="5"/>
@@ -501,6 +546,168 @@ xmlns:aero="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramewor
                 </Setter.Value>
                 </Setter>
             </Style>  -->	
+   <system:Double x:Key="MahApps.Sizes.ScrollBar.Width">10</system:Double>	
+    <Style x:Key="MahApps.Styles.RepeatButton.ScrollBarSmall" TargetType="{x:Type RepeatButton}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Height" Value="{DynamicResource MahApps.Sizes.ScrollBar.VerticalRepeatButton.Height}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="Interval" Value="50" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Margin" Value="1" />
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RepeatButton}">
+                    <Grid Width="{TemplateBinding Width}"
+                          Height="{TemplateBinding Height}"
+                          Background="{TemplateBinding Background}">
+                        <Viewbox x:Name="ArrowBox"
+                                 Margin="{TemplateBinding Margin}"
+                                 SnapsToDevicePixels="True"
+                                 Stretch="Uniform"
+                                 UseLayoutRounding="True">
+                            <Path x:Name="Arrow"
+                                  Width="256"
+                                  Height="256"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Data="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Content, Mode=OneWay}"
+                                  Fill="{DynamicResource MahApps.Brushes.RightArrowFill}"
+                                  Stretch="Uniform" />
+                        </Viewbox>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="ArrowBox" Property="Opacity" Value="0.5" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource MahApps.Brushes.Gray1}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource MahApps.Brushes.Accent}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Width" Value="{DynamicResource MahApps.Sizes.ScrollBar.HorizontalRepeatButton.Width}" />
+    </Style>   
+ <Style x:Key="MahApps.Styles.Thumb.ScrollBar" TargetType="{x:Type Thumb}">
+        <Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Thumb}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Thumb}">
+                    <Grid x:Name="ThumbVisual">
+                        <Rectangle x:Name="Background"
+                                   Fill="{DynamicResource MahApps.Brushes.RightArrowFill}"
+                                   SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                   StrokeThickness="{TemplateBinding BorderThickness}" />
+                        <Rectangle x:Name="MouseOverRectangle"
+                                   Fill="{DynamicResource MahApps.Brushes.ThemeForeground}"
+                                   Opacity="0"
+                                   SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                   StrokeThickness="{TemplateBinding BorderThickness}" />
+                        <Rectangle x:Name="PressedRectangle"
+                                   Fill="{DynamicResource MahApps.Brushes.ThemeForeground}"
+                                   Opacity="0"
+                                   SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                                   StrokeThickness="{TemplateBinding BorderThickness}" />
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="MouseOver" Storyboard="{StaticResource MahApps.Storyboard.ScrollBarThumbMouseOver}" />
+                                <VisualState x:Name="Pressed" Storyboard="{StaticResource MahApps.Storyboard.ScrollBarThumbPressed}" />
+                                <VisualState x:Name="Disabled" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="ThumbVisual" Property="Opacity" Value="0" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>   
+    <Style x:Key="MahApps.Styles.RepeatButton.ScrollBarLarge" TargetType="{x:Type RepeatButton}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Interval" Value="50" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RepeatButton}">
+                    <Rectangle Width="{TemplateBinding Width}"
+                               Height="{TemplateBinding Height}"
+                               Fill="{TemplateBinding Background}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>   
+    <Style x:Key="MahApps.Styles.ScrollViewer" TargetType="{x:Type ScrollViewer}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                    <Grid x:Name="Grid" Background="{TemplateBinding Background}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="leftColumn" Width="*" />
+                            <ColumnDefinition x:Name="rightColumn" Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <ScrollContentPresenter x:Name="PART_ScrollContentPresenter"
+                                                Grid.Row="0"
+                                                Grid.Column="0"
+                                                Margin="{TemplateBinding Padding}"
+                                                CanContentScroll="{TemplateBinding CanContentScroll}"
+                                                CanHorizontallyScroll="False"
+                                                CanVerticallyScroll="False"
+                                                Content="{TemplateBinding Content}"
+                                                ContentTemplate="{TemplateBinding ContentTemplate}" />
+                        <ScrollBar x:Name="PART_VerticalScrollBar"
+                                   Grid.Row="0"
+                                   Grid.Column="1"
+                                   Cursor="Arrow"
+                                   Maximum="{TemplateBinding ScrollableHeight}"
+                                   Minimum="0"
+                                   ViewportSize="{TemplateBinding ViewportHeight}"
+                                   Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
+                                   Value="{Binding VerticalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}" />
+                        <ScrollBar x:Name="PART_HorizontalScrollBar"
+                                   Grid.Row="1"
+                                   Grid.Column="0"
+                                   Cursor="Arrow"
+                                   Maximum="{TemplateBinding ScrollableWidth}"
+                                   Minimum="0"
+                                   Orientation="Horizontal"
+                                   ViewportSize="{TemplateBinding ViewportWidth}"
+                                   Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"
+                                   Value="{Binding HorizontalOffset, Mode=OneWay, RelativeSource={RelativeSource TemplatedParent}}" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="mah:ScrollViewerHelper.VerticalScrollBarOnLeftSide" Value="True">
+                            <Setter TargetName="PART_HorizontalScrollBar" Property="Grid.Column" Value="1" />
+                            <Setter TargetName="PART_ScrollContentPresenter" Property="Grid.Column" Value="1" />
+                            <Setter TargetName="PART_VerticalScrollBar" Property="Grid.Column" Value="0" />
+                            <Setter TargetName="leftColumn" Property="Width" Value="Auto" />
+                            <Setter TargetName="rightColumn" Property="Width" Value="*" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="mah:ScrollViewerHelper.VerticalScrollBarOnLeftSide" Value="False" />
+    </Style>			
+			
 <Style x:Key="MahApps.Styles.ToggleButton.ExpanderHeader.Down"
            BasedOn="{StaticResource MahApps.Styles.ToggleButton.ExpanderHeader.Up}"
            TargetType="{x:Type ToggleButton}">
@@ -614,6 +821,11 @@ xmlns:aero="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramewor
 		<GradientStop Color="Black" Offset="0"/>
 		<!-- <GradientStop Color="#FF0A2347" Offset="0.06"/> -->
 		<GradientStop Color="#FF0A2347" Offset="0.1"/>
+	</LinearGradientBrush>
+	<LinearGradientBrush x:Key="MainGridBackGradient" PresentationOptions:Freeze="True"  EndPoint="0.5,1" StartPoint="0.5,0">
+		<GradientStop Color="Black" Offset="0"/>
+		<!-- <GradientStop Color="#FF0A2347" Offset="0.06"/> -->
+		<GradientStop Color="#FF0A2347" Offset="0.1"/>
 	</LinearGradientBrush>	
 	<LinearGradientBrush x:Key="ImageGridBackGradient" PresentationOptions:Freeze="True"  EndPoint="0,1" StartPoint="0,0">
 		<GradientStop Color="Transparent" Offset="0"/>
@@ -627,13 +839,13 @@ xmlns:aero="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramewor
 		<GradientStop Offset="0.1" Color="black"></GradientStop>
 		<GradientStop Offset="1" Color="Transparent"></GradientStop>
 	</LinearGradientBrush>	
-   <LinearGradientBrush x:Key="MainGridGradient" PresentationOptions:Freeze="True"  EndPoint="0.5,1" StartPoint="0.5,0">
-		<GradientStop Color="Black"/>
-	   <GradientStop Color="#FF282829" Offset="0.06"/>
-	</LinearGradientBrush>
 	<LinearGradientBrush x:Key="GridGradient" PresentationOptions:Freeze="True"  EndPoint="0.5,1" StartPoint="0.5,0">
 		<GradientStop Color="Black" Offset="0.0" />
 		<GradientStop Offset="1" Color="Transparent"></GradientStop>
+	</LinearGradientBrush>	
+	<LinearGradientBrush x:Key="VideoViewGradient" PresentationOptions:Freeze="True"  EndPoint="0.5,1" StartPoint="0.5,0">
+		<GradientStop Color="Black" Offset="1" />
+		<GradientStop Offset="0.5" Color="#C2191A1A"></GradientStop>
 	</LinearGradientBrush>		
 	<DropShadowBitmapEffect x:Key="SeparatorDropShadow" Color="Black" Direction="320" ShadowDepth="15" Softness="1" PresentationOptions:Freeze="True" />
 	<DropShadowBitmapEffect x:Key="ExpanderDropShadow" Color="Black" Direction="260" ShadowDepth="5" Softness="0.5" PresentationOptions:Freeze="True"/>

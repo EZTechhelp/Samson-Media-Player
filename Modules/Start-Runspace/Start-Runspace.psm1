@@ -58,13 +58,13 @@ function Start-Runspace
       foreach($m in $Script_Modules){
         try{
           if($debug_verbose){
-            Write-Ezlogs ">>>> Importing Module $m for runspace" -showtime
+            if($verboselog){write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] >>>> Importing Module $m for runspace" | out-file $logfile -Force -Append -Encoding unicode}
           }
           Import-module $m
           $PSModuleAutoLoadingPreference = 'All'
         }
         catch{
-          Write-Ezlogs "An exception occurred loading modules" -showtime -catcherror $_
+          write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] An exception occurred loading modules $($_ | out-string)" | out-file $logfile -Force -Append -Encoding unicode
         } 
       }
     }
@@ -110,14 +110,14 @@ function Start-Runspace
                 if($debug_Verbose){write-output "[$(Get-date -format $logdateformat)] >>>> Runspace '$($runspace.powershell.runspace.name)' Completed" | out-file $logfile -Force -Append -Encoding unicode}
                 #if($debug_Verbose){write-output "[$(Get-date -format $logdateformat)] Runspace '$($runspace.runspace | out-string)'" | out-file $logfile -Force -Append}              
                 if($runspace.powershell.HadErrors){
-                  Write-ezlogs "`n[-----RUNSPACE $($runspace.powershell.runspace.name) HAD ERRORS------]" 
+                  write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] [-----RUNSPACE $($runspace.powershell.runspace.name) HAD ERRORS------]" | out-file $logfile -Force -Append -Encoding unicode
                   $e_index = 0
                   foreach ($e in $error)
                   {
                     $e_index++
-                    Write-ezlogs "[ERROR $e_index Message] =========================================================================" -CatchError $e
+                    write-output "[$(Get-date -format $logdateformat)] [ERROR $e_index Message] ========================================================================= $($e | out-string)" | out-file $logfile -Force -Append -Encoding unicode
                   }                 
-                  Write-ezlogs '-----------------'
+                  write-output "[$(Get-date -format $logdateformat)] -----------------" | out-file $logfile -Force -Append -Encoding unicode
                   #$error.Clear()
                 }
                 $runspace.powershell.Runspace.Dispose()
@@ -126,7 +126,7 @@ function Start-Runspace
                 $runspace.Runspace = $null
                 $runspace.powershell = $null 
               }catch{
-                write-ezlogs "An exception occurred performing cleanup of runspace: $($runspace.powershell.runspace | out-string)" -showtime -catcherror $_              
+                write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] An exception occurred performing cleanup of runspace: $($runspace.powershell.runspace | out-string)`n $($_ | out-string)" | out-file $logfile -Force -Append -Encoding unicode             
               }             
             } 
           }
@@ -150,14 +150,14 @@ function Start-Runspace
     if($existingjob_check){
       try{
         if(($existingjob_check.powershell.runspace) -and $existingjob_check.runspace.isCompleted -eq $false -and $Runspace_Name -ne 'Start_SplashScreen'){
-          write-ezlogs "Existing Runspace '$Runspace_Name' found, attempting to cancel" -showtime -warning 
+          write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] [WARNING] Existing Runspace '$Runspace_Name' found, attempting to cancel" | out-file $logfile -Force -Append -Encoding unicode 
           $existingjob_check.powershell.stop()      
           $existingjob_check.powershell.Runspace.Dispose()
           $existingjob_check.powershell.dispose()
           $jobs.remove($existingjob_check)      
         }
       }catch{
-        write-ezlogs "An exception occurred stopping existing runspace $runspace_name" -showtime -catcherror $_
+        write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] An exception occurred stopping existing runspace $runspace_name $($_ | out-string)" | out-file $logfile -Force -Append -Encoding unicode 
       }
     }
     return
@@ -166,21 +166,15 @@ function Start-Runspace
   if($existingjob_check){
     try{
       if(($existingjob_check.powershell.runspace) -and $existingjob_check.runspace.isCompleted -eq $false -and $Runspace_Name -ne 'Start_SplashScreen' -and $Runspace_Name -ne 'Show_WebLogin'){
-        write-ezlogs "Existing Runspace '$Runspace_Name' found as busy, stopping before starting new" -showtime -warning
-        <#        foreach($job in $jobs){
-            write-ezlogs "Before Runspace Job $($job.powershell.runspace | select * | out-string)"
-        } #>  
+         write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] [WARNING] Existing Runspace '$Runspace_Name' found as busy, stopping before starting new" | out-file $logfile -Force -Append -Encoding unicode  
         $existingjob_check.powershell.stop()      
         $existingjob_check.powershell.Runspace.Dispose()
         $existingjob_check.powershell.dispose()
-        $jobs.remove($existingjob_check)      
-        <#        foreach($job in $jobs){
-            write-ezlogs "After removal Runspace Job $($job.powershell.runspace | select * | out-string)"
-        }#>       
+        $jobs.remove($existingjob_check)            
         #$null = $existingjob_check.powershell.EndInvoke($existingjob_check.Runspace)
       }
     }catch{
-      write-ezlogs "An exception occurred stopping existing runspace $runspace_name" -showtime -catcherror $_
+      write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] An exception occurred stopping existing runspace $runspace_name $($_ | out-string)" | out-file $logfile -Force -Append -Encoding unicode
     }
   } 
 

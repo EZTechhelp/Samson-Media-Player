@@ -42,9 +42,9 @@
     <Window.TaskbarItemInfo>
         <TaskbarItemInfo/>
     </Window.TaskbarItemInfo>
-<Window.Clip>
+<!-- <Window.Clip>
     <RectangleGeometry Rect="0,0,1400,600" RadiusX="8" RadiusY="8"/>
-</Window.Clip>		
+</Window.Clip> -->		
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -102,7 +102,7 @@
             <ColumnDefinition Name = "RootGrid_Column1" Width="200*" MinWidth="500"/>
             <ColumnDefinition Name = "RootGrid_Column3" Width="200*" MinWidth="600"/>
         </Grid.ColumnDefinitions>	
-		<Grid HorizontalAlignment="stretch" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Stretch" Name = "MainGrid" Background="{StaticResource GameDetailsBackGradient}" >
+		<Grid HorizontalAlignment="stretch" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Stretch" Name = "MainGrid" Background="{StaticResource MainGridBackGradient}" >
         <Grid.RowDefinitions>
             <RowDefinition Height="0*"/>
 			<RowDefinition Height="400*"/>
@@ -139,15 +139,15 @@
             </mah:TransitioningContentControl.CustomVisualStates>
             <Image Name="MainGrid_Background_Image_Source" Grid.ColumnSpan="4" Grid.RowSpan="4">
                 <Image.Effect>
-                    <BlurEffect Radius="15"/>
+                    <BlurEffect Radius="30"/>
                 </Image.Effect>
             </Image>
         </mah:TransitioningContentControl>				       	
-        <mah:MetroTabControl Style="{DynamicResource MahApps.Styles.TabControl.Animated}" Effect="{StaticResource DropShadow}" Name="MainGrid_Top_TabControl" Margin="10,0,5,10" Background="transparent"  VerticalAlignment="stretch" BorderThickness="0,1,0,0" BorderBrush="#050607" HorizontalAlignment="stretch"  Grid.Row="1" Grid.ColumnSpan="3" mah:TabControlHelper.Underlined="SelectedTabitem" TabStripPlacement="Top" >
+        <mah:MetroTabControl Style="{DynamicResource MahApps.Styles.TabControl.Animated}" Effect="{StaticResource DropShadow}" Name="MainGrid_Top_TabControl" Margin="10,0,5,10" Background="transparent"  VerticalAlignment="stretch" BorderThickness="0,0,0,0" BorderBrush="#050607" HorizontalAlignment="stretch"  Grid.Row="1" Grid.ColumnSpan="3" mah:TabControlHelper.Underlined="SelectedTabitem" TabStripPlacement="Top" >
             <TabControl.Resources>
                 <Style TargetType="{x:Type TabItem}" BasedOn="{StaticResource {x:Type TabItem}}">
                     <Setter Property="mah:TabControlHelper.Underlined" Value="TabPanel" />
-                    <Setter Property="mah:TabControlHelper.UnderlinePlacement" Value="Right" />
+                    <Setter Property="mah:TabControlHelper.UnderlinePlacement" Value="Bottom" />
                     <Setter Property="mah:TabControlHelper.UnderlineBrush" Value="White" />
                 </Style>
             </TabControl.Resources>
@@ -215,7 +215,7 @@
 		VerticalAlignment="Top" />	
 		<Label Name="MediaPlayer_Links_Label" Content="Playlists" FontWeight="Bold" HorizontalAlignment="Center" FontSize="14"></Label>		 
 	 </StackPanel>		 
-    <ScrollViewer VerticalAlignment="Stretch" VerticalScrollBarVisibility="Visible" AttachedBehavior:ScrollAnimationBehavior.IsEnabled="True" AttachedBehavior:ScrollAnimationBehavior.TimeDuration="00:00:00.30" AttachedBehavior:ScrollAnimationBehavior.PointsToScroll="30" Background="Transparent" Grid.Column="0" Grid.Row="1" Margin="0,5,0,0" WpfExtensions:DragDropExtension.ScrollOnDragDrop="True">			
+    <ScrollViewer VerticalAlignment="Stretch" VerticalScrollBarVisibility="Visible" AttachedBehavior:ScrollAnimationBehavior.IsEnabled="True" AttachedBehavior:ScrollAnimationBehavior.TimeDuration="00:00:00.30" AttachedBehavior:ScrollAnimationBehavior.PointsToScroll="30" Style="{StaticResource MahApps.Styles.ScrollViewer}" Background="Transparent" Grid.Column="0" Grid.Row="1" Margin="0,5,0,0" WpfExtensions:DragDropExtension.ScrollOnDragDrop="True">			
 			<TreeView Margin="2,0,0,0"
 					  BorderThickness="1"
 					  Name='PlayQueue_TreeView'
@@ -334,8 +334,8 @@
 				 </TreeView.Template>					 
 			</TreeView>									 
         </ScrollViewer>	
-		<GridSplitter Name="PlaylistSplitter" Height="2" Background="Gray" HorizontalAlignment="Stretch" Margin="0,5,0,0" ResizeDirection="Rows" Grid.Row="2" VerticalAlignment="Top" OpacityMask="{StaticResource SeparatorGradient}"/>		
-		<ScrollViewer VerticalAlignment="Stretch" VerticalScrollBarVisibility="Visible" AttachedBehavior:ScrollAnimationBehavior.IsEnabled="True" AttachedBehavior:ScrollAnimationBehavior.TimeDuration="00:00:00.30" AttachedBehavior:ScrollAnimationBehavior.PointsToScroll="30" Background="Transparent" Grid.Column="0" Grid.Row="2" Margin="0,10,0,0" WpfExtensions:DragDropExtension.ScrollOnDragDrop="True">			
+		<GridSplitter Name="PlaylistSplitter" Height="3" Background="#D82E3E55" Opacity="0.8" HorizontalAlignment="Stretch" Margin="0,5,0,0" ResizeDirection="Rows" Grid.Row="2" VerticalAlignment="Top" OpacityMask="{StaticResource SeparatorGradient}"/>		
+		<ScrollViewer VerticalAlignment="Stretch" VerticalScrollBarVisibility="Visible" AttachedBehavior:ScrollAnimationBehavior.IsEnabled="True" AttachedBehavior:ScrollAnimationBehavior.TimeDuration="00:00:00.30" AttachedBehavior:ScrollAnimationBehavior.PointsToScroll="30"  Background="Transparent" Grid.Column="0" Grid.Row="2" Margin="0,10,5,0" WpfExtensions:DragDropExtension.ScrollOnDragDrop="True">			
 				<TreeView Margin="2,5,0,0"
 				  BorderThickness="1"
 				  Name='Playlists_TreeView'
@@ -453,26 +453,46 @@
 			 </TreeView.Template>					 
 		</TreeView>
         </ScrollViewer>		
-		<GridSplitter Name="Playlist_GridSplitter" Width="2" Background="Gray" HorizontalAlignment='Right' Margin="0,0,0,0" ResizeDirection="Columns" Grid.Row="1" Grid.RowSpan="2" VerticalAlignment="Stretch" Grid.Column="0" OpacityMask="{StaticResource VerticalSeparatorGradient}"/>         					
-			<Grid Name="VLC_Grid" Background="Transparent" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="1" Grid.RowSpan="2" Visibility = "Visible" VerticalAlignment="Stretch" Margin="0,0,0,20">
+		<GridSplitter Name="Playlist_GridSplitter" Width="4" Background="#D82E3E55" Opacity="0.8" HorizontalAlignment='Right' Margin="0,0,0,0" ResizeDirection="Columns" Grid.Row="1" Grid.RowSpan="2" VerticalAlignment="Stretch" Grid.Column="0" OpacityMask="{StaticResource VerticalSeparatorGradient}"/>         					
+			<Grid Name="VLC_Grid" Background="#01000000" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="1" Grid.RowSpan="2" Visibility = "Visible" VerticalAlignment="Stretch" Margin="0,0,0,20">
 					<Grid.RowDefinitions>
 						<RowDefinition Name="VLC_Grid_Row0" Height="200*"/>
 						<RowDefinition Name="VLC_Grid_Row1" Height="*"/>
 						<RowDefinition Name="VLC_Grid_Row2" Height="*"/>
 					</Grid.RowDefinitions>			
-			    <vlc:VideoView x:Name="VideoView" VerticalAlignment="Stretch" Grid.Row="0" HorizontalAlignment="Stretch">			
+			    <vlc:VideoView x:Name="VideoView" Grid.Row="0" HorizontalAlignment="Stretch" Background="#01000000">
+				<Grid x:Name="VideoView_Grid" Background="#02000000" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="-10,0,65,0">
+					<mah:FlyoutsControl Name="Test_Flyout" Background="#02000000" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,0" OpacityMask="{StaticResource SeparatorGradient}"> 
+						<mah:Flyout IsModal="false" HorizontalContentAlignment="Stretch" Position="Bottom" IsOpen="false"  Name="TestFlyout" AnimateOpacity="True" CloseButtonVisibility="Hidden" VerticalAlignment="Bottom" HorizontalAlignment="Center" TitleVisibility="Visible" >						 
+							<Grid VerticalAlignment="stretch" Background="{StaticResource VideoViewGradient}" HorizontalAlignment="Stretch" >
+							<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+								<Button Name='VideoView_Play_Button' IsEnabled="true" VerticalAlignment = "Center" Background="Transparent" BorderThickness="0" Width="42" Style="{StaticResource VideoViewButtonStyle}">
+									<iconPacks:PackIconMaterial  Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Play_Icon' Kind="PauseCircleOutline" Height="32" Width="32" BorderThickness="0" />
+								</Button>
+								<Button Name='VideoView_Stop_Button' IsEnabled="true" VerticalAlignment = "Center" Background="Transparent" BorderThickness="0" Width="42" Style="{StaticResource VideoViewButtonStyle}">
+									<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Stop_Icon' Kind="StopCircleOutline" Height="32" Width="32" BorderThickness="0" />
+								</Button>
+								<Button Name='VideoView_LargePlayer_Button' IsEnabled="true" VerticalAlignment = "Center" Background="Transparent" BorderThickness="0" Width="42" Style="{StaticResource VideoViewButtonStyle}">
+									<iconPacks:PackIconCodicons Style="{StaticResource VideoViewCodiconsStyle}" Name='VideoView_LargePlayer_Icon' Kind="ScreenFull" Height="32" Width="32" BorderThickness="0" />
+									<!-- ScreenNormal -->
+								</Button>									
+                            </StackPanel>								
+							</Grid>
+						</mah:Flyout>
+					</mah:FlyoutsControl>
+				</Grid>				
 			    </vlc:VideoView>			
-				<Image Name="MediaView_Image" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Stretch="Uniform"/>
+				<Image Name="MediaView_Image" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Stretch="Uniform" MaxWidth="600"/>
 				<TextBlock Name="MediaView_TextBlock" HorizontalAlignment="Center" FontSize="14" VerticalAlignment="Center" Grid.Row="2" Margin="0,0,0,0"/> 
 			</Grid>
-         <Slider Minimum="0" Name="MediaPlayer_Slider" TickPlacement="TopLeft" VerticalAlignment="Bottom" Background="Transparent" Grid.Column="1" Margin="10,45,10,5" Grid.Row="2" Orientation="Horizontal" Style="{DynamicResource MahApps.Styles.Slider.Flat}"/>			
-		 <GridSplitter Name="Chat_GridSplitter" Width="2" Background="Gray" HorizontalAlignment='Left' Margin="0,0,0,0" ResizeDirection="Columns" Grid.Row="1" Grid.RowSpan="2" VerticalAlignment="Stretch" Grid.Column="2" OpacityMask="{StaticResource VerticalSeparatorGradient}"/>
+         <Slider Minimum="0" Name="MediaPlayer_Slider" Value="{Binding Value,IsAsync=True}" TickPlacement="TopLeft" VerticalAlignment="Bottom" Background="Transparent" Grid.Column="1" Margin="10,45,10,5" Grid.Row="2" Orientation="Horizontal" Style="{DynamicResource MahApps.Styles.Slider.Flat}"/>			
+		 <GridSplitter Name="Chat_GridSplitter" Width="3" Background="#D82E3E55" HorizontalAlignment='Left' Margin="0,0,0,0" ResizeDirection="Columns" Grid.Row="1" Grid.RowSpan="2" VerticalAlignment="Stretch" Grid.Column="2" OpacityMask="{StaticResource VerticalSeparatorGradient}" Opacity="0.8"/>
 <!--             <Separator Name = "Chat_View_Separator" Margin="10,0,0,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Visibility="{Binding ElementName=Chat_View, Path=Visibility}"/> -->			 
         	<wv2:WebView2 Name="chat_WebView2" Grid.Column="2" Grid.Row="1" Grid.RowSpan="2" Margin="10,0,5,0" Visibility = "hidden" VerticalAlignment="Stretch"/>	   
                </Grid>	
             </TabItem>
         </mah:MetroTabControl>
-		<GridSplitter Name="GridSplitter" Height="2" Background="Gray" HorizontalAlignment="Stretch" Margin="0,0,0,0" ResizeDirection="Rows" Grid.Row="2" VerticalAlignment="Top" Grid.ColumnSpan="4" OpacityMask="{StaticResource SeparatorGradient}"/>	
+		<GridSplitter Name="GridSplitter" Height="4" Background="#D82E3E55" HorizontalAlignment="Stretch" Margin="0,0,0,0" ResizeDirection="Rows" Grid.Row="2" VerticalAlignment="Top" Grid.ColumnSpan="4" OpacityMask="{StaticResource SeparatorGradient}" Opacity="0.9"/>	
 		 <Button Name='Add_Media_Button' FontSize="12" FontWeight="Bold" Margin="700,10,0,0" Grid.ColumnSpan="3" Height="25" Style="{StaticResource DetailButtonStyle}" Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Left" IsEnabled="true">
 			<StackPanel Orientation="Horizontal">
 				<iconPacks:PackIconBootstrapIcons Kind="CollectionFill"
@@ -493,7 +513,7 @@
             </TabControl.Resources>
             <TabItem Header="Local Media Browser" >
   				<Grid Background="{StaticResource GridGradient}" VerticalAlignment="stretch" HorizontalAlignment="stretch" Opacity="1" Margin="0,0,0,0" AllowDrop="true">
-                    <DataGrid Name="MediaTable" Margin="5,36,5,15" VerticalAlignment="Top" HorizontalAlignment="stretch" Opacity="1" SelectionUnit="FullRow" SelectionMode="Extended" ScrollViewer.CanContentScroll="false" VirtualizingPanel.IsVirtualizingWhenGrouping="True" EnableColumnVirtualization="true" EnableRowVirtualization="true" VirtualizingPanel.VirtualizationMode="Standard" MaxHeight="1600" MaxWidth="2560" RowHeight="30" AllowDrop="true" PresentationOptions:Freeze="True"  VirtualizingStackPanel.ScrollUnit="Pixel">		
+                    <DataGrid Name="MediaTable" Margin="5,36,5,15" VerticalAlignment="Top" HorizontalAlignment="stretch" Opacity="1" SelectionUnit="FullRow" SelectionMode="Extended" ScrollViewer.CanContentScroll="false" VirtualizingPanel.IsVirtualizingWhenGrouping="True" EnableColumnVirtualization="true" EnableRowVirtualization="true" VirtualizingPanel.VirtualizationMode="Standard" MaxHeight="1600" MaxWidth="2560" RowHeight="30" AllowDrop="true" PresentationOptions:Freeze="True"  VirtualizingStackPanel.ScrollUnit="Pixel" ItemsSource="{Binding View,IsAsync=True}">		
 <!--             <DataGrid.GroupStyle>
                 <GroupStyle ContainerStyle="{StaticResource MahApps.Styles.GroupItem.DataGrid}">
                     <GroupStyle.HeaderTemplate>
@@ -547,7 +567,7 @@
 								<Setter Property="Template">
 									<Setter.Value>
 										<ControlTemplate>
-											<Expander IsExpanded="True" BorderThickness="0,0,0,1" Margin = "0,5,0,5" Foreground = "White"  mah:HeaderedControlHelper.HeaderFontWeight="Bold" mah:HeaderedControlHelper.HeaderBackground="Black" mah:HeaderedControlHelper.HeaderForeground="LightGray"  mah:HeaderedControlHelper.HeaderFontSize="14"  Header="{Binding Path=Name}" Uid="{Binding}" Name="MediaTable_Expander"  ExpandDirection = "Down" ScrollViewer.CanContentScroll="false" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Standard" PresentationOptions:Freeze="True" Style="{StaticResource MetroExpanderWithNormalCase}">										
+											<Expander IsExpanded="True" BorderThickness="0,0,0,1" Margin = "0,5,0,5" Foreground = "White"  mah:HeaderedControlHelper.HeaderFontWeight="Bold" mah:HeaderedControlHelper.HeaderBackground="Black" mah:HeaderedControlHelper.HeaderForeground="LightGray"  mah:HeaderedControlHelper.HeaderFontSize="14"  Header="{Binding Path=Name,IsAsync=True}" Uid="{Binding}" Name="MediaTable_Expander"  ExpandDirection = "Down" ScrollViewer.CanContentScroll="false" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Standard" PresentationOptions:Freeze="True" Style="{StaticResource MetroExpanderWithNormalCase}">										
 												<ItemsPresenter />
 											</Expander>
 										</ControlTemplate>

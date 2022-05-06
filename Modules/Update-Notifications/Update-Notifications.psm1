@@ -94,25 +94,36 @@ function Update-Notifications
       $Null = $array.add($Message_color)
       $Null = $array.add($MessageFontWeight)
   }#>
-  if($Level = 'ERROR'){
+  if($Level -eq 'ERROR'){
     $Level_color = 'Red'
-  }elseif($Level = 'Warning'){
+  }elseif($Level -eq 'Warning'){
     $Level_color = 'Orange'
-  }elseif($Level = 'INFO'){
+  }elseif($Level -eq 'INFO'){
     $Level_color = 'Cyan'
   }
-  $itemssource = [pscustomobject]@{
-    ID=$ID;
-    Time="$(Get-Date -Format 'MM/dd/yyyy h:mm:ss tt')";
-    Level=$Level;
-    Level_color=$Level_color
-    LevelFontWeight=$LevelFontWeight    
-    Message=$Message
-    Message_color=$Message_color
-    MessageFontWeight=$MessageFontWeight
-    
-  }
   
+  if($synchash.Notifications_Grid.items.id -contains $id){
+    $itemssource = $synchash.Notifications_Grid.items | where {$_.id -eq $id} | select -Unique
+    $itemssource.Time = "$(Get-Date -Format 'MM/dd/yyyy h:mm:ss tt')"
+    $itemssource.Level = $Level
+    $itemssource.Level_color = $Level_color
+    $itemssource.LevelFontWeight  = $LevelFontWeight 
+    $itemssource.Message = $Message
+    $itemssource.Message_color = $Message_color
+    $itemssource.MessageFontWeight = $MessageFontWeight
+  }else{
+    $itemssource = [pscustomobject]@{
+      ID=$ID;
+      Time="$(Get-Date -Format 'MM/dd/yyyy h:mm:ss tt')"
+      Level=$Level
+      Level_color=$Level_color
+      LevelFontWeight=$LevelFontWeight    
+      Message=$Message
+      Message_color=$Message_color
+      MessageFontWeight=$MessageFontWeight
+    
+    }
+  } 
   if($No_runspace){
     $syncHash.Notifications_Grid.Background = "Transparent"
     $syncHash.Notifications_Grid.AlternatingRowBackground = "Transparent"

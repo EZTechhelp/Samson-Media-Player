@@ -180,6 +180,7 @@ function Get-LocalMedia
                 $newRow = New-Object PsObject -Property @{
                   'name' = $name
                   'encodedTitle' = $encodedTitle
+                  'id' = $encodedTitle
                   'url' = $url
                   'type' = $type
                   'length' = $length

@@ -209,6 +209,9 @@ function Write-EZLogs
     [switch]$enablelogs = $true,
     [string]$logfile = $logfile,
     [switch]$Warning,
+    [switch]$PrintErrors,
+    [array]$ErrorsToPrint,    
+    [switch]$CallBack = $true,
     $CatchError,
     [switch]$logOnly,
     [string]$DateTimeFormat = 'MM/dd/yyyy h:mm:ss tt',
@@ -227,74 +230,118 @@ function Write-EZLogs
     [int]$linesafter
   )
 
+  $output = $Null
   if(!$logfile){$logfile = $thisApp.Config.Log_file}
   if(!$logfile){$logfile = Start-EZlogs -noheader}
-  #if(!$logfile){Write-Color -showtime -NoNewLine -DateTimeFormat:$DateTimeFormat;Write-Warning ($wrn = "Log file was not specified. You must first run Start-EZLogs -Logfile_Directory to specify a log directory in order to use the logging functionality")}
   if($showtime -and !$logtime){$logtime = $true}else{$logtime = $false}
   if($foregroundcolor){$color = $foregroundcolor}
-  if($LinesBefore -ne 0){ for ($i = 0; $i -lt $LinesBefore; $i++) {write-host "`n" -NoNewline;if($enablelogs){write-output "" | Out-File -FilePath $logfile -Encoding unicode -Append -Force}}}
+  if($CallBack -and $text -notmatch "\[$((Get-PSCallStack)[1].FunctionName)\]"){
+    if($((Get-PSCallStack)[1].FunctionName) -match 'ScriptBlock'){
+      $text = "[$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] $text"
+    }else{
+      $text = "[$((Get-PSCallStack)[1].FunctionName)] $text"
+    }    
+  }
+  if($showtime){
+    $timestamp = "[$(Get-Date -Format $DateTimeFormat)] "
+  }else{
+    $timestamp = $Null
+  }  
+  if($LinesBefore -ne 0){ for ($i = 0; $i -lt $LinesBefore; $i++) {
+      try{
+        write-host "`n" -NoNewline
+        if($enablelogs){
+          write-output "" | Out-File -FilePath $logfile -Encoding unicode -Append -Force
+        }
+      }catch{
+        start-sleep -Milliseconds 1
+        if($enablelogs){
+          write-output "`n$timestamp[ERROR] [WRITE-EZLOGS-LinesBefore] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" | Out-File -FilePath $logfile -Encoding unicode -Append -Force
+        }
+      }       
+    }
+  }
   if($BackgroundColor){$BackgroundColor_param = $BackgroundColor}else{$BackgroundColor_param = $null}
-  if($CatchError){$text = "[ERROR] $text`:`n | $($CatchError.exception.message)`n | $($CatchError.InvocationInfo.positionmessage)`n | $($CatchError.ScriptStackTrace)`n";$color = "red"}
- 
+  if($CatchError){$text = "[ERROR] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] $text`:`n |+ $($CatchError.exception.message)`n |+ $($CatchError.InvocationInfo.positionmessage)`n |+ $($CatchError.ScriptStackTrace)`n";$color = "red"} 
+  if($PrintErrors -and $ErrorsToPrint -as [array]){
+    try{    
+      Write-Host -Object "$timestamp[PRINT ALL ERRORS] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)]" -ForegroundColor Red;if($enablelogs){"$timestamp[PRINT ALL ERRORS] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)]" | Out-File -FilePath $logfile -Encoding unicode -Append -Force}
+      $e_index = 0
+      foreach ($e in $ErrorsToPrint)
+      {
+        $e_index++
+        Write-Host -Object "[ERROR $e_index Message] =========================================================================`n$($e.exception.message)`n$($e.InvocationInfo.positionmessage)`n$($e.ScriptStackTrace)`n`n" -ForegroundColor Red;if($enablelogs){"[ERROR $e_index Message] =========================================================================`n$($e.exception.message)`n$($e.InvocationInfo.positionmessage)`n$($e.ScriptStackTrace)`n`n" | Out-File -FilePath $logfile -Encoding unicode -Append -Force}        
+      }   
+    }catch{ 
+      start-sleep -Milliseconds 1
+      $e_index = 0
+      foreach ($e in $ErrorsToPrint)
+      {
+        $e_index++
+        Write-Host -Object "[ERROR $e_index Message] =========================================================================`n$($e.exception.message)`n$($e.InvocationInfo.positionmessage)`n$($e.ScriptStackTrace)`n`n" -ForegroundColor Red;if($enablelogs){"[ERROR $e_index Message] =========================================================================`n$($e.exception.message)`n$($e.InvocationInfo.positionmessage)`n$($e.ScriptStackTrace)`n`n" | Out-File -FilePath $logfile -Encoding unicode -Append -Force}        
+      }      
+      Write-host ("$timestamp[ERROR] [WRITE-EZLOGS] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)") -ForegroundColor Red
+      ("[$(Get-Date -Format $DateTimeFormat)] [ERROR] [WRITE-EZLOGS] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)") | Out-File -FilePath $logfile -Encoding unicode -Append -Force
+    }
+    return  
+  }   
   #if($linesAfter){$text = "$text`n"}
   if($enablelogs)
   {
     if($VerboseDebug -and $warning)
     {
       $tmp = [System.IO.Path]::GetTempFileName();
-      #Write-Color -showtime -NoNewLine -DateTimeFormat:$DateTimeFormat;Write-Warning ($wrn = "$text");Write-Output "[$(Get-Date -Format $DateTimeFormat)] [WARNING] $wrn" | Out-File -FilePath $logfile -Encoding unicode -Append -Verbose:$VerboseDebug 4>$tmp
       $result = "[DEBUG] $(Get-Content $tmp)" | Out-File $logfile -Encoding unicode -Append -Force;Remove-Item $tmp   
     }
     elseif($Warning)
     {
       if($logOnly)
-      {
-        if($showtime){
-          Write-Output "[$(Get-Date -Format $DateTimeFormat)] " | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline -Force
+      { 
+        try{
+          Write-Output "$timestamp[WARNING]  $text" | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine
+        }catch{
+          start-sleep -Milliseconds 1
+          Write-Output "$timestamp[WARNING] $text`n[$(Get-Date -Format $DateTimeFormat)] [ERROR] [WRITE-EZLOGS-LOGONLY-WARNING] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine
         }
-        Write-Output "[WARNING] $text" | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine
       }
       else
-      {
-        if($showtime){
-          Write-Host -Object "[$([datetime]::Now.ToString($DateTimeFormat))] " -NoNewline;if($enablelogs){"[$([datetime]::Now.ToString($DateTimeFormat))] " | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline -Force}
-        }
-        Write-Warning ($wrn = "$text");Write-Output "[WARNING] $wrn" | Out-File -FilePath $logfile -Encoding unicode -Append
+      {        
+        try{
+          Write-Warning ($wrn = "$text")
+          Write-Output "$timestamp[WARNING] $wrn" | Out-File -FilePath $logfile -Encoding unicode -Append
+        }catch{
+          start-sleep -Milliseconds 1
+          Write-Output "$timestamp[WARNING] $text`n[$(Get-Date -Format $DateTimeFormat)] [ERROR] [WRITE-EZLOGS-WARNING] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" | Out-File -FilePath $logfile -Encoding unicode -Append
+        }        
       }      
     }
     elseif($VerboseDebug)
     {
-      if($showtime){
-        Write-Host -Object "[$([datetime]::Now.ToString($DateTimeFormat))] " -NoNewline;if($enablelogs){"[$([datetime]::Now.ToString($DateTimeFormat))] " | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline -Force}
-      }
       if($BackGroundColor){
-        Write-Host -Object "[DEBUG] $text" -ForegroundColor:Cyan -NoNewline:$NoNewLine -BackgroundColor:$BackGroundColor;if($enablelogs){"[DEBUG] $text" | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine -Force}
+        Write-Host -Object "$timestamp[DEBUG] $text" -ForegroundColor:Cyan -NoNewline:$NoNewLine -BackgroundColor:$BackGroundColor;if($enablelogs){"$timestamp[DEBUG] $text" | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine -Force}
       }else{
-        Write-Host -Object "[DEBUG] $text" -ForegroundColor:Cyan -NoNewline:$NoNewLine;if($enablelogs){"[DEBUG] $text" | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine -Force}
+        Write-Host -Object "$timestamp[DEBUG] $text" -ForegroundColor:Cyan -NoNewline:$NoNewLine;if($enablelogs){"$timestamp[DEBUG] $text" | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine -Force}
       }    
-      #Write-Color "[DEBUG] $text" -color Cyan -showtime:$showtime -LogFile:$logfile -LogTime:$logtime -NoNewLine:$NoNewLine -DateTimeFormat:$DateTimeFormat -BackGroundColor $BackgroundColor_param -StartSpaces:$StartSpaces -LinesBefore:$linesBefore -LinesAfter:$linesAfter
     }
     else
     {
       if($logOnly)
       {
-        if($showtime){
-          Write-Output "[$(Get-Date -Format $DateTimeFormat)] " | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline -Force
-        }
-        Write-Output "$text" | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine 
+        Write-Output "$timestamp$text" | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine 
       }
       else
-      {
-        if($showtime){
-          Write-Host -Object "[$([datetime]::Now.ToString($DateTimeFormat))] " -NoNewline;if($enablelogs){"[$([datetime]::Now.ToString($DateTimeFormat))] " | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline -Force}
-        }
-        if($BackGroundColor){
-          Write-Host -Object $text -ForegroundColor:$Color -NoNewline:$NoNewLine -BackgroundColor:$BackGroundColor;if($enablelogs){$text | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine -Force}
-        }else{
-          Write-Host -Object $text -ForegroundColor:$Color -NoNewline:$NoNewLine;if($enablelogs){$text | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine -Force}
-        }
-
-        #Write-Color $text -color:$color -showtime:$showtime -LogFile:$logfile -LogTime:$logtime -NoNewLine:$NoNewLine -DateTimeFormat:$DateTimeFormat -BackGroundColor $BackgroundColor_param -StartSpaces:$StartSpaces -LinesBefore:$linesBefore -LinesAfter:$linesAfter
+      {      
+        try{
+          if($BackGroundColor){
+            Write-Host -Object ($timestamp + $text) -ForegroundColor:$Color -NoNewline:$NoNewLine -BackgroundColor:$BackGroundColor;if($enablelogs){$timestamp + $text | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine -Force}
+          }else{
+            Write-Host -Object ($timestamp + $text) -ForegroundColor:$Color -NoNewline:$NoNewLine;if($enablelogs){$timestamp + $text | Out-File -FilePath $logfile -Encoding unicode -Append -NoNewline:$NoNewLine -Force}
+          }
+        }catch{ 
+          start-sleep -Milliseconds 1
+          Write-host ("$timestamp[ERROR] [WRITE-EZLOGS] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)") -ForegroundColor Red
+          ($timestamp + $text + "`n[$(Get-Date -Format $DateTimeFormat)] [ERROR] [WRITE-EZLOGS] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)") | Out-File -FilePath $logfile -Encoding unicode -Append -Force
+        }      
       }
     }
   }
@@ -306,7 +353,6 @@ function Write-EZLogs
         Write-Host -Object "[$([datetime]::Now.ToString($DateTimeFormat))] " -NoNewline
       }
       Write-Warning ($wrn = "$text")  
-      #Write-Color -showtime:$showtime -NoNewLine -DateTimeFormat:$DateTimeFormat;Write-Warning ($wrn = "$text")
     }
     else
     {
@@ -318,10 +364,24 @@ function Write-EZLogs
       }else{
         Write-Host -Object $text -ForegroundColor:$Color -NoNewline:$NoNewLine
       }    
-      #Write-Color $text -color:$color -showtime:$showtime -NoNewLine:$NoNewLine -DateTimeFormat:$DateTimeFormat -BackGroundColor $BackgroundColor_param -StartSpaces:$StartSpaces -LinesBefore:$linesBefore -LinesAfter:$linesAfter
     }     
   }
-  if($LinesAfter -ne 0){ for ($i = 0; $i -lt $LinesAfter; $i++) {write-host "`n" -NoNewline;if($enablelogs){write-output "" | Out-File -FilePath $logfile -Encoding unicode -Append -Force}}}
+  if($LinesAfter -ne 0){
+    for ($i = 0; $i -lt $LinesAfter; $i++) {
+      try{
+        write-host "`n" -NoNewline
+        if($enablelogs){
+          write-output "" | Out-File -FilePath $logfile -Encoding unicode -Append -Force
+        }
+      }catch{
+        start-sleep -Milliseconds 1
+        write-host "`n" -NoNewline
+        if($enablelogs){
+          write-output "`n[$(Get-Date -Format $DateTimeFormat)] [ERROR] [WRITE-EZLOGS-LinesAfter] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" | Out-File -FilePath $logfile -Encoding unicode -Append -Force
+        }
+      }    
+    }
+  }
 }
 #---------------------------------------------- 
 #endregion Write-EZLogs Function

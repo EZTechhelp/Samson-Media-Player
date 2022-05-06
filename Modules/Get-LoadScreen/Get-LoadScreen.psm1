@@ -65,9 +65,13 @@ function Start-SplashScreen{
   )  
     
   $global:hash = [hashtable]::Synchronized(@{})
+  if(!$log_file){
+    $log_file = $thisApp.Config.Log_File
+  }
   $Global:splash_logo = "$($current_folder)\\Resources\\MusicPlayerFilltest.ico"
   if($Startup){
     try{
+       
       if($setup){
         [void] [System.Reflection.Assembly]::LoadWithPartialName("System") 
         [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Globalization") 
@@ -75,10 +79,9 @@ function Start-SplashScreen{
         [void] [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") 
         [void] [System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
         $Assemblies = (Get-childitem "$Current_Folder" -Filter "*.dll" -Force -Recurse)
-      }else{
+      }else{        
         $Assemblies = (Get-childitem "$Current_Folder\\Assembly" -Filter "*.dll" -Force -Recurse)
-      }     
-      
+      }           
       #$script:Assembly_Names = ($Assemblies).BaseName    
       #$thisScript.Version | out-file "$Current_Folder\\Resources\Version_check.txt"
       foreach ($a in $Assemblies)
@@ -86,12 +89,12 @@ function Start-SplashScreen{
         $Assembly = $a.fullName
         $Assembly_Name = $a.BaseName
         if($Assembly_Name -ne 'WebView2Loader'){
-          if($verboselog){write-ezlogs ">>>> Loading assembly $assembly" -showtime -color cyan}
+          if($verboselog){write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] >>>> Loading assembly $assembly" | out-file $log_file -Force -Append -Encoding unicode}
           $null = [System.Reflection.Assembly]::LoadFrom($Assembly)
         }          
       }
     }catch{
-      write-output "[$(Get-date -format $logdateformat)] [ERROR] An exception occurred loading assemblines -- '$($_ | out-string)'" | out-file $log_file -Force -Append -Encoding utf8 
+      write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] [ERROR] An exception occurred loading assemblines -- '$($_ | out-string)'" | out-file $log_file -Force -Append -Encoding unicode
     } 
   }
   
@@ -111,7 +114,7 @@ function Start-SplashScreen{
       $reader = New-Object System.Xml.XmlNodeReader $xml
       $hash.window = [Windows.Markup.XamlReader]::Load($reader)
     }catch{
-      write-output "[$(Get-date -format $logdateformat)] [ERROR] An exception occurred loading Splash.XAML -- '$($_ | out-string)'" | out-file $log_file -Force -Append -Encoding utf8 
+      write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] [ERROR] An exception occurred loading Splash.XAML -- '$($_ | out-string)'" | out-file $log_file -Force -Append -Encoding unicode
     }
     $hash.LoadingLabel = $hash.window.FindName("LoadingLabel")
     $hash.Logo = $hash.window.FindName("Logo")
@@ -129,12 +132,12 @@ function Start-SplashScreen{
         param($Sender)    
         if($sender -eq $hash.Window){        
           try{
-            write-ezlogs " Splash Screen Closed" -showtime
+            write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] >>>> Splash Screen Closed" | out-file $log_file -Force -Append -Encoding unicode 
             return
-           # if($Startup){
-           # }         
+            # if($Startup){
+            # }         
           }catch{
-            write-ezlogs "An exception occurred closing Splash window" -showtime -catcherror $_
+            write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] [ERROR] An exception occurred closing Splash window-- '$($_ | out-string)'" | out-file $log_file -Force -Append -Encoding unicode
             return
           }
         }         
@@ -153,9 +156,10 @@ function Start-SplashScreen{
       $hashContext = New-Object Windows.Forms.ApplicationContext 
       [void][System.Windows.Forms.Application]::Run($hashContext)             
     }catch{
-      write-output "[$(Get-date -format $logdateformat)] [ERROR] An exception occurred when opening main Get-LoadScreen window -- '$($_ | out-string)'" | out-file $log_file -Force -Append -Encoding utf8 
+      write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] [ERROR] An exception occurred when opening main Get-LoadScreen window -- '$($_ | out-string)'" | out-file $log_file -Force -Append -Encoding unicode
     }     
-  } 
+  }
+   
   $Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"}  
   Start-Runspace $Splash_Pwshell -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -runspace_name $Runspace_name -logfile $Log_file -Script_Modules $thisApp.Config.Script_Modules
   

@@ -74,8 +74,8 @@ Function ConvertTo-OrderedDictionary {
  
       PS C:\> $myHash | Get-Member
  
-       TypeName: System.Collections.Specialized.OrderedDictionary
-       . . .
+      TypeName: System.Collections.Specialized.OrderedDictionary
+      . . .
  
       .EXAMPLE
       PS C:\> $colors = "red", "green", "blue"
@@ -91,62 +91,62 @@ Function ConvertTo-OrderedDictionary {
       about_hash_tables
   #>
 
-    #Requires -Version 3
+  #Requires -Version 3
 
-    [CmdletBinding(ConfirmImpact='None')]
-    [OutputType('System.Collections.Specialized.OrderedDictionary')]
-    Param (
-        [parameter(Mandatory,HelpMessage='Add help message for user', ValueFromPipeline)]
-        $Hash
-    )
+  [CmdletBinding(ConfirmImpact='None')]
+  [OutputType('System.Collections.Specialized.OrderedDictionary')]
+  Param (
+    [parameter(Mandatory,HelpMessage='Add help message for user', ValueFromPipeline)]
+    $Hash
+  )
 
-    begin {
-        Write-Verbose -Message "Starting $($MyInvocation.Mycommand)"
-    } #close begin block
+  begin {
+    Write-Verbose -Message "Starting $($MyInvocation.Mycommand)"
+  } #close begin block
 
-    process {
-        write-verbose -Message ($Hash.gettype())
-        if ($Hash -is [System.Collections.Hashtable])
-        {
-            write-verbose -Message '$Hash is a HashTable'
-            $dictionary = [ordered] @{}
-            $keys = $Hash.keys | sort-object
-            foreach ($key in $keys)
-            {
-                $dictionary.add($key, $Hash[$key])
-            }
-            $dictionary
-        }
-        elseif ($Hash -is [System.Array])
-        {
-            write-verbose -Message '$Hash is an Array'
-            $dictionary = [ordered] @{}
-            for ($i = 0; $i -lt $hash.count; $i++)
-            {
-                $dictionary.add($i, $hash[$i])
-            }
-            $dictionary
-        }
-        elseif ($Hash -is [System.Collections.Specialized.OrderedDictionary])
-        {
-            write-verbose -Message '$Hash is an OrderedDictionary'
-            $dictionary = [ordered] @{}
-            $keys = $Hash.keys
-            foreach ($key in $keys)
-            {
-                $dictionary.add($key, $Hash[$key])
-            }
-            $dictionary
-        }
-        else
-        {
-            Write-Error -Message 'Enter a hash table, an array, or an ordered dictionary.'
-        }
+  process {
+    write-verbose -Message ($Hash.gettype())
+    if ($Hash -is [System.Collections.Hashtable])
+    {
+      write-verbose -Message '$Hash is a HashTable'
+      $dictionary = [ordered] @{}
+      $keys = $Hash.keys | sort-object
+      foreach ($key in $keys)
+      {
+        $dictionary.add($key, $Hash[$key])
+      }
+      $dictionary
     }
+    elseif ($Hash -is [System.Array])
+    {
+      write-verbose -Message '$Hash is an Array'
+      $dictionary = [ordered] @{}
+      for ($i = 0; $i -lt $hash.count; $i++)
+      {
+        $dictionary.add($i, $hash[$i])
+      }
+      $dictionary
+    }
+    elseif ($Hash -is [System.Collections.Specialized.OrderedDictionary])
+    {
+      write-verbose -Message '$Hash is an OrderedDictionary'
+      $dictionary = [ordered] @{}
+      $keys = $Hash.keys
+      foreach ($key in $keys)
+      {
+        $dictionary.add($key, $Hash[$key])
+      }
+      $dictionary
+    }
+    else
+    {
+      Write-Error -Message 'Enter a hash table, an array, or an ordered dictionary.'
+    }
+  }
 
-    end {
-        Write-Verbose -Message "Ending $($MyInvocation.Mycommand)"
-    } #close end block
+  end {
+    Write-Verbose -Message "Ending $($MyInvocation.Mycommand)"
+  } #close end block
 
 } #EndFunction ConvertTo-OrderedDictionary
 
@@ -800,57 +800,65 @@ function Show-NotifyBalloon
     $thisApp,
     [string]$Icon_path,
     [int]$Timeout,
-    $Click_Command
+    [System.EventHandler]$Click_Command
   )
+  if($Balloon){
+    $Balloon.dispose()
+  }
   $null = [system.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')     
   Remove-Event BalloonClicked_event -ea SilentlyContinue
   Unregister-Event -SourceIdentifier BalloonClicked_event -ea silentlycontinue
   Remove-Event BalloonClosed_event -ea SilentlyContinue
   Unregister-Event -SourceIdentifier BalloonClosed_event -ea silentlycontinue      
   $Global:Balloon = New-Object System.Windows.Forms.NotifyIcon     
-  if($Icon_path){
+  if($TipIcon){
     #$image_bytes = [System.IO.File]::ReadAllBytes($icon_path)
     #$stream_image = [System.IO.MemoryStream]::new($image_bytes)        
-    #$baloon_icon = [System.Drawing.Image]::FromStream($stream_image)       
-    $Balloon.Icon = $icon_path 
+    #$baloon_icon = [System.Drawing.Image]::FromStream($stream_image)     
+    $Balloon.BalloonTipIcon = $TipIcon
+    #$Balloon.Icon = $icon_path 
   }else{
-    $imagecontrol = New-Object MahApps.Metro.IconPacks.PackIconBootstrapIcons
-    $imagecontrol.width = "16"
-    $imagecontrol.Height = "16"
-    $imagecontrol.Kind = "MusicPlayerFill"
-    $imagecontrol.Foreground = 'White'  
+    <#    $imagecontrol = New-Object MahApps.Metro.IconPacks.PackIconBootstrapIcons
+        $imagecontrol.width = "16"
+        $imagecontrol.Height = "16"
+        $imagecontrol.Kind = "MusicPlayerFill"
+    $imagecontrol.Foreground = 'White'#>  
     #$Balloon.Icon =  [System.Drawing.Icon]::ExtractAssociatedIcon((Get-Process -id $pid | Select-Object -ExpandProperty Path)) 
-    $Balloon.Icon = "$($thisApp.Config.Current_folder)\\Resources\\MusicPlayerFill.ico"
+    $Balloon.BalloonTipIcon =  = "$($thisApp.Config.Current_folder)\\Resources\\MusicPlayerFill.ico"
   }              
-  $Balloon.BalloonTipIcon = $TipIcon
   $Balloon.BalloonTipText = $Message          
   $Balloon.BalloonTipTitle = $Title     
   $Balloon.Visible = $true 
-  if(!$Click_Command){
-    register-objectevent $Balloon BalloonTipClicked BalloonClicked_event -Action {
-      try{
-        $Balloon.Visible = $False
-        $Balloon.dispose()
-      }catch{
-        write-ezlogs "Exception BalloonTipClicked event" -showtime -catcherror $_
-      }
-    } | Out-Null
+  
+  [System.EventHandler]$balloonTipClick_Command  = {
+    param($sender)
+    try{
+      $Balloon.Visible = $False
+      $Balloon.dispose()
+      if($thisapp.Config.Verbose_logging){write-ezlogs ">>> Balloon notification was clicked and disposed" -showtime}
+    }catch{
+      write-ezlogs "Exception BalloonTipClicked event" -showtime -catcherror $_
+    }
+  }.GetNewClosure()
+ 
+  if($Click_Command){
+    $balloon.Add_BalloonTipClicked($Click_Command)
   }else{
-    register-objectevent $Balloon BalloonTipClicked BalloonClicked_event -Action $Click_Command | Out-Null
+    $balloon.Add_BalloonTipClicked($balloonTipClick_Command)
   }
 
   #Balloon message closed
-  register-objectevent $Balloon BalloonTipClosed BalloonClosed_event `
-  -Action {
-    try{
-      #$Install_hash.Window.Dispatcher.invoke([action]{
-      $Balloon.Visible = $False
-      $Balloon.dispose()
-      #})
-    }catch{
-      write-ezlogs "Exception BalloonTipClosed event" -showtime -catcherror $_
-    }
-  } | Out-Null  
+  $balloon.Add_BalloonTipClosed({
+      try{
+        #$Install_hash.Window.Dispatcher.invoke([action]{
+        $Balloon.Visible = $False
+        $Balloon.dispose()
+        #})
+      }catch{
+        write-ezlogs "Exception BalloonTipClosed event" -showtime -catcherror $_
+      }
+  })  
+  
   if($Timeout){
     $Balloon.ShowBalloonTip($Timeout)
   }else{
@@ -1613,8 +1621,8 @@ Function Start-WebNavigation{
           $youtube_id = ($($uri) -split('v='))[1].trim()
           $uri = "https://yewtu.be/embed/$youtube_id"
         }elseif($uri -match 'list='){
-           $playlist_id = ($($uri) -split('list='))[1].trim()
-           $uri = "https://yewtu.be/playlist?list=$playlist_id"
+          $playlist_id = ($($uri) -split('list='))[1].trim()
+          $uri = "https://yewtu.be/playlist?list=$playlist_id"
         }else{
           $uri = "https://yewtu.be/"
         } 
@@ -1815,6 +1823,61 @@ function Get-StrongPassword ([Parameter(Mandatory=$true)][int]$PasswordLenght)
 #----------------------------------------------
 
 #---------------------------------------------- 
+#region Use Run-As Function
+#----------------------------------------------
+function Use-RunAs 
+{    
+  # Check if script is running as Adminstrator and if not use RunAs 
+  # Use Check Switch to check if admin 
+  # http://gallery.technet.microsoft.com/scriptcenter/63fd1c0d-da57-4fb4-9645-ea52fc4f1dfb
+    
+  param([Switch]$Check) 
+  $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator') 
+  if ($Check) { return $IsAdmin }     
+  if ($MyInvocation.ScriptName -ne '') 
+  {  
+    if (-not $IsAdmin)  
+    {  
+      try 
+      {  
+        #$arg = "-file `"$($MyInvocation.ScriptName)`""         
+        $ScriptPath = [System.IO.Path]::Combine($thisApp.Config.Current_folder,"$($thisApp.Config.App_Name).ps1")
+        if(![System.IO.File]::Exists($ScriptPath)){
+          $ScriptPath = $((Get-PSCallStack).ScriptName | where {$_ -notmatch '.psm1'} | select -First 1)
+        }
+        write-ezlogs "Script requesting Admin Permissions to install requirments, restarting with Path: $($ScriptPath)" -showtime -warning
+        $arg = "-NoProfile -ExecutionPolicy Bypass -file `"$($ScriptPath)`""
+        if($hash.Window.IsVisible){
+          close-splashscreen
+        }
+        if([System.IO.File]::Exists("$env:programfiles\PowerShell\7\pwsh.exe")){
+          $process = Start-Process "$env:programfiles\PowerShell\7\pwsh.exe" -Verb Runas -ArgumentList $arg -ErrorAction SilentlyContinue -WindowStyle Hidden
+        }else{         
+          Start-Process "$psHome\powershell.exe" -Verb Runas -ArgumentList $arg -ErrorAction SilentlyContinue -WindowStyle Hidden
+        }
+      } 
+      catch 
+      { 
+        Write-ezlogs 'Failed to restart script with runas' -showtime -catcherror $_ 
+        break               
+      } 
+      if($pid){
+        stop-process $pid -Force -ErrorAction SilentlyContinue
+      }      
+      exit # Quit this session of powershell 
+    }  
+  }  
+  else  
+  {  
+    Write-EZLogs 'Script must be saved as a .ps1 file first' -showtime -LinesAfter 1 -Warning  
+    break  
+  }  
+}
+#---------------------------------------------- 
+#endregion Use Run-As Function
+#----------------------------------------------
+
+#---------------------------------------------- 
 #region Confirm Requirements
 #----------------------------------------------
 function confirm-requirements([switch]$enablelogs,[switch]$Verboselog,$required_appnames,[switch]$FirstRun,$thisApp,$logfile)
@@ -1830,6 +1893,7 @@ function confirm-requirements([switch]$enablelogs,[switch]$Verboselog,$required_
       },"Normal") 
     }
     try{
+      Use-RunAs      
       Write-Host -Object "[$(Get-date -format $logdateformat)] | Chocolatey is not installed, installing....";if($Verboselog){"[$(Get-date -format $logdateformat)] | Chocolatey is not installed, installing...." | Out-File -FilePath $logfile -Encoding unicode -Append -Force}
       Set-ExecutionPolicy Bypass -Scope Process -Force
       [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
@@ -1857,6 +1921,7 @@ function confirm-requirements([switch]$enablelogs,[switch]$Verboselog,$required_
     }
     else
     {
+      Use-RunAs
       Write-Output "This machine does not meet the minimum requirements to use this script. Your Powershell version is $($PSVersionTable.psversion) and the minimum required is 3`n | Attempting to updating Powershell via Chocolatey...." -OutVariable message;if($Verboselog){$message | Out-File -FilePath $logfile -Encoding unicode -Append}
       choco install powershell -confirm -force 
       if($($PSVersionTable.PSVersion.Major) -ge 3)
@@ -1891,7 +1956,7 @@ function confirm-requirements([switch]$enablelogs,[switch]$Verboselog,$required_
           }
         }else{
           try{
-            Write-Host -Object "[$(Get-date -format $logdateformat)] >>>> Installing Spicetify";if($Verboselog){"[$(Get-date -format $logdateformat)] >>>> Installing Spicetify" | Out-File -FilePath $logfile -Encoding unicode -Append -Force}
+            write-ezlogs ">>>> Installing Spicetify" -showtime
             Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.ps1" | Invoke-Expression -Verbose
             Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-marketplace/master/install.ps1" | Invoke-Expression -Verbose
             if([System.IO.File]::Exists("$($env:USERPROFILE)\\spicetify-cli\\spicetify.exe") -and [System.IO.File]::Exists("$($env:USERPROFILE)\\.spicetify\\config-xpui.ini")){
@@ -1905,6 +1970,7 @@ function confirm-requirements([switch]$enablelogs,[switch]$Verboselog,$required_
           }         
         }                  
       }else{
+        Use-RunAs
         $chocoappmatch = choco list $app --localonly
         $appinstalled = $($chocoappmatch | Select-String $app | out-string).trim()       
       }     
@@ -1921,6 +1987,7 @@ function confirm-requirements([switch]$enablelogs,[switch]$Verboselog,$required_
           },"Normal")  
         }
         try{
+          Use-RunAs
           Write-Host -Object "[$(Get-date -format $logdateformat)] [WARNING] $app is not installed! Attempting to install via chocolatey";if($Verboselog){"[$(Get-date -format $logdateformat)] [WARNING] $app is not installed! Attempting to install via chocolatey" | Out-File -FilePath $logfile -Encoding unicode -Append -Force}    
           choco upgrade $app --confirm --force --acceptlicense
         }catch{
@@ -2047,6 +2114,95 @@ function Set-SingleRegEntry
 #---------------------------------------------- 
 #endregion Set-SingleRegEntry Function
 #----------------------------------------------
+$SetWindowComposition = @'
+[DllImport("user32.dll")]
+public static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
+
+[StructLayout(LayoutKind.Sequential)]
+public struct WindowCompositionAttributeData {
+    public WindowCompositionAttribute Attribute;
+    public IntPtr Data;
+    public int SizeOfData;
+}
+
+public enum WindowCompositionAttribute {
+    WCA_ACCENT_POLICY = 19
+}
+
+public enum AccentState {
+    ACCENT_DISABLED = 0,
+    ACCENT_ENABLE_BLURBEHIND = 3,
+    ACCENT_ENABLE_ACRYLICBLURBEHIND = 4
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct AccentPolicy {
+    public AccentState AccentState;
+    public int AccentFlags;
+    public int GradientColor;
+    public int AnimationId;
+}
+'@
+Add-Type -MemberDefinition $SetWindowComposition -Namespace 'WindowStyle' -Name 'Blur'
+function Set-WindowBlur {
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory)]
+    [int]
+    $MainWindowHandle,
+    [Parameter(ParameterSetName='Enable',Mandatory)]
+    [switch]
+    $Enable,
+    [Parameter(ParameterSetName='Acrylic',Mandatory)]
+    [switch]
+    $Acrylic,
+    # Color in BGR hex format (for ease, will just be used as an integer), eg. for red use 0x0000FF
+    [Parameter(ParameterSetName='Acrylic')]
+    [ValidateRange(0x000000, 0xFFFFFF)]
+    [int]
+    $Color= 0x000000,
+    # Transparency 0-255, 0 full transparency and 255 is a solid $Color
+    [Parameter(ParameterSetName='Acrylic')]
+    [ValidateRange(0, 255)]
+    [int]
+    $Transparency = 80,
+    [Parameter(ParameterSetName='Disable',Mandatory)]
+    [switch]
+    $Disable
+  )
+  $Accent = [WindowStyle.Blur+AccentPolicy]::new()
+  switch ($PSCmdlet.ParameterSetName) {
+    'Enable' {
+      $Accent.AccentState = [WindowStyle.Blur+AccentState]::ACCENT_ENABLE_BLURBEHIND
+    }
+    'Acrylic' {
+      $Accent.AccentState = [WindowStyle.Blur+AccentState]::ACCENT_ENABLE_ACRYLICBLURBEHIND
+      $Accent.GradientColor = $Transparency -shl 24 -bor ($Color -band 0xFFFFFF)
+    }
+    'Disable' {
+      $Accent.AccentState = [WindowStyle.Blur+AccentState]::ACCENT_DISABLED
+    }
+  }
+  $AccentStructSize = [System.Runtime.InteropServices.Marshal]::SizeOf($Accent)
+  $AccentPtr = [System.Runtime.InteropServices.Marshal]::AllocHGlobal($AccentStructSize)
+  [System.Runtime.InteropServices.Marshal]::StructureToPtr($Accent,$AccentPtr,$false)
+  $Data = [WindowStyle.Blur+WindowCompositionAttributeData]::new()
+  $Data.Attribute = [WindowStyle.Blur+WindowCompositionAttribute]::WCA_ACCENT_POLICY
+  $Data.SizeOfData = $AccentStructSize
+  $Data.Data = $AccentPtr
+  $Result = [WindowStyle.Blur]::SetWindowCompositionAttribute($MainWindowHandle,[ref]$Data)
+  if ($Result -eq 1) {
+    Write-ezlogs "Successfully set Window Blur status."
+  }
+  else {
+    Write-ezlogs "Warning, couldn't set Window Blur status."
+  }
+  [System.Runtime.InteropServices.Marshal]::FreeHGlobal($AccentPtr)
+}
+
+
+
+
 Export-ModuleMember -Function @(
   'ConvertFrom-Roman',
   'Test-URL',
@@ -2065,4 +2221,5 @@ Export-ModuleMember -Function @(
   'Start-WebNavigation',
   'confirm-requirements',
   'Test-RegistryValue',
-  'ConvertTo-OrderedDictionary')
+  'ConvertTo-OrderedDictionary',
+'Set-WindowBlur')

@@ -35,6 +35,7 @@ function Get-Youtube
     [string]$Youtube_URL,
     [switch]$Import_Profile,
     $thisApp,
+    $log,
     $all_installed_apps,
     [switch]$Refresh_Global_Profile,
     [switch]$Startup,
@@ -66,16 +67,16 @@ function Get-Youtube
   }
   $AllTwitch_Media_Profile_File_Path = [System.IO.Path]::Combine($AllTwitch_Media_Profile_Directory_Path,"All-Twitch_Media-Profile.xml")  
   if($startup -and $Import_Profile -and ([System.IO.File]::Exists($AllYoutube_Media_Profile_File_Path))){ 
-    if($Verboselog){write-ezlogs " | Importing Youtube Media Profile: $AllYoutube_Media_Profile_File_Path" -showtime -enablelogs}
+    if($Verboselog){write-ezlogs " | Importing Youtube Media Profile: $AllYoutube_Media_Profile_File_Path" -showtime -enablelogs -logfile:$log}
     [System.Collections.ArrayList]$Available_Youtube_Media = Import-CliXml -Path $AllYoutube_Media_Profile_File_Path
     $Available_Twitch_Media = $Available_Youtube_Media | where {$_.Source -eq 'TwitchChannel'}
     if(@($Available_Twitch_Media).count -gt 1 -and !([System.IO.File]::Exists($AllTwitch_Media_Profile_File_Path))){
-      write-ezlogs ">>>> Saving Available Twitch Media profile to $AllTwitch_Media_Profile_File_Path" -showtime
+      write-ezlogs ">>>> Saving Available Twitch Media profile to $AllTwitch_Media_Profile_File_Path" -showtime -logfile:$log
       [System.Collections.ArrayList]$Available_Twitch_Media | Export-Clixml $AllTwitch_Media_Profile_File_Path -Force     
     }    
     return $Available_Youtube_Media    
   }else{
-    if($Verboselog){write-ezlogs " | Youtube Media Profile to import not found at $AllYoutube_Media_Profile_File_Path....Attempting to build new profile" -showtime -enablelogs}
+    if($Verboselog){write-ezlogs " | Youtube Media Profile to import not found at $AllYoutube_Media_Profile_File_Path....Attempting to build new profile" -showtime -enablelogs -logfile:$log}
   }   
   $youtubedl_path = "$($thisApp.config.Current_folder)\\Resources\\Youtube-dl" 
   $env:Path += ";$youtubedl_path" 
@@ -83,7 +84,7 @@ function Get-Youtube
   if($Youtube_URL){
     $yt_dl_urls = $Youtube_URL
     if($Import_Profile -and ([System.IO.File]::Exists($AllYoutube_Media_Profile_File_Path))){ 
-      write-ezlogs " | Importing Youtube Media Profile: $AllYoutube_Media_Profile_File_Path" -showtime -enablelogs
+      write-ezlogs " | Importing Youtube Media Profile: $AllYoutube_Media_Profile_File_Path" -showtime -enablelogs -logfile:$log
       [System.Collections.ArrayList]$Available_Youtube_Media = Import-CliXml -Path $AllYoutube_Media_Profile_File_Path 
     }
   }else{
@@ -157,7 +158,7 @@ function Get-Youtube
           'Playlist' = $twitch_channel
           'Source' = 'YoutubePlaylist_item'
         }
-        write-ezlogs " | Adding Twitch stream channel: $twitch_channel - Status: $Live_status" -showtime
+        write-ezlogs " | Adding Twitch stream channel: $twitch_channel - Status: $Live_status" -showtime -logfile:$log
         $null = $yt_dlp.add($twitch_item)      
       }elseif($import_browser_auth){
         #$yt_dlp = yt-dlp -f b* -g $playlist --rm-cache-dir -o '*' -j --cookies-from-browser $import_browser_auth
@@ -167,7 +168,7 @@ function Get-Youtube
       }    
       #--flat-playlist    
     }catch{
-      write-ezlogs "An exception occurred processing $($playlist) with yt-dl" -showtime -catcherror $_
+      write-ezlogs "An exception occurred processing $($playlist) with yt-dl" -showtime -catcherror $_ -logfile:$log
     }
     if($yt_dlp){
       #Get all playlists
@@ -189,7 +190,7 @@ function Get-Youtube
           if($track.title){
             $name = $null
             $name = $track.playlist      
-            write-ezlogs " | Found Playlist item $($track.title)" -showtime
+            write-ezlogs " | Found Playlist item $($track.title)" -showtime -logfile:$log
             $url = $null
             $type = $null
             $type = $track.ie_key
@@ -208,11 +209,11 @@ function Get-Youtube
             $track_encodedTitle = $Null  
             $track_encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($track.title)-YoutubePlaylist")
             $track_encodedTitle = [System.Convert]::ToBase64String($track_encodedBytes)     
-            write-ezlogs " | Type $($type)" -showtime
-            write-ezlogs " | Playlist ID $($playlist_id)" -showtime
-            write-ezlogs " | ID $($track.id)" -showtime
-            write-ezlogs " | Track Total $($Tracks_Total)" -showtime 
-            write-ezlogs " | Track URL $($track.url)" -showtime
+            write-ezlogs " | Type $($type)" -showtime -logfile:$log
+            write-ezlogs " | Playlist ID $($playlist_id)" -showtime -logfile:$log
+            write-ezlogs " | ID $($track.id)" -showtime -logfile:$log
+            write-ezlogs " | Track Total $($Tracks_Total)" -showtime -logfile:$log
+            write-ezlogs " | Track URL $($track.url)" -showtime -logfile:$log
             if($track.urls){
               $url_streams = $track.urls -split "`n"
             }else{
@@ -309,11 +310,11 @@ function Get-Youtube
               }
               $null = $playlist_items.Add($newRow)           
             }else{
-              write-ezlogs "Found Playlist item ($name) but unable to get its URL" -showtime -enablelogs -warning
+              write-ezlogs "Found Playlist item ($name) but unable to get its URL" -showtime -enablelogs -warning -logfile:$log
             } 
             if($track.playlist_id){ 
               if($Available_Youtube_Media.id -notcontains $track.playlist_id){
-                write-ezlogs ">>>> Found Youtube Playlist $($track.playlist)" -showtime
+                write-ezlogs ">>>> Found Youtube Playlist $($track.playlist)" -showtime -logfile:$log
                 $encodedTitle = $Null  
                 $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($track.playlist)-YoutubePlaylist")
                 $encodedTitle = [System.Convert]::ToBase64String($encodedBytes)       
@@ -336,12 +337,12 @@ function Get-Youtube
                 $null = $youtube_Media_output.Add($newRow)
                 #$null = $Available_Youtube_Media.Add($newRow)        
               }else{
-                write-ezlogs "Youtube Playlist $($track.playlist) has already been added" -showtime -warning
+                write-ezlogs "Youtube Playlist $($track.playlist) has already been added" -showtime -warning -logfile:$log
                 $encodedTitle = $Null
               }                    
             }elseif($track.channel_id){
               if($Available_Youtube_Media.id -notcontains $track.channel_id){
-                write-ezlogs ">>>> Found Youtube Channel $($track.channel)" -showtime
+                write-ezlogs ">>>> Found Youtube Channel $($track.channel)" -showtime -logfile:$log
                 $encodedTitle = $Null  
                 $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($track.channel)-YoutubeChannel")
                 $encodedTitle = [System.Convert]::ToBase64String($encodedBytes)       
@@ -364,12 +365,12 @@ function Get-Youtube
                 $null = $youtube_Media_output.Add($newRow)
                 #$null = $Available_Youtube_Media.Add($newRow)        
               }else{
-                write-ezlogs "Youtube channel $($track.channel) has already been added" -showtime -warning
+                write-ezlogs "Youtube channel $($track.channel) has already been added" -showtime -warning -logfile:$log
                 $encodedTitle = $Null
               }           
             }elseif($track.extractor -match 'twitch'){
               if($Available_Youtube_Media.id -notcontains $track.id){
-                write-ezlogs ">>>> Found Twitch Channel $($track.uploader)" -showtime
+                write-ezlogs ">>>> Found Twitch Channel $($track.uploader)" -showtime -logfile:$log
                 $encodedTitle = $Null  
                 $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($track.uploader)-TwitchChannel")
                 $encodedTitle = [System.Convert]::ToBase64String($encodedBytes)       
@@ -394,30 +395,30 @@ function Get-Youtube
                 #$null = $Available_Youtube_Media.Add($newRow)        
               }          
             }else{
-              write-ezlogs "Twitch Channel $($track.uploader) has already been added" -showtime -warning
+              write-ezlogs "Twitch Channel $($track.uploader) has already been added" -showtime -warning -logfile:$log
               $encodedTitle = $Null
             }
             if($encodedTitle -ne $Null){
               $null = $Available_Youtube_Media.Add($youtube_Media_output)
             }                          
           }else{
-            write-ezlogs "Unable to parse a title from $($track | out-string)" -showtime -warning
+            write-ezlogs "Unable to parse a title from $($track | out-string)" -showtime -warning -logfile:$log
           }           
         }       
       }          
     }else{
-      write-ezlogs "Unable to get Youtube playlist $($playlist)" -showtime -warning
+      write-ezlogs "Unable to get Youtube playlist $($playlist)" -showtime -warning -logfile:$log
     }
   }
   $Available_Twitch_Media = $Available_Youtube_Media | where {$_.Source -eq 'TwitchChannel'}
   if(@($Available_Twitch_Media).count -gt 1){
-    write-ezlogs ">>>> Saving Available Twitch Media profile to $AllTwitch_Media_Profile_File_Path" -showtime
+    write-ezlogs ">>>> Saving Available Twitch Media profile to $AllTwitch_Media_Profile_File_Path" -showtime -logfile:$log
     [System.Collections.ArrayList]$Available_Twitch_Media | Export-Clixml $AllTwitch_Media_Profile_File_Path -Force     
   }
   if($export_profile -and $AllYoutube_Media_Profile_File_Path -and $Available_Youtube_Media){
     [System.Collections.ArrayList]$Available_Youtube_Media | Export-Clixml $AllYoutube_Media_Profile_File_Path -Force
   }
-  if($Verboselog){write-ezlogs " | Number of Youtube Playlists found: $($Available_Youtube_Media.Count)" -showtime -enablelogs}      
+  if($Verboselog){write-ezlogs " | Number of Youtube Playlists found: $($Available_Youtube_Media.Count)" -showtime -enablelogs -logfile:$log}      
   return [System.Collections.ArrayList]$Available_Youtube_Media  
 }
 #---------------------------------------------- 

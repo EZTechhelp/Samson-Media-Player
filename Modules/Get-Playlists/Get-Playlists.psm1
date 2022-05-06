@@ -30,7 +30,7 @@
 #----------------------------------------------
 function Get-Playlists
 {
- [CmdletBinding()]
+  [CmdletBinding()]
   param (
     [switch]$Clear,
     [switch]$Startup,
@@ -63,6 +63,7 @@ function Get-Playlists
   if($Verboselog){write-ezlogs "#### Executing Get-Playlists ####" -enablelogs -color yellow -linesbefore 1}
   $syncHash.PlayQueue_TreeView.items.Clear()
   $syncHash.Playlists_TreeView.items.Clear()
+  
   $Media_ContextMenu = $synchash.Media_ContextMenu
   if($Import_Playlists_Cache){
     $all_playlists = [hashtable]::Synchronized(@{})
@@ -96,58 +97,58 @@ function Get-Playlists
     $all_playlists.playlists | Export-Clixml "$($thisApp.config.Playlist_Profile_Directory)\\All-Playlists-Cache.xml" -Force -Encoding UTF8
   }  
   if($thisApp.config.Current_Playlist.values){
-    if($VerboseLog){
-      write-ezlogs ">>>> Updating current play queue" -showtime -color cyan
-      write-ezlogs " | Importing config file $($thisApp.Config.Config_Path)" -showtime
-    }     
-    $thisApp.config = Import-Clixml -Path $thisApp.Config.Config_Path
-    $Current_Playlist = New-Object System.Windows.Controls.TreeViewItem
-    $header = New-Object PsObject -Property @{
-      'title' = 'Play Queue'
-      'Status' = ''
-      'FontStyle' = 'Normal'
-      'FontColor' = 'White'
-      'FontWeight' = 'Bold'
-      'FontSize' = 12          
-      'Status_Msg' = ''
-      'Status_FontStyle' = ''
-      'Status_FontColor' = ''
-      'Status_FontWeight' = ''
-      'Status_FontSize' = ''          
-    }    
-    $Current_Playlist.Name = 'Play_Queue'
-    $Current_Playlist.isExpanded = $true     
-    $Current_Playlist.Header = $header
-    $Current_Playlist.Uid = "$($thisApp.Config.Current_Folder)\\Resources\\Material-AnimationPlayOutline.png"    
-    $Current_Playlist.Tag = @{        
-      synchash=$synchash;
-      thisScript=$thisScript;
-      thisApp=$thisApp
-      PlayMedia_Command = $PlayMedia_Command
-      PlaySpotify_Media_Command = $PlaySpotify_Media_Command
-      Playlist = 'Play Queue'
-      All_Playlists = $all_playlists
-    }    
-    $null = $Current_Playlist.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)
-    #write-ezlogs $($all_playlists.playlists | out-string)
-    if(($thisApp.config.Current_Playlist.GetType()).name -notmatch 'OrderedDictionary'){$thisApp.config.Current_Playlist = ConvertTo-OrderedDictionary -hash ($thisApp.config.Current_Playlist)}
-    foreach($item in $thisApp.config.Current_Playlist.values){
-      #$Track = $synchash.MediaTable.Items | where {$_.id -eq $item}
-      #write-ezlogs "[Get-Playlists] | Looking for track with ID $($item)" -showtime 
-      $Track = $all_playlists.playlists.Playlist_tracks | where {$_.id -eq $item} | select -Unique     
-      if(!$Track){
-        $Track = $synchash.MediaTable.items | where {$_.id -eq $item}
-      }            
-      if(!$Track){
-        $Track = $synchash.SpotifyTable.items | where {$_.id -eq $item}
-      }
-      if(!$Track){
-        $Track = $synchash.YoutubeTable.items | where {$_.id -eq $item}
-      } 
-      $playlist = $all_playlists.playlists | where {$_.Playlist_tracks.id -eq $item} | select -Unique   
-      #write-ezlogs "[Get-Playlists] | Adding track $($track | out-string) to Play Queue" -showtime           
-      if($Track.id){
-        $Current_Playlist_ChildItem = New-Object System.Windows.Controls.TreeViewItem
+    try{
+      if($VerboseLog){
+        write-ezlogs ">>>> Updating current play queue" -showtime -color cyan
+        write-ezlogs " | Importing config file $($thisApp.Config.Config_Path)" -showtime
+      }     
+      $thisApp.config = Import-Clixml -Path $thisApp.Config.Config_Path
+      $Current_Playlist = New-Object System.Windows.Controls.TreeViewItem
+      $header = New-Object PsObject -Property @{
+        'title' = 'Play Queue'
+        'Status' = ''
+        'FontStyle' = 'Normal'
+        'FontColor' = 'White'
+        'FontWeight' = 'Bold'
+        'FontSize' = 12          
+        'Status_Msg' = ''
+        'Status_FontStyle' = ''
+        'Status_FontColor' = ''
+        'Status_FontWeight' = ''
+        'Status_FontSize' = ''          
+      }    
+      $Current_Playlist.Name = 'Play_Queue'
+      $Current_Playlist.isExpanded = $true     
+      $Current_Playlist.Header = $header
+      $Current_Playlist.Uid = "$($thisApp.Config.Current_Folder)\\Resources\\Material-AnimationPlayOutline.png"    
+      $Current_Playlist.Tag = @{        
+        synchash=$synchash;
+        thisScript=$thisScript;
+        thisApp=$thisApp
+        PlayMedia_Command = $PlayMedia_Command
+        PlaySpotify_Media_Command = $PlaySpotify_Media_Command
+        Playlist = 'Play Queue'
+        All_Playlists = $all_playlists
+      }    
+      $null = $Current_Playlist.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)
+      #write-ezlogs $($all_playlists.playlists | out-string)
+      if(($thisApp.config.Current_Playlist.GetType()).name -notmatch 'OrderedDictionary'){$thisApp.config.Current_Playlist = ConvertTo-OrderedDictionary -hash ($thisApp.config.Current_Playlist)}
+      foreach($item in $thisApp.config.Current_Playlist.values | where {$_}){
+        #$Track = $synchash.MediaTable.Items | where {$_.id -eq $item}
+        $Title = $Null
+        $track = $null
+        if($Verboselog){write-ezlogs "[Get-Playlists] | Looking for track with ID $($item)" -showtime} 
+        $Track = $all_playlists.playlists.Playlist_tracks | where {$_.id -eq $item} | select -Unique     
+        if(!$Track){
+          $Track = $synchash.All_local_Media | where {$_.id -eq $item} | select -Unique 
+        }            
+        if(!$Track){
+          $Track = $synchash.All_Spotify_Media.playlist_tracks | where {$_.id -eq $item} | select -Unique 
+        }
+        if(!$Track){
+          $Track = $synchash.All_Youtube_Media.playlist_tracks | where {$_.id -eq $item} | select -Unique 
+        } 
+        $playlist = $all_playlists.playlists | where {$_.Playlist_tracks.id -eq $item} | select -Unique   
         if($Track.Spotify_path){
           $Title = "$($Track.Artist_Name) - $($Track.Track_Name)"
           $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Spotify.png"
@@ -158,135 +159,160 @@ function Get-Playlists
         }elseif($Track.type -eq 'YoutubePlaylist_item'){
           $Title = "$($Track.Title)"
           $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Youtube.png"
-        }else{
+        }elseif($Track.SongInfo.Artist -and $Track.SongInfo.Title){
+          $Title = "$($Track.SongInfo.Artist) - $($Track.SongInfo.Title)"
+          $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
+        }elseif($Track.Artist -and $Track.Title){
           $Title = "$($Track.Artist) - $($Track.Title)"
           $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
-        }
-        if($Track.live_status -eq 'Offline'){
-          $fontstyle = 'Italic'
-          $fontcolor = 'Gray'
-          $FontWeight = 'Normal'
-          $FontSize = 12          
-        }elseif($Track.live_status -eq 'Online' -or $Track.live_status -eq 'Live'){
-          $fontstyle = 'Normal'
-          $fontcolor = 'LightGreen'
-          $FontWeight = 'Normal'
-          $FontSize = 12         
+        }elseif($Track.Title){
+          $Title = "$($Track.Title)"
+          $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
+        }elseif($Track.Name){
+          $Title = "$($Track.Name)"
+          $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
         }else{
-          $fontstyle = 'Normal'
-          $fontcolor = 'White' 
-          $FontWeight = 'Normal'
-          $FontSize = 12                     
-        }
-        if($track.status_msg){
-          $status_msg = $track.status_msg
-          if($track.live_status -eq 'Offline'){
-            $Status_fontcolor = 'Gray'
-            $Status_fontstyle = 'Italic'
+          $title = $null
+          write-ezlogs "Can't find type or title for track $($track | out-string)" -showtime -warning
+        }       
+        #write-ezlogs "[Get-Playlists] | Adding track $($track | out-string) to Play Queue" -showtime           
+        if($Track.id -and -not [string]::IsNullOrEmpty($Title)){
+          $Current_Playlist_ChildItem = New-Object System.Windows.Controls.TreeViewItem
+
+          if($Track.live_status -eq 'Offline'){
+            $fontstyle = 'Italic'
+            $fontcolor = 'Gray'
+            $FontWeight = 'Normal'
+            $FontSize = 12          
+          }elseif($Track.live_status -eq 'Online' -or $Track.live_status -eq 'Live'){
+            $fontstyle = 'Normal'
+            $fontcolor = 'LightGreen'
+            $FontWeight = 'Normal'
+            $FontSize = 12         
           }else{
-            $Status_fontcolor = 'White'
-            $Status_fontstyle = 'Normal'
-          }          
-          $Status_FontWeight = 'Normal'
-          $Status_FontSize = 12
-        }else{
-          $status_msg = $null
-          $Status_fontstyle = 'Normal'
-          $Status_fontcolor = 'White' 
-          $Status_FontWeight = 'Normal'
-          $Status_FontSize = 12          
-        }                    
-        $header = New-Object PsObject -Property @{
-          'title' = $title
-          'ID' = $track.id
-          'Status' = $Track.live_status
-          'FontStyle' = $fontstyle
-          'FontColor' = $fontcolor
-          'FontWeight' = $FontWeight
-          'FontSize' = $FontSize          
-          'Status_Msg' = $status_msg
-          'Status_FontStyle' = $Status_fontstyle
-          'Status_FontColor' = $Status_fontcolor
-          'Status_FontWeight' = $Status_FontWeight
-          'Status_FontSize' = $Status_FontSize          
-        }  
-        #write-ezlogs "[Get-Playlists] | Adding $($title) with ID $($track.id) to Play Queue" -showtime      
-        $Current_Playlist_ChildItem.Header = $header        
-        $Current_Playlist_ChildItem.Name = 'Track'
-        $Current_Playlist_ChildItem.Uid = $icon_path
-        if($thisApp.config.Last_Played -eq $Track.id){
-          #$Current_Playlist_ChildItem.IsSelected = $true
-        }
-        #$Current_Playlist_ChildItem.Tag = $Track
-        $Current_Playlist_ChildItem.Tag = @{        
-          synchash=$synchash;
-          thisScript=$thisScript;
-          thisApp=$thisApp
-          PlayMedia_Command = $PlayMedia_Command
-          All_Playlists = $all_playlists
-          PlaySpotify_Media_Command = $PlaySpotify_Media_Command
-          Media_ContextMenu = $Media_ContextMenu
-          Media = $Track
-        } 
-        $Current_Playlist_ChildItem.add_KeyDown{
-          param
-          (
-            [Parameter(Mandatory)][Object]$sender,
-            [Parameter(Mandatory)][Windows.Input.KeyEventArgs]$e
-          )
-          $synchash = $Sender.tag.synchash
-          $thisApp = $Sender.tag.thisapp
-          $thisScript = $Sender.tag.thisScript 
-          $PlayMedia_Command = $sender.tag.PlayMedia_Command
-          $all_playlists = $sender.tag.all_playlists
-          $Playlist = $Sender.header          
-          $Media = $sender.tag.Media 
-          $PlaySpotify_Media_Command = $sender.tag.PlaySpotify_Media_Command
-          $Media_ContextMenu = $sender.tag.Media_ContextMenu
-          $Playlist = $e.Source.Parent.Header
-          if($e.Key -eq 'Enter' -and $Media.url)
-          {
-            #write-ezlogs "Playlist $($e.Source.Parent.Header | out-string)" -showtime
-            try{
-              if($media.Spotify_Path){
-                $media = $syncHash.SpotifyTable.items | where {$_.id -eq $Media.id} | select -Unique
-                Play-SpotifyMedia -Media $Media -thisApp $thisApp -synchash $synchash -Script_Modules $Script_Modules -Show_notification -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -PlaySpotify_Media_Command $PlaySpotify_Media_Command 
-              }else{
-                Start-Media -Media $Media -thisApp $thisApp -synchash $synchash -Show_notification -Script_Modules $Script_Modules -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -PlaySpotify_Media_Command $PlaySpotify_Media_Command 
-              }  
-              #Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command -all_playlists $all_playlists
-            }catch{
-              write-ezlogs "An exception occurred attempting to play media using keyboard event $($e.Key | out-string) for media $($Media.id) from Playlist $($Playlist)" -showtime -catcherror $_
-            }    
+            $fontstyle = 'Normal'
+            $fontcolor = 'White' 
+            $FontWeight = 'Normal'
+            $FontSize = 12                     
           }
-          if($e.Key -eq 'Delete'-and $Media.url)
-          {
-            try{
-              if($media.Spotify_Path){
-                if($thisApp.config.Current_Playlist.values -contains $Media.encodedtitle){
-                  write-ezlogs " | Removing $($Media.encodedtitle) from Play Queue" -showtime
-                  $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator() | where {$_.value -eq $Media.encodedtitle} | select * -ExpandProperty key
-                  $null = $thisApp.config.Current_Playlist.Remove($index_toremove) 
-                }      
-              }elseif($thisApp.config.Current_Playlist.values -contains $Media.id){
-                write-ezlogs " | Removing $($Media.id) from Play Queue" -showtime
-                $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator() | where {$_.value -eq $Media.id} | select * -ExpandProperty key
-                $null = $thisApp.config.Current_Playlist.Remove($index_toremove)                 
-              }
-              $thisApp.config | Export-Clixml -Path $thisApp.Config.Config_Path -Force -Encoding UTF8
-              Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -startup -thisApp $thisApp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command  -all_playlists $all_playlists 
-            }catch{
-              write-ezlogs "An exception occurred removing media $($Media.id) from Playlist $($Playlist) using keyboard event $($e.Key | out-string)" -showtime -catcherror $_
-            } 
+          if($track.status_msg){
+            $status_msg = $track.status_msg
+            if($track.live_status -eq 'Offline'){
+              $Status_fontcolor = 'Gray'
+              $Status_fontstyle = 'Italic'
+            }else{
+              $Status_fontcolor = 'White'
+              $Status_fontstyle = 'Normal'
+            }          
+            $Status_FontWeight = 'Normal'
+            $Status_FontSize = 12
+          }else{
+            $status_msg = $null
+            $Status_fontstyle = 'Normal'
+            $Status_fontcolor = 'White' 
+            $Status_FontWeight = 'Normal'
+            $Status_FontSize = 12          
+          }                    
+          $header = New-Object PsObject -Property @{
+            'title' = $title
+            'ID' = $track.id
+            'Status' = $Track.live_status
+            'FontStyle' = $fontstyle
+            'FontColor' = $fontcolor
+            'FontWeight' = $FontWeight
+            'FontSize' = $FontSize          
+            'Status_Msg' = $status_msg
+            'Status_FontStyle' = $Status_fontstyle
+            'Status_FontColor' = $Status_fontcolor
+            'Status_FontWeight' = $Status_FontWeight
+            'Status_FontSize' = $Status_FontSize          
           }    
-        }               
-        $null = $Current_Playlist_ChildItem.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$PlayMedia_Command)
-        $null = $Current_Playlist_ChildItem.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)        
-        $null = $Current_Playlist.items.add($Current_Playlist_ChildItem)        
-      }
-    }   
-    $null = $syncHash.PlayQueue_TreeView.Items.Add($Current_Playlist) 
-    $syncHash.PlayQueue_TreeView.AllowDrop = $true   
+          $Current_Playlist_ChildItem.Header = $header        
+          $Current_Playlist_ChildItem.Name = 'Track'
+          $Current_Playlist_ChildItem.Uid = $icon_path
+          if($thisApp.config.Last_Played -eq $Track.id){
+            #$Current_Playlist_ChildItem.IsSelected = $true
+          }
+          #$Current_Playlist_ChildItem.Tag = $Track
+          $Current_Playlist_ChildItem.Tag = @{        
+            synchash=$synchash;
+            thisScript=$thisScript;
+            thisApp=$thisApp
+            PlayMedia_Command = $PlayMedia_Command
+            All_Playlists = $all_playlists
+            PlaySpotify_Media_Command = $PlaySpotify_Media_Command
+            Media_ContextMenu = $Media_ContextMenu
+            Media = $Track
+          } 
+          $Current_Playlist_ChildItem.add_KeyDown{
+            param
+            (
+              [Parameter(Mandatory)][Object]$sender,
+              [Parameter(Mandatory)][Windows.Input.KeyEventArgs]$e
+            )
+            $synchash = $Sender.tag.synchash
+            $thisApp = $Sender.tag.thisapp
+            $thisScript = $Sender.tag.thisScript 
+            $PlayMedia_Command = $sender.tag.PlayMedia_Command
+            $all_playlists = $sender.tag.all_playlists
+            $Playlist = $Sender.header          
+            $Media = $sender.tag.Media 
+            $PlaySpotify_Media_Command = $sender.tag.PlaySpotify_Media_Command
+            $Media_ContextMenu = $sender.tag.Media_ContextMenu
+            $Playlist = $e.Source.Parent.Header
+            if($e.Key -eq 'Enter' -and $Media.url)
+            {
+              #write-ezlogs "Playlist $($e.Source.Parent.Header | out-string)" -showtime
+              try{
+                if($media.Spotify_Path){
+                  $media = $syncHash.SpotifyTable.items | where {$_.id -eq $Media.id} | select -Unique
+                  Play-SpotifyMedia -Media $Media -thisApp $thisApp -synchash $synchash -Script_Modules $Script_Modules -Show_notification -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -PlaySpotify_Media_Command $PlaySpotify_Media_Command 
+                }else{
+                  Start-Media -Media $Media -thisApp $thisApp -synchash $synchash -Show_notification -Script_Modules $Script_Modules -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -PlaySpotify_Media_Command $PlaySpotify_Media_Command 
+                }  
+                #Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command -all_playlists $all_playlists
+              }catch{
+                write-ezlogs "An exception occurred attempting to play media using keyboard event $($e.Key | out-string) for media $($Media.id) from Playlist $($Playlist)" -showtime -catcherror $_
+              }    
+            }
+            if($e.Key -eq 'Delete'-and $Media.url)
+            {
+              try{
+                if($media.Spotify_Path){
+                  if($thisApp.config.Current_Playlist.values -contains $Media.encodedtitle){
+                    write-ezlogs " | Removing $($Media.encodedtitle) from Play Queue" -showtime
+                    $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator() | where {$_.value -eq $Media.encodedtitle} | select * -ExpandProperty key
+                    $null = $thisApp.config.Current_Playlist.Remove($index_toremove) 
+                  }      
+                }elseif($thisApp.config.Current_Playlist.values -contains $Media.id){
+                  write-ezlogs " | Removing $($Media.id) from Play Queue" -showtime
+                  $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator() | where {$_.value -eq $Media.id} | select * -ExpandProperty key
+                  $null = $thisApp.config.Current_Playlist.Remove($index_toremove)                 
+                }
+                $thisApp.config | Export-Clixml -Path $thisApp.Config.Config_Path -Force -Encoding UTF8
+                Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -startup -thisApp $thisApp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command  -all_playlists $all_playlists 
+              }catch{
+                write-ezlogs "An exception occurred removing media $($Media.id) from Playlist $($Playlist) using keyboard event $($e.Key | out-string)" -showtime -catcherror $_
+              } 
+            }    
+          }               
+          $null = $Current_Playlist_ChildItem.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$PlayMedia_Command)
+          $null = $Current_Playlist_ChildItem.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)
+          if($Current_Playlist.items -notcontains $Current_Playlist_ChildItem){
+            if($Verboselog){write-ezlogs "[Get-Playlists] | Adding $($title) with ID $($track.id) to Play Queue" -showtime  } 
+            $null = $Current_Playlist.items.add($Current_Playlist_ChildItem)          
+          }else{
+            write-ezlogs "Duplicate item ($title) already exists in $($playlist)" -showtime -warning
+          }                 
+        }else{
+          write-ezlogs "Unable to add track to play queue due to missing title or ID! Title: $($Title) - ID: $($track.id) - $($track | out-string)" -showtime -warning
+        }
+      }   
+      $null = $syncHash.PlayQueue_TreeView.Items.Add($Current_Playlist) 
+      $syncHash.PlayQueue_TreeView.AllowDrop = $true 
+    }catch{
+      write-ezlogs "An exception occurred processing current_playlist" -showtime -catcherror $_
+    } 
   }  
   <#   $syncHash.PlayQueue_TreeView.add_SelectedItemChanged({
 
@@ -311,16 +337,12 @@ function Get-Playlists
           }
           if($d.Handled){
             Import-Youtube -Youtube_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $Media_Profile_Directory -PlayMedia_Command $PlayMedia_Command -thisApp $thisApp
-          }
-          #close-splashscreen
-          #$synchash.Window.Show()        
+          }        
         }else{
           write-ezlogs "The provided URL is not valid or was not provided! -- $LinkDrop" -showtime -warning
         }                        
       }catch{
         write-ezlogs "An exception occurred in PreviewDrop" -showtime -catcherror $_
-        #close-splashscreen
-        #$synchash.Window.Show()
       }    
     }elseif($d.Data.GetDataPresent([Windows.Forms.DataFormats]::FileDrop)){
       try{  
@@ -332,7 +354,7 @@ function Get-Playlists
           #start-sleep 1      
           $d.Handled = $true  
           write-ezlogs ">>>> Adding Local Media $FileDrop" -showtime -color cyan
-          Import-Media -Media_Path $FileDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -PlayMedia_Command $PlayMedia_Command -thisApp $thisApp
+          Import-Media -Media_Path $FileDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -PlayMedia_Command $PlayMedia_Command -thisApp $thisApp -use_runspace
           #close-splashscreen
           #$synchash.Window.Show()        
         }else{
@@ -548,13 +570,18 @@ function Get-Playlists
               try{               
                 #write-ezlogs "Playlist to update before: $($Playlist_To_Update.Playlist_tracks.Title | out-string)"                        
                 $Updated_Playlist = New-Object -TypeName 'System.Collections.ArrayList'
-                foreach($item in $Playlist_items.tag.Media){
-                  $null = $Updated_Playlist.add($item)
-                } 
-                $Playlist_To_Update.Playlist_tracks = $Updated_Playlist
-                #write-ezlogs "Playlist to update after: $($Playlist_To_Update.Playlist_tracks.Title | out-string)"  
-                $Playlist_To_Update | Export-Clixml $Playlist_To_Update.Playlist_Path -Force 
-                $d.Handled = $false                             
+                if($Playlist_To_Update.Playlist_tracks -and $Playlist_items.tag.media){
+                  foreach($item in $Playlist_items.tag.media){
+                    $null = $Updated_Playlist.add($item)
+                  } 
+                  $Playlist_To_Update.Playlist_tracks = $Updated_Playlist
+                  #write-ezlogs "Playlist to update after: $($Playlist_To_Update.Playlist_tracks.Title | out-string)"  
+                  $Playlist_To_Update | Export-Clixml $Playlist_To_Update.Playlist_Path -Force 
+                  $d.Handled = $false 
+                }else{
+                  write-ezlogs "Unable to find Playlist($playlist_to_update) to update for media $($Media.title - $Media.id)" -showtime -warning
+                  $d.Handled = $true
+                }                           
                 $this.Stop()
               }catch{
                 $this.Stop()
@@ -562,8 +589,7 @@ function Get-Playlists
               }
           }.GetNewClosure())                   
           $synchash.Playlist_update_timer.start()  
-          $syncHash.Playlists_TreeView.UpdateLayout()          
-                                     
+          $syncHash.Playlists_TreeView.UpdateLayout()                                              
         }catch{
           $d.Handled = $true
           write-ezlogs "An exception occurred moving $($Media.id) from Playlist $($from_Playlist) to Playlist $to_Playlist" -showtime -catcherror $_
@@ -588,151 +614,155 @@ function Get-Playlists
       write-ezlogs "You dropped $($e.data | out-string)"
   } #> 
   #$syncHash.MediaTable.add_PreviewDragOver($Drag_Over)
-  if(!$Update_Current_Playlist){    
-    $image_resources_dir = [System.IO.Path]::Combine($($thisApp.Config.Current_folder) ,"Resources")
-    if($all_playlists.playlists -and !$Refresh_All_Playlists)
-    { 
-      foreach ($Playlist in $all_playlists.playlists)
-      {
-        $Playlist_Item = New-Object System.Windows.Controls.TreeViewItem
-        $Playlist_Item.AllowDrop = $true
-        $Playlist_item.IsExpanded = $true
-        $Playlist_name = $null
-        $Playlist_ID = $null
-        $Media_Description = $null
-        $Track_Total = $null
-        $Playlist_name = $Playlist.name
-        if($verboselog){write-ezlogs ">>>> Adding Playlist $Playlist_name" -showtime -color cyan}
-        $Playlist_ID = $Playlist.Playlist_ID
-        $Media_Description = $Playlist.Description
-        $Track_Total = $Playlist.Playlist_Track_Total
-        $Type = $Playlist.type
-        $Playlist_tracks = $Playlist.Playlist_tracks
-        $Playlist_Item.Uid = "$($thisApp.Config.Current_Folder)\\Resources\\Fontisto-PlayList.png" 
-        $Group_Name = 'Name'
-        $Sub_GroupName = 'Artist_Name'
-        $Playlist_Item.Tag = @{        
-          synchash=$synchash;
-          thisScript=$thisScript;
-          thisApp=$thisApp
-          PlayMedia_Command = $PlayMedia_Command
-          PlaySpotify_Media_Command = $PlaySpotify_Media_Command
-          Playlist = $Playlist
-          All_Playlists = $all_playlists
-        }        
-        #$Playlist_Item.Tag = $Playlist
-        $header = New-Object PsObject -Property @{
-          'title' = $Playlist_name
-          'Status' = ''
-          'FontStyle' = 'Normal'
-          'FontColor' = 'White'
-          'FontWeight' = 'Bold'
-          'FontSize' = 12          
-          'Status_Msg' = ''
-          'Status_FontStyle' = ''
-          'Status_FontColor' = ''
-          'Status_FontWeight' = ''
-          'Status_FontSize' = ''          
-        }        
-        $Playlist_Item.Header = $header
-        $Playlist_Item.Name = 'Playlist'
-        $null = $Playlist_Item.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)        
-        $Playlist_Item.add_PreviewDrop($PreviewDrop)
-        foreach($Track in $Playlist_tracks){
-          if($Track.id){
-            $ChildItem = New-Object System.Windows.Controls.TreeViewItem
-            $Childitem.AllowDrop = $true
-            [int]$hrs = $($([timespan]::FromMilliseconds($track.Duration_ms)).Hours)
-            [int]$mins = $($([timespan]::FromMilliseconds($track.Duration_ms)).Minutes)
-            [int]$secs = $($([timespan]::FromMilliseconds($track.Duration_ms)).Seconds) 
-            $total_time = "$mins`:$secs"
-            $Title = $null
-            if($Track.Spotify_path){
-              $Title = "$($Track.Artist_Name) - $($Track.Track_Name)"
-              $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Spotify.png"
-            }elseif($Track.webpage_url -match 'twitch'){
-              $Title = "$($Track.Title)"
-              #$title = "Twitch Stream: $($track.Playlist)"
-              $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Twitch.png"
-            }elseif($Track.type -eq 'YoutubePlaylist_item'){
-              $Title = "$($Track.Title)"
-              $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Youtube.png"
-            }else{
-              $Title = "$($Track.Artist) - $($Track.Title)"
-              $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
-            } 
-            if($Track.live_status -eq 'Offline'){
-              $fontstyle = 'Italic'
-              $fontcolor = 'Gray'
-              $FontWeight = 'Normal'
-              $FontSize = 12          
-            }elseif($Track.live_status -eq 'Online' -or $track.live_status -eq 'Live'){
-              $fontstyle = 'Normal'
-              $fontcolor = 'LightGreen'
-              $FontWeight = 'Normal'
-              $FontSize = 12         
-            }else{
-              $fontstyle = 'Normal'
-              $fontcolor = 'White' 
-              $FontWeight = 'Normal'
-              $FontSize = 12                     
-            }
-            if($Track.status_msg){
-              $status_msg = $Track.status_msg
-              if($Track.live_status -eq 'Offline'){
-                $Status_fontcolor = 'Gray'
-                $Status_fontstyle = 'Italic'
+  if(!$Update_Current_Playlist){   
+    try{
+      $image_resources_dir = [System.IO.Path]::Combine($($thisApp.Config.Current_folder) ,"Resources")
+      if($all_playlists.playlists -and !$Refresh_All_Playlists)
+      { 
+        foreach ($Playlist in $all_playlists.playlists)
+        {
+          $Playlist_Item = New-Object System.Windows.Controls.TreeViewItem
+          $Playlist_Item.AllowDrop = $true
+          $Playlist_item.IsExpanded = $true
+          $Playlist_name = $null
+          $Playlist_ID = $null
+          $Media_Description = $null
+          $Track_Total = $null
+          $Playlist_name = $Playlist.name
+          if($verboselog){write-ezlogs ">>>> Adding Playlist $Playlist_name" -showtime -color cyan}
+          $Playlist_ID = $Playlist.Playlist_ID
+          $Media_Description = $Playlist.Description
+          $Track_Total = $Playlist.Playlist_Track_Total
+          $Type = $Playlist.type
+          $Playlist_tracks = $Playlist.Playlist_tracks
+          $Playlist_Item.Uid = "$($thisApp.Config.Current_Folder)\\Resources\\Fontisto-PlayList.png" 
+          $Group_Name = 'Name'
+          $Sub_GroupName = 'Artist_Name'
+          $Playlist_Item.Tag = @{        
+            synchash=$synchash;
+            thisScript=$thisScript;
+            thisApp=$thisApp
+            PlayMedia_Command = $PlayMedia_Command
+            PlaySpotify_Media_Command = $PlaySpotify_Media_Command
+            Playlist = $Playlist
+            All_Playlists = $all_playlists
+          }        
+          #$Playlist_Item.Tag = $Playlist
+          $header = New-Object PsObject -Property @{
+            'title' = $Playlist_name
+            'Status' = ''
+            'FontStyle' = 'Normal'
+            'FontColor' = 'White'
+            'FontWeight' = 'Bold'
+            'FontSize' = 12          
+            'Status_Msg' = ''
+            'Status_FontStyle' = ''
+            'Status_FontColor' = ''
+            'Status_FontWeight' = ''
+            'Status_FontSize' = ''          
+          }        
+          $Playlist_Item.Header = $header
+          $Playlist_Item.Name = 'Playlist'
+          $null = $Playlist_Item.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)        
+          $Playlist_Item.add_PreviewDrop($PreviewDrop)
+          foreach($Track in $Playlist_tracks){
+            if($Track.id){
+              $ChildItem = New-Object System.Windows.Controls.TreeViewItem
+              $Childitem.AllowDrop = $true
+              [int]$hrs = $($([timespan]::FromMilliseconds($track.Duration_ms)).Hours)
+              [int]$mins = $($([timespan]::FromMilliseconds($track.Duration_ms)).Minutes)
+              [int]$secs = $($([timespan]::FromMilliseconds($track.Duration_ms)).Seconds) 
+              $total_time = "$mins`:$secs"
+              $Title = $null
+              if($Track.Spotify_path){
+                $Title = "$($Track.Artist_Name) - $($Track.Track_Name)"
+                $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Spotify.png"
+              }elseif($Track.webpage_url -match 'twitch'){
+                $Title = "$($Track.Title)"
+                #$title = "Twitch Stream: $($track.Playlist)"
+                $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Twitch.png"
+              }elseif($Track.type -eq 'YoutubePlaylist_item'){
+                $Title = "$($Track.Title)"
+                $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Youtube.png"
               }else{
-                $Status_fontcolor = 'White'
+                $Title = "$($Track.Artist) - $($Track.Title)"
+                $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
+              } 
+              if($Track.live_status -eq 'Offline'){
+                $fontstyle = 'Italic'
+                $fontcolor = 'Gray'
+                $FontWeight = 'Normal'
+                $FontSize = 12          
+              }elseif($Track.live_status -eq 'Online' -or $track.live_status -eq 'Live'){
+                $fontstyle = 'Normal'
+                $fontcolor = 'LightGreen'
+                $FontWeight = 'Normal'
+                $FontSize = 12         
+              }else{
+                $fontstyle = 'Normal'
+                $fontcolor = 'White' 
+                $FontWeight = 'Normal'
+                $FontSize = 12                     
+              }
+              if($Track.status_msg){
+                $status_msg = $Track.status_msg
+                if($Track.live_status -eq 'Offline'){
+                  $Status_fontcolor = 'Gray'
+                  $Status_fontstyle = 'Italic'
+                }else{
+                  $Status_fontcolor = 'White'
+                  $Status_fontstyle = 'Normal'
+                }                            
+                $Status_FontWeight = 'Normal'
+                $Status_FontSize = 12
+              }else{
+                $status_msg = $null
                 $Status_fontstyle = 'Normal'
-              }                            
-              $Status_FontWeight = 'Normal'
-              $Status_FontSize = 12
-            }else{
-              $status_msg = $null
-              $Status_fontstyle = 'Normal'
-              $Status_fontcolor = 'White' 
-              $Status_FontWeight = 'Normal'
-              $Status_FontSize = 12          
-            }                    
-            $header = New-Object PsObject -Property @{
-              'title' = $title
-              'Status' = $Track.live_status
-              'ID' = $Track.id
-              'FontStyle' = $fontstyle
-              'FontColor' = $fontcolor
-              'FontWeight' = $FontWeight
-              'FontSize' = $FontSize          
-              'Status_Msg' = $status_msg
-              'Status_FontStyle' = $Status_fontstyle
-              'Status_FontColor' = $Status_fontcolor
-              'Status_FontWeight' = $Status_FontWeight
-              'Status_FontSize' = $Status_FontSize          
-            }     
-            if($Verboselog){write-ezlogs " | Adding Playlist Track: $Title" -showtime}
-            $ChildItem.Header = $header       
-            $ChildItem.Name = 'Track'
-            $ChildItem.Uid = $icon_path
-            #$ChildItem.Tag = $Track
-            $ChildItem.Tag = @{        
-              synchash=$synchash;
-              thisScript=$thisScript;
-              thisApp=$thisApp
-              PlayMedia_Command = $PlayMedia_Command
-              All_Playlists = $all_playlists
-              PlaySpotify_Media_Command = $PlaySpotify_Media_Command
-              Media = $Track
-            }  
-            $Childitem.add_PreviewDrop($PreviewDrop)          
-            $null = $Childitem.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$PlayMedia_Command)
-            #$null = $Childitem.AddHandler([System.Windows.Controls.Button]::MouseRightButtonDownEvent,$Media_ContextMenu)
-            $null = $Childitem.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)
-            #$null = $Childitem.AddHandler([System.Windows.Controls.Button]::PreviewMouseLeftButtonDownEvent,$Drag_MouseDown)            
-            $null = $Playlist_Item.items.add($ChildItem)     
+                $Status_fontcolor = 'White' 
+                $Status_FontWeight = 'Normal'
+                $Status_FontSize = 12          
+              }                    
+              $header = New-Object PsObject -Property @{
+                'title' = $title
+                'Status' = $Track.live_status
+                'ID' = $Track.id
+                'FontStyle' = $fontstyle
+                'FontColor' = $fontcolor
+                'FontWeight' = $FontWeight
+                'FontSize' = $FontSize          
+                'Status_Msg' = $status_msg
+                'Status_FontStyle' = $Status_fontstyle
+                'Status_FontColor' = $Status_fontcolor
+                'Status_FontWeight' = $Status_FontWeight
+                'Status_FontSize' = $Status_FontSize          
+              }     
+              if($Verboselog){write-ezlogs " | Adding Playlist Track: $Title" -showtime}
+              $ChildItem.Header = $header       
+              $ChildItem.Name = 'Track'
+              $ChildItem.Uid = $icon_path
+              #$ChildItem.Tag = $Track
+              $ChildItem.Tag = @{        
+                synchash=$synchash;
+                thisScript=$thisScript;
+                thisApp=$thisApp
+                PlayMedia_Command = $PlayMedia_Command
+                All_Playlists = $all_playlists
+                PlaySpotify_Media_Command = $PlaySpotify_Media_Command
+                Media = $Track
+              }  
+              $Childitem.add_PreviewDrop($PreviewDrop)          
+              $null = $Childitem.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$PlayMedia_Command)
+              #$null = $Childitem.AddHandler([System.Windows.Controls.Button]::MouseRightButtonDownEvent,$Media_ContextMenu)
+              $null = $Childitem.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)
+              #$null = $Childitem.AddHandler([System.Windows.Controls.Button]::PreviewMouseLeftButtonDownEvent,$Drag_MouseDown)            
+              $null = $Playlist_Item.items.add($ChildItem)     
+            }
           }
+          $null = $syncHash.Playlists_TreeView.Items.Add($Playlist_Item)               
         }
-        $null = $syncHash.Playlists_TreeView.Items.Add($Playlist_Item)               
       }
+    }catch{
+      write-ezlogs "An exception occurred processing all_playlists" -showtime -catcherror $_
     }
   }
 }

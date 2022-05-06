@@ -39,6 +39,7 @@ function Import-Spotify
     [string]$Media_Profile_Directory,
     $Refresh_All_Spotify_Media,
     $thisApp,
+    $log = $thisApp.Config.SpotifyMedia_logfile,
     $Group,
     $thisScript,
     $Import_Cache_Profile = $startup,
@@ -52,8 +53,10 @@ function Import-Spotify
   
   $all_spotify_media =  [hashtable]::Synchronized(@{})
   try{
-    if($Verboselog){write-ezlogs "#### Getting Spotify Media ####" -enablelogs -color yellow -linesbefore 1}
-    $all_spotify_media.media = Get-Spotify -Media_directories $Media_directories -Media_Profile_Directory $Media_Profile_Directory -Import_Profile:$Import_Cache_Profile -Export_Profile -Verboselog:$VerboseLog -thisApp $thisApp
+    if($thisApp.Config.Verbose_logging){write-ezlogs "#### Getting Spotify Media ####" -enablelogs -color yellow -linesbefore 1 -logfile:$log}
+    $synchash.All_Spotify_Media = Get-Spotify -Media_directories $Media_directories -Media_Profile_Directory $Media_Profile_Directory -Import_Profile:$Import_Cache_Profile -Export_Profile -Verboselog:$VerboseLog -thisApp $thisApp -log:$log
+    #TODO: Cleanup old hashtable
+    $all_spotify_media.media = $synchash.All_Spotify_Media 
   }catch{
     write-ezlogs "An exception occurred in Get-Spotify" -showtime -catcherror $_
   }
@@ -99,10 +102,10 @@ function Import-Spotify
   $Null = $Spotify_Datatable.datatable.Columns.AddRange($Fields)
 
   $image_resources_dir = [System.IO.Path]::Combine($($thisApp.Config.Current_folder) ,"Resources")
-  if($all_spotify_media.media -and !$Refresh_All_Spotify_Media)
+  if($synchash.All_Spotify_Media -and !$Refresh_All_Spotify_Media)
   { 
     $counter = 0
-    foreach ($Media in $all_spotify_media.media)
+    foreach ($Media in $synchash.All_Spotify_Media | where {$_.id})
     {
       $Array = @()
       $Playlist_name = $null     
@@ -126,7 +129,7 @@ function Import-Spotify
       $synchash.Spotify_GroupName = 'Playlist'
       #$Group_Name = 'Playlist'
       #$Sub_GroupName = 'Artist'
-      if($verboselog){write-ezlogs ">>> Found Spotify Playlist: $Playlist_name" -showtime} 
+      if($verboselog){write-ezlogs ">>> Found Spotify Playlist: $Playlist_name" -showtime -logfile:$log} 
       #$Sub_GroupName = 'Artist_Name'
       foreach($Track in $Playlist_tracks){
         if($Track.id){
@@ -140,7 +143,7 @@ function Import-Spotify
           $total_time = "$mins`:$secs"
           $thumbimage = $Track.Album.images | where {$_.Width -le 64}
           $albumimage = $Track.Album.images | where {$_.Width -ge 300} | select -last 1
-          if($verboselog){write-ezlogs " | Adding Spotify Track: $($Track.Name) - ID $($Track.id)" -showtime} 
+          if($verboselog){write-ezlogs " | Adding Spotify Track: $($Track.Name) - ID $($Track.id)" -showtime -logfile:$log} 
           #---------------------------------------------- 
           #region Add Properties to datatable
           #----------------------------------------------
@@ -170,16 +173,16 @@ function Import-Spotify
           $newTableRow.Album_web_url = $Track.Album.href
           $newTableRow.Album_images = $albumimage.url
           $newTableRow.Group_Name = $synchash.Spotify_GroupName
-          $newTableRow.encodedtitle = $track_encodedTitle
-          $newTableRow.ID = $track_encodedTitle
+          $newTableRow.encodedtitle = $Track.id
+          $newTableRow.ID = $Track.id
           $newTableRow.playlist_encodedtitle = $Playlist_encodedtitle
           $newTableRow.type = $Track.type
           $newTableRow.Source = $Media.source
           $newTableRow.Spotify_Path = $Spotify_Path 
-          if($Spotify_Datatable.datatable.id -notcontains $track_encodedTitle){
+          if($Spotify_Datatable.datatable.id -notcontains $Track.id){
             $Null = $Spotify_Datatable.datatable.Rows.Add($newTableRow) 
           }else{
-            write-ezlogs "Duplicate Spotify Track found $($Track.Name) - ID $($Track.id) - Playlist $($Playlist_name)" -showtime -warning
+            write-ezlogs "Duplicate Spotify Track found $($Track.Name) - ID $($Track.id) - Playlist $($Playlist_name)" -showtime -warning -logfile:$log
           }                       
           #---------------------------------------------- 
           #endregion Add Properties to datatable
@@ -188,7 +191,7 @@ function Import-Spotify
       }              
     }
   }
-  if($verboselog){write-ezlogs " | Compiling datatable and adding items" -showtime -color cyan -enablelogs} 
+  if($verboselog){write-ezlogs " | Compiling datatable and adding items" -showtime -color cyan -enablelogs -logfile:$log} 
   $PerPage = $thisApp.Config.SpotifyBrowser_Paging
   #$syncHash.SpotifyTable.Items.clear()
   if($thisApp.Config.SpotifyBrowser_Paging -ne $Null){
@@ -251,7 +254,7 @@ function Import-Spotify
         $view.GroupDescriptions.Clear()
         $null = $view.GroupDescriptions.Add($groupdescription)
       }else{
-        write-ezlogs "[Import-Spotify] View group descriptions not available or null! Likely CollectionViewSource was empty!" -showtime -warning
+        write-ezlogs "[Import-Spotify] View group descriptions not available or null! Likely CollectionViewSource was empty!" -showtime -warning -logfile:$log
       }
       if($Sub_GroupName){
         $sub_groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
@@ -310,11 +313,11 @@ function Import-Spotify
           $synchash.SpotifyTable.CanUserAddRows = $False
           $synchash.SpotifyTable.HorizontalContentAlignment = "left"
           $synchash.SpotifyTable.IsReadOnly = $True
-          if($verboselog){write-ezlogs " | Adding Spotify Media table play button and select checkbox to table" -showtime -color cyan -enablelogs} 
+          if($verboselog){write-ezlogs " | Adding Spotify Media table play button and select checkbox to table" -showtime -color cyan -enablelogs -logfile:$log} 
           $buttonColumn = New-Object System.Windows.Controls.DataGridTemplateColumn
           $buttonFactory = New-Object System.Windows.FrameworkElementFactory([System.Windows.Controls.Button])
           $Null = $buttonFactory.SetValue([System.Windows.Controls.Button]::ContentProperty, "Play")
-          if($verboselog){write-ezlogs " | Setting SpotifyTable Play button click event" -showtime -color cyan -enablelogs} 
+          if($verboselog){write-ezlogs " | Setting SpotifyTable Play button click event" -showtime -color cyan -enablelogs -logfile:$log} 
           #$buttonstyle = $synchash.Window.TryFindResource('ImageGridButtonStyle')
           #$Null = $buttonFactory.SetValue([System.Windows.Controls.Button]::StyleProperty, $buttonstyle)
           $Null = $buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$PlayMedia_Command)
@@ -340,11 +343,11 @@ function Import-Spotify
       $synchash.SpotifyTable.CanUserAddRows = $False
       $synchash.SpotifyTable.HorizontalContentAlignment = "left"
       $synchash.SpotifyTable.IsReadOnly = $True
-      if($verboselog){write-ezlogs " | Adding Spotify Media table play button and select checkbox to table" -showtime -color cyan -enablelogs} 
+      if($verboselog){write-ezlogs " | Adding Spotify Media table play button and select checkbox to table" -showtime -color cyan -enablelogs -logfile:$log} 
       $buttonColumn = New-Object System.Windows.Controls.DataGridTemplateColumn
       $buttonFactory = New-Object System.Windows.FrameworkElementFactory([System.Windows.Controls.Button])
       $Null = $buttonFactory.SetValue([System.Windows.Controls.Button]::ContentProperty, "Play")
-      if($verboselog){write-ezlogs " | Setting SpotifyTable Play button click event" -showtime -color cyan -enablelogs} 
+      if($verboselog){write-ezlogs " | Setting SpotifyTable Play button click event" -showtime -color cyan -enablelogs -logfile:$log} 
       $Null = $buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$PlayMedia_Command)
       $dataTemplate = New-Object System.Windows.DataTemplate
       $dataTemplate.VisualTree = $buttonFactory

@@ -71,13 +71,17 @@ function Import-Media
       write-ezlogs "Provided File $Media_Path is not a valid media type" -showtime -warning
     }
     if($Path){
-      $all_local_media.media = Get-LocalMedia -Media_Path $Path -Media_Profile_Directory $Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp
+      $synchash.All_local_Media = Get-LocalMedia -Media_Path $Path -Media_Profile_Directory $Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp
+      #TODO: Cleanup old hashtable
+      $all_local_media.media = $synchash.All_local_Media
     }else{
-      Update-Notifications -Level 'WARNING' -Message $message -VerboseLog -Message_color "Red" -thisApp $thisApp -synchash $synchash -Open_Flyout -No_runspace
+      Update-Notifications -Level 'WARNING' -Message $message -VerboseLog -Message_color "Orange" -thisApp $thisApp -synchash $synchash -Open_Flyout
       return
     }
   }else{
-    $all_local_media.media = Get-LocalMedia -Media_directories $Media_directories -Media_Profile_Directory $Media_Profile_Directory -Import_Profile:$Import_Cache_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -startup 
+    $synchash.All_local_Media = Get-LocalMedia -Media_directories $Media_directories -Media_Profile_Directory $Media_Profile_Directory -Import_Profile:$Import_Cache_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -startup 
+    #TODO: Cleanup old hashtable
+    $all_local_media.media = $synchash.All_local_Media
   }
  
   if($verboselog){write-ezlogs " | Compiling datatable and adding items" -showtime -color cyan -enablelogs} 
@@ -103,11 +107,10 @@ function Import-Media
  
   $Global:Datatable.datatable = New-Object System.Data.DataTable
   $Null = $Datatable.datatable.Columns.AddRange($Fields)
-
   #$image_resources_dir = [System.IO.Path]::Combine($($thisApp.Config.Current_folder) ,"Resources")
-  if($all_local_media.media -and !$Refresh_All_Media)
+  if($synchash.All_local_Media -and !$Refresh_All_Media)
   {   
-    foreach ($Media in $all_local_media.media)
+    foreach ($Media in $synchash.All_local_Media | where {$_.encodedtitle})
     {
       $Media_title = $null
       $Artist = $Null
@@ -125,39 +128,46 @@ function Import-Media
         $Media_title = $null
       }
       if($verboselog){write-ezlogs ">>> Found Local Media title: $Media_title" -showtime} 
-      if($media.songinfo.Artist){
-        $artist = $media.songinfo.Artist
-        $artist = (Get-Culture).TextInfo.ToTitleCase($artist).trim()          
-        if($verboselog){write-ezlogs " | Found count based on matching artist name $artist $($file_count)" -showtime -color cyan -enablelogs}
-      }else{
-        $artist = $media.directory | split-path -Leaf
-        $artist = (Get-Culture).TextInfo.ToTitleCase($artist).trim()         
-      }
-      if($media.directory_filecount){
-        $file_count = $media.directory_filecount
-        if($verboselog){write-ezlogs " | File count found from profile $($file_count)" -showtime -color cyan -enablelogs} 
-      }elseif($artist){
-        $file_count = @($all_local_media.media | where {$_.songinfo.Artist -eq $artist}).count 
-      }elseif([System.IO.Directory]::Exists($media.directory)){
-        if($verboselog){write-ezlogs " | Getting file count for directory $($media.directory)" -showtime -color cyan -enablelogs} 
-        $file_count = @([System.IO.Directory]::GetFiles("$($media.directory)",'*','AllDirectories') | Where{$_ -match $pattern}).count
-      }else{
-        $file_count = "NA"
-      }     
-      if($media.songinfo.duration){
-        $duration = $media.songinfo.duration
-      }elseif($media.songinfo.length){
-        $duration = $media.songinfo.length
-      }else{
-        $duration = $Null
-      }
-      if($media.songinfo.filesize){
-        $filesize = $media.songinfo.filesize
-      }elseif($media.length){
-        $filesize = $media.length
-      }else{
-        $filesize = $null
-      }
+      try{
+        if($media.songinfo.Artist){
+          $artist = $media.songinfo.Artist
+          $artist = (Get-Culture).TextInfo.ToTitleCase($artist).trim()          
+          if($verboselog){write-ezlogs " | Found count based on matching artist name $artist $($file_count)" -showtime -color cyan -enablelogs}
+        }elseif([System.IO.Directory]::Exists($media.directory)){          
+          $artist = $media.directory | split-path -Leaf
+          $artist = (Get-Culture).TextInfo.ToTitleCase($artist).trim()         
+        }else{ 
+          write-ezlogs "No Artist name could be generated for $($media | out-string)" -warning
+          $artist = $Null
+        }
+        if($media.directory_filecount){
+          $file_count = $media.directory_filecount
+          if($verboselog){write-ezlogs " | File count found from profile $($file_count)" -showtime -color cyan -enablelogs} 
+        }elseif($artist){
+          $file_count = @($all_local_media.media | where {$_.songinfo.Artist -eq $artist}).count 
+        }elseif([System.IO.Directory]::Exists($media.directory)){
+          if($verboselog){write-ezlogs " | Getting file count for directory $($media.directory)" -showtime -color cyan -enablelogs} 
+          $file_count = @([System.IO.Directory]::GetFiles("$($media.directory)",'*','AllDirectories') | Where{$_ -match $pattern}).count
+        }else{
+          $file_count = "NA"
+        }     
+        if($media.songinfo.duration){
+          $duration = $media.songinfo.duration
+        }elseif($media.songinfo.length){
+          $duration = $media.songinfo.length
+        }else{
+          $duration = $Null
+        }
+        if($media.songinfo.filesize){
+          $filesize = $media.songinfo.filesize
+        }elseif($media.length){
+          $filesize = $media.length
+        }else{
+          $filesize = $null
+        }
+      }catch{
+        write-ezlogs "[Import-Media] An exception occurred parsing local media properties for $($Media_title)" -showtime -catcherror $_
+      }      
       $synchash.LocalMedia_GroupName = 'Group_Name'
       #$Group_Name = 'Group_Name'
           
@@ -167,23 +177,27 @@ function Import-Media
         #---------------------------------------------- 
         #region Add Properties to datatable
         #----------------------------------------------
-        $newTableRow =$Datatable.datatable.NewRow()
-        $newTableRow.Track = $media.Songinfo.tracknumber
-        $newTableRow.Title = $Media_title
-        $newTableRow.Artist = $artist    
-        $newTableRow.Album = $media.songinfo.album
-        $newTableRow.Duration = $duration
-        $newTableRow.URL = $media.url
-        $newTableRow.Size = $filesize
-        $newTableRow.Type = $media.type
-        $newTableRow.Source = $media.Source
-        $newTableRow.ID = $encodedtitle
-        $newTableRow.Cover_art = $media.Cover_art        
-        $newTableRow.Group_Name = "$artist"
-        $newTableRow.Directory = [regex]::Escape($media.directory)
-        $newTableRow.SongInfo = $media.songinfo                
-        $newTableRow.ItemCount = ($media.directory_filecount)
-        $Null = $Datatable.datatable.Rows.Add($newTableRow)        
+        try{
+          $newTableRow =$Datatable.datatable.NewRow()
+          $newTableRow.Track = $media.Songinfo.tracknumber
+          $newTableRow.Title = $Media_title
+          $newTableRow.Artist = $artist    
+          $newTableRow.Album = $media.songinfo.album
+          $newTableRow.Duration = $duration
+          $newTableRow.URL = $media.url
+          $newTableRow.Size = $filesize
+          $newTableRow.Type = $media.type
+          $newTableRow.Source = $media.Source
+          $newTableRow.ID = $encodedtitle
+          $newTableRow.Cover_art = $media.Cover_art        
+          $newTableRow.Group_Name = "$artist"
+          $newTableRow.Directory = [regex]::Escape($media.directory)
+          $newTableRow.SongInfo = $media.songinfo                
+          $newTableRow.ItemCount = ($media.directory_filecount)
+          $Null = $Datatable.datatable.Rows.Add($newTableRow)
+        }catch{
+          write-ezlogs "[Import-Media] An exception occurred Adding new row to datatable" -showtime -catcherror $_
+        }        
         #---------------------------------------------- 
         #endregion Add Properties to datatable
         #----------------------------------------------                 
@@ -219,96 +233,38 @@ function Import-Media
     $synchash.LocalMedia_CurrentView_Group = ($groupmembers.GetEnumerator() | select * | select -last 1).Name    
     $itemsource = ($groupmembers.GetEnumerator() | select * | select -last 1).Value | Sort-object -Property {$_.Artist},{[int]$_.Track}
     $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($itemsource) 
-    if($synchash.LocalMedia_GroupName){
-      $groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
-      $groupdescription.PropertyName = $synchash.LocalMedia_GroupName
-      $view.GroupDescriptions.Clear()
-      $null = $view.GroupDescriptions.Add($groupdescription)
-      if($Sub_GroupName){
-        $sub_groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
-        $sub_groupdescription.PropertyName = $Sub_GroupName
-        $null = $view.GroupDescriptions.Add($sub_groupdescription)
-      }
-    }elseif($view.GroupDescriptions){
-      $view.GroupDescriptions.Clear()
-    } 
-    if($use_runspace){
-      $syncHash.Window.Dispatcher.invoke([action]{
-          $syncHash.MediaTable.ItemsSource = $view
-          $synchash.Media_Table_Total_Media.content = "$(@($syncHash.MediaTable.ItemsSource).count) of Total | $(@($Datatable.datatable).count)"
-          $synchash.LocalMedia_lblpageInformation.content = "$($synchash.LocalMedia_CurrentView_Group) of $($synchash.LocalMedia_TotalView_Groups)"           
-      },"Normal")     
-    }else{
-      $syncHash.MediaTable.ItemsSource = $view
-      $synchash.Media_Table_Total_Media.content = "$(@($syncHash.MediaTable.ItemsSource).count) of Total | $(@($Datatable.datatable).count)"
-      $synchash.LocalMedia_lblpageInformation.content = "$($synchash.LocalMedia_CurrentView_Group) of $($synchash.LocalMedia_TotalView_Groups)"       
-    }   
-   
   }else{  
     $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($Datatable.datatable) 
-    if($synchash.LocalMedia_GroupName){
-      $groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
-      $groupdescription.PropertyName = $synchash.LocalMedia_GroupName
-      $view.GroupDescriptions.Clear()
-      $null = $view.GroupDescriptions.Add($groupdescription)
-      if($Sub_GroupName){
-        $sub_groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
-        $sub_groupdescription.PropertyName = $Sub_GroupName
-        $null = $view.GroupDescriptions.Add($sub_groupdescription)
-      }
-    }elseif($view.GroupDescriptions){
-      $view.GroupDescriptions.Clear()
-    } 
-    
-    if($use_runspace){
-      $syncHash.Window.Dispatcher.invoke([action]{
-          $syncHash.MediaTable.ItemsSource = $view
-          $synchash.Media_Table_Total_Media.content = "$(@($syncHash.MediaTable.ItemsSource).count) of Total | $(@($Datatable.datatable).count)"
-          $synchash.LocalMedia_lblpageInformation.content = "$($synchash.LocalMedia_CurrentView_Group) of $($synchash.LocalMedia_TotalView_Groups)"           
-      },"Normal")     
+  }   
+  $synchash.LocalMedia_View = $view
+  if($synchash.LocalMedia_GroupName){
+    $groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
+    $groupdescription.PropertyName = $synchash.LocalMedia_GroupName
+    if($synchash.LocalMedia_View.GroupDescriptions){
+      $synchash.LocalMedia_View.GroupDescriptions.Clear()    
     }else{
-      $syncHash.MediaTable.ItemsSource = $view
-      $synchash.Media_Table_Total_Media.content = "$(@($syncHash.MediaTable.ItemsSource).count) of Total | $(@($Datatable.datatable).count)"
-      $synchash.LocalMedia_lblpageInformation.content = "$($synchash.LocalMedia_CurrentView_Group) of $($synchash.LocalMedia_TotalView_Groups)"       
-    }     
-  }  
-  <#  if($use_runspace){
-      $syncHash.Window.Dispatcher.invoke([action]{
-      $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($Datatable.datatable) 
-      if($synchash.LocalMedia_GroupName){
-      $groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
-      $groupdescription.PropertyName = $synchash.LocalMedia_GroupName
-      $view.GroupDescriptions.Clear()
-      $null = $view.GroupDescriptions.Add($groupdescription)
-      if($Sub_GroupName){
+      write-ezlogs "[Import-Media] View group descriptions not available or null! Likely CollectionViewSource was empty!" -showtime -warning
+    }
+    $null = $synchash.LocalMedia_View.GroupDescriptions.Add($groupdescription)
+    if($Sub_GroupName){
       $sub_groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
       $sub_groupdescription.PropertyName = $Sub_GroupName
-      $null = $view.GroupDescriptions.Add($sub_groupdescription)
-      }    
-      }elseif($view.GroupDescriptions){
-      $view.GroupDescriptions.Clear()
-      }  
-      $syncHash.MediaTable.ItemsSource = $view
-      $synchash.Media_Table_Total_Media.content = "Total | $(@($syncHash.MediaTable.ItemsSource).count)"
-      })
-      }else{
-      $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($Datatable.datatable) 
-      if($synchash.LocalMedia_GroupName){
-      $groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
-      $groupdescription.PropertyName = $synchash.LocalMedia_GroupName
-      $view.GroupDescriptions.Clear()
-      $null = $view.GroupDescriptions.Add($groupdescription)
-      if($Sub_GroupName){
-      $sub_groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
-      $sub_groupdescription.PropertyName = $Sub_GroupName
-      $null = $view.GroupDescriptions.Add($sub_groupdescription)
-      }    
-      }elseif($view.GroupDescriptions){
-      $view.GroupDescriptions.Clear()
-      }  
-      $syncHash.MediaTable.ItemsSource = $view
-      $synchash.Media_Table_Total_Media.content = "Total | $(@($syncHash.MediaTable.ItemsSource).count)"
-  } #>    
+      $null = $synchash.LocalMedia_View.GroupDescriptions.Add($sub_groupdescription)
+    }
+  }elseif($synchash.LocalMedia_View.GroupDescriptions){
+    $synchash.LocalMedia_View.GroupDescriptions.Clear()
+  } 
+  if($use_runspace){
+    $syncHash.Window.Dispatcher.invoke([action]{
+        $syncHash.MediaTable.ItemsSource = $synchash.LocalMedia_View
+        $synchash.Media_Table_Total_Media.content = "$(@($syncHash.MediaTable.ItemsSource).count) of Total | $(@($Datatable.datatable).count)"
+        $synchash.LocalMedia_lblpageInformation.content = "$($synchash.LocalMedia_CurrentView_Group) of $($synchash.LocalMedia_TotalView_Groups)"           
+    },"Normal")     
+  }else{
+    $syncHash.MediaTable.ItemsSource = $synchash.LocalMedia_View
+    $synchash.Media_Table_Total_Media.content = "$(@($syncHash.MediaTable.ItemsSource).count) of Total | $(@($Datatable.datatable).count)"
+    $synchash.LocalMedia_lblpageInformation.content = "$($synchash.LocalMedia_CurrentView_Group) of $($synchash.LocalMedia_TotalView_Groups)"       
+  }    
   if($Startup)
   {
     if($PerPage -ne $Null){
