@@ -8,7 +8,7 @@
 
 Simple media player built in PowerShell and WPF that allows playback and playlist management of media from multiple media sources such as local disk, Spotify, YouTube, Twitch and others. Powered by LibVLCSharp
 
-![Example IMAGE](/images/Example-Image.png)
+![Example IMAGE](/Images/Example_Image.png)
 
 **Current Features**
 
