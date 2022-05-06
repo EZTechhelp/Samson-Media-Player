@@ -1,0 +1,27 @@
+﻿<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">
+  <Obj RefId="0">
+    <TN RefId="0">
+      <T>Deserialized.System.Management.Automation.PSCustomObject</T>
+      <T>Deserialized.System.Object</T>
+    </TN>
+    <MS>
+	  <S N="Preset_name"></S>
+      <S N="Preset_Path"></S>
+      <S N="Preset_ID"></S>
+      <Obj N="EQ_Bands" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+        </LST>
+      </Obj>
+      <S N="Preset_Date_Added"></S>
+      <S N="type">Custom</S>
+      <S N="Source"></S>
+      <S N="description"></S>
+      <S N="encodedTitle"></S>
+    </MS>
+  </Obj>
+</Objs>

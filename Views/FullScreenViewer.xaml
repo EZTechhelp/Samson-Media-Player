@@ -1,0 +1,91 @@
+<mah:MetroWindow
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+		xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+		xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+		xmlns:wf="clr-namespace:Microsoft.Web.WebView2.WinForms;assembly=Microsoft.Web.WebView2.WinForms"
+        xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+		xmlns:actions="clr-namespace:MahApps.Metro.Actions;assembly=MahApps.Metro"
+		xmlns:Dialogs="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro" 
+		xmlns:PresentationOptions="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+		xmlns:AttachedBehavior="clr-namespace:ScrollAnimateBehavior.AttachedBehaviors;assembly=AnimatedScrollViewer"
+		xmlns:gif="http://wpfanimatedgif.codeplex.com"
+		xmlns:wpftk="clr-namespace:WpfToolkit.Controls;assembly=VirtualizingWrapPanel"
+        Name='FullScreen_Viewer' 
+		xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
+		MinHeight="750"  
+		MinWidth="750" 
+		VerticalAlignment="Stretch" 
+		WindowStartupLocation="CenterScreen"  
+		WindowTransitionsEnabled = "True" 
+		BorderThickness="0"
+        GlowBrush="Black"  
+		ShowTitleBar="True" 
+		ShowSystemMenu="True" 
+		Background="Black" 
+		ShowSystemMenuOnRightClick="True" 
+		IsWindowDraggable="True" 
+		UseNoneWindowStyle="true" 
+		ShowIconOnTitleBar="false" 
+		AllowsTransparency="True" 
+		LeftWindowCommandsOverlayBehavior="HiddenTitleBar" 
+		RightWindowCommandsOverlayBehavior="HiddenTitleBar"  >
+    <Window.TaskbarItemInfo>
+        <TaskbarItemInfo/>
+    </Window.TaskbarItemInfo>
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.GridSplitter.xaml"  />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Blue.xaml" />
+                <ResourceDictionary Source="Views/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <mah:MetroWindow.LeftWindowCommands>
+        <mah:WindowCommands Margin="0,0,0,0" Background="Black">
+            <Button Name="FullScreen_LeftWindow_Button" Background="Black" Style="{StaticResource MenuButtonStyle}" BorderBrush="Transparent" Width="30" Height="30" VerticalAlignment="Center">
+                <Menu Grid.Row="0"
+              Margin="0,0,0,0"
+			  Background="Black"
+			  Grid.ColumnSpan="1"
+			  Name="FullScreen_Title_menu"
+			  >
+                <MenuItem Name="FullScreen_Title_menu_title" Width="30" Height="30" Background="Black" >
+                        <MenuItem.Icon>
+                            <Image Margin="0,0,0,5" Name="FullScreen_Title_menu_Image" RenderOptions.BitmapScalingMode="Fant" HorizontalAlignment="Left"></Image>
+                        </MenuItem.Icon>
+                        <MenuItem Header="Hide Title Bar" IsCheckable="True" IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type mah:MetroWindow}}, Path=UseNoneWindowStyle}" />
+                        <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Effect="{StaticResource DropShadow}" OpacityMask="{StaticResource SeparatorGradient}" Height="1" VerticalAlignment="Bottom" Margin="0,0,0,0">
+                        </Separator>
+                        <MenuItem Header="ShowTitleBar"
+                          IsCheckable="True"
+                          IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type mah:MetroWindow}}, Path=ShowMyTitleBar}" />
+                        <MenuItem Header="ShowInTaskbar"
+                          IsCheckable="True"
+                          IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type mah:MetroWindow}}, Path=ShowInTaskbar}" />
+                        <MenuItem Header="Topmost"
+                          IsCheckable="True"
+                          IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type mah:MetroWindow}}, Path=Topmost}" />
+                        <MenuItem Header="Ignore taskbar on maximize"
+                          IsCheckable="True"
+                          IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type mah:MetroWindow}}, Path=IgnoreTaskbarOnMaximize}" />
+                        <MenuItem Header="Toggle FullScreen (no taskbar, window style = none)"
+						  Name="Toggle_FullScreen"
+                          IsCheckable="True"
+                          IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type mah:MetroWindow}}, Path=ToggleFullScreen}" />
+                    </MenuItem>
+                </Menu>
+            </Button>
+        </mah:WindowCommands>
+    </mah:MetroWindow.LeftWindowCommands>
+<Grid Name="FullScreen_VLC_Grid" Background="Transparent" HorizontalAlignment="Stretch"  Visibility = "Visible" VerticalAlignment="Stretch">
+
+			</Grid>	
+</mah:MetroWindow>

@@ -1,0 +1,116 @@
+﻿<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">
+  <Obj RefId="0">
+    <TN RefId="0">
+      <T>Deserialized.System.Management.Automation.PSCustomObject</T>
+      <T>Deserialized.System.Object</T>
+    </TN>
+    <MS>
+      <S N="App_Version"></S>
+	  <S N="Templates_Directory"></S>
+	  <S N="Current_Folder"></S>
+      <S N="App_Name">EZT-MediaPlayer</S>
+      <S N="Config_Path">%appdata%\EZT-MediaPlayer</S>
+      <S N="Media_Profile_Directory">$($thisScript.TempFolder)\\MediaProfiles</S>
+	  <S N="Image_Cache_Path">$($thisScript.TempFolder)\\Images</S>
+	  <S N="EQPreset_Profile_Directory">%appdata%\EZT-MediaPlayer\\EQPresets</S>
+	  <S N="Playlist_Profile_Directory">$($thisScript.TempFolder)\\PlaylistProfiles</S>
+      <B N="Use_Profile_Cache">true</B>
+	  <S N="Log_File"></S>
+      <B N="Remove_webcache_onExit">false</B>
+      <B N="Remove_Profilecache_onExit">false</B>
+	  <B N="Import_Youtube_Media">false</B>
+	  <B N="Import_Spotify_Media">false</B>
+	  <B N="Import_Youtube_Browser_Auth">false</B>
+	  <S N="Youtube_Browser"></S>
+      <B N="Remove_Imagecache_onExit">false</B>
+      <B N="Always_On_Top">false</B>
+      <B N="Verbose_logging">true</B>
+      <B N="Toggle_FullScreen">false</B>  
+	  <B N="Start_On_Windows_Login">false</B>
+	  <B N="Enable_Marquee">false</B>
+	  <B N="Chat_View">true</B>
+	  <S N="App_EXE_Path"></S>
+	  <B N="Start_Tray_only">false</B>
+	  <S N="Media_Volume">100</S>
+	  <B N="Minimize_To_Tray">false</B>
+	  <B N="Group_Games">false</B>
+	  <S N="Group_By">Artist</S>
+	  <S N="Last_Played"></S>
+	  <S N="Last_Played_title"></S>	  
+      <I32 N="SpotifyBrowser_Paging">50</I32>
+      <I32 N="YoutubeBrowser_Paging">50</I32>
+      <I32 N="MediaBrowser_Paging">50</I32>	  
+      <B N="Is_Playing">false</B>
+	  <S N="streamlink"></S>	  
+      <Obj N="Media_Directories" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+        </LST>
+      </Obj>
+      <Obj N="Custom_EQ_Presets" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+        </LST>
+      </Obj>	  
+      <Obj N="Youtube_Playlists" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+        </LST>
+      </Obj>  	  
+      <Obj N="Current_Playlist" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+        </LST>
+      </Obj> 
+	  <S N="Spotify_Last_Played"></S>
+      <Obj N="Current_Spotify_Playlist" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+        </LST>
+      </Obj> 	  
+	  <S N="Sort_By"></S>
+      <Obj N="Group_Names" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+          <S>Artist</S>
+		  <S>Favorites</S>
+		  <S>Source</S>
+		  <S>Location</S>
+        </LST>
+      </Obj> 
+      <Obj N="Favorites" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+        </LST>
+      </Obj>	  
+    </MS>
+  </Obj>
+</Objs>
