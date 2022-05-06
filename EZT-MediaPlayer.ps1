@@ -4213,10 +4213,7 @@ $synchash.Window.Add_Closed({
     try
     {
       $synchash.VLC.stop()
-      $synchash.VLC.Dispose()
-      #$libvlc.CloseLogFile()
-      #$libvlc.dispose()    
-      #$synchash.VLC.stop()
+      $synchash.VLC.Dispose() 
       $thisapp.Config.Spicetify = ''
       $Spotify_process = Get-Process 'Spotify*' -ErrorAction SilentlyContinue
       if($Spotify_process){Stop-Process $Spotify_process -Force}
@@ -4237,34 +4234,36 @@ $synchash.Window.Add_Closed({
         Write-Output "[$(Get-Date -Format $logdateformat)]: Calling garbage collector" -OutVariable message
         if($enablelogs){$Message | Out-File -FilePath $logfile -Encoding unicode -Append}  
       }
-      $jobCleanup.Flag = $false      
-      #Stop all runspaces
-      $jobCleanup.PowerShell.Dispose() 
-      [GC]::Collect()    
-      
+      if($jobCleanup.Flag){
+        $jobCleanup.Flag = $false      
+        #Stop jobcleanup runspace
+        $jobCleanup.PowerShell.Dispose() 
+        [GC]::Collect()   
+      }
       #close podeserver
-      if((NETSTAT.EXE -n) | where {$_ -match '127.0.0.1:8974'}){Invoke-RestMethod -Uri 'http://127.0.0.1:8974/CLOSEPODE' -UseBasicParsing -ErrorAction SilentlyContinue}       
+      if((NETSTAT.EXE -n) | where {$_ -match '127.0.0.1:8974'}){Invoke-RestMethod -Uri 'http://127.0.0.1:8974/CLOSEPODE' -UseBasicParsing -ErrorAction SilentlyContinue}         
+      #---------------------------------------------- 
+      #region Stop Logging
+      #----------------------------------------------
+      Stop-EZlogs -ErrorSummary $error -clearErrors -stoptimer -logOnly -logfile $logfile -enablelogs
+      #---------------------------------------------- 
+      #endregion Stop Logging
+      #----------------------------------------------          
     }
     catch
     {
       Write-Output "[$(Get-Date -Format $logdateformat)]: [ERROR] An exception occurred during add_closed cleanup. $($_ | Out-String)"
       "[$(Get-Date -Format $logdateformat)]: [ERROR] An exception occurred during add_closed cleanup. $($_ | Out-String)" | Out-File -FilePath $logfile -Append -Encoding unicode
-    }
-    #---------------------------------------------- 
-    #region Stop Logging
-    #----------------------------------------------
-    Stop-EZlogs -ErrorSummary $error -clearErrors -stoptimer -logOnly -logfile $logfile -enablelogs
-    #---------------------------------------------- 
-    #endregion Stop Logging
-    #----------------------------------------------     
-    exit
+    }    
+    if($pid)
+    {
+      Stop-Process $pid
+    } 
 })
 #Add Exit
 $synchash.Window.Add_Closing({
     $synchash.timer.stop()
     [System.Windows.Forms.Application]::Exit()   
-    if(!$PSCommandPath)
-    {Stop-Process $pid}
 })
 #---------------------------------------------- 
 #endregion Window Close
