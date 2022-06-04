@@ -76,7 +76,7 @@ function Get-Youtube
     }    
     return $Available_Youtube_Media    
   }else{
-    if($Verboselog){write-ezlogs " | Youtube Media Profile to import not found at $AllYoutube_Media_Profile_File_Path....Attempting to build new profile" -showtime -enablelogs -logfile:$log}
+    if($Verboselog){write-ezlogs " | Youtube Media Profile to import not found at $AllYoutube_Media_Profile_File_Path....Attempting to build new profile" -showtime -enablelogs -logfile:$log} 
   }   
   $youtubedl_path = "$($thisApp.config.Current_folder)\\Resources\\Youtube-dl" 
   $env:Path += ";$youtubedl_path" 
@@ -94,11 +94,14 @@ function Get-Youtube
   foreach($playlist in $yt_dl_urls){
     try{
       $yt_dlp = $null
+      if($playlist -match '&t='){
+        $playlist = ([regex]::matches($playlist, "(?<value>.*)&t=" ) | %{$_.groups[1].value} )
+      }
       #$youtubedl_path = "C:\Users\DopaDodge\OneDrive - EZTechhelp Company\Development\Repositories\EZT-MediaPlayer\Resources\Youtube-dl"
       if($playlist -match 'twitch.tv'){
         #$streamlink_fetchjson = streamlink $playlist --json\
         $twitch_channel = $((Get-Culture).textinfo.totitlecase(($playlist | split-path -leaf).tolower()))        
-        $TwitchAPI = Get-TwitchAPI -StreamName $twitch_channel -thisApp $thisApp -verboselog:$thisApp.Config.Verbose_logging
+        $TwitchAPI = Get-TwitchAPI -StreamName $twitch_channel -thisApp $thisApp -startup -verboselog:$thisApp.Config.Verbose_logging
         $id = $Null  
         $idbytes = [System.Text.Encoding]::UTF8.GetBytes("$($twitch_channel)-TwitchChannel")
         $id = [System.Convert]::ToBase64String($idbytes)      
@@ -123,26 +126,20 @@ function Get-Youtube
           $Status_msg = ''
           $Stream_title = ''
         }           
-        <#        if($streamlink_fetchjson){
-            $twitch_status = $streamlink_fetchjson | convertfrom-json
-        }#>
-        <#        if($twitch_status.error -match 'No playable streams found'){          
-            $title = "Twitch Stream: $($twitch_channel)"
-            $Live_status = 'Offline'
-            $Status_msg = ''
-            }elseif($twitch_status.metadata.author -notmatch $twitch_channel){
-            $title = "Twitch Stream: $($twitch_channel)"
-            $Live_status = 'Hosting'
-            $Status_msg = "- $($twitch_status.metadata.author)"
-            }elseif($twitch_status.metadata.category){
-            $title = "Twitch Stream: $($twitch_status.metadata.author)"
-            $Live_status = 'Online'
-            $Status_msg = "- $($twitch_status.metadata.category)"    
-            }else{
-            $title = "Twitch Stream: $($twitch_channel)"
-            $Live_status = 'Offline'
-            $Status_msg = ''
-        }#>
+        if($TwitchAPI.thumbnail_url){
+          $thumbnail = "$($TwitchAPI.thumbnail_url -replace '{width}x{height}','500x500')"
+        }else{
+          $thumbnail = $null
+        }
+        if($TwitchAPI.profile_image_url){
+          $profile_image_url = $TwitchAPI.profile_image_url
+          $offline_image_url = $TwitchAPI.offline_image_url
+          $description = $TwitchAPI.description
+        }else{
+          $profile_image_url = $Null
+          $offline_image_url = $Null  
+          $description = $Null   
+        }        
         $yt_dlp = New-Object -TypeName 'System.Collections.ArrayList'
         $twitch_item = New-Object PsObject -Property @{
           'title' = $title
@@ -152,6 +149,10 @@ function Get-Youtube
           'Stream_title' = $Stream_title
           'Status_msg' = $Status_msg
           'webpage_url' = $playlist
+          'thumbnail' = $thumbnail
+          'description' = $description
+          'profile_image_url' = $profile_image_url
+          'offline_image_url' = $offline_image_url          
           'uploader' = $twitch_channel
           'is_not_json' = $true
           'extractor' = 'Twitch'
@@ -199,6 +200,8 @@ function Get-Youtube
             $images = $null
             $images = $track.thumbnails
             $href = $Null
+            $duration = $Null
+            $duration = $track.duration 
             if($track.playlist_id){
               $href = "https://www.youtube.com/playlist?list=$($track.playlist_id)"
             }
@@ -214,6 +217,7 @@ function Get-Youtube
             write-ezlogs " | ID $($track.id)" -showtime -logfile:$log
             write-ezlogs " | Track Total $($Tracks_Total)" -showtime -logfile:$log
             write-ezlogs " | Track URL $($track.url)" -showtime -logfile:$log
+            write-ezlogs " | Description $($track.description)" -showtime -logfile:$log
             if($track.urls){
               $url_streams = $track.urls -split "`n"
             }else{
@@ -252,14 +256,22 @@ function Get-Youtube
                   $Stream_title = $track.Stream_title
                 }else{
                   $Stream_title = $Null
-                }               
+                }                              
               }else{
                 $title = $track.title
+                $thumbnail = $null
                 $live_status = $null
                 $status_msg = $null
                 $Stream_title = $Null
                 $Group = 'Youtube'
-              }  
+                if($track.duration){
+                  [int]$hrs = $($([timespan]::Fromseconds($Track.Duration)).Hours)
+                  [int]$mins = $($([timespan]::Fromseconds($Track.Duration)).Minutes)
+                  [int]$secs = $($([timespan]::Fromseconds($Track.Duration)).Seconds) 
+                  [int]$milsecs = $($([timespan]::Fromseconds($Track.Duration)).TotalMilliseconds)
+                  $duration = $milsecs
+                }
+              }              
               #write-ezlogs " | Title: $($title)" -showtime          
               $newRow = New-Object PsObject -Property @{
                 'title' = $title
@@ -267,7 +279,7 @@ function Get-Youtube
                 'playlist_index' = $track.playlist_index
                 'channel_id' = $track.channel_id
                 'id' = $track.id
-                'duration' = $track.duration
+                'duration' = $duration
                 'encodedTitle' = $track_encodedTitle
                 'url' = $url
                 'video_url' = $video_url
@@ -288,6 +300,8 @@ function Get-Youtube
                 'thumbnail' = $track.thumbnail
                 'filesize_approx' = $track.filesize_approx
                 'width' = $track.width
+                'profile_image_url' = $track.profile_image_url
+                'offline_image_url' = $track.offline_image_url                 
                 'full_title' = $track.fulltitle
                 'height' = $track.height
                 'video_ext' = $track.video_ext
@@ -341,7 +355,7 @@ function Get-Youtube
                 $encodedTitle = $Null
               }                    
             }elseif($track.channel_id){
-              if($Available_Youtube_Media.id -notcontains $track.channel_id){
+              if($track.channel_id -and $Available_Youtube_Media.playlist_tracks.id -notcontains $track.id){
                 write-ezlogs ">>>> Found Youtube Channel $($track.channel)" -showtime -logfile:$log
                 $encodedTitle = $Null  
                 $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($track.channel)-YoutubeChannel")
@@ -365,7 +379,7 @@ function Get-Youtube
                 $null = $youtube_Media_output.Add($newRow)
                 #$null = $Available_Youtube_Media.Add($newRow)        
               }else{
-                write-ezlogs "Youtube channel $($track.channel) has already been added" -showtime -warning -logfile:$log
+                write-ezlogs "Youtube track $($track.title) has already been added" -showtime -warning -logfile:$log
                 $encodedTitle = $Null
               }           
             }elseif($track.extractor -match 'twitch'){
@@ -373,7 +387,7 @@ function Get-Youtube
                 write-ezlogs ">>>> Found Twitch Channel $($track.uploader)" -showtime -logfile:$log
                 $encodedTitle = $Null  
                 $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($track.uploader)-TwitchChannel")
-                $encodedTitle = [System.Convert]::ToBase64String($encodedBytes)       
+                $encodedTitle = [System.Convert]::ToBase64String($encodedBytes)                      
                 $newRow = New-Object PsObject -Property @{
                   'name' = $track.uploader
                   'id' = $track.id
@@ -382,10 +396,10 @@ function Get-Youtube
                   'type' = 'Twitch_channel'
                   'Tracks_Total' = ''
                   'Live_Status' = $live_status
-                  'description' = ''
+                  'description' = $track.description
                   'playlist_tracks' = $playlist_items
                   'chat_url' = "https://twitch.tv/$($track.uploader)/chat"
-                  'images' = $track.thumbnails
+                  'images' = $track.thumbnail
                   'Profile_Path' = $AllYoutube_Media_Profile_File_Path
                   'Profile_Date_Added' = $(Get-Date -Format 'MM-dd-yyyy hh:mm:ss:tt')
                   'Source' = 'TwitchChannel'
@@ -416,8 +430,10 @@ function Get-Youtube
     [System.Collections.ArrayList]$Available_Twitch_Media | Export-Clixml $AllTwitch_Media_Profile_File_Path -Force     
   }
   if($export_profile -and $AllYoutube_Media_Profile_File_Path -and $Available_Youtube_Media){
+    write-ezlogs ">>>> Saving Available Youtube Media profile to $AllYoutube_Media_Profile_File_Path" -showtime -logfile:$log
     [System.Collections.ArrayList]$Available_Youtube_Media | Export-Clixml $AllYoutube_Media_Profile_File_Path -Force
-  }
+  }  
+  #$synchash.Youtube_FirstRun = $false
   if($Verboselog){write-ezlogs " | Number of Youtube Playlists found: $($Available_Youtube_Media.Count)" -showtime -enablelogs -logfile:$log}      
   return [System.Collections.ArrayList]$Available_Youtube_Media  
 }

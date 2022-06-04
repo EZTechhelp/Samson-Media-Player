@@ -10,10 +10,10 @@
 	  <S N="Current_Folder"></S>
       <S N="App_Name">EZT-MediaPlayer</S>
       <S N="Config_Path">%appdata%\EZT-MediaPlayer</S>
-      <S N="Media_Profile_Directory">$($thisScript.TempFolder)\\MediaProfiles</S>
+      <S N="Media_Profile_Directory">%appdata%\EZT-MediaPlayer\\MediaProfiles</S>
 	  <S N="Image_Cache_Path">$($thisScript.TempFolder)\\Images</S>
 	  <S N="EQPreset_Profile_Directory">%appdata%\EZT-MediaPlayer\\EQPresets</S>
-	  <S N="Playlist_Profile_Directory">$($thisScript.TempFolder)\\PlaylistProfiles</S>
+	  <S N="Playlist_Profile_Directory">%appdata%\EZT-MediaPlayer\\PlaylistProfiles</S>
       <B N="Use_Profile_Cache">true</B>
 	  <S N="Log_File"></S>
       <B N="Remove_webcache_onExit">false</B>
@@ -21,17 +21,31 @@
 	  <B N="Import_Youtube_Media">false</B>
 	  <B N="Import_Spotify_Media">false</B>
 	  <B N="Import_Youtube_Browser_Auth">false</B>
+      <B N="Startup_perf_timer">true</B>	  
+	  <B N="Install_Spotify">false</B>
 	  <S N="Youtube_Browser"></S>
       <B N="Remove_Imagecache_onExit">false</B>
+	  <B N="Use_Visualizations">false</B>
+	  <S N="Current_Visualization"></S>  
       <B N="Always_On_Top">false</B>
       <B N="Verbose_logging">true</B>
-      <B N="Toggle_FullScreen">false</B>  
+      <B N="Toggle_FullScreen">false</B> 
+	  <B N="PlayLink_OnDrop">false</B>
+	  <B N="SplashScreenAudio">false</B>
+      <B N="Youtube_WebPlayer">false</B>
+	  <B N="Spotify_WebPlayer">false</B>	  
 	  <B N="Start_On_Windows_Login">false</B>
 	  <B N="Enable_Marquee">false</B>
 	  <B N="Chat_View">true</B>
+	  <B N="VideoView_LargePlayer">false</B>
 	  <S N="App_EXE_Path"></S>
 	  <B N="Start_Tray_only">false</B>
 	  <S N="Media_Volume">100</S>
+	  <S N="Spotify_SP_DC"></S>
+	  <S N="Youtube_1PSID"></S>
+	  <S N="Youtube_1PAPISID"></S>
+	  <S N="Youtube_3PAPISID"></S>
+	  <S N="Chat_WebView2_Cookie"></S>  
 	  <B N="Minimize_To_Tray">false</B>
 	  <B N="Group_Games">false</B>
 	  <S N="Group_By">Artist</S>
@@ -59,7 +73,10 @@
         </TN>
         <LST>
         </LST>
-      </Obj>	  
+      </Obj>
+      <S N="EQ_Selected_Preset"></S>
+      <B N="Enable_EQ">false</B>	  
+	  <Db N="EQ_Preamp">0</Db>
       <Obj N="Youtube_Playlists" RefId="1">
         <TN RefId="1">
           <T>System.Object[]</T>

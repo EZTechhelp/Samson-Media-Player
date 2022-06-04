@@ -156,15 +156,20 @@ Function ConvertTo-OrderedDictionary {
 function Get-SongInfo($Path)
 {
   $Shell = New-Object -COMObject Shell.Application
-  $Folder = $shell.Namespace($(Split-Path $Path))
-  $File = $Folder.ParseName($(Split-Path $Path -Leaf))
+  $Folder = $shell.Namespace($([System.IO.Path]::GetDirectoryName($Path)))
+  $File = $Folder.ParseName($([System.IO.Path]::GetFileName($Path)))
+  $title = ($Folder.GetDetailsOf($File, 21))
+  $artistpattern = "(?<value>.*) by (?<value>.*)"
   #[int]$h, [int]$m, [int]$s = ($Folder.GetDetailsOf($File, 27)).split(":")
   $Artist = ($Folder.GetDetailsOf($File, 13))
+  if([string]::IsNullOrEmpty($artist) -and $title -match $artistpattern){   
+    $artist = ([regex]::matches($title,  $artistpattern)| %{$_.groups[1].value} )
+  }
   if($Artist -match ';'){
     $artist = ($artist -split ';')[0]
   }
   $filesize = ($Folder.GetDetailsOf($File, 1))
-  $title = ($Folder.GetDetailsOf($File, 21))
+  $comments =  ($Folder.GetDetailsOf($File,24))
   $album = ($Folder.GetDetailsOf($File, 14))
   #$year = ($Folder.GetDetailsOf($File, 15))
   #$Genre = ($Folder.GetDetailsOf($File, 16))
@@ -183,6 +188,7 @@ function Get-SongInfo($Path)
     'Title' = $title
     'Album' = $album 
     'Year' = $year
+    'Comments' = $comments
     'Genre' = $Genre
     'Length' = $length
     'Duration' = $duration
@@ -1605,6 +1611,8 @@ Function Start-WebNavigation{
   Param(
     $uri,
     $synchash,
+    $thisScript,
+    $thisApp,
     $WebView2
   ) 
   try{
@@ -1619,21 +1627,96 @@ Function Start-WebNavigation{
       if($uri -match "youtube.com"){
         if($uri -match "v="){
           $youtube_id = ($($uri) -split('v='))[1].trim()
-          $uri = "https://yewtu.be/embed/$youtube_id"
+          if($thisApp.Config.Use_invidious){
+            $uri = "https://yewtu.be/embed/$youtube_id`?&autoplay=1"
+          }else{
+            $uri = "https://www.youtube.com/embed/$youtube_id`?&autoplay=1"
+          }
         }elseif($uri -match 'list='){
           $playlist_id = ($($uri) -split('list='))[1].trim()
-          $uri = "https://yewtu.be/playlist?list=$playlist_id"
-        }else{
-          $uri = "https://yewtu.be/"
-        } 
+          if($thisApp.Config.Use_invidious){            
+            $uri = "https://yewtu.be/embed/videoseries?list=$playlist_id`?&autoplay=1"            
+          }else{
+            $uri = "https://www.youtube.com/embed/videoseries?list=$youtube_id`?&autoplay=1"
+          }                   
+        }
+        <#        elseif($uri -notmatch '/embed/'){
+            $uri = "https://yewtu.be/"
+        } #>
+      }elseif($uri -match "spotify.com"){
+        if($uri -match 'open.spotify.com/track/'){
+          $spotify_id = ($($uri) -split('open.spotify.com/track/'))[1].trim()
+          if($thisApp.Config.Spotify_WebPlayer){
+            
+<#            try{
+              $embedhtml = Get-content "$($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html"
+              
+            }catch{
+              write-ezlogs "An exception occurred getting content of $($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html" -showtime -catcherror $_
+            }#>
+            if($embedhtml){
+              $urihtml = ($embedhtml -replace '!!SPOTIFYACCESSTOKEN!!','BQB3lYEQmjzGqovJolrxq0yqslzUJhc4geBp95PwlEBrfFbiKC0l1bHXLovo0msVPOj1C5tIim8kw6K9x5ugd3GiUDMU-mGJMDE9MhIWxxYTMO0Oyl58DozujFWRqAVdGjomI1QX536ZS1aasgZEnaypNb6uRbz61Bea6e9TEMF7XqCUmPnCFLd8yB412226J5aetngHVHpmGT5451eN6DisVf8a1vwJt4vNr02XHRxEZ7jjpSNEJdejUDQcfZTvqij2teFXy1p48ih7_B8KvhYesKg6w8o' `
+              -replace '!!SPOTIFYMEDIAID!!',$spotify_id -replace '!!SPOTIFYMEDIATYPE!!','track' | out-string)
+              $synchash.Spotify_WebPlayer_URL = $urihtml
+            }else{
+              $uri = "https://open.spotify.com/embed/track/$spotify_id"
+              $synchash.Spotify_WebPlayer_URL = $uri
+              $urihtml = $Null
+            }          
+          }           
+        }elseif($uri -match 'open.spotify.com/playlist/'){
+          $spotify_id = ($($uri) -split('open.spotify.com/playlist/'))[1].trim()
+          if($thisApp.Config.Spotify_WebPlayer){
+<#            try{
+              $embedhtml = Get-content "$($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html"            
+            }catch{
+              write-ezlogs "An exception occurred getting content of $($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html" -showtime -catcherror $_
+            }#>
+            if($embedhtml){
+              $urihtml = ($embedhtml -replace '!!SPOTIFYACCESSTOKEN!!','BQB3lYEQmjzGqovJolrxq0yqslzUJhc4geBp95PwlEBrfFbiKC0l1bHXLovo0msVPOj1C5tIim8kw6K9x5ugd3GiUDMU-mGJMDE9MhIWxxYTMO0Oyl58DozujFWRqAVdGjomI1QX536ZS1aasgZEnaypNb6uRbz61Bea6e9TEMF7XqCUmPnCFLd8yB412226J5aetngHVHpmGT5451eN6DisVf8a1vwJt4vNr02XHRxEZ7jjpSNEJdejUDQcfZTvqij2teFXy1p48ih7_B8KvhYesKg6w8o' `
+              -replace '!!SPOTIFYMEDIAID!!',$spotify_id -replace '!!SPOTIFYMEDIATYPE!!','playlist' -replace '!!SPOTIFYMEDIATYPE!!','track' | out-string)
+              $synchash.Spotify_WebPlayer_URL = $urihtml
+            }else{
+              $uri = "https://open.spotify.com/embed/track/$spotify_id"
+              $synchash.Spotify_WebPlayer_URL = $uri
+              $urihtml = $Null
+            }          
+          }          
+        }
       }
       if($WebView2 -ne $null -and $WebView2.CoreWebView2 -ne $null){
-        write-ezlogs "Navigating with CoreWebView2.Navigate: $($uri)" -enablelogs -Color cyan -showtime
-        $WebView2.CoreWebView2.Navigate($uri)
+        if($uri -match 'youtube.com' -or $uri -match 'google.com'){
+          $WebView2.CoreWebView2.Settings.UserAgent = "Chrome"
+          $WebView2.CoreWebView2.Settings.UserAgent = "Andriod"
+        }else{
+          $WebView2.CoreWebView2.Settings.UserAgent = ""
+        }   
+        if($urihtml){
+          write-ezlogs "Navigating with CoreWebView2.NavigateToString: $($urihtml)" -enablelogs -Color cyan -showtime
+          $WebView2.CoreWebView2.NavigateToString($urihtml)
+        }else{
+          write-ezlogs "Navigating with CoreWebView2.Navigate: $($uri)" -enablelogs -Color cyan -showtime
+          $WebView2.CoreWebView2.Navigate($uri)
+        }
+           
+
+        #$synchash.WebView2.CoreWebView2.Navigate($synchash.Youtube_WebPlayer_URL)
       }
       else{
-        write-ezlogs "Navigating with Source: $($uri)" -enablelogs -Color cyan -showtime
-        $WebView2.source = $uri
+             
+        if($urihtml){
+          write-ezlogs "Adding CoreWebView2InitializationCompleted with navigate to url: $($urihtml)" -enablelogs -Color cyan -showtime  
+           $synchash.Youtube_WebPlayer_URL = $urihtml
+           $synchash.Spotify_WebPlayer_URL = $urihtml
+        }else{
+          write-ezlogs "Adding CoreWebView2InitializationCompleted with navigate to url: $($uri)" -enablelogs -Color cyan -showtime  
+           $synchash.Youtube_WebPlayer_URL = $uri
+           $synchash.Spotify_WebPlayer_URL = $uri
+        }             
+         
+        
+        #write-ezlogs "Navigating with Source: $($uri)" -enablelogs -Color cyan -showtime
+        #$WebView2.source = $uri
       } 
       #$synchash.txtUrl.text = $uri
     }else{
@@ -1831,12 +1914,12 @@ function Use-RunAs
   # Use Check Switch to check if admin 
   # http://gallery.technet.microsoft.com/scriptcenter/63fd1c0d-da57-4fb4-9645-ea52fc4f1dfb
     
-  param([Switch]$Check) 
+  param([Switch]$Check,[Switch]$ForceReboot) 
   $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator') 
   if ($Check) { return $IsAdmin }     
   if ($MyInvocation.ScriptName -ne '') 
   {  
-    if (-not $IsAdmin)  
+    if (-not $IsAdmin -or $ForceReboot)  
     {  
       try 
       {  
@@ -1887,17 +1970,18 @@ function confirm-requirements([switch]$enablelogs,[switch]$Verboselog,$required_
   if (!$env:ChocolateyInstall -or !([System.IO.File]::Exists("$env:ChocolateyInstall\Choco.exe"))){
     if($hash.Window){
       $hash.Window.Dispatcher.invoke([action]{
-          $hash.LoadingLabel.Content="Starting Up..."
+          $hash.LoadingLabel.Content="Checking Requirements..."
           $hash.More_Info_Msg.Visibility= "Visible"
           $hash.More_info_Msg.text="Installing Required App: Chocolatey"      
       },"Normal") 
     }
     try{
       Use-RunAs      
-      Write-Host -Object "[$(Get-date -format $logdateformat)] | Chocolatey is not installed, installing....";if($Verboselog){"[$(Get-date -format $logdateformat)] | Chocolatey is not installed, installing...." | Out-File -FilePath $logfile -Encoding unicode -Append -Force}
+      write-ezlogs "Chocolatey is not installed, installing...." -showtime -warning
       Set-ExecutionPolicy Bypass -Scope Process -Force
       [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
       iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex | Out-File -FilePath $logfile -Encoding unicode -Append
+      Use-RunAs -ForceReboot
     }catch{
       write-ezlogs "An exception occurred installeding Chocolatey" -showtime -catcherror $_
     }
@@ -1906,7 +1990,7 @@ function confirm-requirements([switch]$enablelogs,[switch]$Verboselog,$required_
   {
     #$testchoco = powershell choco -v
     $testchoco = (Get-ItemProperty "$env:ChocolateyInstall\\choco.exe").VersionInfo.ProductVersion
-    if($Verboselog){Write-Host -Object "[$(Get-date -format $logdateformat)] | Chocolatey is installed. Version $testchoco";"[$(Get-date -format $logdateformat)] | Chocolatey is installed. Version $testchoco" | Out-File -FilePath $logfile -Encoding unicode -Append -Force}
+    write-ezlogs ">>>> Chocolatey is installed. Version $testchoco" -showtime -color cyan
   }
   #endregion Install Chocolatey
 
@@ -1941,55 +2025,81 @@ function confirm-requirements([switch]$enablelogs,[switch]$Verboselog,$required_
   if(-not [string]::IsNullOrEmpty($required_appnames) -and $firstRun){
     foreach ($app in $required_appnames)
     {
-      if($app -eq 'Spotify' -and $thisApp.Config.Import_Spotify_Media){
+      if($app -eq 'Spotify'){
         if([System.IO.File]::Exists("$($env:APPDATA)\\Spotify\\Spotify.exe")){
           $appinstalled = (Get-ItemProperty "$($env:APPDATA)\\Spotify\\Spotify.exe").VersionInfo.ProductVersion
         }else{
           #$chocoappmatch = choco list $app --localonly
-          #$appinstalled = $($chocoappmatch | Select-String $app | out-string).trim()
-        }          
-      }elseif($app -eq 'Spicetify' -or $thisApp.Config.Import_Spotify_Media){       
+          $appinstalled = ''
+        } 
+        $Do_Install = $thisApp.Config.Install_Spotify     
+        write-ezlogs ">>>> Skip install for $app`: $($thisApp.Config.Install_Spotify)" -showtime  
+      }elseif($app -eq 'Spicetify'){      
         if([System.IO.File]::Exists("$($env:USERPROFILE)\\spicetify-cli\\spicetify.exe") -and [System.IO.File]::Exists("$($env:USERPROFILE)\\.spicetify\\config-xpui.ini")){
           $appinstalled = (Get-iniFile "$($env:USERPROFILE)\\.spicetify\\config-xpui.ini").Backup.with
           if(!$appinstalled){
             $appinstalled = "$($env:USERPROFILE)\\spicetify-cli\\spicetify.exe"
-          }
-        }else{
-          try{
-            write-ezlogs ">>>> Installing Spicetify" -showtime
-            Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.ps1" | Invoke-Expression -Verbose
-            Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-marketplace/master/install.ps1" | Invoke-Expression -Verbose
-            if([System.IO.File]::Exists("$($env:USERPROFILE)\\spicetify-cli\\spicetify.exe") -and [System.IO.File]::Exists("$($env:USERPROFILE)\\.spicetify\\config-xpui.ini")){
-              $appinstalled = (Get-iniFile "$($env:USERPROFILE)\\.spicetify\\config-xpui.ini").Backup.with
-              if(!$appinstalled){
-                $appinstalled = "$($env:USERPROFILE)\\spicetify-cli\\spicetify.exe"
-              }
-            }
-          }catch{
-            write-ezlogs "An exception occurred attempting to install Spicetify" -showtime -catcherror $_
-          }         
-        }                  
-      }else{
-        Use-RunAs
-        $chocoappmatch = choco list $app --localonly
-        $appinstalled = $($chocoappmatch | Select-String $app | out-string).trim()       
-      }     
-      if($appinstalled)
-      {
-        if($Verboselog){Write-Host -Object "[$(Get-date -format $logdateformat)] | $app is installed. Version $appinstalled";"[$(Get-date -format $logdateformat)] | $app is installed. Version $appinstalled" | Out-File -FilePath $logfile -Encoding unicode -Append -Force}
-      }
-      else
-      {
-        if($hash.Window){
-          $hash.Window.Dispatcher.invoke([action]{
-              $hash.More_Info_Msg.Visibility= "Visible"
-              $hash.More_info_Msg.text="Installing Required App: $app"      
-          },"Normal")  
+          }           
         }
+        if($thisApp.Config.Import_Spotify_Media -and $thisApp.Config.use_Spicetify -and !$thisApp.Config.Spotify_WebPlayer -and $thisApp.Config.Install_Spotify){
+          $Do_Install = $true
+        }else{
+          $Do_Install = $false
+        }                           
+      }elseif($app -eq 'Streamlink'){
+        if([System.IO.File]::Exists("$("${env:ProgramFiles(x86)}\\Streamlink\\bin\\streamlink.exe")")){
+          #$appinstalled = streamlink --version-check
+          $appinstalled = "Streamlink is installed at $("${env:ProgramFiles(x86)}\\Streamlink\\bin\\streamlink.exe")"
+        }else{
+          $Do_Install = $true
+        }
+      }else{        
+        $chocoappmatch = choco list $app --localonly
+        $appinstalled = $($chocoappmatch | Select-String $app | out-string).trim()
+        $Do_Install = $true       
+      }     
+      if($appinstalled){
+        write-ezlogs ">>>> $app is installed. Version $appinstalled" -showtime
+      }elseif(!$Do_Install){
+        write-ezlogs ">>>> $app is not installed! Auto installation skipped!" -showtime -warning      
+      }else{        
         try{
           Use-RunAs
-          Write-Host -Object "[$(Get-date -format $logdateformat)] [WARNING] $app is not installed! Attempting to install via chocolatey";if($Verboselog){"[$(Get-date -format $logdateformat)] [WARNING] $app is not installed! Attempting to install via chocolatey" | Out-File -FilePath $logfile -Encoding unicode -Append -Force}    
-          choco upgrade $app --confirm --force --acceptlicense
+          if($hash.Window){
+            $hash.Window.Dispatcher.invoke([action]{
+                $hash.LoadingLabel.Content="Checking Requirements..."
+                $hash.More_Info_Msg.Visibility= "Visible"
+                $hash.More_info_Msg.text="Installing Required App: $app"      
+            },"Normal") 
+          } 
+          if($app -eq 'Spicetify'){
+            try{
+              write-ezlogs ">>>> Installing Spicetify" -showtime            
+              Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.ps1" | Invoke-Expression -Verbose
+              Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-marketplace/master/install.ps1" | Invoke-Expression -Verbose
+              if([System.IO.File]::Exists("$($env:USERPROFILE)\\spicetify-cli\\spicetify.exe") -and [System.IO.File]::Exists("$($env:USERPROFILE)\\.spicetify\\config-xpui.ini")){
+                $appinstalled = (Get-iniFile "$($env:USERPROFILE)\\.spicetify\\config-xpui.ini").Backup.with
+                if(!$appinstalled){
+                  $appinstalled = "$($env:USERPROFILE)\\spicetify-cli\\spicetify.exe"
+                }
+              }
+            }catch{
+              write-ezlogs "An exception occurred attempting to install Spicetify" -showtime -catcherror $_
+            }
+          }else{
+            write-ezlogs "$app is not installed! Attempting to install via chocolatey" -showtime -warning             
+            $choco_install = choco upgrade $app --confirm --force --acceptlicense
+            write-ezlogs "Verifying if $app was installed successfully...." -showtime
+            $chocoappmatch = choco list $app --localonly
+            if($chocoappmatch){
+              $appinstalled = $($chocoappmatch | Select-String $app | out-string).trim()
+            }
+          }        
+          if($appinstalled){
+            write-ezlogs "[SUCCESS] $app was successfully installed. Version $appinstalled" -showtime
+          }else{
+            write-ezlogs "Unable to verify if $app installed successfully! Choco output: $($choco_install | out-string)" -showtime -warning 
+          }
         }catch{
           write-ezlogs "An exception occurred attempting to install app $app via chocolatey" -showtime -catcherror $_
         }
@@ -2222,4 +2332,5 @@ Export-ModuleMember -Function @(
   'confirm-requirements',
   'Test-RegistryValue',
   'ConvertTo-OrderedDictionary',
-'Set-WindowBlur')
+  'Set-WindowBlur',
+'Use-Runas')

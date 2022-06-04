@@ -38,38 +38,52 @@ function Start-Media{
     $PlayMedia_Command,
     $PlaySpotify_Media_Command,
     $thisApp,
+    [switch]$use_WebPlayer = $thisapp.config.Youtube_WebPlayer,
     $all_playlists,
     [switch]$Show_notifications = $thisApp.Config.Show_notifications,
     $Script_Modules,
     [switch]$Verboselog
-  )
+  ) 
+  try{   
+    $synchash.Youtube_WebPlayer_URL = $null
+    $synchash.Youtube_WebPlayer_title = $null
+    $synchash.Start_media = $null
+    $synchash.Start_media_timer.stop()  
+    $synchash.Youtube_WebPlayer_timer.start()
+    $synchash.WebPlayer_Playing_timer.stop()    
+    $synchash.Media_Current_Title = '' 
+    if($Media.SongInfo.title){
+      $mediatitle = $($Media.SongInfo.title)
+      $artist = $Media.SongInfo.Artist
+    }else{
+      $mediatitle = $($Media.title)
+      $artist = $Media.Artist
+    } 
+    
+    #$encodedtitle = $media.id 
+    $url = $($Media.url)
+    if(!$url -and (Test-URL $Media)){
+      $url = $Media
+      write-ezlogs ">>>> Selected Media to play is a url $($url)" -showtime
+    }else{
+      write-ezlogs ">>>> Selected Media to play $($mediatitle)" -showtime
+    }
   
-  $synchash.Window.Dispatcher.invoke([action]{  
-      $syncHash.MainGrid_Background_Image_Source_transition.content = ''
-      $syncHash.MainGrid_Background_Image_Source.Source = $null
-      $syncHash.MainGrid.Background = $synchash.Window.TryFindResource('MainGridBackGradient')
-      $synchash.MediaView_Image.Source = $Null
-  },'Background')
-  $synchash.Media_Current_Title = '' 
-  if($Media.SongInfo.title){
-    $mediatitle = $($Media.SongInfo.title)
-    $artist = $Media.SongInfo.Artist
-  }else{
-    $mediatitle = $($Media.title)
-    $artist = $Media.Artist
-  } 
-  #$encodedtitle = $media.id 
-  $url = $($Media.url)
-  write-ezlogs ">>>> Selected Media to play $($mediatitle)" -showtime
-  if($thisApp.Config.Verbose_logging){
-    write-ezlogs " | Media to play: $($media | out-string)" -showtime
-  }
-  $thisapp.Config.streamlink = ''
-  Add-Member -InputObject $thisApp.config -Name 'streamlink' -Value '' -MemberType NoteProperty -Force  
-  if($synchash.VLC.state -eq 'Playing'){
-    $synchash.VLC.stop()
-  }
-  $Synchash.Timer.stop()
+    if($thisApp.Config.Verbose_logging){
+      write-ezlogs " | Media to play: $($media | out-string)" -showtime
+    }
+    $thisapp.Config.streamlink = ''
+    Add-Member -InputObject $thisApp.config -Name 'streamlink' -Value '' -MemberType NoteProperty -Force   
+    if((Get-Process Streamlink*)){
+      Get-Process Streamlink* | Stop-Process -Force
+    } 
+    if($synchash.VLC.state -eq 'Playing'){
+      $synchash.VLC.stop()
+    }
+    $Synchash.Timer.stop()
+  }catch{
+    write-ezlogs "An exception occurred when starting Start-Media" -showtime -catcherror $_
+  }  
   if($thisApp.config.Use_Spicetify -and (Get-Process -Name 'Spotify*') -and $synchash.Spotify_Status -ne 'Stopped'){
     try{
       #start-sleep 1
@@ -109,7 +123,7 @@ function Start-Media{
   if(!$Media -and $synchash.Media_URL.text){
     $media_link = $($synchash.Media_URL.text).trim()
   }elseif(-not [string]::IsNullOrEmpty($url)){
-    $media_link = $($url).trim()
+    $media_link = $($url)
   }
   try{
     $existingitems = $null
@@ -168,8 +182,38 @@ function Start-Media{
       $chat_url = "$($media.webpage_url)/chat"
     }else{
       $chat_url = $null
-    }                     
-    if($media.type -eq 'YoutubePlaylist_item'){
+    }
+    if($use_WebPlayer -and ($media.type -eq 'YoutubePlaylist_item' -or $media.Group -eq 'Youtube') -and ($media.webpage_url -match 'youtube' -or $media.webpage_url -match 'yewtu.be' -or $media -match 'yewtu.be' -or $media -match 'youtube')){
+      $delay = $null     
+      if($media.title){
+        $title = $media.title
+      }else{
+        $title = $media
+      }
+      write-ezlogs "[Youtube_WebPlayer] | Youtube URL Title: $title" -showtime -logfile:$thisApp.Config.YoutubeMedia_logfile
+      if($media.Duration_ms){
+        $duration = $($([timespan]::FromMilliseconds(($media.Duration_ms)).TotalMilliseconds))
+      }          
+      $synchash.Youtube_WebPlayer_title = $title
+      $synchash.MediaPlayer_CurrentDuration = $duration
+      if($media.webpage_url -match "v="){
+        $youtube_id = ($($media.webpage_url) -split('v='))[1].trim()
+        if($thisApp.Config.Use_invidious){
+          [Uri]$vlcurl = "https://yewtu.be/embed/$youtube_id`?&autoplay=1"
+        }else{
+          [Uri]$vlcurl = "https://www.youtube.com/embed/$youtube_id`?&autoplay=1"
+        }
+      }elseif($media.webpage_url -match 'list='){
+        $playlist_id = ($($media.webpage_url) -split('list='))[1].trim()
+        if($thisApp.Config.Use_invidious){            
+          [Uri]$vlcurl = "https://yewtu.be/embed/videoseries?list=$playlist_id`?&autoplay=1"            
+        }else{
+          [Uri]$vlcurl = "https://www.youtube.com/embed/videoseries?list=$youtube_id`?&autoplay=1"
+        }                   
+      }      
+      $synchash.Youtube_WebPlayer_URL = [Uri]$vlcurl
+      $synchash.Youtube_WebPlayer_timer.start()
+    }elseif($media.type -eq 'YoutubePlaylist_item'){
       $delay = $null
       if($media.webpage_url -match 'twitch.tv'){
         $twitch_channel = $((Get-Culture).textinfo.totitlecase(($media.webpage_url | split-path -leaf).tolower()))
@@ -185,7 +229,8 @@ function Start-Media{
             Update-Notifications -Level 'WARNING' -Message "Twitch Channel $twitch_channel`: OFFLINE" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout
             Add-Member -InputObject $media -Name 'Live_Status' -Value 'Offline' -MemberType NoteProperty -Force
             Add-Member -InputObject $media -Name 'Status_msg' -Value '' -MemberType NoteProperty -Force
-            Add-Member -InputObject $media -Name 'Stream_title' -Value "" -MemberType NoteProperty -Force          
+            Add-Member -InputObject $media -Name 'Stream_title' -Value "" -MemberType NoteProperty -Force 
+            Add-Member -InputObject $media -Name 'thumbnail' -Value "" -MemberType NoteProperty -Force         
             $synchash.Window.Dispatcher.invoke([action]{ 
                 $Synchash.Timer.stop() 
                 $synchash.Now_Playing_Label.content = ""                     
@@ -193,15 +238,26 @@ function Start-Media{
             return
           }else{
             write-ezlogs "[START_MEDIA] Starting streamlink $($media.webpage_url)" -showtime -logfile:$thisApp.Config.TwitchMedia_logfile
+            if($TwitchAPI.thumbnail_url){
+              $thumbnail = "$($TwitchAPI.thumbnail_url -replace '{width}x{height}','500x500')"
+            }else{
+              $thumbnail = ''
+            }            
             Add-Member -InputObject $Media -Name 'Live_Status' -Value $TwitchAPI.type -MemberType NoteProperty -Force
             Add-Member -InputObject $media -Name 'Status_msg' -Value "- $($TwitchAPI.game_name)" -MemberType NoteProperty -Force  
-            Add-Member -InputObject $media -Name 'Stream_title' -Value "$($TwitchAPI.title)" -MemberType NoteProperty -Force       
+            Add-Member -InputObject $media -Name 'Stream_title' -Value "$($TwitchAPI.title)" -MemberType NoteProperty -Force
+            Add-Member -InputObject $media -Name 'thumbnail' -Value $thumbnail -MemberType NoteProperty -Force       
             $streamlink_wait_timer = 1
             $streamlinkblock = {
-              if((Get-Process Streamlink*)){
-                Get-Process Streamlink* | Stop-Process -Force
-              }
-              $streamlink = streamlink $media.webpage_url "best,720p,480p" --player-external-http --player-external-http-port 53828 --loglevel debug --logfile $streamlink_log --retry-streams 2 --twitch-disable-ads
+              try{
+                if((Get-Process Streamlink*)){
+                  Get-Process Streamlink* | Stop-Process -Force
+                  start-sleep -Milliseconds 500
+                }              
+                $streamlink = streamlink $media.webpage_url "best,720p,480p" --player-external-http --player-external-http-port 53828 --loglevel debug --logfile $streamlink_log --retry-streams 1 --retry-max 10 --twitch-disable-ads --stream-segment-threads 2 --ringbuffer-size 32M
+              }catch{
+                write-ezlogs "An exception occurred executing streamlink for Media url $($media.webpage_url)" -showtime -catcherror $_
+              }            
               if($error){
                 write-ezlogs -showtime -PrintErrors -ErrorsToPrint $error
               }
@@ -313,8 +369,10 @@ function Start-Media{
       $delay = $null
       $media = yt-dlp -f b -g $media_link --rm-cache-dir -o '*' -j
       [Uri]$vlcurl = $media[0]
-      $media_metadata = $media[1] | Convertfrom-json    
-      $duration = $($([timespan]::Fromseconds($media_metadata.duration)).TotalMilliseconds)
+      $media_metadata = $media[1] | Convertfrom-json 
+      if($media_metadata.duration){
+        $duration = $($([timespan]::Fromseconds($media_metadata.duration)).TotalMilliseconds)     
+      }     
       $title = $media_metadata.title
       write-ezlogs "[START_MEDIA] | Youtube URL Title: $title" -showtime -logfile:$thisApp.Config.YoutubeMedia_logfile
     }elseif($media_link -match 'streaming.mediaservices.windows.net'){
@@ -338,14 +396,17 @@ function Start-Media{
       }elseif($media.SongInfo.duration){
         $media_Duration = $media.SongInfo.duration
       }
-      if($media_Duration){
-        try{
+      if(-not [string]::IsNullOrEmpty($media_Duration)){
+        try{         
           [int]$length = $([System.TimeSpan]::Parse($media_Duration).TotalSeconds)
           $timespan = $([timespan]::FromSeconds($length))
           $duration = $timespan.TotalMilliseconds
         }catch{
           write-ezlogs "An execption occurred parsing duration of ($($media_Duration)) for $($title)" -showtime -catcherror $_
+          $duration = 0
         }            
+      }else{
+        $duration = 0
       }              
       [Uri]$vlcurl = $($media_link)      
       if($thisApp.Config.Verbose_Logging){write-ezlogs "[START_MEDIA] | Local Path Title: $title" -showtime}
@@ -366,61 +427,109 @@ function Start-Media{
       return      
     }    
     try{     
-      Import-Module "$($thisApp.Config.Current_Folder)\\Modules\\Get-HelperFunctions\\Get-HelperFunctions.psm1"           
-   
+      Import-Module "$($thisApp.Config.Current_Folder)\\Modules\\Get-HelperFunctions\\Get-HelperFunctions.psm1"          
       $synchash.Window.Dispatcher.invoke([action]{   
-          $a = 0
-          $c = 0
-          #Import-Module "$($thisApp.Config.Current_Folder)\\Modules\\Get-HelperFunctions\\Get-HelperFunctions.psm1"
-          #write-ezlogs " | Media link $($media_link | out-string)" -showtime             
-          $synchash.Media_URL.text = $media_link                           
-          if($delay){
-            $synchash.vlc.SetAudioDelay(-2000000)
-          }              
-          $synchash.MediaPlayer_Slider.Maximum = $([timespan]::FromMilliseconds($duration)).TotalSeconds 
-          [int]$a = $($duration / 1000);
-          $synchash.Now_Playing_Label.content = "Now Playing - $title"          
-          [int]$c = $($([timespan]::FromSeconds($a)).TotalMinutes)     
-          [int]$hrs = $($([timespan]::FromSeconds($a)).Hours)
-          [int]$mins = $($([timespan]::FromSeconds($a)).Minutes)
-          [int]$secs = $($([timespan]::FromSeconds($a)).Seconds)
-          [int]$milsecs = $($([timespan]::FromSeconds($a)).Milliseconds)
-          $total_time = "$hrs`:$mins`:$secs"      
-          $synchash.Media_Length_Label.content = '0' + "/" + "$total_time"  
-          $synchash.MediaPlayer_CurrentDuration = $total_time          
-          if($video_url -and $audio_url){
-            $libvlc_media = [LibVLCSharp.Shared.Media]::new($synchash.libvlc,[Uri]($video_url),[LibVLCSharp.Shared.FromType]::FromLocation,":input-slave=$($audio_url)")
-          }elseif($vlcurl -or $media_link){
-            if($media_link){
-              if($media_link){
-                write-ezlogs "[START_MEDIA] | Medialink is URL link $media_link" -showtime
-                $from_path = [LibVLCSharp.Shared.FromType]::FromLocation
-              }else{
-                write-ezlogs "[START_MEDIA] | Medialink is local path link $media_link" -showtime
-                $from_path = [LibVLCSharp.Shared.FromType]::FromPath
+      
+          if(!$synchash.Youtube_WebPlayer_URL){
+            $a = 0
+            $c = 0
+            #Import-Module "$($thisApp.Config.Current_Folder)\\Modules\\Get-HelperFunctions\\Get-HelperFunctions.psm1"
+            #write-ezlogs " | Media link $($media_link | out-string)" -showtime             
+            $synchash.Media_URL.text = $media_link                           
+            if($delay){
+              $synchash.vlc.SetAudioDelay(-2000000)
+            }              
+            if(-not [string]::IsNullOrEmpty($duration)){
+              try{
+                $synchash.MediaPlayer_Slider.Maximum = $([timespan]::FromMilliseconds($duration)).TotalSeconds 
+                [int]$a = $($duration / 1000);
+                $synchash.Now_Playing_Label.content = "Now Playing - $title"          
+                [int]$c = $($([timespan]::FromSeconds($a)).TotalMinutes)     
+                [int]$hrs = $($([timespan]::FromSeconds($a)).Hours)
+                [int]$mins = $($([timespan]::FromSeconds($a)).Minutes)
+                [int]$secs = $($([timespan]::FromSeconds($a)).Seconds)
+                [int]$milsecs = $($([timespan]::FromSeconds($a)).Milliseconds)
+                $total_time = "$hrs`:$mins`:$secs"
+              }catch{
+                write-ezlogs "An exception occurred parsing duration time $($duration)" -showtime -catcherror $_
               }
-              $libvlc_media = [LibVLCSharp.Shared.Media]::new($synchash.libvlc,[Uri]($media_link),$from_path,$null)             
             }else{
-              if($vlcurl){
-                write-ezlogs "[START_MEDIA] | vlcurl is URL link $vlcurl" -showtime
-                $from_path = [LibVLCSharp.Shared.FromType]::FromLocation
-              }else{
-                write-ezlogs "[START_MEDIA] | vlcurl is local path link $vlcurl" -showtime
-                $from_path = [LibVLCSharp.Shared.FromType]::FromPath
-              }            
-              $libvlc_media = [LibVLCSharp.Shared.Media]::new($synchash.libvlc,[Uri]($vlcurl),$from_path,$null)
+              $total_time = "0`:0`:0"
+            }                  
+            $synchash.Media_Length_Label.content = '0' + "/" + "$total_time"  
+            $synchash.MediaPlayer_CurrentDuration = $total_time   
+            $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))')        
+            $synchash.libvlc.dispose()    
+            try{
+              #$video_View_grid = $synchash.VideoView_Grid          
+              if($synchash.VLC_Grid.children -contains $synchash.VideoView){
+                $synchash.VLC_Grid.children.Remove($synchash.VideoView)
+              }
+              $synchash.VideoView.MediaPlayer.Dispose()
+              if($synchash.VLC_Grid.children -notcontains $synchash.VideoView){
+                $synchash.VLC_Grid.children.add($synchash.VideoView)                
+              } 
+              $synchash.VLC_Grid.UpdateLayout()                 
+            }catch{
+              write-ezlogs "An exception occurred disposing and creating a new Webvifew control" -showtime -catcherror $_
             }
-          } 
-          if(!$thisApp.Config.Use_HardwareAcceleration){
-            write-ezlogs "[START_MEDIA] | Disabling Hardware Acceleration" -showtime
-            $libvlc_media.AddOption(":avcodec-hw=none")
-          }  
-          if($thisApp.Config.Verbose_Logging){write-ezlogs "[START_MEDIA] | VLC Media URL to play: $($libvlc_media.Mrl)" -showtime}                         
-          $synchash.vlc.media = $libvlc_media                              
-          $null = $synchash.VLC.Play()  
-
+            if($thisApp.Config.Use_Visualizations -and ($media_link -match $audio_media_pattern -or $vlcurl -match $audio_media_pattern)){ 
+              #,"--no-video"
+              
+              if($thisApp.Config.Current_Visualization -eq 'Spectrum'){
+                $Visualization = "Visual"
+                $effect = "--effect-list=spectrum"
+              }else{
+                $Visualization = $thisApp.Config.Current_Visualization
+                $effect = "--effect-list=spectrum"
+              }     
+              write-ezlogs "Enabling Visualization plugin '$Visualization'" -showtime        
+              $synchash.libvlc = [LibVLCSharp.Shared.LibVLC]::new('--file-logging',"--logfile=$($thisApp.Config.logfile_directory)\$($thisapp.config.App_Name)-$($thisapp.config.App_Version)-VLC.log",'--log-verbose=3',"--audio-visual=$($Visualization)",$effect,"--video-on-top","--spect-show-original")                                                   
+            }else{          
+              $synchash.libvlc = [LibVLCSharp.Shared.LibVLC]::new('--file-logging',"--logfile=$($thisApp.Config.logfile_directory)\$($thisapp.config.App_Name)-$($thisapp.config.App_Version)-VLC.log",'--log-verbose=3')         
+            }            
+            $synchash.VideoView.MediaPlayer = [LibVLCSharp.Shared.MediaPlayer]::new($synchash.libvlc)     
+            $synchash.VLC = $synchash.VideoView.MediaPlayer   
+            if($thisapp.config.Enable_EQ){$null = $synchash.vlc.SetEqualizer($synchash.Equalizer)} 
+            $synchash.libvlc_No_vis_timer.start()
+                                                     
+            if($video_url -and $audio_url){
+              $libvlc_media = [LibVLCSharp.Shared.Media]::new($synchash.libvlc,[Uri]($video_url),[LibVLCSharp.Shared.FromType]::FromLocation,":input-slave=$($audio_url)")
+            }elseif($vlcurl -or $media_link){
+              if($media_link){
+                if([System.IO.File]::Exists($media_link)){
+                  write-ezlogs "[START_MEDIA] | Medialink is local path link $media_link" -showtime
+                  $from_path = [LibVLCSharp.Shared.FromType]::FromPath                
+                }else{
+                  write-ezlogs "[START_MEDIA] | Medialink is URL link $media_link" -showtime
+                  $from_path = [LibVLCSharp.Shared.FromType]::FromLocation
+                }
+                $libvlc_media = [LibVLCSharp.Shared.Media]::new($synchash.libvlc,[Uri]($media_link),$from_path,$null)             
+              }else{
+                if($vlcurl){
+                  write-ezlogs "[START_MEDIA] | vlcurl is URL link $vlcurl" -showtime
+                  $from_path = [LibVLCSharp.Shared.FromType]::FromLocation
+                }else{
+                  write-ezlogs "[START_MEDIA] | vlcurl is local path link $vlcurl" -showtime
+                  $from_path = [LibVLCSharp.Shared.FromType]::FromPath
+                }            
+                $libvlc_media = [LibVLCSharp.Shared.Media]::new($synchash.libvlc,[Uri]($vlcurl),$from_path,$null)
+              }
+            }                      
+            if(!$thisApp.Config.Use_HardwareAcceleration){
+              write-ezlogs "[START_MEDIA] | Disabling Hardware Acceleration" -showtime
+              $libvlc_media.AddOption(":avcodec-hw=none")
+              $synchash.vlc.EnableHardwareDecoding = $false
+            }else{
+              $synchash.vlc.EnableHardwareDecoding = $true
+            } 
+            if($thisApp.Config.Verbose_Logging){write-ezlogs "[START_MEDIA] | VLC Media URL to play: $($libvlc_media.Mrl)" -showtime}                         
+            $synchash.vlc.media = $libvlc_media                                   
+            #$null = $synchash.VLC.Play()  
+          }
           Add-Member -InputObject $thisApp.config -Name 'Last_Played_title' -Value $title -MemberType NoteProperty -Force
-          Add-Member -InputObject $thisApp.config -Name 'Last_Played' -Value $media.id -MemberType NoteProperty -Force              
+          Add-Member -InputObject $thisApp.config -Name 'Last_Played' -Value $media.id -MemberType NoteProperty -Force    
+                    
           try{          
             if(Test-URL $chat_url){
               if($thisApp.config.Chat_View){
@@ -430,7 +539,7 @@ function Start-Media{
                 $synchash.Chat_View_Button.Opacity=1
                 $synchash.Chat_View_Button.ToolTip="Chat View"   
                 $synchash.chat_column.Width = "400"        
-              } 
+              }              
               $synchash.Chat_View_Button.IsEnabled = $true   
               if($syncHash.chat_WebView2 -ne $null -and $syncHash.chat_WebView2.CoreWebView2 -ne $null){
                 write-ezlogs "[START_MEDIA] Navigating with CoreWebView2.Navigate: $($chat_url)" -enablelogs -Color cyan -showtime
@@ -448,7 +557,18 @@ function Start-Media{
               $synchash.Chat_View_Button.ToolTip="Chat View Not Available"
               $synchash.chat_WebView2.Visibility = 'Hidden'
               $synchash.chat_WebView2.stop()
-            }                   
+            }
+            if($thisapp.config.VideoView_LargePlayer){
+              $synchash.MainGrid_Row3.Height="22*"
+              $synchash.playlist_column.Width="*"
+              $synchash.Expand_Player_Icon.Kind = 'ScreenNormal'
+              $synchash.VideoView_LargePlayer_Icon.Kind = 'ScreenNormal'
+            }else{
+              $synchash.MainGrid_Row3.Height="400*"
+              $synchash.playlist_column.Width="200*"
+              $synchash.Expand_Player_Icon.Kind = 'ScreenFull'
+              $synchash.VideoView_LargePlayer_Icon.Kind = 'ScreenFull'
+            }                               
             [array]$media_queue = $syncHash.PlayQueue_TreeView.Items.Items.tag.Media
             foreach($id in $media_queue.id){
               if($thisApp.config.Current_Playlist.values -notcontains $id){
@@ -459,44 +579,70 @@ function Start-Media{
             }           
             write-ezlogs "[START_MEDIA] >>>> Saving config file to $($thisApp.Config.Config_Path)" -showtime -color cyan
             $thisApp.config | Export-Clixml -Path $thisApp.Config.Config_Path -Force -Encoding UTF8  
-            $synchash.update_status_timer.start()    
-            $synchash.VideoView.add_MouseEnter({
-
-                $synchash.VideoView_Flyout.IsOpen = $true
-                write-ezlogs "Video Mouse Enter: $($this | out-string)"
-
-            })                                     
+            $synchash.update_status_timer.start()                                       
           }catch{
             write-ezlogs "[START_MEDIA] An exception occurred attempting to generate the notification balloon" -showtime -catcherror $_
           }                                                            
       },"Normal")
-     
-      $play_timeout = 0
-      $streamlink_wait_timer = 1
-      while(!$synchash.vlc.IsPlaying -and $play_timeout -lt 60){
-        $play_timeout++
-        $streamlink_wait_timer++
-        write-ezlogs "[START_MEDIA] | Waiting for VLC to begin playing..." -showtime
-        if($media.webpage_url -match 'twitch.tv' -and $streamlink_wait_timer -and $streamlink_wait_timer -eq 11){
-          write-ezlogs "[START_MEDIA] >>>> Relaunching streamlink as it should have started by now" -showtime -color cyan -logfile:$thisApp.Config.TwitchMedia_logfile
-          $streamlinkblock = {              
-            if((Get-Process Streamlink*)){
-              Get-Process Streamlink* | Stop-Process -Force
-            }        
-            $streamlink = streamlink $media.webpage_url "best,720p,480p" --player-external-http --player-external-http-port 53828 --loglevel debug --logfile $streamlink_log --retry-streams 2 --twitch-disable-ads
-            if($error){
-              write-ezlogs -showtime -PrintErrors -ErrorsToPrint $error
-            }
+      
+      if(!$synchash.Youtube_WebPlayer_URL){
+        $null = $synchash.VLC.Play()     
+        #$synchash.EQ_Timer.start()    
+        $play_timeout = 0
+        $streamlink_wait_timer = 1        
+        while(!$synchash.vlc.IsPlaying -and $play_timeout -lt 60){
+          $play_timeout++
+          $streamlink_wait_timer++
+          write-ezlogs "[START_MEDIA] | Waiting for VLC to begin playing..." -showtime
+          if($media.webpage_url -match 'twitch.tv' -and $streamlink_wait_timer -and $streamlink_wait_timer -eq 11){
+            write-ezlogs "[START_MEDIA] >>>> Relaunching streamlink as it should have started by now, relaunching Start-Media" -showtime -color cyan -logfile:$thisApp.Config.TwitchMedia_logfile
+            try{
+              $synchash.Start_media = $Media
+              $synchash.start_media_timer.start()
+              return
+              #Start-Media -Media $Media -thisApp $thisapp -synchash $synchash -Script_Modules $Script_Modules -media_contextMenu $synchash.Media_ContextMenu -PlayMedia_Command $synchash.PlayMedia_Command -all_playlists $all_playlists
+            }catch{
+              write-ezlogs "An exception occurred relaunching Start-Media" -showtime -catcherror $_
+            }            
+            <#            $streamlinkblock = {              
+                if((Get-Process Streamlink*)){
+                Get-Process Streamlink* | Stop-Process -Force
+                }        
+                $streamlink = streamlink $media.webpage_url "best,720p,480p" --player-external-http --player-external-http-port 53828 --loglevel debug --logfile $streamlink_log --retry-streams 2 --twitch-disable-ads
+                start-sleep 1 
+                $null = $synchash.VLC.Play()
+                if($error){
+                write-ezlogs -showtime -PrintErrors -ErrorsToPrint $error
+                }
+                }
+                $Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"}  
+            Start-Runspace $streamlinkblock -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -logfile $thisApp.Config.Log_file -runspace_name "Streamlink HTTP Runspace" -thisApp $thisApp -Script_Modules $Script_Modules #> 
+          }elseif($play_timeout -eq 15){
+            write-ezlogs "| Playback still hasnt starting, Attempting to execute Play() again" -showtime -warning
+            $null = $synchash.VLC.Play()           
           }
-          $Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"}  
-          Start-Runspace $streamlinkblock -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -logfile $thisApp.Config.Log_file -runspace_name "Streamlink HTTP Runspace" -thisApp $thisApp -Script_Modules $Script_Modules 
+          start-sleep 1         
         }
-        start-sleep 1
-      }
-
-      if(-not [string]::IsNullOrEmpty($Media.cover_art)){
+        if($synchash.vlc.IsPlaying){
+          Add-Member -InputObject $thisApp.config -Name 'Last_Played' -Value $media.id -MemberType NoteProperty -Force
+          $synchash.Timer.Start()  
+        }
+      }   
+      if(-not [string]::IsNullOrEmpty($Media.offline_image_url)){
+        $image = $($Media.offline_image_url | select -First 1)
+        $decode_Width = "1280"
+      }elseif(-not [string]::IsNullOrEmpty($Media.profile_image_url)){
+        $image = $($Media.profile_image_url | select -First 1)
+        $decode_Width = "500"
+      }elseif(-not [string]::IsNullOrEmpty($Media.cover_art)){
+        $decode_Width = "500"
         $image = $($Media.Cover_art | select -First 1)
+      }elseif(-not [string]::IsNullOrEmpty($Media.images.url)){
+        $decode_Width = "500"
+        $image = $($Media.images.url | where {$_ -match 'maxresdefault.jpg'} | select -First 1)
+        write-ezlogs "#### Media : $($image)" -showtime
       }elseif(-not [string]::IsNullOrEmpty($Media.thumbnail)){
+        $decode_Width = "500"
         $image = $($Media.thumbnail | select -First 1)
       }else{
         $image = $null
@@ -504,18 +650,17 @@ function Start-Media{
       $image_Cache_path = $Null
       if($image)
       {
-        if($thisApp.Config.Verbose_logging){write-ezlogs "[START_MEDIA] Media Image found: $($image)" -showtime}
-       
+        if($thisApp.Config.Verbose_logging){write-ezlogs "[START_MEDIA] Media Image found: $($image)" -showtime}      
         if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
           if($thisApp.Config.Verbose_logging){write-ezlogs " Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime}
           $null = New-item ($thisApp.config.image_Cache_path) -ItemType directory -Force
         }
-        $encodeduri = $Null  
-        $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($Image | split-path -Leaf)-Local")
-        $encodeduri = [System.Convert]::ToBase64String($encodedBytes)                     
-        $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),"$($encodeduri).png")
+        #$encodeduri = $Null  
+        #$encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($media.title)-$($media.type)")
+        #$encodeduri = [System.Convert]::ToBase64String($encodedBytes)                     
+        $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),"$($media.id).png")
         if([System.IO.File]::Exists($image_Cache_path)){
-          $image_Cache_path = $image
+          $cached_image = $image_Cache_path
         }elseif($image){         
           if($thisApp.Config.Verbose_logging){write-ezlogs "[START_MEDIA] | Destination path for cached image: $image_Cache_path" -showtime}
           if(!([System.IO.File]::Exists($image_Cache_path))){
@@ -535,7 +680,7 @@ function Start-Media{
                 $image.CacheOption = "OnLoad"
                 #$image.CreateOptions = "DelayCreation"
                 #$image.DecodePixelHeight = 229;
-                $image.DecodePixelWidth = 500;
+                $image.DecodePixelWidth = $decode_Width
                 $image.StreamSource = $stream_image
                 $image.EndInit();        
                 $stream_image.Close()
@@ -549,20 +694,21 @@ function Start-Media{
                 $save_stream = [System.IO.FileStream]::new("$image_Cache_path",'Create')
                 $encoder.Save($save_stream)
                 $save_stream.Dispose()       
-              }              
+              }  
+              $cached_image = $image_Cache_path            
             }catch{
-              $image_Cache_path = $Null
+              $cached_image = $Null
               write-ezlogs "[START_MEDIA] An exception occurred attempting to download $image to path $image_Cache_path" -showtime -catcherror $_
             }
           }           
         }else{
           write-ezlogs "[START_MEDIA] Cannot Download image $image to cache path $image_Cache_path - URL is invalid" -enablelogs -showtime -warning
-          $image_Cache_path = $Null        
+          $cached_image = $Null        
         }                                    
       } 
-      if([System.IO.File]::Exists($image_Cache_path)){
-        if($thisApp.Config.Verbose_logging){write-ezlogs "Setting background image to $image_Cache_path" -enablelogs -showtime}
-        $synchash.Background_cached_image = $image_Cache_path
+      if([System.IO.File]::Exists($cached_image)){
+        if($thisApp.Config.Verbose_logging){write-ezlogs "Setting background image to $cached_image" -enablelogs -showtime}
+        $synchash.Background_cached_image = $cached_image 
         <#        Add-Type -AssemblyName System.Drawing
             write-ezlogs "Getting primary accent color for image: $image_Cache_path" -showtime
             $BitMap = [System.Drawing.Bitmap]::FromFile($image_Cache_path)
@@ -583,11 +729,12 @@ function Start-Media{
         $synchash.background_accent_color = $Null
         $synchash.Background_cached_image = $null
       }                 
-      if($synchash.vlc.IsPlaying){       
+      if($synchash.vlc.IsPlaying -or ($use_WebPlayer -and $synchash.Youtube_WebPlayer_URL)){       
         $synchash.Media_Current_Title = "$title"
+        Add-Member -InputObject $thisApp.config -Name 'Last_Played' -Value $media.id -MemberType NoteProperty -Force
         $synchash.Window.Dispatcher.invoke([action]{  
-            $synchash.update_background_timer.start()      
-            #$Synchash.Timer.start() 
+            $synchash.update_background_timer.start()                       
+            $synchash.EQ_Timer.start()               
             <#            if($thisApp.Config.streamlink.title){
                 $synchash.Now_Playing_Label.content = "Now Playing - $($thisApp.Config.streamlink.User_Name): $($thisApp.Config.streamlink.title)"
             }#>            
@@ -610,23 +757,29 @@ function Start-Media{
             $startapp = Get-startapps '*Windows Media Player'
             $appid = $startapp.AppID | select -last 1
           } 
-          if($image_Cache_path){
-            $applogo = $image_Cache_path 
-          }else{
-            $applogo = "$($thisApp.Config.Current_folder)\\Resources\\MusicPlayerFill.png"
-          }
-          if($media.webpage_url -match 'twitch.tv'){
+          if($media.webpage_url -match 'twitch.tv'){          
             $source = 'Twitch Stream'
-            if(!$image_Cache_path){
+            if(!$Media.profile_image_url){
               $applogo = "$($thisApp.Config.Current_folder)\\Resources\\Material-Twitch48.png"
+            }else{
+              $applogo = $($Media.profile_image_url | select -First 1)
             }
-          }elseif($media.type -eq 'YoutubePlaylist_item'){
+          }elseif($media.type -eq 'YoutubePlaylist_item' -or $media.Group -eq 'Youtube'){
             $source = 'Youtube Media'
-            if(!$image_Cache_path){
+            if($Media.images.url){
+              $applogo = $Media.images.url | select -first 1
+            }elseif($cached_image){
+              $applogo = $cached_image
+            }else{              
               $applogo = "$($thisApp.Config.Current_folder)\\Resources\\Material-Youtube.png"
             }
           }else{
             $source = 'Local Media'
+            if($cached_image){
+              $applogo = $cached_image 
+            }else{
+              $applogo = "$($thisApp.Config.Current_folder)\\Resources\\MusicPlayerFill.png"
+            }            
           } 
           $Message = "Media : $($thisApp.config.Last_Played_title)`nPlay Duration : $($synchash.MediaPlayer_CurrentDuration)`nSource : $source"
           if($psversiontable.PSVersion.Major -gt 5){

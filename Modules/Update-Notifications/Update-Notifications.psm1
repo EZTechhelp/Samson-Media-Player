@@ -104,6 +104,8 @@ function Update-Notifications
   
   if($synchash.Notifications_Grid.items.id -contains $id){
     $itemssource = $synchash.Notifications_Grid.items | where {$_.id -eq $id} | select -Unique
+    $existing = $true
+    write-ezlogs "Found existing notification with ID: $($itemssource.id) - updating" -showtime
     $itemssource.Time = "$(Get-Date -Format 'MM/dd/yyyy h:mm:ss tt')"
     $itemssource.Level = $Level
     $itemssource.Level_color = $Level_color
@@ -111,7 +113,9 @@ function Update-Notifications
     $itemssource.Message = $Message
     $itemssource.Message_color = $Message_color
     $itemssource.MessageFontWeight = $MessageFontWeight
+    
   }else{
+    $existing = $false
     $itemssource = [pscustomobject]@{
       ID=$ID;
       Time="$(Get-Date -Format 'MM/dd/yyyy h:mm:ss tt')"
@@ -179,8 +183,11 @@ function Update-Notifications
             [int]$notifications = [int]$synchash.Notifications_Grid.items.count + 1
           }
           [int]$synchash.Notifications_Badge.badge = [int]$notifications
-             
-          $null = $synchash.Notifications_Grid.Items.add($itemssource)
+          if($existing){
+            $null = $synchash.Notifications_Grid.items.Refresh()
+          }else{
+            $null = $synchash.Notifications_Grid.Items.add($itemssource)
+          }             
           if($Open_Flyout){
             $synchash.NotificationFlyout.isOpen=$true 
           }

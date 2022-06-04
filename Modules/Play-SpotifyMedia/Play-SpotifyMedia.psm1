@@ -44,6 +44,15 @@ function Play-SpotifyMedia{
   )
   
   #Reset UI
+  if(!(Get-command -Module Spotishell)){
+    Import-Module "$($thisApp.Config.Current_folder)\Modules\Spotishell\Spotishell.psm1"
+  } 
+  $synchash.Start_media = $null
+  $synchash.Start_media_timer.stop()    
+  $synchash.Youtube_WebPlayer_URL = $null
+  $synchash.Youtube_WebPlayer_title = $null  
+  $synchash.Youtube_WebPlayer_timer.start()  
+  $synchash.WebPlayer_Playing_timer.stop() 
   $synchash.Window.Dispatcher.invoke([action]{  
       $syncHash.MainGrid_Background_Image_Source_transition.content = ''
       $syncHash.MainGrid_Background_Image_Source.Source = $null
@@ -141,7 +150,7 @@ function Play-SpotifyMedia{
       write-ezlogs "[Play-SpotifyMedia] An exception occurred updating current_playlist" -showtime -catcherror $_ -logfile:$log
     }
     
-    Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command 
+    Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -Refresh_Spotify_Playlists
     $spotify_scriptblock = {
       try{
         Import-module "$($thisApp.Config.Current_Folder)\Modules\Spotishell\Spotishell.psm1" -Force
@@ -226,10 +235,15 @@ function Play-SpotifyMedia{
         }        
         if(!$devices){       
           $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name 
+          $device_Wait = 1
           while(!$devices -and $start_waittimer -le 120){
             $start_waittimer++
-            write-ezlogs "[Play-SpotifyMedia] | Waiting for available Spotify devices" -showtime -warning -logfile:$log
+            write-ezlogs "| Waiting for available Spotify devices" -showtime -warning -logfile:$log
             $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
+            if($device_Wait -and $device_Wait -eq 11){
+              write-ezlogs "| Attempting to restart Spotify client as it should have started by now" -showtime -warning -logfile:$log
+              $Spotify_Process = Start $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized" -PassThru
+            }
             start-sleep 1
           }          
           if($devices){
@@ -348,7 +362,8 @@ function Play-SpotifyMedia{
             $encodeduri = [System.Convert]::ToBase64String($encodedBytes)                     
             $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),"$($encodeduri).png")
             if([System.IO.File]::Exists($image_Cache_path)){
-              $image_Cache_path = $image
+              $cached_image = $image_Cache_path
+              if($thisApp.Config.Verbose_logging){write-ezlogs "| Found cached image: $cached_image" -showtime -logfile:$log}
             }elseif($image){         
               if($thisApp.Config.Verbose_logging){write-ezlogs "| Destination path for cached image: $image_Cache_path" -showtime -logfile:$log}
               if(!([System.IO.File]::Exists($image_Cache_path))){
@@ -382,19 +397,20 @@ function Play-SpotifyMedia{
                     $save_stream = [System.IO.FileStream]::new("$image_Cache_path",'Create')
                     $encoder.Save($save_stream)
                     $save_stream.Dispose()       
-                  }              
+                  }  
+                  $cached_image = $image_Cache_path            
                 }catch{
-                  $image_Cache_path = $Null
+                  $cached_image = $Null
                   write-ezlogs "An exception occurred attempting to download $image to path $image_Cache_path" -showtime -catcherror $_ -logfile:$log
                 }
               }           
             }else{
               write-ezlogs "Cannot Download image $image to cache path $image_Cache_path - URL is invalid" -enablelogs -showtime -warning -logfile:$log
-              $image_Cache_path = $Null        
+              $cached_image = $Null        
             }                                      
           }
-          if([System.IO.File]::Exists($image_Cache_path)){
-            $synchash.Background_cached_image = $image_Cache_path
+          if([System.IO.File]::Exists($cached_image)){
+            $synchash.Background_cached_image = $cached_image
             <#        Add-Type -AssemblyName System.Drawing
                 write-ezlogs "Getting primary accent color for image: $image_Cache_path" -showtime
                 $BitMap = [System.Drawing.Bitmap]::FromFile($image_Cache_path)
@@ -427,10 +443,10 @@ function Play-SpotifyMedia{
               }else{
                 $spotify_appid = $Spotify_Path
               }              
-              if(!$image_Cache_path){
+              if(!$cached_image){
                 $applogo = "$($thisApp.Config.Current_folder)\\Resources\\Material-Spotify.png"
               }else{
-                $applogo = $image_Cache_path
+                $applogo = $cached_image
               }
               [int]$hrs = $($([timespan]::FromMilliseconds($current_track.item.duration_ms)).Hours)
               [int]$mins = $($([timespan]::FromMilliseconds($current_track.item.duration_ms)).Minutes)

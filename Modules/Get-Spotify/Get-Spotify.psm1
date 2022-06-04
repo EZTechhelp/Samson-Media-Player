@@ -54,12 +54,12 @@ function Get-Spotify
   $pattern = "[™$illegal]"
   $pattern2 = "[:$illegal]"
   $AllSpotify_Media_Profile_Directory_Path = [System.IO.Path]::Combine($Media_Profile_Directory,"All-Spotify_MediaProfile")
-  if (!(Test-path $AllSpotify_Media_Profile_Directory_Path)){
+  if (!([System.IO.Directory]::Exists($AllSpotify_Media_Profile_Directory_Path))){
     $Null = New-Item -Path $AllSpotify_Media_Profile_Directory_Path -ItemType directory -Force
   } 
   $AllSpotify_Media_Profile_File_Path = [System.IO.Path]::Combine($AllSpotify_Media_Profile_Directory_Path,"All-Spotify_Media-Profile.xml")
   
-  if($Import_Profile -and (Test-path $AllSpotify_Media_Profile_File_Path -PathType Leaf)){ 
+  if($Import_Profile -and ( [System.IO.File]::Exists($AllSpotify_Media_Profile_File_Path))){ 
     if($Verboselog){write-ezlogs " | Importing Spotify Media Profile: $AllSpotify_Media_Profile_File_Path" -showtime -enablelogs -logfile:$log}
     $Available_Spotify_Media = Import-CliXml -Path $AllSpotify_Media_Profile_File_Path
     return $Available_Spotify_Media    
@@ -67,6 +67,9 @@ function Get-Spotify
     if($Verboselog){write-ezlogs " | Spotify Media Profile to import not found at $AllSpotify_Media_Profile_File_Path....Attempting to build new profile" -showtime -enablelogs -logfile:$log}
   }  
   try{
+    if(!(Get-command -Module Spotishell)){
+      Import-Module "$($thisApp.Config.Current_folder)\Modules\Spotishell\Spotishell.psm1"
+    }   
     $Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name
   }catch{
     write-ezlogs "An exception occurred in Get-SpotifyApplication" -showtime -catcherror $_ -logfile:$log
@@ -106,7 +109,7 @@ function Get-Spotify
   }
 
   if(!$Spotify_Install_Path){
-    write-ezlogs ">>>> Could find Spotify, checking using Get-InstalledApplications" -showtime -logfile:$log
+    write-ezlogs ">>>> Could not find Spotify, checking using Get-InstalledApplications" -showtime -logfile:$log
     $installed_apps = Get-InstalledApplications
     $Spotify_app = $installed_apps | where {$_.'Display Name' -eq 'Spotify'} | select -Unique
     $Spotify_Install_Path = $Spotify_app.'Install Location'
@@ -116,20 +119,25 @@ function Get-Spotify
     write-ezlogs " | Spotify is installed at $Spotify_Launch_Path" -showtime -logfile:$log
     #$devices = Get-AvailableDevices   
   }else{
-    write-ezlogs "Unable to find Spotify installed at path $Spotify_Launch_Path, installing via chocolatey" -showtime -Warning -logfile:$log
-    choco upgrade spotify -confirm -force --acceptlicense   
-    $installed_apps = Get-InstalledApplications -verboselog
-    $Spotify_app = $installed_apps | where {$_.'Display Name' -eq 'Spotify'} | select -Unique    
-    $Spotify_Install_Path = $Spotify_app.'Install Location'
-    $Spotify_Launch_Path = "$($Spotify_app.'Install Location')\\Spotify.exe"       
-    if([System.IO.File]::Exists($Spotify_Launch_Path)){
-      write-ezlogs "[SUCCESS] Spotify installed successfully" -showtime -logfile:$log
-      #Start $Spotify_Launch_Path -NoNewWindow 
-      #wait for spotify to launch
-      #start-sleep 2     
+    write-ezlogs "Unable to find Spotify installed at path $Spotify_Launch_Path" -showtime -Warning -logfile:$log
+    if($thisApp.Config.Install_Spotify){
+      write-ezlogs ">>>> Installing Spotify via chocolatey" -showtime -logfile:$log      
+      choco upgrade spotify -confirm -force --acceptlicense   
+      $installed_apps = Get-InstalledApplications -verboselog
+      $Spotify_app = $installed_apps | where {$_.'Display Name' -eq 'Spotify'} | select -Unique    
+      $Spotify_Install_Path = $Spotify_app.'Install Location'
+      $Spotify_Launch_Path = "$($Spotify_app.'Install Location')\\Spotify.exe"       
+      if([System.IO.File]::Exists($Spotify_Launch_Path)){
+        write-ezlogs "[SUCCESS] Spotify installed successfully" -showtime -logfile:$log
+        #Start $Spotify_Launch_Path -NoNewWindow 
+        #wait for spotify to launch
+        #start-sleep 2     
+      }else{
+        write-ezlogs "Spotify did not appear to install or unable to find, cannot continue" -showtime -warning -logfile:$log
+        return
+      }     
     }else{
-      write-ezlogs "Spotify did not appear to install or unable to find, cannot continue" -showtime -warning -logfile:$log
-      return
+      write-ezlogs "Auto installation of Spotify is not enabled, skipping install. Spotify must be manually installed for Spotify features to function" -showtime -warning
     }
   }
   
@@ -171,6 +179,15 @@ function Get-Spotify
         $encodedTitle = [System.Convert]::ToBase64String($encodedBytes)    
         $playlist_items = Get-PlaylistItems -id $playlist.id -ApplicationName $thisApp.config.App_Name
         if($playlist_items){
+          foreach($track in $playlist_items.track){
+            Add-Member -InputObject $track -Name "title" -Value $track.name -MemberType NoteProperty -Force 
+            Add-Member -InputObject $track -Name "Artist" -Value ($track.Artists.Name -join ',') -MemberType NoteProperty -Force
+            Add-Member -InputObject $track -Name "Album_Info" -Value ($track.Album) -MemberType NoteProperty -Force
+            Add-Member -InputObject $track -Name "Album" -Value ($track.Album.Name) -MemberType NoteProperty -Force
+            Add-Member -InputObject $track -Name "Profile_Path" -Value ($AllSpotify_Media_Profile_File_Path) -MemberType NoteProperty -Force
+            Add-Member -InputObject $track -Name "Spotify_Launch_Path" -Value ($Spotify_Launch_Path) -MemberType NoteProperty -Force
+            Add-Member -InputObject $track -Name "Source" -Value 'SpotifyPlaylist' -MemberType NoteProperty -Force
+          }        
           $Playlist_tracks = $playlist_items.track
         }                 
         $newRow = New-Object PsObject -Property @{

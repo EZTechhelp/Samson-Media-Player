@@ -122,7 +122,7 @@ function Update-MediaTimer{
       $duration = $current_track.item.duration_ms
     }       
     #write-ezlogs "Last played title: $($thisApp.config.Last_Played_title) -- Current name : $($name)" -showtime
-  }          
+  }           
   if($synchash.vlc.IsPlaying -and $synchash.VLC.Time -ne -1){
     try{      
       if(!$synchash.MediaPlayer_Slider.IsMouseOver){$synchash.MediaPlayer_Slider.Value = $([timespan]::FromMilliseconds($synchash.VLC.Time)).TotalSeconds}      
@@ -131,25 +131,32 @@ function Update-MediaTimer{
       [int]$secs = $($([timespan]::FromMilliseconds($synchash.VLC.Time)).Seconds)     
       $total_time = $synchash.MediaPlayer_CurrentDuration      
       $synchash.Media_Length_Label.content = "$hrs" + ':' + "$mins" + ':' + "$secs" + '/' + "$($total_time)"   
-      if($thisapp.Config.streamlink.viewer_count -and $thisApp.Config.Enable_Marquee){
-        if($thisapp.Config.Verbose_Logging){write-ezlogs " | Twitch Viewer count: $($thisapp.Config.streamlink.viewer_count)" -showtime -color cyan}
+      if(@($Current_playing.header).count -gt 1){
+        $Current_playing = $Current_playing | select -first 1
+      }       
+      if($thisApp.Config.Enable_Marquee -and !$thisApp.Config.Use_Visualizations){
+        #if($thisapp.Config.Verbose_Logging){write-ezlogs " | Twitch Viewer count: $($thisapp.Config.streamlink.viewer_count)" -showtime -color cyan}
         $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Enable, 1) #enable marquee option
         $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Size, 24) #set the font size 
         $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Position, 8) #set the position of text
-        $synchash.VLC.SetMarqueeString([LibVLCSharp.Shared.VideoMarqueeOption]::Text, "Viewers: $($thisapp.Config.streamlink.viewer_count)")
+        if($thisapp.Config.streamlink.viewer_count){
+          $synchash.VLC.SetMarqueeString([LibVLCSharp.Shared.VideoMarqueeOption]::Text, "Viewers: $($thisapp.Config.streamlink.viewer_count)")
+        }else{
+          $synchash.VLC.SetMarqueeString([LibVLCSharp.Shared.VideoMarqueeOption]::Text, "$($Current_playing.Header.title) - $($synchash.Media_Length_Label.content)")
+        }      
         #to set subtitle or any other text                                          
       }else{
         $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Enable, 0) #disable marquee option                                   
-      }
-      if(@($Current_playing.header).count -gt 1){
-        $Current_playing = $Current_playing | select -first 1
-      }      
+      }     
       if($Current_playing -and $Current_playing.Header.title -notmatch '---> '){       
-        Get-Playlists -verboselog:$false -synchash $synchash -Media_Profile_Directory $thisapp.Config.Media_Profile_Directory -thisApp $thisapp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command -all_playlists $all_playlists
+        Get-Playlists -verboselog:$false -synchash $synchash -Media_Profile_Directory $thisapp.Config.Media_Profile_Directory -thisApp $thisapp -Refresh_Spotify_Playlists -all_playlists $all_playlists
         #Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -startup -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command -all_playlists $all_playlists        
         $Current_playlist_items = $synchash.PlayQueue_TreeView.Items | where {$_.Name -eq 'Play_Queue'}
-        $Current_playing = $Current_playlist_items.items | where {$_.tag.Media.id -eq $thisapp.Config.Last_Played} | select -Unique    
-        if($thisapp.Config.streamlink.type){$Current_playing.Header.Status = "$($thisapp.Config.streamlink.type)"} 
+        $Current_playing = $Current_playlist_items.items | where  {$_.header.id -eq $thisapp.Config.Last_Played} | select -Unique    
+        if($thisapp.Config.streamlink.type){
+          #write-ezlogs "Header: $($Current_playing.Header | out-string)"
+          $Current_playing.Header.Status = "$($thisapp.Config.streamlink.type)"
+        } 
         if($thisapp.Config.streamlink.Title){$Current_playing.Header.Status_Msg = "$($thisapp.Config.streamlink.game_name)"}
         #(($syncHash.PlayQueue_TreeView.Items | where {$_.Name -eq 'Play_Queue'}).items | where {$_.tag.Media.id -eq $thisApp.Config.Last_Played}).Header = "---> $($Current_playing.Header)"
         if($Current_playing.Header.title){
@@ -179,11 +186,11 @@ function Update-MediaTimer{
       [int]$totalsecs = $([timespan]::FromMilliseconds($duration)).Seconds
       $total_time = "$totalhrs`:$totalmins`:$totalsecs"    
       $synchash.Media_Length_Label.content = "$hrs" + ':' + "$mins" + ':' + "$secs" + '/' + "$($total_time)"              
-      $Current_playing = $Current_playlist_items.items | where {$_.tag.Media.encodedtitle -eq $thisapp.Config.Last_Played} | select -Unique 
+      $Current_playing = $Current_playlist_items.items | where {$_.header.id -eq $thisapp.Config.Last_Played} | select -Unique 
       if($Current_playing -and $Current_playing.Header -notmatch '---> '){
         Get-Playlists -verboselog:$false -synchash $synchash -Media_Profile_Directory $thisapp.Config.Media_Profile_Directory -thisApp $thisapp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command -all_playlists $all_playlists
         $Current_playlist_items = $synchash.PlayQueue_TreeView.Items | where {$_.Name -eq 'Play_Queue'}    
-        $Current_playing = $Current_playlist_items.items | where {$_.header.id -eq $thisapp.Config.Last_Played} | select -Unique         
+        $Current_playing = $Current_playlist_items.items | where {$_.header.id -eq $thisapp.Config.Last_Played} | select -Unique              
         #(($syncHash.PlayQueue_TreeView.Items | where {$_.Name -eq 'Play_Queue'}).items | where {$_.tag.Media.encodedtitle -eq $thisApp.Config.Last_Played}).Header = "---> $($Current_playing.Header)"
         if($Current_playing.Header.title){
           $Current_playing.Header.title = "---> $($Current_playing.Header.title)"
@@ -202,7 +209,7 @@ function Update-MediaTimer{
     }catch{
       write-ezlogs 'An exception occurred processing Spotify playback in tick_timer' -showtime -catcherror $_
     }    
-  }elseif((!$synchash.vlc.IsPlaying) -and $synchash.Spotify_Status -eq 'Stopped'){   
+  }elseif((!$synchash.vlc.IsPlaying) -and $synchash.Spotify_Status -eq 'Stopped' -and !$synchash.Webview2.CoreWebView2.IsDocumentPlayingAudio){   
     if($thisapp.Config.Verbose_Logging){
       if($synchash.Spotify_Status -eq 'Stopped' -and !$synchash.vlc.IsPlaying){
         write-ezlogs "Spotify_Status now equals 'Stopped'" -showtime
@@ -210,36 +217,47 @@ function Update-MediaTimer{
         write-ezlogs "VLC is_Playing is now false - '$($synchash.vlc.IsPlaying)'" -showtime
       }
     }
-    if($thisapp.config.Use_Spicetify){
-      try{
-        #start-sleep 1
-        write-ezlogs "Stopping Spotify playback with Invoke-RestMethod to 'http://127.0.0.1:8974/PAUSE'" -showtime -color cyan
-        Invoke-RestMethod -Uri 'http://127.0.0.1:8974/PAUSE' -UseBasicParsing  
-      }catch{
-        write-ezlogs "An exception occurred executing Invoke-RestMethod to 'http://127.0.0.1:8974/PAUSE'" -showtime -catcherror $_
-        if(Get-Process -Name 'Spotify*' -ErrorAction SilentlyContinue){Get-Process -Name 'Spotify*' | Stop-Process -Force -ErrorAction SilentlyContinue}             
-      }
-    }else{
-      try{
-        $devices = Get-AvailableDevices -ApplicationName $thisapp.config.App_Name
-        if($devices){
-          write-ezlogs 'Stopping Spotify playback with Suspend-Playback' -showtime -color cyan
-          Suspend-Playback -ApplicationName $thisapp.config.App_Name -DeviceId $devices.id
-        }else{
-          write-ezlogs 'Couldnt get Spotify Device id, using nuclear option and force stopping Spotify process' -showtime -warning
-          if(Get-Process -Name 'Spotify*' -ErrorAction SilentlyContinue){Get-Process -Name 'Spotify*' | Stop-Process -Force -ErrorAction SilentlyContinue}            
+    if(Get-Process -Name 'Spotify*' -ErrorAction SilentlyContinue){
+      if($thisapp.config.Use_Spicetify){
+        try{
+          #start-sleep 1
+          write-ezlogs "Stopping Spotify playback with Invoke-RestMethod to 'http://127.0.0.1:8974/PAUSE'" -showtime -color cyan
+          Invoke-RestMethod -Uri 'http://127.0.0.1:8974/PAUSE' -UseBasicParsing  
+        }catch{
+          write-ezlogs "An exception occurred executing Invoke-RestMethod to 'http://127.0.0.1:8974/PAUSE'" -showtime -catcherror $_
+          Get-Process -Name 'Spotify*' | Stop-Process -Force -ErrorAction SilentlyContinue            
+        }
+      }else{
+        try{
+          $devices = Get-AvailableDevices -ApplicationName $thisapp.config.App_Name
+          if($devices){
+            write-ezlogs 'Stopping Spotify playback with Suspend-Playback' -showtime -color cyan
+            Suspend-Playback -ApplicationName $thisapp.config.App_Name -DeviceId $devices.id
+          }else{
+            write-ezlogs 'Couldnt get Spotify Device id, using nuclear option and force stopping Spotify process' -showtime -warning
+            Get-Process -Name 'Spotify*' | Stop-Process -Force -ErrorAction SilentlyContinue            
+          }           
+        }catch{
+          write-ezlogs 'An exception occurred executing Suspend-Playback' -showtime -catcherror $_
+          Get-Process -Name 'Spotify*' | Stop-Process -Force -ErrorAction SilentlyContinue            
         }           
-      }catch{
-        write-ezlogs 'An exception occurred executing Suspend-Playback' -showtime -catcherror $_
-        if(Get-Process -Name 'Spotify*' -ErrorAction SilentlyContinue){Get-Process -Name 'Spotify*' | Stop-Process -Force -ErrorAction SilentlyContinue}             
-      }           
+      }
     }       
     if($thisapp.config.Current_Playlist.values -contains $last_played){
       $index_toremove = $thisapp.config.Current_Playlist.GetEnumerator() | where {$_.value -eq $last_played} | select * -ExpandProperty key
       $null = $thisapp.config.Current_Playlist.Remove($index_toremove)                         
     }     
-    $thisapp.config | Export-Clixml -Path $thisapp.Config.Config_Path -Force -Encoding UTF8
+    $thisapp.config | Export-Clixml -Path $thisapp.Config.Config_Path -Force -Encoding UTF8   
     try{   
+      if($thisApp.config.Chat_View){
+        $synchash.Chat_View_Button.IsEnabled = $false    
+        $synchash.chat_column.Width = "*"
+        $synchash.Chat_Icon.Kind="ChatRemove"
+        $synchash.Chat_View_Button.Opacity=0.7
+        $synchash.Chat_View_Button.ToolTip="Chat View Not Available"
+        $synchash.chat_WebView2.Visibility = 'Hidden'
+        $synchash.chat_WebView2.stop()        
+      }     
       if($thisapp.config.Shuffle_Playback){$next_item = $thisapp.config.Current_Playlist.values | where {$_} | Get-Random -Count 1}else{
         #$next_item = $thisApp.config.Current_Playlist.values | where {$_} | Select -First 1 
         $index_toget = ($thisapp.config.Current_Playlist.keys | measure -Minimum).Minimum 
@@ -261,13 +279,14 @@ function Update-MediaTimer{
           $syncHash.MainGrid.Background = $synchash.Window.TryFindResource('MainGridBackGradient')
         }else{
           write-ezlogs "| Next to play is $($next_selected_media.title)" -showtime         
-          if($next_selected_media.Spotify_Path){Play-SpotifyMedia -Media $next_selected_media -thisApp $thisapp -synchash $synchash -Script_Modules $Script_Modules -Show_notification -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command
+          if($next_selected_media.Spotify_Path){
+            Start-SpotifyMedia -Media $next_selected_media -thisApp $thisapp -synchash $synchash -Script_Modules $Script_Modules -Show_notification -media_contextMenu $synchash.Media_ContextMenu -PlayMedia_Command $synchash.PlayMedia_Command
           }elseif($next_selected_media.id){
             if(Get-Process -Name 'Spotify*' -ErrorAction SilentlyContinue){
               Get-Process -Name 'Spotify*' | Stop-Process -Force -ErrorAction SilentlyContinue
             } 
             $synchash.Spotify_Status = 'Stopped'           
-            Start-Media -media $next_selected_media -thisApp $thisapp -synchash $synchash -Show_notification -Script_Modules $Script_Modules -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -all_playlists $all_playlists
+            Start-Media -media $next_selected_media -thisApp $thisapp -synchash $synchash -Show_notification -Script_Modules $Script_Modules -media_contextMenu $synchash.Media_ContextMenu -PlayMedia_Command $synchash.PlayMedia_Command -all_playlists $all_playlists
           }          
         }          
         $synchash.timer.stop()     

@@ -41,6 +41,9 @@ function Start-KeyWatcher{
   
   $keyboard_Watcher_ScriptBlock = {  
     try{
+      if(!(Get-command -Module Spotishell)){
+        Import-Module "$($thisApp.Config.Current_folder)\Modules\Spotishell\Spotishell.psm1"
+      } 
       $volumeup_key = [Byte]175    
       $volumedown_key = [Byte]174
       $volumeMute = [Byte]173
@@ -78,48 +81,56 @@ function Start-KeyWatcher{
           if($next){
             $next_selected = $Null
             $next_selected = [hashtable]::Synchronized(@{}) 
-            $last_played = [hashtable]::Synchronized(@{})     
-            write-ezlogs "[Start-KeyWatcher] >>>> Next keypress received" -showtime -color cyan
-            $current_track = (Get-CurrentTrack -ApplicationName $thisApp.config.App_Name) 
-            if($current_track){
-              $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
-            }
-            try{     
-              if($current_track.is_playing){
-                $last_played.mediaid = $thisApp.config.Last_Played
-                if($devices){
-                  if($thisApp.config.Use_Spicetify){
-                    try{
-                      write-ezlogs "[NEXT_KEYPRESS] Stopping Spotify playback with Invoke-RestMethod to 'http://127.0.0.1:8974/PAUSE'" -showtime -color cyan
-                      Invoke-RestMethod -Uri 'http://127.0.0.1:8974/PAUSE' -UseBasicParsing  
+            $last_played = [hashtable]::Synchronized(@{})  
+            $last_played.mediaid = $thisApp.config.Last_Played        
+            $synchash.Youtube_WebPlayer_URL = $null
+            $synchash.Youtube_WebPlayer_title = $null
+            $synchash.Spotify_WebPlayer_title = $null
+            $synchash.Spotify_WebPlayer_URL = $null
+            $synchash.Start_media = $null                
+            write-ezlogs "[NEXT_KEYPRESS] >>>> Next keypress received" -showtime -color cyan
+            write-ezlogs "[NEXT_KEYPRESS] >>>> Stopping play timers" -showtime
+            $synchash.Window.Dispatcher.invoke([action]{                
+                $Synchash.Timer.stop()
+                $synchash.Start_media_timer.stop()  
+                $synchash.WebPlayer_Playing_timer.stop()  
+            })            
+            if($synchash.vlc.IsPlaying){
+              $synchash.VLC.stop()
+            }else{
+              try{   
+                $current_track = (Get-CurrentTrack -ApplicationName $thisApp.config.App_Name) 
+                if($current_track){
+                  $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
+                }              
+                if($current_track.is_playing){
+                  #$last_played.mediaid = $thisApp.config.Last_Played
+                  if($devices){
+                    if($thisApp.config.Use_Spicetify){
+                      try{
+                        write-ezlogs "[NEXT_KEYPRESS] Stopping Spotify playback with Invoke-RestMethod to 'http://127.0.0.1:8974/PAUSE'" -showtime -color cyan
+                        Invoke-RestMethod -Uri 'http://127.0.0.1:8974/PAUSE' -UseBasicParsing  
+                        $thisApp.Config.Spicetify = ''
+                      }catch{
+                        write-ezlogs "[NEXT_KEYPRESS] An exception occurred executing Invoke-RestMethod to 'http://127.0.0.1:8974/PAUSE' -- forcing Spotify to close (Nuclear option I know)" -showtime -catcherror $_
+                        if(Get-Process -Name 'Spotify' -ErrorAction SilentlyContinue){
+                          Get-Process -Name 'Spotify' | Stop-Process -Force -ErrorAction SilentlyContinue
+                        } 
+                        $thisApp.Config.Spicetify = ''            
+                      }
+                    }else{
+                      write-ezlogs "[NEXT_KEYPRESS] Stopping Spotify playback with Suspend-Playback -ApplicationName $($thisApp.config.App_Name) -DeviceId $($devices.id) " -showtime -color cyan
                       $thisApp.Config.Spicetify = ''
-                    }catch{
-                      write-ezlogs "[NEXT_KEYPRESS] An exception occurred executing Invoke-RestMethod to 'http://127.0.0.1:8974/PAUSE' -- forcing Spotify to close (Nuclear option I know)" -showtime -catcherror $_
-                      if(Get-Process -Name 'Spotify' -ErrorAction SilentlyContinue){
-                        Get-Process -Name 'Spotify' | Stop-Process -Force -ErrorAction SilentlyContinue
-                      } 
-                      $thisApp.Config.Spicetify = ''            
+                      Suspend-Playback -ApplicationName $thisApp.config.App_Name -DeviceId $devices.id   
                     }
-                  }else{
-                    write-ezlogs "[NEXT_KEYPRESS] Stopping Spotify playback with Suspend-Playback -ApplicationName $($thisApp.config.App_Name) -DeviceId $($devices.id) " -showtime -color cyan
-                    $thisApp.Config.Spicetify = ''
-                    Suspend-Playback -ApplicationName $thisApp.config.App_Name -DeviceId $devices.id   
-                  }
-                }          
-                $synchash.Spotify_Status = 'Stopped'  
-              }
-            }catch{
-              write-ezlogs "[NEXT_KEYPRESS] An exception occurred stopped Spotify" -showtime -catcherror $_
+                  }          
+                  $synchash.Spotify_Status = 'Stopped'  
+                }
+              }catch{
+                write-ezlogs "[NEXT_KEYPRESS] An exception occurred stopped Spotify" -showtime -catcherror $_
+              }               
             }      
-            try{                          
-              write-ezlogs "[NEXT_KEYPRESS] >>>> Stopping tick timer" -showtime
-              $synchash.Window.Dispatcher.invoke([action]{ 
-                  $Synchash.Timer.stop()
-              })                  
-              if($synchash.vlc.IsPlaying){
-                $last_played.mediaid = $thisApp.config.Last_Played
-                $synchash.VLC.stop()
-              }             
+            try{                                                         
               if([System.IO.File]::Exists($thisApp.Config.Config_Path)){
                 $thisApp.config = Import-Clixml -Path $thisApp.Config.Config_Path
                 if($thisApp.Config.Verbose_logging){write-ezlogs "[NEXT_KEYPRESS] | Importing config file $($thisApp.Config.Config_Path)" -showtime}
@@ -244,11 +255,17 @@ function Start-KeyWatcher{
               write-ezlogs "[NEXT_KEYPRESS] | Unable to get media information about next item $next_item!" -showtime -warning             
               return
             }else{
-              write-ezlogs "[NEXT_KEYPRESS] | Next to play is $($next_selected.media.title) - ID $($next_selected.media.id)" -showtime
+              if($next_selected.media.SongInfo.title){
+                $title = $next_selected.media.SongInfo.title
+              }else{
+                $title = $next_selected.media.title
+              }
+              write-ezlogs "[NEXT_KEYPRESS] | Next to play is $($title) - ID $($next_selected.media.id)" -showtime
+              #write-ezlogs "[NEXT_KEYPRESS] | Media: $($next_selected.media | out-string)" -showtime
               Add-Member -InputObject $thisApp.config -Name 'Last_Played' -Value ($next_selected.media.id) -MemberType NoteProperty -Force
-              if($next_selected.media.Spotify_Path){
-                $thisApp.Config.Spicetify.is_paused = $true
-                Play-SpotifyMedia -Media $next_selected.media -thisApp $thisApp -synchash $synchash                                       
+              if($next_selected.media.Spotify_Path -or $next_selected.media.Spotify_Launch_Path -or $next_selected.media.Source -match 'Spotify'){
+                Add-Member -InputObject $thisApp.config -Name 'Spicetify' -Value $true -MemberType NoteProperty -Force
+                Start-SpotifyMedia -Media $next_selected.media -thisApp $thisApp -synchash $synchash                                       
               }elseif($next_selected.media.id){
                 if(Get-Process -Name 'Spotify' -ErrorAction SilentlyContinue){
                   Get-Process -Name 'Spotify' | Stop-Process -Force -ErrorAction SilentlyContinue
@@ -266,6 +283,10 @@ function Start-KeyWatcher{
                 try{
                   if($synchash.vlc.IsPlaying){
                     $synchash.VLC.stop()
+                  }elseif($synchash.Youtube_WebPlayer_title -and $synchash.Youtube_WebPlayer_URL){
+                    $synchash.Youtube_WebPlayer_URL = $null
+                    $synchash.Youtube_WebPlayer_title = $null  
+                    $synchash.Youtube_WebPlayer_timer.start()
                   }else{
                     $current_track = (Get-CurrentTrack -ApplicationName $thisApp.config.App_Name) 
                   }

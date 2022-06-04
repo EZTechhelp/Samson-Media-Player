@@ -37,7 +37,7 @@ function Get-LocalMedia
     [switch]$Import_Profile,
     $thisApp,
     $all_installed_apps,
-    [switch]$Refresh_Global_Profile,
+    [switch]$Refresh_All_Media = $true,
     [switch]$Startup,
     [switch]$update_global,
     [switch]$Export_Profile,
@@ -50,50 +50,29 @@ function Get-LocalMedia
   $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidPathChars())
   $pattern = "[™$illegal]"
   $pattern2 = "[:$illegal]"
-  $AllMedia_Profile_Directory_Path = [System.IO.Path]::Combine($Media_Profile_Directory,"All-MediaProfile")
+  $AllMedia_Profile_Directory_Path = [System.IO.Path]::Combine($thisApp.Config.Media_Profile_Directory,"All-MediaProfile")
   if (!([System.IO.Directory]::Exists($AllMedia_Profile_Directory_Path))){
     $Null = New-Item -Path $AllMedia_Profile_Directory_Path -ItemType directory -Force
   } 
   $AllMedia_Profile_File_Path = [System.IO.Path]::Combine($AllMedia_Profile_Directory_Path,"All-Media-Profile.xml")
-  $media_pattern = [regex]::new('$(?<=\.(MP3|mp3|Mp3|mP3|mp4|MP4|Mp4|flac|FLAC|Flac|WAV|wav|Wav|AVI|Avi|avi|wmv|h264|mkv|webm|h265|mov|h264|mpeg|mpg4|movie|mpgx|vob|3gp|m2ts|aac))')
-  $media_formats = @(
-    '*.Mp3'
-    '*.mp4'
-    '*.wav'
-    '*.flac'
-    '*.h264'
-    '*.avi'
-    '*.mkv'
-    '*.webm'
-    '*.h265'
-    '*.mov'
-    '*.wmv'
-    '*.h264'
-    '*.mpeg'
-    '*.mpg4'
-    '*.movie'
-    '*.mpgx'
-    '*.vob'
-    '*.3gp'
-    '*.m2ts'
-    '*.aac'
-  )
-  $image_formats = @(
-    '*.jpg'
-    '*.png'
-    '*.Jpeg'
-  )
-  $media_pattern = [regex]::new('$(?<=\.(MP3|mp3|Mp3|mP3|mp4|MP4|Mp4|flac|FLAC|Flac|WAV|wav|Wav|AVI|Avi|avi|wmv|h264|mkv|webm|h265|mov|h264|mpeg|mpg4|movie|mpgx|vob|3gp|m2ts|aac))')
-  $image_pattern = [regex]::new('$(?<=\.(jpg|png|jpeg|PNG|JPG|JPEG))')
-  #Enable linked connections in order to access mapped drives when running under admin context
-  if(!$(Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name EnableLinkedConnections -ErrorAction SilentlyContinue)){
-    write-ezlogs " | Adding EnableLinkedConnections to registry" -showtime
-    New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name EnableLinkedConnections -Value 1 -PropertyType 'DWord'
-    write-ezlogs " | Restarting LanmanWorkstation service" -showtime
-    get-service LanmanWorkstation | Restart-Service -Force
-  }
+  $media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)avi|(?i)wmv|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mov|(?i)h264|(?i)mpeg|(?i)mpg4|(?i)movie|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))')
+  $image_pattern = [regex]::new('$(?<=\.((?i)jpg|(?i)png|(?i)jpeg))')
   if($startup -and $Import_Profile -and ([System.IO.FIle]::Exists($AllMedia_Profile_File_Path))){ 
-    if($Verboselog){write-ezlogs " | Importing Local Media Profile: $AllMedia_Profile_File_Path" -showtime -enablelogs}
+    $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator') 
+    #Enable linked connections in order to access mapped drives when running under admin context
+    if(!$IsAdmin){
+      try{ 
+        if(!$(Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name EnableLinkedConnections -ErrorAction SilentlyContinue)){
+          write-ezlogs " | Adding EnableLinkedConnections to registry" -showtime
+          New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name EnableLinkedConnections -Value 1 -PropertyType 'DWord'
+          write-ezlogs " | Restarting LanmanWorkstation service" -showtime
+          get-service LanmanWorkstation* | Restart-Service -Force
+        }
+      }catch{
+        write-ezlogs "An exception occurred setting EnableLinkedConnections registry" -showtime -catcherror $_
+      }
+    }  
+    if($Verboselog){write-ezlogs "[STARTUP] | Importing Local Media Profile: $AllMedia_Profile_File_Path" -showtime -enablelogs}
     [System.Collections.ArrayList]$Local_Available_Media = Import-CliXml -Path $AllMedia_Profile_File_Path
     return $Local_Available_Media    
   }elseif($startup -and $Import_Profile){
@@ -107,9 +86,19 @@ function Get-LocalMedia
     }
   }else{
     $directories = $Media_directories
-    $Local_Available_Media = New-Object -TypeName 'System.Collections.ArrayList'
-  }   
-  if($directories){  
+    if(!$Refresh_All_Media){
+      if($Verboselog){write-ezlogs " | Importing Local Media Profile to process differences: $AllMedia_Profile_File_Path" -showtime -enablelogs}
+      [System.Collections.ArrayList]$Local_Available_Media = Import-CliXml -Path $AllMedia_Profile_File_Path
+    }
+  } 
+  if(!$Local_Available_Media -or @($Local_Available_Media).count -lt 1){
+    if($Verboselog){write-ezlogs " | Creating new Array list for Local_Available_Media" -showtime -enablelogs}
+    $Local_Available_Media = New-Object -TypeName 'System.Collections.ArrayList'  
+  }  
+  if($directories){
+    if(!$Refresh_All_Media){
+      $directories = $directories | where {$Local_Available_Media.directory.fullname -notcontains $_}
+    }      
     foreach($directory in $directories){
       if($hash.Window.isVisible){
         $hash.Window.Dispatcher.invoke([action]{
@@ -118,8 +107,26 @@ function Get-LocalMedia
         },"Normal")
       }      
       if([System.IO.Directory]::Exists($directory)){
-        if($Verboselog){write-ezlogs " | Scanning for media files in directory: $directory" -showtime -enablelogs}
-        $media_files = (robocopy $directory 'Doesntexist' $media_formats /L /E /FP /NS /NC /NjH /NJS /NDL /NP /MT:20).trim()       
+        if($Verboselog){write-ezlogs " | Scanning for media files in directory: $directory" -showtime -enablelogs}     
+        if($PSVersionTable.PSVersion.Major -gt 5){ 
+          try{ 
+            $searchOptions = [System.IO.EnumerationOptions]::New()
+            $searchOptions.RecurseSubdirectories = $true
+            $searchOptions.IgnoreInaccessible = $true   
+            $searchoptions.AttributesToSkip = "Hidden,System,ReparsePoint,Temporary"
+            $media_files = [System.IO.Directory]::EnumerateFiles($directory,'*',$searchOptions) | where {$_ -match $media_pattern}
+          }catch{
+            write-ezlogs "An exception occurred attempting to enumerate files for directory $($directory)" -showtime -catcherror $_        
+          }    
+        }else{
+          try{
+            #$media_files = [System.IO.Directory]::EnumerateFiles($directory,'*','AllDirectories') | where {$_ -match $media_pattern}  
+            $media_files = cmd /c dir $directory /s /b /a-d | Where{$_ -match $media_pattern}  
+          }catch{
+            write-ezlogs "An exception occurred attempting to enumerate files for directory $($directory)" -showtime -catcherror $_
+          } 
+        }                    
+        #$media_files = (robocopy $directory 'Doesntexist' $media_formats /L /E /FP /NS /NC /NjH /NJS /NDL /NP /MT:20).trim()       
       }elseif([System.IO.File]::Exists($directory)){
         if($Verboselog){write-ezlogs " | Found Media file: $directory" -showtime -enablelogs}
         $media_files = $directory
@@ -127,13 +134,12 @@ function Get-LocalMedia
       if(-not [string]::IsNullOrEmpty($media_files)){ 
         #$found_media = $media_formats | %{ Get-ChildItem -File $mediaDirectory -Filter $_ -Recurse }
         try{
-          ($media_files).trim() | foreach {  
+          foreach ($m in $media_files) {  
             $media = $Null
-            if([System.IO.File]::Exists($_)){  
-              $Media = [System.IO.FileInfo]::new($_) | Where{$_.Extension -match $media_pattern}             
+            if([System.IO.File]::Exists($m)){  
+              $Media = [System.IO.FileInfo]::new($m) | Where{$_.Extension -match $media_pattern}             
             }           
             if($Media){              
-              #$Media = [System.IO.FileInfo]::new($_)
               $name = $null           
               $name = $media.BaseName
               $url = $null
@@ -154,7 +160,8 @@ function Get-LocalMedia
                 $images = $null                
                 if([System.IO.Directory]::Exists($media.Directory)){
                   $directory_filecount = @([System.IO.Directory]::GetFiles("$($media.Directory)",'*','AllDirectories') | Where{$_ -match $media_pattern}).count
-                  $images = (robocopy $media.Directory 'Doesntexist' $image_formats /L /E /FP /NS /NC /NjH /NJS /NDL /NP /MT:20).trim() | where {$_}
+                  $images = [System.IO.Directory]::EnumerateFiles($media.Directory,'*','TopDirectoryOnly') | where {$_ -match $image_pattern}
+                  #$images = (robocopy $media.Directory 'Doesntexist' $image_formats /L /E /FP /NS /NC /NjH /NJS /NDL /NP /MT:20).trim() | where {$_}
                 }                
                 if($images){
                   $covert_art = $images | where {$_ -match $name}                  
@@ -163,14 +170,15 @@ function Get-LocalMedia
                   }                  
                   if(!$covert_art){
                     $covert_art = $images | where {$_ -match 'album'}
-                  }
-                  if(!$covert_art){
-                    $covert_art = $images | select -first 1
                   }                  
                 }
                 $songinfo = $Null
                 $songinfo = Get-SongInfo -path $url
-                $songinfo.Artist = $(Get-Culture).TextInfo.ToTitleCase($songinfo.Artist).trim() 
+                if(!$songinfo.Artist -and $directory){
+                  $songinfo.Artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($directory))).trim()  
+                }else{
+                  $songinfo.Artist = $(Get-Culture).TextInfo.ToTitleCase($songinfo.Artist).trim() 
+                }               
                 if($Verboselog){write-ezlogs ">>>> Found local media file $name" -showtime -color Cyan}
                 if($Verboselog){write-ezlogs " | Type $($type)" -showtime}
                 if($Verboselog){write-ezlogs " | Title $($Songinfo.title)" -showtime}
@@ -179,6 +187,7 @@ function Get-LocalMedia
              
                 $newRow = New-Object PsObject -Property @{
                   'name' = $name
+                  'title' = $Songinfo.title
                   'encodedTitle' = $encodedTitle
                   'id' = $encodedTitle
                   'url' = $url
@@ -191,7 +200,6 @@ function Get-LocalMedia
                   'Profile_Path' = $AllMedia_Profile_File_Path
                   'Profile_Date_Added' = $(Get-Date -Format 'MM-dd-yyyy hh:mm:ss:tt')
                   'Source' = 'Local'
-                  'LaunchCommand' = ""
                 }              
                 $null = $Local_Media_output.Add($newRow) 
                 $null = $Local_Available_Media.add($Local_Media_output)                                         
@@ -204,7 +212,7 @@ function Get-LocalMedia
           }
           #$found_media = (Get-childitem -path "$($mediaDirectory)\*" -Filter $media_formats -Recurse -force)
         }catch{
-          write-ezlogs "An exception occurrred processesing media files $($media_files | out-string)" -showtime -catcherror $_
+          write-ezlogs "An exception occurrred processesing media files - Type: $($Media_files.gettype() | out-string) -  $($media_files | out-string)" -showtime -catcherror $_
         }
       }else{
         write-ezlogs "Provided Media Directory $Directory is not valid!" -showtime -warning

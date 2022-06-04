@@ -1,44 +1,14 @@
-<TabItem 
-xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
-xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-xmlns:sys="clr-namespace:System;assembly=mscorlib"
-xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
-xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
-xmlns:wf="clr-namespace:Microsoft.Web.WebView2.WinForms;assembly=Microsoft.Web.WebView2.WinForms"
-xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
-xmlns:actions="clr-namespace:MahApps.Metro.Actions;assembly=MahApps.Metro"
-xmlns:wfs="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
-xmlns:elementhost="clr-namespace:System.Windows.Forms.Integration.ElementHost;assembly=WindowsFormsIntegration"
-xmlns:Dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro" 
-xmlns:aero="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
-xmlns:AttachedBehavior="clr-namespace:ScrollAnimateBehavior.AttachedBehaviors;assembly=AnimatedScrollViewer"
-xmlns:controlzEx="urn:controlzex"
-xmlns:PresentationOptions="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
-xmlns:dd="clr-namespace:GongSolutions.Wpf.DragDrop;assembly=GongSolutions.Wpf.DragDrop"
-Header="Youtube Browser" 
-BorderBrush="gray" 
-Visibility="Visible" 
-Name="Youtube_Tabitem"
-IsEnabled="true"
+<TabItem
+ Header="Youtube Browser"
+         BorderBrush="gray"
+         Visibility="Visible"
+         Name="Youtube_Tabitem"
+         IsEnabled="true"
 >
-<TabItem.Resources>      
-	  <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-			<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.GridSplitter.xaml"  />
-                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
-                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />	
-			 <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Dark.Blue.xaml" /> 
-	         <ResourceDictionary Source="Views/Styles.xaml" />
-            </ResourceDictionary.MergedDictionaries>		
-        </ResourceDictionary> 
-</TabItem.Resources> 		
 	<Grid Background="black" VerticalAlignment="stretch" HorizontalAlignment="stretch" Opacity="1" Margin="0,0,0,0">
-		<mah:ProgressRing Foreground="White" Name='Youtube_Progress_Ring' IsActive="false" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Panel.ZIndex="2"/>	
-		<DataGrid Name="YoutubeTable" Margin="5,36,5,15" VerticalAlignment="Top" HorizontalAlignment="stretch" Opacity="1" SelectionUnit="FullRow" SelectionMode="Extended" AreRowDetailsFrozen="True" ScrollViewer.CanContentScroll="false"  ItemsSource="{Binding View, IsAsync=True}" EnableRowVirtualization="True" EnableColumnVirtualization = "True" PresentationOptions:Freeze="True" MaxHeight="1600" MaxWidth="2560" VirtualizingStackPanel.ScrollUnit="Pixel" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Standard" AllowDrop="true" >
-<!--             <DataGrid.GroupStyle>
+		<mah:ProgressRing Foreground="White" Name='Youtube_Progress_Ring' IsActive="false" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Panel.ZIndex="2"/>
+		<DataGrid Name="YoutubeTable" Margin="5,36,5,15" VerticalAlignment="Top" HorizontalAlignment="stretch" Opacity="1" SelectionUnit="FullRow" SelectionMode="Extended" AreRowDetailsFrozen="True" ScrollViewer.CanContentScroll="false" ItemsSource="{Binding View, IsAsync=True}" EnableRowVirtualization="True" EnableColumnVirtualization="True" PresentationOptions:Freeze="True" MaxHeight="1600" MaxWidth="2560" VirtualizingStackPanel.ScrollUnit="Pixel" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Standard" AllowDrop="true">
+			<!--             <DataGrid.GroupStyle>
                 <GroupStyle ContainerStyle="{StaticResource MahApps.Styles.GroupItem.DataGrid}">
                     <GroupStyle.HeaderTemplate>
                         <DataTemplate>
@@ -51,99 +21,99 @@ IsEnabled="true"
                     </GroupStyle.HeaderTemplate>
                 </GroupStyle>
             </DataGrid.GroupStyle> -->
-				<DataGrid.Resources>  
-					<Style TargetType="ScrollViewer" >
-						<Setter Property="AttachedBehavior:ScrollAnimationBehavior.IsEnabled" Value="True" />
-						<Setter Property="AttachedBehavior:ScrollAnimationBehavior.TimeDuration" Value="00:00:00.30" />
-						<Setter Property="AttachedBehavior:ScrollAnimationBehavior.PointsToScroll" Value="35" />
-					</Style>				
-				</DataGrid.Resources>			
-				<DataGrid.CellStyle>
-					<Style TargetType="DataGridCell">
-						<Style.Triggers>
-							<Trigger Property="IsSelected"
-										Value="True">
-								<Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}" />
-								<Setter Property="BorderThickness" Value="0" />	
-								<Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"  />
-								<Setter Property="BorderBrush" Value="Transparent" />
-							</Trigger>
-						</Style.Triggers>
-					</Style>
-				</DataGrid.CellStyle>
-				<DataGrid.RowStyle>
-					<Style TargetType="DataGridRow">
-						<Style.Triggers>
-							<Trigger Property="IsSelected"
-										Value="True">
-							<Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}" />		
-                            <Setter Property="BorderThickness" Value="0" />	
-							<Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}" />
-							<Setter Property="BorderBrush" Value="Transparent" />							
-							</Trigger>					
-						</Style.Triggers>
-					</Style>
-				</DataGrid.RowStyle>			
-				<DataGrid.GroupStyle>
-					<GroupStyle>
-						<GroupStyle.ContainerStyle>
-							<Style TargetType="{x:Type GroupItem}">
-								<Setter Property="Template">
-									<Setter.Value>
-										<ControlTemplate>
-											<Expander IsExpanded="True" BorderThickness="0,0,0,1" Margin = "0,5,0,5" Foreground = "White"  mah:HeaderedControlHelper.HeaderFontWeight="Bold" mah:HeaderedControlHelper.HeaderBackground="Black" mah:HeaderedControlHelper.HeaderForeground="LightGray"  mah:HeaderedControlHelper.HeaderFontSize="14"  Header="{Binding Path=Name,IsAsync=True}" Name="YoutubeTable_Expander"  ExpandDirection = "Down" PresentationOptions:Freeze="True" ScrollViewer.CanContentScroll="false" Style="{StaticResource MetroExpanderWithNormalCase}">										
-												<ItemsPresenter />
-											</Expander>
-										</ControlTemplate>
-									</Setter.Value>
-								</Setter>
-							</Style>
-						</GroupStyle.ContainerStyle>
-					</GroupStyle>
-				</DataGrid.GroupStyle>					
+			<DataGrid.Resources>
+				<Style TargetType="ScrollViewer">
+					<Setter Property="AttachedBehavior:ScrollAnimationBehavior.IsEnabled" Value="True"/>
+					<Setter Property="AttachedBehavior:ScrollAnimationBehavior.TimeDuration" Value="00:00:00.30"/>
+					<Setter Property="AttachedBehavior:ScrollAnimationBehavior.PointsToScroll" Value="35"/>
+				</Style>
+			</DataGrid.Resources>
+			<DataGrid.CellStyle>
+				<Style TargetType="DataGridCell">
+					<Style.Triggers>
+						<Trigger Property="IsSelected"
+						         Value="True">
+							<Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}"/>
+							<Setter Property="BorderThickness" Value="0"/>
+							<Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>
+							<Setter Property="BorderBrush" Value="Transparent"/>
+						</Trigger>
+					</Style.Triggers>
+				</Style>
+			</DataGrid.CellStyle>
+			<DataGrid.RowStyle>
+				<Style TargetType="DataGridRow">
+					<Style.Triggers>
+						<Trigger Property="IsSelected"
+						         Value="True">
+							<Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}"/>
+							<Setter Property="BorderThickness" Value="0"/>
+							<Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>
+							<Setter Property="BorderBrush" Value="Transparent"/>
+						</Trigger>
+					</Style.Triggers>
+				</Style>
+			</DataGrid.RowStyle>
+			<DataGrid.GroupStyle>
+				<GroupStyle>
+					<GroupStyle.ContainerStyle>
+						<Style TargetType="{x:Type GroupItem}">
+							<Setter Property="Template">
+								<Setter.Value>
+									<ControlTemplate>
+										<Expander IsExpanded="True" BorderThickness="0,0,0,1" Margin="0,5,0,5" Foreground="White" mah:HeaderedControlHelper.HeaderFontWeight="Bold" mah:HeaderedControlHelper.HeaderBackground="Black" mah:HeaderedControlHelper.HeaderForeground="LightGray" mah:HeaderedControlHelper.HeaderFontSize="14" Header="{Binding Path=Name}" Uid="{Binding}" Name="YoutubeTable_Expander" ExpandDirection="Down" ScrollViewer.CanContentScroll="false" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Standard" PresentationOptions:Freeze="True" Style="{StaticResource MetroExpanderWithNormalCase}">
+											<ItemsPresenter/>
+										</Expander>
+									</ControlTemplate>
+								</Setter.Value>
+							</Setter>
+						</Style>
+					</GroupStyle.ContainerStyle>
+				</GroupStyle>
+			</DataGrid.GroupStyle>
 			<DataGrid.Columns>
-				<DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}" EditingElementStyle="{DynamicResource MetroDataGridCheckBox}" Header="Select" Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay,IsAsync=True}" />						
-			</DataGrid.Columns>	
-<!-- 				<DataGrid.Template>
+				<DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}" EditingElementStyle="{DynamicResource MetroDataGridCheckBox}" Header="Select" Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay,IsAsync=True,UpdateSourceTrigger=PropertyChanged}"/>
+			</DataGrid.Columns>
+			<!-- 				<DataGrid.Template>
 					<ControlTemplate>
 						<ScrollViewer  AttachedBehavior:ScrollAnimationBehavior.IsEnabled="True" AttachedBehavior:ScrollAnimationBehavior.TimeDuration="00:00:00.30" AttachedBehavior:ScrollAnimationBehavior.PointsToScroll="35" VerticalScrollBarVisibility="Visible" ScrollViewer.CanContentScroll="true" VirtualizingPanel.VirtualizationMode="Standard" VirtualizingPanel.IsVirtualizing="True" >
 							<ItemsPresenter  />
 						</ScrollViewer>
 					</ControlTemplate>
-				</DataGrid.Template>	 -->		
+				</DataGrid.Template>	 -->
 		</DataGrid>
 		<Label Content="Filter" Foreground="#ffffff" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top"/>
-		<TextBox Name="YoutubeFilterTextBox" Background = "lightgray" HorizontalAlignment="Left" Height="26" Margin="78,5,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="172"/>
-		 <Button Name='Add_youtubeMedia_Button' FontSize="12" FontWeight="Bold" Margin="300,5,0,0"  Height="25" Style="{StaticResource DetailButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Left" IsEnabled="true">
+		<TextBox Name="YoutubeFilterTextBox" Background="lightgray" HorizontalAlignment="Left" Height="26" Margin="78,5,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="172"/>
+		<Button Name='Add_youtubeMedia_Button' FontSize="12" FontWeight="Bold" Margin="300,5,0,0" Height="25" Style="{StaticResource DetailButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Left" IsEnabled="true">
 			<StackPanel Orientation="Horizontal">
 				<iconPacks:PackIconMaterial Kind="Plus"
-									Margin="4 4 2 4"
-									Width="16"
-									Height="16"
-									VerticalAlignment="Center" />
-					<TextBlock Text="Add Youtube Video" Margin="2 2 2 2" VerticalAlignment="Center" />
-				</StackPanel>
-			</Button>		
-		<StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Margin="0,0,0,0" VerticalAlignment="Top" >
-<!-- 		<Button Height="23" HorizontalAlignment="Left"  
+				                            Margin="4 4 2 4"
+				                            Width="16"
+				                            Height="16"
+				                            VerticalAlignment="Center"/>
+				<TextBlock Text="Add Youtube Video" Margin="2 2 2 2" VerticalAlignment="Center"/>
+			</StackPanel>
+		</Button>
+		<StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Margin="0,0,0,0" VerticalAlignment="Top">
+			<!-- 		<Button Height="23" HorizontalAlignment="Left"  
 		Name="Youtube_btnFirst" VerticalAlignment="Bottom" Width="40" 
 		Content="&lt;&lt;" Opacity="0.75" Margin="5,0,0,0"/> -->
-		<Button Height="23"  VerticalAlignment="Top" 
-		Name="Youtube_btnPrev" Width="40" 
-		Opacity="0.75" Content="&lt;" Margin="5,5,0,0"/>
-		<Label Name="Youtube_lblpageInformation" HorizontalContentAlignment="Center" 
-		HorizontalAlignment="Left" Height="30" Width="60" 
-		VerticalContentAlignment="Center" VerticalAlignment="Top" />
-		<Button Height="23" HorizontalAlignment="Right" 
-		Name="Youtube_btnNext" VerticalAlignment="Top" Width="40" 
-		Content="&gt;" Opacity="0.75" Margin="5,5,0,0"/>
-<!-- 		<Button Height="23" HorizontalAlignment="Right"  
+			<Button Height="23" VerticalAlignment="Top"
+			        Name="Youtube_btnPrev" Width="40"
+			        Opacity="0.75" Content="&lt;" Margin="5,5,0,0"/>
+			<Label Name="Youtube_lblpageInformation" HorizontalContentAlignment="Center"
+			       HorizontalAlignment="Left" Height="30" Width="60"
+			       VerticalContentAlignment="Center" VerticalAlignment="Top"/>
+			<Button Height="23" HorizontalAlignment="Right"
+			        Name="Youtube_btnNext" VerticalAlignment="Top" Width="40"
+			        Content="&gt;" Opacity="0.75" Margin="5,5,0,0"/>
+			<!-- 		<Button Height="23" HorizontalAlignment="Right"  
 		VerticalAlignment="Bottom" Width="40" Name="Youtube_btnLast" 
 		 Opacity="0.75" Content="&gt;&gt;" Margin="5,0,0,0"/> -->
-		<ComboBox Name="Youtube_cbNumberOfRecords" HorizontalAlignment="Left"  
-		VerticalAlignment="Top" Width="120"  SelectedIndex="0" Margin="5,5,0,0"
-		 Opacity="0.75"/>
-		<Label Name ="Youtube_Table_Total_Media" Content="Total Media |"  HorizontalAlignment="Right"  FontSize="16" Margin="10,0,0,0" Foreground="#ffffff" VerticalAlignment="Top" />		 
-		</StackPanel>		
-	</Grid>	
+			<ComboBox Name="Youtube_cbNumberOfRecords" HorizontalAlignment="Left"
+			          VerticalAlignment="Top" Width="120" SelectedIndex="0" Margin="5,5,0,0"
+			          Opacity="0.75"/>
+			<Label Name="Youtube_Table_Total_Media" Content="Total Media |" HorizontalAlignment="Right" FontSize="16" Margin="10,0,0,0" Foreground="#ffffff" VerticalAlignment="Top"/>
+		</StackPanel>
+	</Grid>
 </TabItem>

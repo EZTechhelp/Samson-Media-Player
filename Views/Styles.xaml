@@ -45,10 +45,14 @@ xmlns:system="clr-namespace:System;assembly=mscorlib"
         <Style x:Key="DefaultComboBoxStyle" TargetType="{x:Type ComboBox}">
             <Setter Property="ItemContainerStyle" Value="{DynamicResource MetroComboBoxItem}" />
         </Style>
-   <LinearGradientBrush x:Key="MainGridGradient" PresentationOptions:Freeze="True"  EndPoint="0.5,1" StartPoint="0.5,0">
+        <LinearGradientBrush x:Key="MainGridGradient"  PresentationOptions:Freeze="True" EndPoint="0.5,1" StartPoint="0.5,0">
+            <GradientStop Color="Black" Offset="0.0" />
+            <GradientStop Offset="1" Color="#FF0A2347"></GradientStop>
+        </LinearGradientBrush>		
+<!--    <LinearGradientBrush x:Key="MainGridGradient" PresentationOptions:Freeze="True"  EndPoint="0.5,1" StartPoint="0.5,0">
 		<GradientStop Color="Black"/>
 	   <GradientStop Color="#FF282829" Offset="0.06"/>
-	</LinearGradientBrush>		
+	</LinearGradientBrush> -->		
     <Style x:Key="MahApps.Styles.GridSplitter" TargetType="{x:Type GridSplitter}">
         <Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Gray8}" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -124,7 +128,7 @@ xmlns:system="clr-namespace:System;assembly=mscorlib"
 		    <Setter Property="OverridesDefaultStyle" Value="True"/>
 			<Setter Property="Background" Value="DarkBlue" />
 			<Setter Property="BorderBrush" Value="Gray" />
-			<Setter Property="Foreground" Value="White" />
+			<Setter Property="Foreground" Value="#FFF5F5F5" />
 			<Setter Property="Margin" Value="5"/>
 			<Setter Property="Template">
 				<Setter.Value>
@@ -132,7 +136,7 @@ xmlns:system="clr-namespace:System;assembly=mscorlib"
 						<Border Name="border" 
 							BorderThickness="1"
 							Padding="4,2" 
-							BorderBrush="DarkGray" 
+							BorderBrush="#FF0061AD" 
 							CornerRadius="1" 
 							PresentationOptions:Freeze="True"
 							Background="{TemplateBinding Background}">
@@ -149,7 +153,7 @@ xmlns:system="clr-namespace:System;assembly=mscorlib"
 					<Trigger Property = "IsEnabled" Value="False">
 						<Setter Property = "Background" Value="DarkGray"/>
 						<Setter Property = "Opacity" Value="0.8"/>
-						<Setter Property= "Foreground" Value="DarkGray"/>
+						<Setter Property= "Foreground" Value="Gray"/>
 					</Trigger>						
                     </ControlTemplate.Triggers>						
                 </ControlTemplate>
@@ -401,7 +405,7 @@ xmlns:system="clr-namespace:System;assembly=mscorlib"
 					</Trigger>
 					<Trigger Property = "IsEnabled" Value="False">
 						<Setter Property = "Background" Value="DarkGray"/>
-						<Setter Property= "Foreground" Value="White"/>
+						<Setter Property= "Foreground" Value="Gray"/>
 						<Setter Property="Effect" >
 							<Setter.Value>
 								<DropShadowEffect ShadowDepth="0" PresentationOptions:Freeze="True" />
@@ -530,8 +534,8 @@ xmlns:system="clr-namespace:System;assembly=mscorlib"
 				<Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>
 			 </Style>  
 	 
-<!--              <Style x:Key="DropDownMenuitemStyle" BasedOn="{StaticResource MahApps.Styles.MenuItem}"  TargetType="MenuItem">
-				 <Setter Property="OverridesDefaultStyle" Value="True"/>
+         <Style x:Key="DropDownMenuitemStyle" BasedOn="{StaticResource MahApps.Styles.MenuItem}"  TargetType="MenuItem">
+			<Setter Property="OverridesDefaultStyle" Value="True"/>
             <Setter Property="Background" Value="Black"/>
             <Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/> 
             <Setter Property="Template">
@@ -545,7 +549,7 @@ xmlns:system="clr-namespace:System;assembly=mscorlib"
                     </ControlTemplate>
                 </Setter.Value>
                 </Setter>
-            </Style>  -->	
+          </Style>	
    <system:Double x:Key="MahApps.Sizes.ScrollBar.Width">10</system:Double>	
     <Style x:Key="MahApps.Styles.RepeatButton.ScrollBarSmall" TargetType="{x:Type RepeatButton}">
         <Setter Property="Background" Value="Transparent" />
@@ -822,11 +826,14 @@ xmlns:system="clr-namespace:System;assembly=mscorlib"
 		<!-- <GradientStop Color="#FF0A2347" Offset="0.06"/> -->
 		<GradientStop Color="#FF0A2347" Offset="0.1"/>
 	</LinearGradientBrush>
-	<LinearGradientBrush x:Key="MainGridBackGradient" PresentationOptions:Freeze="True"  EndPoint="0.5,1" StartPoint="0.5,0">
-		<GradientStop Color="Black" Offset="0"/>
-		<!-- <GradientStop Color="#FF0A2347" Offset="0.06"/> -->
-		<GradientStop Color="#FF0A2347" Offset="0.1"/>
+	<LinearGradientBrush x:Key="MainGridBackGradient"  PresentationOptions:Freeze="True" EndPoint="0.5,1" StartPoint="0.5,0">
+		<GradientStop Color="Black" Offset="0.0" />
+		<GradientStop Offset="0.5" Color="#FF0A2347"></GradientStop>
 	</LinearGradientBrush>	
+<!-- 	<LinearGradientBrush x:Key="MainGridBackGradient" PresentationOptions:Freeze="True"  EndPoint="0.5,1" StartPoint="0.5,0">
+		<GradientStop Color="Black" Offset="0"/>
+		<GradientStop Color="#FF0A2347" Offset="0.1"/>
+	</LinearGradientBrush>	 -->
 	<LinearGradientBrush x:Key="ImageGridBackGradient" PresentationOptions:Freeze="True"  EndPoint="0,1" StartPoint="0,0">
 		<GradientStop Color="Transparent" Offset="0"/>
 		<GradientStop Color="#050607" Offset="0.6"/>

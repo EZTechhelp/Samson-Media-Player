@@ -22,14 +22,26 @@ function Get-SpotifyAccessToken {
   )
 
   # Get Application from the Store
-  $Application = Get-SpotifyApplication -Name $ApplicationName
+  try{
+    $Application = Get-SpotifyApplication -Name $ApplicationName
+  }catch{
+    write-ezlogs "An exception occurred getting Spotify Application $Application" -showtime -catcherror $_
+  }
+  
 
   # If Token is available
-  if ($Application.Token) {
+  if ($Application.Token.access_token) {
 
     # Check that Access Token is not expired
-    $Expires = [DateTime]::ParseExact($Application.Token.Expires, 'u', $null)
-    if ((Get-Date) -le $Expires.AddSeconds(-10)) {
+    try{       
+      $Expires = [DateTime]::ParseExact($Application.Token.Expires, 'u', $null)
+      $Expire_status = (Get-Date) -le $Expires.AddSeconds(-10)
+      
+    }catch{
+      write-ezlogs "An exception occurred parsing token expiration from application $($application | out-string)" -showtime -catcherror $_
+    }
+    
+    if ($Expire_status) {
       # Access Token is still valid, then use it
       return $Application.Token.access_token
     }

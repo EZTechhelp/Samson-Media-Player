@@ -34,6 +34,7 @@ function Get-Playlists
   param (
     [switch]$Clear,
     [switch]$Startup,
+    [switch]$PlayLink_OnDrop = $thisApp.Config.PlayLink_OnDrop,
     $synchash,
     $thisApp,
     $media_contextMenu,
@@ -64,18 +65,18 @@ function Get-Playlists
   $syncHash.PlayQueue_TreeView.items.Clear()
   $syncHash.Playlists_TreeView.items.Clear()
   
-  $Media_ContextMenu = $synchash.Media_ContextMenu
   if($Import_Playlists_Cache){
     $all_playlists = [hashtable]::Synchronized(@{})
     $all_playlists.playlists = Import-Clixml "$($thisApp.config.Playlist_Profile_Directory)\\All-Playlists-Cache.xml"
   }elseif($startup -or (@($all_playlists).count -lt 2)){
     $all_playlists = [hashtable]::Synchronized(@{})
     $all_playlists.playlists = New-Object -TypeName 'System.Collections.ArrayList'
-    (robocopy $Playlist_Profile_Directory 'Doesntexist' '*Playlist.xml' /L /E /FP /NS /NC /NjH /NJS /NDL /NP /MT:20).trim() | foreach { 
+    $playlist_pattern = [regex]::new('$(?<=((?i)Playlist.xml))')
+    [System.IO.Directory]::EnumerateFiles($Playlist_Profile_Directory,'*','AllDirectories') | where {$_ -match $playlist_pattern} | foreach { 
       $profile_path = $null
       if([System.IO.File]::Exists($_)){
         $profile_path = $_
-        if($Verboselog){write-ezlogs ">>>> Importing Playlist profile $profile_path" -showtime -enablelogs -color cyan}
+        write-ezlogs ">>>> Importing Playlist profile $profile_path" -showtime -enablelogs -color cyan
         try{
           if([System.IO.File]::Exists($profile_path)){
             $Playlist_profile = Import-CliXml -Path $profile_path
@@ -89,8 +90,7 @@ function Get-Playlists
             $Null = $all_playlists.playlists.Add($Playlist_profile)
           }catch{
             write-ezlogs "An exception occurred adding playlist ($Playlist_encodedTitle) from path $profile_path" -showtime -catcherror $_
-          }
-              
+          }  
         }               
       }
     }
@@ -110,12 +110,13 @@ function Get-Playlists
         'FontStyle' = 'Normal'
         'FontColor' = 'White'
         'FontWeight' = 'Bold'
-        'FontSize' = 12          
+        'FontSize' = 14          
         'Status_Msg' = ''
         'Status_FontStyle' = ''
         'Status_FontColor' = ''
         'Status_FontWeight' = ''
-        'Status_FontSize' = ''          
+        'Status_FontSize' = ''
+        'TreeViewBD' = '1'          
       }    
       $Current_Playlist.Name = 'Play_Queue'
       $Current_Playlist.isExpanded = $true     
@@ -125,56 +126,165 @@ function Get-Playlists
         synchash=$synchash;
         thisScript=$thisScript;
         thisApp=$thisApp
-        PlayMedia_Command = $PlayMedia_Command
-        PlaySpotify_Media_Command = $PlaySpotify_Media_Command
+        PlayMedia_Command = $synchash.PlayMedia_Command
         Playlist = 'Play Queue'
         All_Playlists = $all_playlists
       }    
-      $null = $Current_Playlist.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)
+      $null = $Current_Playlist.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Media_ContextMenu)
       #write-ezlogs $($all_playlists.playlists | out-string)
       if(($thisApp.config.Current_Playlist.GetType()).name -notmatch 'OrderedDictionary'){$thisApp.config.Current_Playlist = ConvertTo-OrderedDictionary -hash ($thisApp.config.Current_Playlist)}
       foreach($item in $thisApp.config.Current_Playlist.values | where {$_}){
         #$Track = $synchash.MediaTable.Items | where {$_.id -eq $item}
         $Title = $Null
         $track = $null
+        $artist = $null
+        $track_name = $null
         if($Verboselog){write-ezlogs "[Get-Playlists] | Looking for track with ID $($item)" -showtime} 
         $Track = $all_playlists.playlists.Playlist_tracks | where {$_.id -eq $item} | select -Unique     
         if(!$Track){
           $Track = $synchash.All_local_Media | where {$_.id -eq $item} | select -Unique 
+          
         }            
         if(!$Track){
-          $Track = $synchash.All_Spotify_Media.playlist_tracks | where {$_.id -eq $item} | select -Unique 
+          $Track = $synchash.All_Spotify_Media.playlist_tracks | where {$_.id -eq $item} | select -Unique
+           
         }
         if(!$Track){
           $Track = $synchash.All_Youtube_Media.playlist_tracks | where {$_.id -eq $item} | select -Unique 
+          if(!$Track){
+            $AllYoutube_Profile_File_Path = [System.IO.Path]::Combine($thisapp.Config.Media_Profile_Directory,'All-Youtube_MediaProfile','All-Youtube_Media-Profile.xml') 
+            if([System.IO.File]::Exists($AllYoutube_Profile_File_Path)){
+              $all_youtube_profile = Import-Clixml $AllYoutube_Profile_File_Path
+              $Track = $all_youtube_profile.playlist_tracks | where {$_.id -eq $item} | select -Unique
+            }
+          }
         } 
         $playlist = $all_playlists.playlists | where {$_.Playlist_tracks.id -eq $item} | select -Unique   
-        if($Track.Spotify_path){
-          $Title = "$($Track.Artist_Name) - $($Track.Track_Name)"
+        #write-ezlogs ">>>> TRACK: $($track | out-string)"
+        if($Track.Spotify_path -or $Track.uri -match 'spotify:' -or $track.Source -eq 'SpotifyPlaylist'){
+          if($Track.Artist){
+            $artist = $Track.Artist
+          }else{
+            $artist = $($Track.Artist_Name)
+          }
+          if($track.title){
+            $track_name = $track.title
+          }else{
+            $track_name = $Track.Track_Name
+          }
+          $Title = "$($artist) - $($track_name)"
+          if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Spotify Track Title: $($Title) " -showtime }
           $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Spotify.png"
         }elseif($Track.webpage_url -match 'twitch'){
           $Title = "$($Track.Title)"
+          if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Twitch Track Title: $($Title) " -showtime }
           #$title = "Twitch Stream: $($track.Playlist)"
-          $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Twitch.png"
-        }elseif($Track.type -eq 'YoutubePlaylist_item'){
+          if($Track.profile_image_url){
+            if($thisApp.Config.Verbose_logging){write-ezlogs "Media Image found: $($Track.profile_image_url)" -showtime}       
+            if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
+              if($thisApp.Config.Verbose_logging){write-ezlogs " Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime}
+              $null = New-item ($thisApp.config.image_Cache_path) -ItemType directory -Force
+            }           
+            $encodeduri = $Null  
+            $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$([System.Uri]::new($Track.profile_image_url).Segments | select -last 1)-Local")
+            $encodeduri = [System.Convert]::ToBase64String($encodedBytes)                     
+            $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),"$($encodeduri).png")
+            if([System.IO.File]::Exists($image_Cache_path)){
+              $cached_image = $image_Cache_path
+            }elseif($Track.profile_image_url){         
+              if($thisApp.Config.Verbose_logging){write-ezlogs "| Destination path for cached image: $image_Cache_path" -showtime}
+              if(!([System.IO.File]::Exists($image_Cache_path))){
+                try{
+                  if([System.IO.File]::Exists($Track.profile_image_url)){
+                    if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not found, copying image $($Track.profile_image_url) to cache path $image_Cache_path" -enablelogs -showtime}
+                    $null = Copy-item -LiteralPath $Track.profile_image_url -Destination $image_Cache_path -Force
+                  }else{
+                    $uri = new-object system.uri($Track.profile_image_url)
+                    if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -enablelogs -showtime}
+                    (New-Object System.Net.WebClient).DownloadFile($uri,$image_Cache_path) 
+                  }             
+                  if([System.IO.File]::Exists($image_Cache_path)){
+                    $stream_image = [System.IO.File]::OpenRead($image_Cache_path) 
+                    $image = new-object System.Windows.Media.Imaging.BitmapImage
+                    $image.BeginInit();
+                    $image.CacheOption = "OnLoad"
+                    #$image.CreateOptions = "DelayCreation"
+                    #$image.DecodePixelHeight = 229;
+                    $image.DecodePixelWidth = 20
+                    $image.StreamSource = $stream_image
+                    $image.EndInit();        
+                    $stream_image.Close()
+                    $stream_image.Dispose()
+                    $stream_image = $null
+                    $image.Freeze();
+                    if($thisApp.Config.Verbose_logging){write-ezlogs "Saving decoded media image to path $image_Cache_path" -showtime -enablelogs}
+                    $bmp = [System.Windows.Media.Imaging.BitmapImage]$image
+                    $encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new()
+                    $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
+                    $save_stream = [System.IO.FileStream]::new("$image_Cache_path",'Create')
+                    $encoder.Save($save_stream)
+                    $save_stream.Dispose()       
+                  }  
+                  $cached_image = $image_Cache_path            
+                }catch{
+                  $cached_image = $Null
+                  write-ezlogs "An exception occurred attempting to download $image to path $image_Cache_path" -showtime -catcherror $_
+                }
+              }           
+            }else{
+              write-ezlogs "Cannot Download image $image to cache path $image_Cache_path - URL is invalid" -enablelogs -showtime -warning
+              $cached_image = $Null        
+            }              
+          }
+          if($cached_image){
+            $icon_path = $cached_image
+          }else{
+            $icon_path = $cached_image
+            $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Twitch.png"
+          }         
+        }elseif($Track.type -eq 'YoutubePlaylist_item' -or $track.Group -eq 'Youtube'){
           $Title = "$($Track.Title)"
+          if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Youtube Track Title: $($Title) " -showtime }
           $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Youtube.png"
-        }elseif($Track.SongInfo.Artist -and $Track.SongInfo.Title){
+        }elseif(($Track.SongInfo.Artist -and $Track.SongInfo.Title)){
           $Title = "$($Track.SongInfo.Artist) - $($Track.SongInfo.Title)"
+          if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Track SingInfo Artist and SongInfo Title: $($Title) " -showtime }
           $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
-        }elseif($Track.Artist -and $Track.Title){
+        }elseif($Track.Artist -and $Track.Title){        
           $Title = "$($Track.Artist) - $($Track.Title)"
+          if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Track Artist and Title: $($Title) " -showtime }
           $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
         }elseif($Track.Title){
+          if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Track Title: $($Track.Title) " -showtime }
           $Title = "$($Track.Title)"
           $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
         }elseif($Track.Name){
-          $Title = "$($Track.Name)"
+          if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Track Name: $($Track.Name) " -showtime }
+          if(!$Track.Artist -and !$Track.SongInfo.Artist -and [System.IO.Directory]::Exists($Track.directory)){     
+            try{
+              $artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($Track.directory))).trim()            
+            }catch{
+              write-ezlogs "An exception occurred getting file name without extension for $($Track.directory)" -showtime -catcherror $_
+              $artist = ''
+            }                
+            if($thisApp.Config.Verbose_logging){write-ezlogs "  | Using Directory name for artist: $($artist) " -showtime }
+          }elseif($Track.Artist){
+            $artist = $Track.Artist
+            if($thisApp.Config.Verbose_logging){write-ezlogs "  | Found Track Name artist: $($artist) " -showtime }
+          }elseif($Track.SongInfo.Artist){
+            $artist = $Track.SongInfo.Artist
+            if($thisApp.Config.Verbose_logging){write-ezlogs "  | Found Track SongInfo artist: $($artist) " -showtime }
+          }
+          if(-not [string]::IsNullOrEmpty($artist)){
+            $Title = "$($artist) - $($Track.Name)"
+          }else{
+            $Title = "$($Track.Name)"
+          }                   
           $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
         }else{
           $title = $null
           write-ezlogs "Can't find type or title for track $($track | out-string)" -showtime -warning
-        }       
+        }     
         #write-ezlogs "[Get-Playlists] | Adding track $($track | out-string) to Play Queue" -showtime           
         if($Track.id -and -not [string]::IsNullOrEmpty($Title)){
           $Current_Playlist_ChildItem = New-Object System.Windows.Controls.TreeViewItem
@@ -238,10 +348,10 @@ function Get-Playlists
             synchash=$synchash;
             thisScript=$thisScript;
             thisApp=$thisApp
-            PlayMedia_Command = $PlayMedia_Command
+            PlayMedia_Command = $synchash.PlayMedia_Command
             All_Playlists = $all_playlists
             PlaySpotify_Media_Command = $PlaySpotify_Media_Command
-            Media_ContextMenu = $Media_ContextMenu
+            Media_ContextMenu = $synchash.Media_ContextMenu
             Media = $Track
           } 
           $Current_Playlist_ChildItem.add_KeyDown{
@@ -253,12 +363,11 @@ function Get-Playlists
             $synchash = $Sender.tag.synchash
             $thisApp = $Sender.tag.thisapp
             $thisScript = $Sender.tag.thisScript 
-            $PlayMedia_Command = $sender.tag.PlayMedia_Command
             $all_playlists = $sender.tag.all_playlists
             $Playlist = $Sender.header          
             $Media = $sender.tag.Media 
             $PlaySpotify_Media_Command = $sender.tag.PlaySpotify_Media_Command
-            $Media_ContextMenu = $sender.tag.Media_ContextMenu
+            $Media_ContextMenu = $synchash.Media_ContextMenu
             $Playlist = $e.Source.Parent.Header
             if($e.Key -eq 'Enter' -and $Media.url)
             {
@@ -266,11 +375,11 @@ function Get-Playlists
               try{
                 if($media.Spotify_Path){
                   $media = $syncHash.SpotifyTable.items | where {$_.id -eq $Media.id} | select -Unique
-                  Play-SpotifyMedia -Media $Media -thisApp $thisApp -synchash $synchash -Script_Modules $Script_Modules -Show_notification -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -PlaySpotify_Media_Command $PlaySpotify_Media_Command 
+                  Start-SpotifyMedia -Media $Media -thisApp $thisApp -synchash $synchash -Script_Modules $Script_Modules -Show_notification
                 }else{
-                  Start-Media -Media $Media -thisApp $thisApp -synchash $synchash -Show_notification -Script_Modules $Script_Modules -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -PlaySpotify_Media_Command $PlaySpotify_Media_Command 
+                  Start-Media -Media $Media -thisApp $thisApp -synchash $synchash -Show_notification -Script_Modules $Script_Modules
                 }  
-                #Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command -all_playlists $all_playlists
+                #Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp  -Refresh_Spotify_Playlists -all_playlists $all_playlists
               }catch{
                 write-ezlogs "An exception occurred attempting to play media using keyboard event $($e.Key | out-string) for media $($Media.id) from Playlist $($Playlist)" -showtime -catcherror $_
               }    
@@ -290,14 +399,14 @@ function Get-Playlists
                   $null = $thisApp.config.Current_Playlist.Remove($index_toremove)                 
                 }
                 $thisApp.config | Export-Clixml -Path $thisApp.Config.Config_Path -Force -Encoding UTF8
-                Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -startup -thisApp $thisApp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command  -all_playlists $all_playlists 
+                Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -startup -thisApp $thisApp  -all_playlists $all_playlists 
               }catch{
                 write-ezlogs "An exception occurred removing media $($Media.id) from Playlist $($Playlist) using keyboard event $($e.Key | out-string)" -showtime -catcherror $_
               } 
             }    
           }               
-          $null = $Current_Playlist_ChildItem.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$PlayMedia_Command)
-          $null = $Current_Playlist_ChildItem.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)
+          $null = $Current_Playlist_ChildItem.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$synchash.PlayMedia_Command)
+          $null = $Current_Playlist_ChildItem.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Media_ContextMenu)
           if($Current_Playlist.items -notcontains $Current_Playlist_ChildItem){
             if($Verboselog){write-ezlogs "[Get-Playlists] | Adding $($title) with ID $($track.id) to Play Queue" -showtime  } 
             $null = $Current_Playlist.items.add($Current_Playlist_ChildItem)          
@@ -330,13 +439,74 @@ function Get-Playlists
           if($LinkDrop -match 'twitch.tv'){
             $d.Handled = $true
             $twitch_channel = $((Get-Culture).textinfo.totitlecase(($LinkDrop | split-path -leaf).tolower()))
-            write-ezlogs ">>>> Adding Twitch channel $twitch_channel - $LinkDrop" -showtime -color cyan                       
+            write-ezlogs ">>>> Adding Twitch channel $twitch_channel - $LinkDrop" -showtime -color cyan    
+            $Group = 'Twitch'                   
           }elseif($LinkDrop -match 'youtube.com' -or $LinkDrop -match 'youtu.be'){
             write-ezlogs ">>>> Adding Youtube link $LinkDrop" -showtime -color cyan
-            $d.Handled = $true
+            $url = [uri]$linkDrop
+            $Group = 'Youtube'
+            if($LinkDrop -match "v="){
+              $youtube_id = ($($LinkDrop) -split('v='))[1].trim()    
+            }elseif($LinkDrop -match 'list='){
+              $youtube_id = ($($LinkDrop) -split('list='))[1].trim()                  
+            }             
+            $d.Handled = $true          
           }
           if($d.Handled){
-            Import-Youtube -Youtube_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $Media_Profile_Directory -PlayMedia_Command $PlayMedia_Command -thisApp $thisApp
+            $synchash.Youtube_Progress_Ring.isActive = $true
+            if($PlayLink_OnDrop){
+              $track_encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($LinkDrop)-YoutubeLinkDrop")
+              $track_encodedTitle = [System.Convert]::ToBase64String($track_encodedBytes)
+              $media = New-Object PsObject -Property @{
+                'title' = "Youtube Video - $youtube_id"
+                'description' = ''
+                'playlist_index' = ''
+                'channel_id' = ''
+                'id' = $youtube_id
+                'duration' = 0
+                'encodedTitle' = $track_encodedTitle
+                'url' = $url
+                'urls' = $LinkDrop
+                'webpage_url' = $LinkDrop
+                'thumbnail' = ''
+                'view_count' = ''
+                'manifest_url' = ''
+                'uploader' = ''
+                'webpage_url_domain' = $url.Host
+                'type' = ''
+                'availability' = ''
+                'Tracks_Total' = ''
+                'images' = ''
+                'Playlist_url' = ''
+                'playlist_id' = $youtube_id
+                'Profile_Path' =''
+                'Profile_Date_Added' = $(Get-Date -Format 'MM-dd-yyyy hh:mm:ss:tt')
+                'Source' = 'YoutubePlaylist_item'
+                'Group' = $Group
+              }            
+              Start-Media -Media $media -thisApp $thisApp -synchash $synchash -Show_notification -Script_Modules $Script_Modules -use_WebPlayer
+            }
+            $synchash.import_Youtube_scriptblock = ({
+                try{
+                  Import-Youtube -Youtube_URL $LinkDrop -verboselog:$thisapp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisapp.config.Media_Profile_Directory -thisApp $thisapp -use_runspace -Youtube_Btnnext_Scriptblock $Youtube_Btnnext_Scriptblock -Youtube_btnPrev_Scriptblock $Youtube_btnPrev_Scriptblock -Youtube_cbNumberOfRecords_Scriptblock $Youtube_cbNumberOfRecords_Scriptblock
+                  if($thisApp.Config.PlayLink_OnDrop){
+                    write-ezlogs ">>>> Starting WebPlayer_Playing timer" -showtime
+                    try{
+                      $synchash.update_status_timer.start()
+                      $synchash.WebPlayer_Playing_timer.Start() 
+                    }catch{
+                      write-ezlogs "An exception occurred executing update_status_timer and WebPlayer_Playing_timer" -showtime -catcherror $_
+                    }
+                  }
+                  if($error){
+                    write-ezlogs -showtime -PrintErrors -ErrorsToPrint $error
+                  }
+                }catch{
+                  write-ezlogs 'An exception occurred in import_Youtube_scriptblock' -showtime -catcherror $_ -logfile:$thisApp.Config.YoutubeMedia_logfile
+                }
+            }.GetNewClosure())
+            $Variable_list = Get-Variable | where {$_.Options -notmatch 'ReadOnly' -and $_.Options -notmatch 'Constant'}
+            Start-Runspace -scriptblock $synchash.import_Youtube_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -Load_Modules -Script_Modules $Script_Modules -runspace_name 'import_Youtube_scriptblock'          
           }        
         }else{
           write-ezlogs "The provided URL is not valid or was not provided! -- $LinkDrop" -showtime -warning
@@ -347,25 +517,15 @@ function Get-Playlists
     }elseif($d.Data.GetDataPresent([Windows.Forms.DataFormats]::FileDrop)){
       try{  
         $FileDrop = $d.Data.GetData([Windows.Forms.DataFormats]::FileDrop)  
-        #foreach ($path in $FileDrop) {
-        if(([System.IO.FIle]::Exists($FileDrop) -or [System.IO.Directory]::Exists($FileDrop))){
-          #$synchash.Window.hide()
-          #Start-SplashScreen -SplashTitle $thisScript.Name -SplashMessage "Updating Media library..." -thisScript $thisScript -current_folder $Current_Folder -log_file $thisApp.Config.Log_file -Script_modules $Script_Modules
-          #start-sleep 1      
+        if(([System.IO.FIle]::Exists($FileDrop) -or [System.IO.Directory]::Exists($FileDrop))){     
           $d.Handled = $true  
           write-ezlogs ">>>> Adding Local Media $FileDrop" -showtime -color cyan
-          Import-Media -Media_Path $FileDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -PlayMedia_Command $PlayMedia_Command -thisApp $thisApp -use_runspace
-          #close-splashscreen
-          #$synchash.Window.Show()        
+          Import-Media -Media_Path $FileDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace       
         }else{
           write-ezlogs "The provided Path is not valid or was not provided! -- $FileDrop" -showtime -warning
-        }          
-        #}      
-        #$path = $e.Data.GetData([Windows.Forms.DataFormats]::FileDrop)                
+        }                        
       }catch{
         write-ezlogs "An exception occurred in PreviewDrop" -showtime -catcherror $_
-        #close-splashscreen
-        #$synchash.Window.Show()
       }    
     }elseif($d.data.GetDataPresent([GongSolutions.Wpf.DragDrop.DragDrop]::DataFormat.Name)){       
       $item = $d.data.GetData([GongSolutions.Wpf.DragDrop.DragDrop]::DataFormat.Name)
@@ -375,18 +535,11 @@ function Get-Playlists
       $to_Playlist_Name = $d.source.parent.Header.title
       $From_Playlist_Name = $item.parent.Header.title
       $to_PlayList = $d.originalsource.datacontext
-      write-ezlogs "From $($From_Playlist_Name | out-string)" -showtime
+      write-ezlogs ">>>> Drag/Drop From Playlist Name: $($From_Playlist_Name | out-string)" -showtime
       #write-ezlogs "Media $($Media | out-string)" -showtime
-      write-ezlogs "To Playlist Name $($to_Playlist_Name | out-string)" -showtime
+      write-ezlogs ">>>> Drag/Drop To Playlist Name $($to_Playlist_Name | out-string)" -showtime
       #write-ezlogs "Destination $($d.originalsource.datacontext | out-string)" -showtime
-      if($to_Playlist_Name -eq 'Play Queue'){      
-        <#        if($Media.Spotify_Path){
-            if($thisApp.config.Current_Spotify_Playlist -notcontains $Media.id)
-            {
-            write-ezlogs " | Adding $($Media.id) to Spotify Play Queue" -showtime
-            $null = $thisApp.config.Current_Spotify_Playlist.Add($Media.id)
-            }      
-        } #>  
+      if($to_Playlist_Name -eq 'Play Queue'){       
         if($thisApp.config.Current_Playlist.values -notcontains $Media.id)
         {
           if($VerboseLog){write-ezlogs " | Adding $($Media.id) to Play Queue from Drag and Drop" -showtime}                  
@@ -394,18 +547,102 @@ function Get-Playlists
           if($Media.Spotify_Path){         
             $Title = "$($media.Artist_Name) - $($media.Track_Name)"
             $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Spotify.png"
-            $click_command = $PlaySpotify_Media_Command
+            $click_command = $synchash.PlayMedia_Command
           }elseif($Media.webpage_url -match 'twitch'){
             $Title = "$($media.Title)"
-            $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Twitch.png"
+            if($Media.profile_image_url){
+              if($thisApp.Config.Verbose_logging){write-ezlogs "Media Image found: $($Media.profile_image_url)" -showtime}       
+              if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
+                if($thisApp.Config.Verbose_logging){write-ezlogs " Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime}
+                $null = New-item ($thisApp.config.image_Cache_path) -ItemType directory -Force
+              }           
+              $encodeduri = $Null  
+              $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$([System.Uri]::new($Media.profile_image_url).Segments | select -last 1)-Local")
+              $encodeduri = [System.Convert]::ToBase64String($encodedBytes)                     
+              $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),"$($encodeduri).png")
+              if([System.IO.File]::Exists($image_Cache_path)){
+                $cached_image = $image_Cache_path
+              }elseif($Media.profile_image_url){         
+                if($thisApp.Config.Verbose_logging){write-ezlogs "| Destination path for cached image: $image_Cache_path" -showtime}
+                if(!([System.IO.File]::Exists($image_Cache_path))){
+                  try{
+                    if([System.IO.File]::Exists($Media.profile_image_url)){
+                      if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not found, copying image $($Media.profile_image_url) to cache path $image_Cache_path" -enablelogs -showtime}
+                      $null = Copy-item -LiteralPath $Media.profile_image_url -Destination $image_Cache_path -Force
+                    }else{
+                      $uri = new-object system.uri($Media.profile_image_url)
+                      if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -enablelogs -showtime}
+                      (New-Object System.Net.WebClient).DownloadFile($uri,$image_Cache_path) 
+                    }             
+                    if([System.IO.File]::Exists($image_Cache_path)){
+                      $stream_image = [System.IO.File]::OpenRead($image_Cache_path) 
+                      $image = new-object System.Windows.Media.Imaging.BitmapImage
+                      $image.BeginInit();
+                      $image.CacheOption = "OnLoad"
+                      #$image.CreateOptions = "DelayCreation"
+                      #$image.DecodePixelHeight = 229;
+                      $image.DecodePixelWidth = 20
+                      $image.StreamSource = $stream_image
+                      $image.EndInit();        
+                      $stream_image.Close()
+                      $stream_image.Dispose()
+                      $stream_image = $null
+                      $image.Freeze();
+                      if($thisApp.Config.Verbose_logging){write-ezlogs "Saving decoded media image to path $image_Cache_path" -showtime -enablelogs}
+                      $bmp = [System.Windows.Media.Imaging.BitmapImage]$image
+                      $encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new()
+                      $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
+                      $save_stream = [System.IO.FileStream]::new("$image_Cache_path",'Create')
+                      $encoder.Save($save_stream)
+                      $save_stream.Dispose()       
+                    }  
+                    $cached_image = $image_Cache_path            
+                  }catch{
+                    $cached_image = $Null
+                    write-ezlogs "An exception occurred attempting to download $image to path $image_Cache_path" -showtime -catcherror $_
+                  }
+                }           
+              }else{
+                write-ezlogs "Cannot Download image $image to cache path $image_Cache_path - URL is invalid" -enablelogs -showtime -warning
+                $cached_image = $Null        
+              }              
+            }
+            if($cached_image){
+              $icon_path = $cached_image
+            }else{
+              $icon_path = $cached_image
+              $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Twitch.png"
+            }
           }elseif($Media.type -eq 'YoutubePlaylist_item'){
             $Title = "$($media.Title)"
             $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Youtube.png"
-            $click_command = $PlayMedia_Command         
+            $click_command = $synchash.PlayMedia_Command         
           }else{
+            if($media.Name){
+              if(!$media.Artist -and !$media.SongInfo.Artist -and [System.IO.Directory]::Exists($media.directory)){     
+                try{
+                  $artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($media.directory))).trim()            
+                }catch{
+                  write-ezlogs "An exception occurred getting file name without extension for $($media.directory)" -showtime -catcherror $_
+                  $artist = ''
+                }                
+                if($thisApp.Config.Verbose_logging){write-ezlogs "  | Using Directory name for artist: $($artist) " -showtime }
+              }elseif($media.Artist){
+                $artist = $media.Artist
+                if($thisApp.Config.Verbose_logging){write-ezlogs "  | Found Track Name artist: $($artist) " -showtime }
+              }elseif($media.SongInfo.Artist){
+                $artist = $media.SongInfo.Artist
+                if($thisApp.Config.Verbose_logging){write-ezlogs "  | Found Track SongInfo artist: $($artist) " -showtime }
+              }
+              if(-not [string]::IsNullOrEmpty($artist)){
+                $Title = "$($artist) - $($media.Name)"
+              }else{
+                $Title = "$($media.Name)"
+              }                   
+            }
             $Title = "$($media.Artist) - $($media.Title)"
             $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
-            $click_command = $PlayMedia_Command
+            $click_command = $synchash.PlayMedia_Command
           }
           if($media.live_status -eq 'Offline'){
             $fontstyle = 'Italic'
@@ -463,13 +700,12 @@ function Get-Playlists
             synchash=$synchash;
             thisScript=$thisScript;
             thisApp=$thisApp
-            PlayMedia_Command = $PlayMedia_Command
-            PlaySpotify_Media_Command = $PlaySpotify_Media_Command
+            PlayMedia_Command = $synchash.PlayMedia_Command
             All_Playlists = $all_playlists
             Media = $Media
           }                  
           $null = $Current_Playlist_ChildItem.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$click_command)
-          $null = $Current_Playlist_ChildItem.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)
+          $null = $Current_Playlist_ChildItem.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Synchash.Media_ContextMenu)
           #$null = $Current_Playlist_ChildItem.AddHandler([System.Windows.Controls.Button]::PreviewMouseLeftButtonDownEvent,$Drag_MouseDown)        
           $Play_Queue = $syncHash.PlayQueue_TreeView.Items | where {$_.Name -eq 'Play_Queue'}
           $null = $Play_Queue.items.add($Current_Playlist_ChildItem)                     
@@ -486,7 +722,9 @@ function Get-Playlists
             $null = $thisApp.config.Current_Playlist.clear()
             $index = 0
             foreach($item in $Play_Queue.items.tag.Media.id | where {$_ -ne $Media.id}){
-              $null = $thisApp.config.Current_Playlist.add($index,$item)              
+              if($thisapp.config.Current_Playlist.values -notcontains $Media.id){
+                $null = $thisApp.config.Current_Playlist.add($index,$item) 
+              }                        
               #$null = $thisApp.config.Current_Playlist.add($item)
             }  
             $index = ($thisApp.config.Current_Playlist.keys | measure -Maximum).Maximum
@@ -642,8 +880,7 @@ function Get-Playlists
             synchash=$synchash;
             thisScript=$thisScript;
             thisApp=$thisApp
-            PlayMedia_Command = $PlayMedia_Command
-            PlaySpotify_Media_Command = $PlaySpotify_Media_Command
+            PlayMedia_Command = $synchash.PlayMedia_Command
             Playlist = $Playlist
             All_Playlists = $all_playlists
           }        
@@ -654,7 +891,7 @@ function Get-Playlists
             'FontStyle' = 'Normal'
             'FontColor' = 'White'
             'FontWeight' = 'Bold'
-            'FontSize' = 12          
+            'FontSize' = 14          
             'Status_Msg' = ''
             'Status_FontStyle' = ''
             'Status_FontColor' = ''
@@ -663,31 +900,143 @@ function Get-Playlists
           }        
           $Playlist_Item.Header = $header
           $Playlist_Item.Name = 'Playlist'
-          $null = $Playlist_Item.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)        
+          $null = $Playlist_Item.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Synchash.Media_ContextMenu)        
           $Playlist_Item.add_PreviewDrop($PreviewDrop)
           foreach($Track in $Playlist_tracks){
             if($Track.id){
               $ChildItem = New-Object System.Windows.Controls.TreeViewItem
               $Childitem.AllowDrop = $true
-              [int]$hrs = $($([timespan]::FromMilliseconds($track.Duration_ms)).Hours)
-              [int]$mins = $($([timespan]::FromMilliseconds($track.Duration_ms)).Minutes)
-              [int]$secs = $($([timespan]::FromMilliseconds($track.Duration_ms)).Seconds) 
-              $total_time = "$mins`:$secs"
+              <#              if($track.Duration_ms){
+                  [int]$hrs = $($([timespan]::FromMilliseconds($track.Duration_ms)).Hours)
+                  [int]$mins = $($([timespan]::FromMilliseconds($track.Duration_ms)).Minutes)
+                  [int]$secs = $($([timespan]::FromMilliseconds($track.Duration_ms)).Seconds) 
+                  $total_time = "$mins`:$secs"
+              }#>
               $Title = $null
-              if($Track.Spotify_path){
-                $Title = "$($Track.Artist_Name) - $($Track.Track_Name)"
+              if($Track.Spotify_path -or $Track.uri -match 'spotify:' -or $track.Source -eq 'SpotifyPlaylist'){
+                if($Track.Artist){
+                  $artist = $Track.Artist
+                }else{
+                  $artist = $($Track.Artist_Name)
+                }
+                if($track.title){
+                  $track_name = $track.title
+                }else{
+                  $track_name = $Track.Track_Name
+                }             
+                $Title = "$($artist) - $($track_name)"
+                if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Spotify Track Title: $($Title) " -showtime }
                 $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Spotify.png"
               }elseif($Track.webpage_url -match 'twitch'){
                 $Title = "$($Track.Title)"
+                if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Twitch Track Title: $($Title) " -showtime }
                 #$title = "Twitch Stream: $($track.Playlist)"
-                $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Twitch.png"
-              }elseif($Track.type -eq 'YoutubePlaylist_item'){
+                if($Track.profile_image_url){
+                  if($thisApp.Config.Verbose_logging){write-ezlogs "Media Image found: $($Track.profile_image_url)" -showtime}       
+                  if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
+                    if($thisApp.Config.Verbose_logging){write-ezlogs " Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime}
+                    $null = New-item ($thisApp.config.image_Cache_path) -ItemType directory -Force
+                  }           
+                  $encodeduri = $Null  
+                  $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$([System.Uri]::new($Track.profile_image_url).Segments | select -last 1)-Local")
+                  $encodeduri = [System.Convert]::ToBase64String($encodedBytes)                     
+                  $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),"$($encodeduri).png")
+                  if([System.IO.File]::Exists($image_Cache_path)){
+                    $cached_image = $image_Cache_path
+                  }elseif($Track.profile_image_url){         
+                    if($thisApp.Config.Verbose_logging){write-ezlogs "| Destination path for cached image: $image_Cache_path" -showtime}
+                    if(!([System.IO.File]::Exists($image_Cache_path))){
+                      try{
+                        if([System.IO.File]::Exists($Track.profile_image_url)){
+                          if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not found, copying image $($Track.profile_image_url) to cache path $image_Cache_path" -enablelogs -showtime}
+                          $null = Copy-item -LiteralPath $Track.profile_image_url -Destination $image_Cache_path -Force
+                        }else{
+                          $uri = new-object system.uri($Track.profile_image_url)
+                          if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -enablelogs -showtime}
+                          (New-Object System.Net.WebClient).DownloadFile($uri,$image_Cache_path) 
+                        }             
+                        if([System.IO.File]::Exists($image_Cache_path)){
+                          $stream_image = [System.IO.File]::OpenRead($image_Cache_path) 
+                          $image = new-object System.Windows.Media.Imaging.BitmapImage
+                          $image.BeginInit();
+                          $image.CacheOption = "OnLoad"
+                          #$image.CreateOptions = "DelayCreation"
+                          #$image.DecodePixelHeight = 229;
+                          $image.DecodePixelWidth = 20
+                          $image.StreamSource = $stream_image
+                          $image.EndInit();        
+                          $stream_image.Close()
+                          $stream_image.Dispose()
+                          $stream_image = $null
+                          $image.Freeze();
+                          if($thisApp.Config.Verbose_logging){write-ezlogs "Saving decoded media image to path $image_Cache_path" -showtime -enablelogs}
+                          $bmp = [System.Windows.Media.Imaging.BitmapImage]$image
+                          $encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new()
+                          $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
+                          $save_stream = [System.IO.FileStream]::new("$image_Cache_path",'Create')
+                          $encoder.Save($save_stream)
+                          $save_stream.Dispose()       
+                        }  
+                        $cached_image = $image_Cache_path            
+                      }catch{
+                        $cached_image = $Null
+                        write-ezlogs "An exception occurred attempting to download $image to path $image_Cache_path" -showtime -catcherror $_
+                      }
+                    }           
+                  }else{
+                    write-ezlogs "Cannot Download image $image to cache path $image_Cache_path - URL is invalid" -enablelogs -showtime -warning
+                    $cached_image = $Null        
+                  }              
+                }
+                if($cached_image){
+                  $icon_path = $cached_image
+                }else{
+                  $icon_path = $cached_image
+                  $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Twitch.png"
+                }         
+              }elseif($Track.type -eq 'YoutubePlaylist_item' -or $track.Group -eq 'Youtube'){
                 $Title = "$($Track.Title)"
+                if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Youtube Track Title: $($Title) " -showtime }
                 $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Youtube.png"
-              }else{
-                $Title = "$($Track.Artist) - $($Track.Title)"
+              }elseif(($Track.SongInfo.Artist -and $Track.SongInfo.Title)){
+                $Title = "$($Track.SongInfo.Artist) - $($Track.SongInfo.Title)"
+                if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Track SingInfo Artist and SongInfo Title: $($Title) " -showtime }
                 $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
-              } 
+              }elseif($Track.Artist -and $Track.Title){        
+                $Title = "$($Track.Artist) - $($Track.Title)"
+                if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Track Artist and Title: $($Title) " -showtime }
+                $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
+              }elseif($Track.Title){
+                if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Track Title: $($Track.Title) " -showtime }
+                $Title = "$($Track.Title)"
+                $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
+              }elseif($Track.Name){
+                if($thisApp.Config.Verbose_logging){write-ezlogs "| Found Track Name: $($Track.Name) " -showtime }
+                if(!$Track.Artist -and !$Track.SongInfo.Artist -and [System.IO.Directory]::Exists($Track.directory)){     
+                  try{
+                    $artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($Track.directory))).trim()            
+                  }catch{
+                    write-ezlogs "An exception occurred getting file name without extension for $($Track.directory)" -showtime -catcherror $_
+                    $artist = ''
+                  }                
+                  if($thisApp.Config.Verbose_logging){write-ezlogs "  | Using Directory name for artist: $($artist) " -showtime }
+                }elseif($Track.Artist){
+                  $artist = $Track.Artist
+                  if($thisApp.Config.Verbose_logging){write-ezlogs "  | Found Track Name artist: $($artist) " -showtime }
+                }elseif($Track.SongInfo.Artist){
+                  $artist = $Track.SongInfo.Artist
+                  if($thisApp.Config.Verbose_logging){write-ezlogs "  | Found Track SongInfo artist: $($artist) " -showtime }
+                }
+                if(-not [string]::IsNullOrEmpty($artist)){
+                  $Title = "$($artist) - $($Track.Name)"
+                }else{
+                  $Title = "$($Track.Name)"
+                }                   
+                $icon_path = "$($thisApp.Config.Current_Folder)\\Resources\\Material-Vlc.png"
+              }else{
+                $title = $null
+                write-ezlogs "Can't find type or title for track $($track | out-string)" -showtime -warning
+              }  
               if($Track.live_status -eq 'Offline'){
                 $fontstyle = 'Italic'
                 $fontcolor = 'Gray'
@@ -745,15 +1094,14 @@ function Get-Playlists
                 synchash=$synchash;
                 thisScript=$thisScript;
                 thisApp=$thisApp
-                PlayMedia_Command = $PlayMedia_Command
+                PlayMedia_Command = $synchash.PlayMedia_Command
                 All_Playlists = $all_playlists
-                PlaySpotify_Media_Command = $PlaySpotify_Media_Command
                 Media = $Track
               }  
               $Childitem.add_PreviewDrop($PreviewDrop)          
-              $null = $Childitem.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$PlayMedia_Command)
+              $null = $Childitem.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$synchash.PlayMedia_Command)
               #$null = $Childitem.AddHandler([System.Windows.Controls.Button]::MouseRightButtonDownEvent,$Media_ContextMenu)
-              $null = $Childitem.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$Media_ContextMenu)
+              $null = $Childitem.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Media_ContextMenu)
               #$null = $Childitem.AddHandler([System.Windows.Controls.Button]::PreviewMouseLeftButtonDownEvent,$Drag_MouseDown)            
               $null = $Playlist_Item.items.add($ChildItem)     
             }

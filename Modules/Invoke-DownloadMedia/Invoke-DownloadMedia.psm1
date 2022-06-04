@@ -86,8 +86,17 @@ function Invoke-DownloadMedia{
     
     $yt_dlp_tempfile = "$($thisScript.tempfolder)\\yt_dlp.log"     
     $thisApp.config.Download_logfile = $yt_dlp_tempfile 
-    if($media.type -eq 'YoutubePlaylist_item' -or $media_link -match 'youtube' -or $media_link -match 'yewtu.be'){
+    if($media.type -eq 'YoutubePlaylist_item' -or $media_link -match 'youtube' -or $media_link -match 'yewtu.be'){   
       if($media.webpage_url){
+        if($media.webpage_url -match "youtube.com"){
+          if($media.webpage_url -match "v="){
+            $youtube_id = ($($media.webpage_url) -split('v='))[1].trim()
+          }elseif($media.webpage_url -match 'list='){
+            $youtube_id = ($($media.webpage_url) -split('list='))[1].trim()
+          }else{
+            $youtube_id = $Null
+          } 
+        }       
         write-ezlogs " | Getting best quality video and audio links from yt_dlp" -showtime 
         if(-not [string]::IsNullOrEmpty($thisApp.config.Youtube_Browser)){
           #$yt_dlp = yt-dlp -f bestvideo+bestaudio/best -g $media.webpage_url --rm-cache-dir -o '*' -j --cookies-from-browser $thisApp.config.Youtube_Browser
@@ -155,9 +164,9 @@ function Invoke-DownloadMedia{
           #$last_line = Get-Content -Path $yt_dlp_tempfile -force -Tail 1 2> $Null
           #Watch the log file and output all new lines. If the new line matches our exit trigger text, break out of wait
           $count = 0
-          Get-Content -Path $yt_dlp_tempfile -force -Tail 1 -wait  | ForEach {
+          Get-Content -Path $yt_dlp_tempfile -force -Tail 1 -wait | ForEach {
             $count++
-            Write-EZLogs "$_" -showtime
+            Write-EZLogs "$($_)" -showtime
             $speedpattern = 'at (?<value>.*) ETA'
             $sizepattern ='of (?<value>.*) at'
             $progresspattern =' (?<value>.*)% of'
@@ -179,13 +188,6 @@ function Invoke-DownloadMedia{
                 $thisApp.config.Download_status = $true
                 $thisApp.config.Download_message = "($progress%) Downloading $($Media.Title) at $speed - Download Size: $download_size - ETA $eta"
                 $thisApp.config.Download_UID = $UID
-                #Update-Notifications -id $UID -Level 'Info' -Message "($progress%) Downloading $($Media.Title) at $speed - Download Size: $download_size - ETA $eta" -VerboseLog -Message_color "Red" -thisApp $thisApp -synchash $synchash -Open_Flyout -clear
-                #$synchash.window.Dispatcher.invoke([action]{
-                #$download_notification = $synchash.Notifications_Grid.items | where {$_.id -eq $UID}  
-                #$download_notification.message = "($progress%) Downloading $($Media.Title) at $speed - Download Size: $download_size - ETA $eta"
-                #$synchash.Download_Progress.tooltip = "Downloading at $speed - Download Size: $download_size"
-                #$synchash.Download_Progress_textbox.text = "Downloading $progress% - ETA $eta"
-                # })
               }catch{
                 write-ezlogs "An exception occurred updating the notification and message with ID $UID" -showtime -catcherror
               }
@@ -238,7 +240,7 @@ function Invoke-DownloadMedia{
         $Synchash.downloadTimer.stop()
     })     
     Write-EZLogs '---------------END Log Entries---------------' -enablelogs
-    Write-EZLogs -text ">>>> yt_dlp. Final loop count: $count" -showtime  -color Cyan             
+    Write-EZLogs -text ">>>> yt_dlp. Final loop count: $count" -showtime            
     if(![System.IO.File]::Exists($downloaded_File)){
       $downloaded_File = [System.IO.Path]::Combine($Download_Path,"$($media.Title).mkv")
     }
@@ -246,8 +248,73 @@ function Invoke-DownloadMedia{
       write-ezlogs "Unable to verify successful download of media file $downloaded_File" -showtime -warning
       $message = "[WARNING] Unable to verify successful download of media file $downloaded_File"
       Update-Notifications -id $UID -Level 'WARNING' -Message $message -VerboseLog -Message_color "Orange" -thisApp $thisApp -synchash $synchash -clear -Open_Flyout
-    } 
-    if([System.IO.File]::Exists($downloaded_File)){
+    }elseif([System.IO.File]::Exists($downloaded_File)){
+     
+      if($youtube_id)
+      { 
+        $image = "https://i.ytimg.com/vi/$youtube_id/maxresdefault.jpg"
+        if($thisApp.Config.Verbose_logging){write-ezlogs "Caching thumbnail images: $($image)" -showtime}       
+        if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
+          if($thisApp.Config.Verbose_logging){write-ezlogs " Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime}
+          $null = New-item ($thisApp.config.image_Cache_path) -ItemType directory -Force
+        }
+        #$encodeduri = $Null  
+        #$encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($Image | split-path -Leaf)-Local")
+        #$encodeduri = [System.Convert]::ToBase64String($encodedBytes) 
+        $Download_Directory = ([System.IO.Directory]::GetParent($downloaded_File)).fullname  
+        $Download_FileName = ([System.IO.Path]::GetFileNameWithoutExtension($downloaded_File))                         
+        $image_Cache_path = [System.IO.Path]::Combine(($Download_Directory),"$($Download_FileName).png")
+        if([System.IO.File]::Exists($image_Cache_path)){
+          write-ezlogs "Cached Image already exists at $image_Cache_path, skipping download" -showtime
+          $cached_image = $image_Cache_path
+        }elseif($image){         
+          if($thisApp.Config.Verbose_logging){write-ezlogs "| Destination path for cached image: $image_Cache_path" -showtime}
+          if(!([System.IO.File]::Exists($image_Cache_path))){
+            try{
+              if([System.IO.File]::Exists($image)){
+                if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not found, copying image $image to cache path $image_Cache_path" -enablelogs -showtime}
+                $null = Copy-item -LiteralPath $image -Destination $image_Cache_path -Force
+              }else{
+                $uri = new-object system.uri($image)
+                if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -enablelogs -showtime}
+                (New-Object System.Net.WebClient).DownloadFile($uri,$image_Cache_path) 
+              }             
+              if([System.IO.File]::Exists($image_Cache_path)){
+                $stream_image = [System.IO.File]::OpenRead($image_Cache_path) 
+                $image = new-object System.Windows.Media.Imaging.BitmapImage
+                $image.BeginInit();
+                $image.CacheOption = "OnLoad"
+                #$image.CreateOptions = "DelayCreation"
+                #$image.DecodePixelHeight = 229;
+                $image.DecodePixelWidth = 500;
+                $image.StreamSource = $stream_image
+                $image.EndInit();        
+                $stream_image.Close()
+                $stream_image.Dispose()
+                $stream_image = $null
+                $image.Freeze();
+                if($thisApp.Config.Verbose_logging){write-ezlogs "Saving decoded media image to path $image_Cache_path" -showtime -enablelogs}
+                $bmp = [System.Windows.Media.Imaging.BitmapImage]$image
+                $encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new()
+                $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
+                $save_stream = [System.IO.FileStream]::new("$image_Cache_path",'Create')
+                $encoder.Save($save_stream)
+                $save_stream.Dispose()       
+              }  
+              $cached_image = $image_Cache_path            
+            }catch{
+              $cached_image = $Null
+              write-ezlogs "An exception occurred attempting to download $image to path $image_Cache_path" -showtime -catcherror $_
+            }
+          }           
+        }else{
+          write-ezlogs "Cannot Download image $image to cache path $image_Cache_path - URL is invalid" -enablelogs -showtime -warning
+          $cached_image = $Null        
+        }                                    
+      }
+      if($cached_image -and $thisApp.Config.Verbose_logging){
+        write-ezlogs "Media image: $cached_image" -showtime
+      }     
       write-ezlogs ">>>> Checking if file was downloaded to existing local media directory" -showtime -color cyan
       foreach($directory in $thisApp.config.Media_Directories){
         $confirm_downloaded_file = (robocopy $directory 'Doesntexist' $($downloaded_File | split-path -leaf) /L /E /FP /NS /NC /NjH /NJS /NDL /NP /MT:20).trim()
@@ -268,35 +335,15 @@ function Invoke-DownloadMedia{
         }else{
           $startapp = Get-startapps '*Windows Media Player'
           $appid = $startapp.AppID | select -last 1
-        }
-        if(-not [string]::IsNullOrEmpty($Media.thumbnail))
-        {
-          $image = $($Media.thumbnail | select -First 1)
-          write-ezlogs "Image found: $($Media.thumbnail | out-string)"
-          $uri = new-object system.uri($image)
-          if(!([System.IO.Directory]::Exists(($thisApp.config.Media_Profile_Directory | Split-path -Parent)))){
-            $null = New-item ($thisApp.config.Media_Profile_Directory | Split-path -Parent) -ItemType directory -Force
-          }
-          $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.Media_Profile_Directory | Split-path -Parent),"$($Image | split-path -Leaf)-$($Media.id).png")
-          write-ezlogs " | Destination path for cached image: $image_Cache_path" -enablelogs -showtime
-          if(!([System.IO.File]::Exists($image_Cache_path))){
-            write-ezlogs " | Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -enablelogs -showtime
-            if($uri){
-              (New-Object System.Net.WebClient).DownloadFile($uri,$image_Cache_path) 
-            }  
-          }
-          #$Null = Start-process $ImageMagick -ArgumentList "`"$image_Cache_path`" -define icon:auto-resize=32,24,16 `"$icon_path`"" -NoNewWindow -PassThru
-          #start-sleep -Milliseconds 200
-          #$menu.Image = $Menu_Games_Picture                                         
-        }  
-        if($image_Cache_path ){
+        } 
+        if($cached_image){
           $applogo = $image_Cache_path 
         }else{
           $applogo = "$($thisApp.Config.Current_folder)\\Resources\\MusicPlayerFill.png"
         }
         if($media.type -eq 'YoutubePlaylist_item'){
           $source = 'Youtube Media'
-          if(!$image_Cache_path){
+          if(!$cached_image){
             $applogo = "$($thisApp.Config.Current_folder)\\Resources\\Material-Youtube.png"
           }
         }else{

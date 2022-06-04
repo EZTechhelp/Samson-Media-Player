@@ -40,24 +40,31 @@ function Add-VLCRegisteredEvents
     [switch]$Verboselog
   )
   
+  #Unregister any existing
+  try{
+    #Get-EventSubscriber -force | unregister-event -force
+  }catch{
+    write-ezlogs "An exception occurred Unregistering an event" -showtime -catcherror $_
+  } 
+  
   #VLC Playing Event
   try{
-    Register-ObjectEvent -InputObject $synchash.Vlc -EventName Playing -MessageData $synchash -Action { 
+    $null = Register-ObjectEvent -InputObject $synchash.Vlc -EventName Playing -MessageData $synchash -Action { 
       $synchash = $Event.MessageData
       try{
         $synchash.Timer.start()  
-        if($thisApp.Config.Verbose_logging){write-ezlogs ">>>> [VLC_Playing_EVENT] Starting tick timer" -showtime -color cyan}
+        if($thisApp.Config.Verbose_logging){write-ezlogs ">>>> [VLC_Playing_EVENT] Starting tick timer" -showtime}
       }catch{
         write-ezlogs "An exception occurred in vlc Playing event" -showtime -catcherror $_
       }   
-    }
+    }.GetNewClosure()
   }catch{
     write-ezlogs "An exception occurred Registering an event" -showtime -catcherror $_
   }
   
   #VLC Stopped Event
   try{
-    Register-ObjectEvent -InputObject $synchash.Vlc -EventName Stopped -MessageData $synchash -Action { 
+    $null = Register-ObjectEvent -InputObject $synchash.Vlc -EventName Stopped -MessageData $synchash -Action { 
       $synchash = $Event.MessageData
       try{
         #$synchash.Timer.Stop()

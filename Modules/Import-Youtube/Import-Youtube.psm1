@@ -53,12 +53,12 @@ function Import-Youtube
   )
   
   $all_Youtube_media =  [hashtable]::Synchronized(@{})
-  if($thisApp.Config.Verbose_Logging){write-ezlogs "#### Getting Youtube Media ####" -enablelogs -color yellow -linesbefore 1 -logfile:$log}
+  if($thisApp.Config.Verbose_Logging){write-ezlogs "#### Getting Youtube Media ####" -linesbefore 1 -logfile:$log}
   if($Youtube_URL){
     $synchash.All_Youtube_Media = Get-Youtube -Youtube_URL $Youtube_URL -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -import_browser_auth $thisApp.config.Youtube_Browser -log:$log
   }else{
     Add-Type -AssemblyName System.Web    
-    $synchash.All_Youtube_Media = Get-Youtube -Youtube_playlists $Youtube_playlists -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -import_browser_auth $thisApp.config.Youtube_Browser -startup -log:$log
+    $synchash.All_Youtube_Media = Get-Youtube -Youtube_playlists $Youtube_playlists -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -import_browser_auth $thisApp.config.Youtube_Browser -startup:$Startup -log:$log
   }
   
   #$synchash.All_Youtube_Media = $all_Youtube_media.media
@@ -74,6 +74,7 @@ function Import-Youtube
     'Artist_ID'
     'Artist_url'
     'Artist_web_url'
+    'Description'
     'video_url'
     'audio_url'
     'Album_name'
@@ -88,6 +89,8 @@ function Import-Youtube
     'Stream_title'
     'Status_msg'
     'chat_url'
+    'profile_image_url'
+    'offline_image_url'    
     'Playlist_Track_Total'
     'Track_Url'
     'webpage_url' 
@@ -110,7 +113,7 @@ function Import-Youtube
   
   $image_resources_dir = [System.IO.Path]::Combine($($thisApp.Config.Current_folder) ,"Resources")
   #$Group_Name = 'Playlist'
-  $synchash.Youtube_GroupName = 'Playlist'
+  $synchash.Youtube_GroupName = 'Group_Name'
   if($synchash.All_Youtube_Media -and !$Refresh_All_Youtube_Media)
   { 
     foreach ($Media in $synchash.All_Youtube_Media | where {$_.id})
@@ -138,21 +141,25 @@ function Import-Youtube
       $Type = $media.type
       $images = $media.images
       $Playlist_tracks = $media.Playlist_tracks
-      #write-ezlogs "chaturl: $chat_url" -showtime      
+      if($verboselog){write-ezlogs ">>>> Adding Youtube Playlist: $($Playlist_name)" -showtime -logfile:$log}      
       #$Sub_GroupName = 'Artist_Name'
       foreach($Track in $Playlist_tracks){
         if($Track.id){
           $track_encodedtitle = $Null 
           $track_encodedtitle = $track.encodedtitle  
-          [int]$hrs = $($([timespan]::Fromseconds($Track.Duration)).Hours)
-          [int]$mins = $($([timespan]::Fromseconds($Track.Duration)).Minutes)
-          [int]$secs = $($([timespan]::Fromseconds($Track.Duration)).Seconds) 
-          [int]$milsecs = $($([timespan]::Fromseconds($Track.Duration)).TotalMilliseconds)
-          $total_time = "$hrs`:$mins`:$secs"                   
-          $thumbimage = $Track.thumbnail 
+          try{
+            [int]$hrs = $($([timespan]::FromMilliseconds($Track.Duration)).Hours)
+            [int]$mins = $($([timespan]::FromMilliseconds($Track.Duration)).Minutes)
+            [int]$secs = $($([timespan]::FromMilliseconds($Track.Duration)).Seconds) 
+            $total_time = "$hrs`:$mins`:$secs"                   
+          }catch{
+            write-ezlogs "An exception occurred parsing track duration time $($Track.Duration)" -showtime -catcherror $_
+          }
           if($Media.Group -match 'twitch'){
             $Playlist_name = $Media.Group
-          }               
+          }   
+          if($verboselog){write-ezlogs " | Adding track: $($Track.title) - $($Track.id)" -showtime -logfile:$log}      
+          write-ezlogs "Playlist: $($Playlist_name) - Media.name $($Media.name) - Title: $($Track.title) - Group: $($Media.Group)"       
           #---------------------------------------------- 
           #region Add Properties to datatable
           #----------------------------------------------
@@ -174,12 +181,15 @@ function Import-Youtube
           $newTableRow.Status_msg = $Track.Status_msg
           $newTableRow.Stream_title = $Track.Stream_title
           $newTableRow.Profile_Path = $Media.Profile_Path
-          $newTableRow.Duration_ms = $milsecs
+          $newTableRow.Description = $Media.Description
+          $newTableRow.Duration_ms = $Track.Duration
           $newTableRow.Track_number = $Track.playlist_index
           $newTableRow.Artist_Name = ''
           $newTableRow.Artist = ''
           $newTableRow.Group = $Media.Group
-          $newTableRow.Artist_ID = ''
+          $newTableRow.Artist_ID = ''         
+          $newTableRow.profile_image_url = $track.profile_image_url
+          $newTableRow.offline_image_url = $track.offline_image_url
           $newTableRow.Artist_url = ''
           $newTableRow.Artist_web_url = ''
           $newTableRow.Album_name = ''
@@ -188,9 +198,9 @@ function Import-Youtube
           $newTableRow.Album_web_url = ''
           $newTableRow.Album_images = ''
           $newTableRow.thumbnail = $Track.thumbnail
-          $newTableRow.Group_Name = $synchash.Youtube_GroupName
+          $newTableRow.Group_Name = "$Playlist_name"
           $newTableRow.encodedtitle = $track.id
-          $newTableRow.ID = $track.id
+          $newTableRow.ID = $track.id       
           $newTableRow.playlist_encodedtitle = $Playlist_encodedtitle
           $newTableRow.type = $Track.source
           $newTableRow.Source = $Track.source       
@@ -202,10 +212,9 @@ function Import-Youtube
       }              
     }
   }
-  if($verboselog){write-ezlogs " | Compiling datatable and adding items" -showtime -color cyan -enablelogs -logfile:$log} 
-  #$view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($Youtube_Datatable.datatable)
+  if($verboselog){write-ezlogs " | Compiling datatable and adding items" -showtime -logfile:$log} 
   $PerPage = $thisApp.Config.YoutubeBrowser_Paging
-  if($thisApp.Config.YoutubeBrowser_Paging -ne $Null){
+  if($thisApp.Config.YoutubeBrowser_Paging -ne $Null -and @($Youtube_Datatable.datatable).count -gt 1){
     $approxGroupSize = (@($Youtube_Datatable.datatable).count | Measure-Object -Sum).Sum / $thisApp.Config.YoutubeBrowser_Paging     
     $approxGroupSize = [math]::ceiling($approxGroupSize)
     #write-host ('This will create {0} groups which will be approximately {1} in size' -f $approxGroupSize, $page_size)
@@ -229,44 +238,54 @@ function Import-Youtube
     $synchash.Youtube_TotalView_Groups = @($groupmembers.GetEnumerator() | select *).count
     $synchash.Youtube_CurrentView_Group = ($groupmembers.GetEnumerator() | select * | select -last 1).Name    
     $itemsource = ($groupmembers.GetEnumerator() | select * | select -last 1).Value | Sort-object -Property {$_.Playlist},{$_.Track_Name}
-    $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($itemsource) 
+    $synchash.Youtube_View = [System.Windows.Data.CollectionViewSource]::GetDefaultView($itemsource) 
   }else{  
-    $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($Youtube_Datatable.datatable) 
+    $synchash.Youtube_View = [System.Windows.Data.CollectionViewSource]::GetDefaultView($Youtube_Datatable.datatable) 
   }
-  $synchash.Youtube_View = $view
-  if($synchash.Youtube_GroupName){
-    $groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
-    $groupdescription.PropertyName = $synchash.Youtube_GroupName
-    if($synchash.Youtube_View.GroupDescriptions){
-      $synchash.Youtube_View.GroupDescriptions.Clear()    
-    }else{
-      write-ezlogs "[Import-Youtube] View group descriptions not available or null! Likely CollectionViewSource was empty!" -showtime -warning -logfile:$log
-    }
-     $null = $synchash.Youtube_View.GroupDescriptions.Add($groupdescription)
-    if($Sub_GroupName){
-      $sub_groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
-      $sub_groupdescription.PropertyName = $Sub_GroupName
-      $null = $synchash.Youtube_View.GroupDescriptions.Add($sub_groupdescription)
+  if($synchash.Youtube_GroupName -and $synchash.Youtube_View){
+    try{
+      $groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
+      $groupdescription.PropertyName = $synchash.Youtube_GroupName
+      if($synchash.Youtube_View.GroupDescriptions){
+        $synchash.Youtube_View.GroupDescriptions.Clear()                
+      } 
+      $null = $synchash.Youtube_View.GroupDescriptions.Add($groupdescription) 
+      if($Sub_GroupName){
+        $sub_groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
+        $sub_groupdescription.PropertyName = $Sub_GroupName
+        $null = $synchash.Youtube_View.GroupDescriptions.Add($sub_groupdescription)
+      }           
+    }catch{
+      write-ezlogs "An exception occurred attempting to set group descriptions" -showtime -catcherror $_
     }
   }elseif($synchash.Youtube_View.GroupDescriptions){
     $synchash.Youtube_View.GroupDescriptions.Clear()
+  }else{
+    write-ezlogs "[Import-Youtube] View group descriptions not available or null! Likely CollectionViewSource was empty!" -showtime -warning -logfile:$log
   }    
   if($use_runspace){
     #$synchash.import_youtube_timer.start()
     $syncHash.Window.Dispatcher.invoke([action]{
-        $syncHash.YoutubeTable.ItemsSource = $synchash.Youtube_View
-        $synchash.Youtube_lblpageInformation.content = "$($synchash.Youtube_CurrentView_Group) of $($synchash.Youtube_TotalView_Groups)" 
-        $synchash.Youtube_Table_Total_Media.content = "$(@($syncHash.YoutubeTable.ItemsSource).count) of Total | $(@(($synchash.Youtube_View_Groups | select *).value).count)"       
-        $synchash.Youtube_Progress_Ring.isActive=$false   
+        try{
+          $syncHash.YoutubeTable.ItemsSource = $synchash.Youtube_View
+          $synchash.Youtube_lblpageInformation.content = "$($synchash.Youtube_CurrentView_Group) of $($synchash.Youtube_TotalView_Groups)" 
+          $synchash.Youtube_Table_Total_Media.content = "$(@($syncHash.YoutubeTable.ItemsSource).count) of Total | $(@(($synchash.Youtube_View_Groups | select *).value).count)"       
+          $synchash.Youtube_Progress_Ring.isActive=$false   
+        }catch{
+          write-ezlogs "[RUNSPACE INVOKE] An exception occurred attempting to set itemsource for MediaTable" -showtime -catcherror $_
+        }    
     },"Normal")     
   }else{
-    $syncHash.SpotifyTable.ItemsSource = $view
-    $synchash.Spotify_Table_Total_Media.content = "$(@($syncHash.SpotifyTable.ItemsSource).count) of Total | $(@($Spotify_Datatable.datatable).count)"
-    $synchash.Spotify_lblpageInformation.content = "$($synchash.Spotify_CurrentView_Group) of $($synchash.Spotify_TotalView_Groups)"
-    $synchash.Youtube_Progress_Ring.isActive=$false        
+    try{
+      $syncHash.YoutubeTable.ItemsSource = $synchash.Youtube_View
+      $synchash.Youtube_Table_Total_Media.content = "$(@($syncHash.YoutubeTable.ItemsSource).count) of Total | $(@($Youtube_Datatable.datatable).count)"
+      $synchash.Youtube_lblpageInformation.content = "$($synchash.Youtube_CurrentView_Group) of $($synchash.Youtube_TotalView_Groups)"
+      $synchash.Youtube_Progress_Ring.isActive=$false     
+    }catch{
+      write-ezlogs "An exception occurred attempting to set itemsource for MediaTable" -showtime -catcherror $_
+    }       
   }
-
-  if($Startup)
+  if($Startup -and !$synchash.Youtube_Update)
   {
     if($use_runspace){
       if($thisApp.Config.YoutubeBrowser_Paging -ne $Null){
@@ -293,8 +312,8 @@ function Import-Youtube
           $buttonColumn = New-Object System.Windows.Controls.DataGridTemplateColumn
           $buttonFactory = New-Object System.Windows.FrameworkElementFactory([System.Windows.Controls.Button])
           $Null = $buttonFactory.SetValue([System.Windows.Controls.Button]::ContentProperty, "Play")
-          if($verboselog){write-ezlogs " | Setting YoutubeTable Play button click event" -showtime -color cyan -enablelogs -logfile:$log} 
-          $Null = $buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$PlayMedia_Command)
+          if($verboselog){write-ezlogs " | Setting YoutubeTable Play button click event" -showtime -enablelogs -logfile:$log} 
+          $Null = $buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
           $dataTemplate = New-Object System.Windows.DataTemplate
           $dataTemplate.VisualTree = $buttonFactory
           $buttonColumn.CellTemplate = $dataTemplate
@@ -323,8 +342,8 @@ function Import-Youtube
       $buttonColumn = New-Object System.Windows.Controls.DataGridTemplateColumn
       $buttonFactory = New-Object System.Windows.FrameworkElementFactory([System.Windows.Controls.Button])
       $Null = $buttonFactory.SetValue([System.Windows.Controls.Button]::ContentProperty, "Play")
-      if($verboselog){write-ezlogs " | Setting YoutubeTable Play button click event" -showtime -color cyan -enablelogs -logfile:$log} 
-      $Null = $buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$PlayMedia_Command)
+      if($verboselog){write-ezlogs " | Setting YoutubeTable Play button click event" -showtime -logfile:$log} 
+      $Null = $buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
       $dataTemplate = New-Object System.Windows.DataTemplate
       $dataTemplate.VisualTree = $buttonFactory
       $buttonColumn.CellTemplate = $dataTemplate
@@ -332,8 +351,9 @@ function Import-Youtube
       $buttonColumn.DisplayIndex = 0
       $null = $synchash.YoutubeTable.Columns.add($buttonColumn) 
     } 
-    if($startup_perf_timer){write-ezlogs " | Seconds to Import-Youtube: $($startup_stopwatch.Elapsed.TotalSeconds)" -showtime}        
+    if($thisApp.Config.startup_perf_timer){write-ezlogs " | Seconds to Import-Youtube: $($startup_stopwatch.Elapsed.TotalSeconds)" -showtime}        
   }
+  $synchash.Youtube_Update = $false
 }
 
 #---------------------------------------------- 
