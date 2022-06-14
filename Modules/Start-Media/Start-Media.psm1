@@ -23,7 +23,7 @@
     EZTechhelp - https://www.eztechhelp.com
 
     .NOTES
-
+    update yt-dlp: yt-dlp -U
 #>
 
 #---------------------------------------------- 
@@ -42,7 +42,7 @@ function Start-Media{
     $all_playlists,
     [switch]$Show_notifications = $thisApp.Config.Show_notifications,
     $Script_Modules,
-    [switch]$Verboselog
+    [switch]$Verboselog = $true
   ) 
   try{   
     $synchash.Youtube_WebPlayer_URL = $null
@@ -52,6 +52,7 @@ function Start-Media{
     $synchash.Youtube_WebPlayer_timer.start()
     $synchash.WebPlayer_Playing_timer.stop()    
     $synchash.Media_Current_Title = '' 
+    $synchash.Current_playing_media = $Null
     if($Media.SongInfo.title){
       $mediatitle = $($Media.SongInfo.title)
       $artist = $Media.SongInfo.Artist
@@ -59,7 +60,7 @@ function Start-Media{
       $mediatitle = $($Media.title)
       $artist = $Media.Artist
     } 
-    
+    $streamlink_log = "$env:temp\EZT-MediaPlayer\streamlink.log"
     #$encodedtitle = $media.id 
     $url = $($Media.url)
     if(!$url -and (Test-URL $Media)){
@@ -68,7 +69,7 @@ function Start-Media{
     }else{
       write-ezlogs ">>>> Selected Media to play $($mediatitle)" -showtime
     }
-  
+    write-ezlogs " | Media to play: $($media | out-string)" -showtime
     if($thisApp.Config.Verbose_logging){
       write-ezlogs " | Media to play: $($media | out-string)" -showtime
     }
@@ -183,7 +184,7 @@ function Start-Media{
     }else{
       $chat_url = $null
     }
-    if($use_WebPlayer -and ($media.type -eq 'YoutubePlaylist_item' -or $media.Group -eq 'Youtube') -and ($media.webpage_url -match 'youtube' -or $media.webpage_url -match 'yewtu.be' -or $media -match 'yewtu.be' -or $media -match 'youtube')){
+    if($thisapp.config.Youtube_WebPlayer -and ($media.type -eq 'YoutubePlaylist_item' -or $media.Group -eq 'Youtube') -and ($media.webpage_url -match 'youtube' -or $media.webpage_url -match 'yewtu.be' -or $media -match 'yewtu.be' -or $media -match 'youtube')){
       $delay = $null     
       if($media.title){
         $title = $media.title
@@ -213,7 +214,7 @@ function Start-Media{
       }      
       $synchash.Youtube_WebPlayer_URL = [Uri]$vlcurl
       $synchash.Youtube_WebPlayer_timer.start()
-    }elseif($media.type -eq 'YoutubePlaylist_item'){
+    }elseif($media.type -eq 'YoutubePlaylist_item' -or $media.Source -eq 'YoutubePlaylist_item' -or $media_link -match 'youtube' -or $media_link -match 'twitch.tv'){
       $delay = $null
       if($media.webpage_url -match 'twitch.tv'){
         $twitch_channel = $((Get-Culture).textinfo.totitlecase(($media.webpage_url | split-path -leaf).tolower()))
@@ -221,8 +222,7 @@ function Start-Media{
         $TwitchAPI = Get-TwitchAPI -StreamName $twitch_channel -thisApp $thisApp
         if($TwitchAPI){
           $thisApp.Config.streamlink = $TwitchAPI #$streamlink_fetchjson | convertfrom-json
-        }                
-        $streamlink_log = "$env:temp\EZT-MediaPlayer\streamlink.log"
+        }                       
         try{       
           if(!$TwitchAPI.type){
             write-ezlogs "[START_MEDIA] Twitch Channel $twitch_channel`: OFFLINE" -showtime -warning -logfile:$thisApp.Config.TwitchMedia_logfile
@@ -309,7 +309,7 @@ function Start-Media{
           start-sleep 1
         }
         if($streamlink_wait_timer -ge 60){
-          write-ezlogs "[START_MEDIA] Timed out waiting for streamlink to start, falling back to yt-dlp" -showtime -warning -logfile:$thisApp.Config.TwitchMedia_logfile
+          write-ezlogs "[START_MEDIA] Timed out waiting for streamlink to start, falling back to yt-dlp" -showtime -warning -logfile:$thisApp.Config.TwitchMedia_logfile          
           $yt_dlp = yt-dlp -f b -g $media.webpage_url -o '*' -j --cookies-from-browser $thisApp.config.Youtube_Browser --add-header "Device-ID: twitch-web-wall-mason" --add-header "Authorization: ''" --sponsorblock-remove all 
           [Uri]$vlcurl = $yt_dlp[0]  
           $media_link = $vlcurl
@@ -321,7 +321,7 @@ function Start-Media{
           [Uri]$vlcurl = 'http://127.0.0.1:53828/'
           $media_link = $vlcurl                  
         }              
-      }elseif($media.webpage_url){ 
+      }elseif($media.webpage_url -or $media_link -match 'youtube'){ 
         <#        $libvlc_media = [LibVLCSharp.Shared.Media]::new([LibVLCSharp.Shared.LibVLC]::new(),[Uri]($media.webpage_url),[LibVLCSharp.Shared.FromType]::FromLocation,$null)
             $parse = $libvlc_media.Parse([LibVLCSharp.Shared.MediaParseOptions]::ParseNetwork)
             while(!$parse.IsCompleted){
@@ -334,26 +334,82 @@ function Start-Media{
           $media_link = $libvlc_media.SubItems[0].Mrl                     
         }else{
           write-ezlogs "[START_MEDIA] | Getting best quality video and audio links from yt_dlp for $($media.webpage_url)" -showtime -logfile:$thisApp.Config.YoutubeMedia_logfile 
-          if(-not [string]::IsNullOrEmpty($thisApp.config.Youtube_Browser)){
-            #$yt_dlp = yt-dlp -f bestvideo+bestaudio/best -g $media.webpage_url -o '*' -j --cookies-from-browser $thisApp.config.Youtube_Browser --sponsorblock-remove all            
-            #$yt_dlp = yt-dlp -f b -g $media.webpage_url -o '*' -j --cookies-from-browser $thisApp.config.Youtube_Browser --sponsorblock-remove all
-            $yt_dlp = yt-dlp -f b $media.webpage_url --no-check-certificate --skip-download --youtube-skip-dash-manifest --cookies-from-browser $thisApp.config.Youtube_Browser -j --dump-single-json | convertfrom-json  | select -Unique
-            #$yt_dlp = yt-dlp -f b -g $media.webpage_url -o '*' -j --cookies-from-browser $thisApp.config.Youtube_Browser --add-header "Device-ID: twitch-web-wall-mason" --add-header "Authorization: ''" --sponsorblock-remove all        
+          try{
+            if($media.webpage_url){
+              $media_link = $media.webpage_url
+            }           
+            if(-not [string]::IsNullOrEmpty($thisApp.config.Youtube_Browser)){
+              #$yt_dlp = yt-dlp -f bestvideo+bestaudio/best -g $media.webpage_url -o '*' -j --cookies-from-browser $thisApp.config.Youtube_Browser --sponsorblock-remove all            
+              #$yt_dlp = yt-dlp -f b -g $media.webpage_url -o '*' -j --cookies-from-browser $thisApp.config.Youtube_Browser --sponsorblock-remove all
+              $yt_dlp = yt-dlp -f b $media_link --no-check-certificate --skip-download --youtube-skip-dash-manifest --cookies-from-browser $thisApp.config.Youtube_Browser -j --dump-single-json | convertfrom-json  | select -Unique
+              #$yt_dlp = yt-dlp -f b -g $media.webpage_url -o '*' -j --cookies-from-browser $thisApp.config.Youtube_Browser --add-header "Device-ID: twitch-web-wall-mason" --add-header "Authorization: ''" --sponsorblock-remove all        
+            }else{
+              #$yt_dlp = yt-dlp -f bestvideo+bestaudio/best -g $media.webpage_url -o '*' -j --sponsorblock-remove all 
+              #$yt_dlp = yt-dlp -f b -g $media.webpage_url -o '*' -j --sponsorblock-remove all 
+              $yt_dlp = yt-dlp -f b $media_link --no-check-certificate --skip-download --youtube-skip-dash-manifest -j --dump-single-json | convertfrom-json  | select -Unique
+              #$yt_dlp = yt-dlp -f b -g $media.webpage_url -o '*' -j --add-header "Device-ID: twitch-web-wall-mason" --add-header "Authorization: ''" --sponsorblock-remove all
+            }
+          }catch{
+            write-ezlogs "An exception occurred in yt-dlp when processing URL $($media_link)" -showtime -catcherror $_
+          }
+          if(!$yt_dlp){
+            write-ezlogs "Unable to get playable url from yt-dlp, trying streamlink..." -showtime -warning -logfile:$thisApp.Config.YoutubeMedia_logfile
+            $streamlink_wait_timer = 1
+            $streamlinkblock = {
+              try{
+                if((Get-Process Streamlink*)){
+                  Get-Process Streamlink* | Stop-Process -Force
+                  start-sleep -Milliseconds 500
+                }              
+                $streamlink = streamlink $media_link "best,720p,480p" --player-external-http --player-external-http-port 53828 --loglevel debug --logfile $streamlink_log --retry-streams 1 --retry-max 10 --stream-segment-threads 2 --ringbuffer-size 32M
+              }catch{
+                write-ezlogs "An exception occurred executing streamlink for Media url $($media_link)" -showtime -catcherror $_ -logfile:$thisApp.Config.YoutubeMedia_logfile
+              }            
+              if($error){
+                write-ezlogs -showtime -PrintErrors -ErrorsToPrint $error
+              }
+            }
+            $Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"}  
+            Start-Runspace $streamlinkblock -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -logfile $thisApp.Config.Log_file -runspace_name "Streamlink HTTP Runspace" -thisApp $thisApp -Script_Modules $Script_Modules   
+            while($streamlink_wait_timer -lt 20 -and !$(Get-Process *streamlink*)){
+              $streamlink_wait_timer++
+              write-ezlogs "[START_MEDIA] Waiting for streamlink process...." -showtime -logfile:$thisApp.Config.YoutubeMedia_logfile
+              if($streamlink_wait_timer -eq 10){
+                write-ezlogs "[START_MEDIA] >>>> Relaunching streamlink as it should have started by now" -showtime -color cyan -logfile:$thisApp.Config.YoutubeMedia_logfile
+                $streamlinkblock = {
+                  if((Get-Process Streamlink*)){
+                    Get-Process Streamlink* | Stop-Process -Force
+                  }
+                  $streamlink = streamlink $media_link "best,720p,480p" --player-external-http --player-external-http-port 53828 --loglevel debug --logfile $streamlink_log --retry-streams 2
+                  if($error){
+                    write-ezlogs -showtime -PrintErrors -ErrorsToPrint $error
+                  }
+                }
+                $Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"}  
+                Start-Runspace $streamlinkblock -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -logfile $thisApp.Config.Log_file -runspace_name "Streamlink HTTP Runspace" -thisApp $thisApp -Script_Modules $Script_Modules 
+              }
+              start-sleep 1
+            }
+            if($streamlink_wait_timer -ge 20){
+              write-ezlogs "[START_MEDIA] Timed out waiting for streamlink to start: $media_link, cannot continue!" -showtime -warning -logfile:$thisApp.Config.YoutubeMedia_logfile 
+              Update-Notifications -Level 'WARNING' -Message "Timed out waiting for streamlink to start: $media_link, cannot continue!" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout -Message_color 'Orange' -MessageFontWeight bold -LevelFontWeight Bold   
+              return     
+            }else{
+              write-ezlogs "[START_MEDIA] >>>> Connecting to streamlink http://127.0.0.1:53828/" -showtime -logfile:$thisApp.Config.YoutubeMedia_logfile
+              [Uri]$vlcurl = 'http://127.0.0.1:53828/'
+              $media_link = $vlcurl                  
+            }                                             
           }else{
-            #$yt_dlp = yt-dlp -f bestvideo+bestaudio/best -g $media.webpage_url -o '*' -j --sponsorblock-remove all 
-            #$yt_dlp = yt-dlp -f b -g $media.webpage_url -o '*' -j --sponsorblock-remove all 
-            $yt_dlp = yt-dlp -f b $media.webpage_url --no-check-certificate --skip-download --youtube-skip-dash-manifest -j --dump-single-json | convertfrom-json  | select -Unique
-            #$yt_dlp = yt-dlp -f b -g $media.webpage_url -o '*' -j --add-header "Device-ID: twitch-web-wall-mason" --add-header "Authorization: ''" --sponsorblock-remove all
-          } 
-          $best_quality = $yt_dlp.url | select -last 1
-          if(Test-URL $best_quality){
-            [Uri]$vlcurl = $best_quality 
-            $media_link = $vlcurl
-          }else{
-            write-ezlogs "Unable to find right URL to use in $($yt_dlp | out-string) -- cannot continue" -showtime -warning -logfile:$thisApp.Config.YoutubeMedia_logfile
-            return
-            $media_link = $Null
-            $vlcurl = $Null
+            $best_quality = $yt_dlp.url | select -last 1
+            if(Test-URL $best_quality){
+              [Uri]$vlcurl = $best_quality 
+              $media_link = $vlcurl
+            }else{
+              write-ezlogs "Unable to find right URL to use in $($yt_dlp | out-string) -- cannot continue" -showtime -warning -logfile:$thisApp.Config.YoutubeMedia_logfile
+              return
+              $media_link = $Null
+              $vlcurl = $Null
+            }
           }            
         }         
         #[Uri]$video_url = $yt_dlp[0]
@@ -475,7 +531,7 @@ function Start-Media{
             }
             if($thisApp.Config.Use_Visualizations -and ($media_link -match $audio_media_pattern -or $vlcurl -match $audio_media_pattern)){ 
               #,"--no-video"
-              
+              $synchash.FullScreen_Player_Button.isEnabled = $true
               if($thisApp.Config.Current_Visualization -eq 'Spectrum'){
                 $Visualization = "Visual"
                 $effect = "--effect-list=spectrum"
@@ -529,6 +585,7 @@ function Start-Media{
           }
           Add-Member -InputObject $thisApp.config -Name 'Last_Played_title' -Value $title -MemberType NoteProperty -Force
           Add-Member -InputObject $thisApp.config -Name 'Last_Played' -Value $media.id -MemberType NoteProperty -Force    
+          $synchash.Current_playing_media = $media
                     
           try{          
             if(Test-URL $chat_url){
@@ -625,6 +682,7 @@ function Start-Media{
         }
         if($synchash.vlc.IsPlaying){
           Add-Member -InputObject $thisApp.config -Name 'Last_Played' -Value $media.id -MemberType NoteProperty -Force
+          $synchash.Current_playing_media = $media
           $synchash.Timer.Start()  
         }
       }   
@@ -732,6 +790,7 @@ function Start-Media{
       if($synchash.vlc.IsPlaying -or ($use_WebPlayer -and $synchash.Youtube_WebPlayer_URL)){       
         $synchash.Media_Current_Title = "$title"
         Add-Member -InputObject $thisApp.config -Name 'Last_Played' -Value $media.id -MemberType NoteProperty -Force
+        $synchash.Current_playing_media = $media
         $synchash.Window.Dispatcher.invoke([action]{  
             $synchash.update_background_timer.start()                       
             $synchash.EQ_Timer.start()               

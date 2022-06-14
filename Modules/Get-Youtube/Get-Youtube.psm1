@@ -161,11 +161,186 @@ function Get-Youtube
         }
         write-ezlogs " | Adding Twitch stream channel: $twitch_channel - Status: $Live_status" -showtime -logfile:$log
         $null = $yt_dlp.add($twitch_item)      
-      }elseif($import_browser_auth){
-        #$yt_dlp = yt-dlp -f b* -g $playlist --rm-cache-dir -o '*' -j --cookies-from-browser $import_browser_auth
-        $yt_dlp = yt-dlp -f bestvideo+bestaudio/best -g $playlist --rm-cache-dir -o '*' -j --cookies-from-browser $import_browser_auth       
+      }elseif($playlist -match 'youtube.com' -or $playlist -match 'youtu.be'){
+        $yt_dlp = New-Object -TypeName 'System.Collections.ArrayList'
+        if($playlist -match "v="){
+          $youtube_id = ($($playlist) -split('v='))[1].trim()  
+          $youtube_type = 'Video'         
+        }elseif($playlist -match 'list='){
+          $youtube_id = ($($playlist) -split('list='))[1].trim()    
+          $youtube_type = 'Playlist'                      
+        }
+        if($youtube_id){
+          try{
+            if($youtube_type -eq 'Playlist'){
+              $video_info = Get-YouTubePlaylistItems -ID $youtube_id
+            }else{
+              $video_info = Get-YouTubeVideo -Id $youtube_id
+            }         
+            if($video_info){
+              foreach($video in $video_info){
+                $title = $Null
+                $description = $Null
+                $channel_id = $Null
+                $channel_title = $Null
+                $channel_info = $Null
+                $url = $Null
+                $images = $Null
+                $playlist_index = $Null
+                $thumbnail = $null
+                $TimeValues = $null
+                $video_moreinfo = $null
+                $duration = $null
+                $hr = $Null
+                $mins = $Null
+                $secs = $null
+                $id = $Null
+                $categories = $Null
+                $playlist_id = $Null
+                $playlist_name = $null
+                $format_note = $Null
+                $likeCount = $Null
+                $title = $video.snippet.title
+                $description = $video.snippet.description
+                if($video.snippet.videoOwnerChannelId){
+                  $channel_id = $video.snippet.videoOwnerChannelId
+                  $channel_title = $video.snippet.videoOwnerChannelTitle                  
+                }else{
+                  $channel_id = $video.snippet.channelId
+                  $channel_title = $video.snippet.channelTitle 
+                }              
+                if($channel_id){
+                  #$channel_info = Get-YouTubeChannel -Id $channel_id -raw
+                } 
+                if($video.playlist_info.snippet.title){
+                  $playlist_name = $video.playlist_info.snippet.title
+                }else{
+                  $playlist_name = $channel_title
+                } 
+                if($video.contentDetails.videoId){
+                  $id = $($video.contentDetails.videoId)
+                  $playlist_id = $video.snippet.playlistId
+                  [uri]$playlist_url = "https://www.youtube.com/playlist?list=$playlist_id"
+                  [uri]$url = "https://www.youtube.com/watch?v=$id"
+                }else{
+                  $id = $youtube_id
+                  [uri]$url = "https://www.youtube.com/watch?v=$id"  
+                }                          
+                $images = $video.snippet.thumbnails
+                if($video.playlist_info.snippet.thumbnails){
+                  $Playlist_images = $video.playlist_info.snippet.thumbnails
+                }else{
+                  $Playlist_images = $Null
+                }
+                if($channel_info.items.BrandingSettings.image.bannerExternalUrl){
+                  $thumbnail = $channel_info.items.BrandingSettings.image.bannerExternalUrl
+                }else{
+                  $thumbnail = $video.snippet.thumbnails.medium.url
+                }
+                if($video.snippet.position){
+                  $playlist_index = $video.snippet.position
+                }               
+                if($video.contentDetails.duration){
+                  $TimeValues = $video.contentDetails.duration
+                  $viewcount = $video.statistics.viewCount 
+                  $commentCount = $video.statistics.commentCount
+                  $likeCount = $video.statistics.likeCount
+                  $format_note = $video.contentDetails.format_note
+                  $categories = $video.topicDetails.topicCategories
+                }elseif($video.contentDetails.videoId){
+                  <#                  $video_moreinfo = Get-YouTubeVideo -Id $video.contentDetails.videoId
+                      if($video_moreinfo){
+                      $TimeValues = $video_moreinfo.contentDetails.duration
+                      $viewcount = $video_moreinfo.statistics.viewCount 
+                      $categories = $video_moreinfo.topicDetails.topicCategories 
+                      $commentCount = $video_moreinfo.statistics.commentCount
+                      $likeCount = $video_moreinfo.statistics.likeCount
+                      $format_note = $video_moreinfo.contentDetails.format_note
+                  }#>
+                }
+                if($video.Playlist_info.contentdetails.itemcount){
+                  $track_Total = $video.Playlist_info.contentdetails.itemcount
+                }else{
+                  $track_total = 1
+                }                               
+                if($TimeValues){
+                  try{
+                    if($TimeValues -match 'H'){
+                      $hr = [regex]::matches($TimeValues, "PT(?<value>.*)H")| %{$_.groups[1].value}
+                      $mins = [regex]::matches($TimeValues, "PT(?<value>.*)H(?<value>.*)M")| %{$_.groups[1].value}
+                      $Secs = [regex]::matches($TimeValues, "M(?<value>.*)S")| %{$_.groups[1].value}
+                    }elseif($TimeValues -match 'M'){
+                      $hr = 0
+                      $mins = [regex]::matches($TimeValues, "PT(?<value>.*)M")| %{$_.groups[1].value}
+                      $Secs = [regex]::matches($TimeValues, "M(?<value>.*)S")| %{$_.groups[1].value}
+                    }elseif($TimeValues -match 'S'){
+                      $hr = 0
+                      $mins = 0
+                      $Secs = [regex]::matches($TimeValues, "PT(?<value>.*)S")| %{$_.groups[1].value}
+                    }else{
+                      $hr = 0
+                      $mins = 0
+                      $secs = 0
+                    }
+                    if(!$hr){
+                      $hr = 0
+                    }
+                    if(!$mins){
+                      $mins = 0
+                    }
+                    if(!$secs){
+                      $secs = 0
+                    }
+                    $duration = [TimeSpan]::Parse("$hr`:$mins`:$secs").TotalSeconds
+                  }catch{
+                    write-ezlogs "An exception occurred parsing duration for $($title) from ($hr`:$mins`:$secs)" -showtime -catcherror $_
+                  }
+                }
+                $youtube_item = New-Object PsObject -Property @{
+                  'title' =  $title
+                  'description' = $description
+                  'playlist_index' = $playlist_index
+                  'channel_id' = $channel_id
+                  'id' = $id
+                  'duration' = $duration
+                  'url' = $url
+                  'urls' = ''
+                  'like_count' = $likeCount
+                  'Categories' = $categories                
+                  'webpage_url' = $url
+                  'thumbnail' = $thumbnail
+                  'view_count' = $viewcount
+                  'uploader' = $channel_title
+                  'channel' = $channel_title
+                  'webpage_url_domain' = $url.Host
+                  'type' = $youtube_type
+                  'format_note' = $format_note
+                  'availability' = $video.status.privacyStatus
+                  'Playlist_Count' = $track_Total
+                  'thumbnails' = $images
+                  'Playlist' = $playlist_name
+                  'Playlist_url' = $playlist_url
+                  'is_not_json' = $true
+                  'playlist_id' = $playlist_id
+                  'Playlist_images' = $Playlist_images
+                  'Source' = $video.kind
+                }
+                #write-ezlogs " | Adding Youtube video: $title" -showtime -logfile:$log
+                if($yt_dlp.id -notcontains $youtube_item.id){
+                  $null = $yt_dlp.add($youtube_item)  
+                }
+              }                
+            }            
+          }catch{
+            write-ezlogs "An exception occurred executing Get-YoutubeVideo" -showtime -catcherror $_
+          }        
+        }     
       }else{
-        $yt_dlp = yt-dlp -f b* -g $playlist --rm-cache-dir -o '*' -j
+        if($import_browser_auth){
+          $yt_dlp = yt-dlp -f bestvideo+bestaudio/best -g $playlist --rm-cache-dir -o '*' -j --cookies-from-browser $import_browser_auth  
+        }else{
+          $yt_dlp = yt-dlp -f b* -g $playlist --rm-cache-dir -o '*' -j
+        }
       }    
       #--flat-playlist    
     }catch{
@@ -191,7 +366,6 @@ function Get-Youtube
           if($track.title){
             $name = $null
             $name = $track.playlist      
-            write-ezlogs " | Found Playlist item $($track.title)" -showtime -logfile:$log
             $url = $null
             $type = $null
             $type = $track.ie_key
@@ -202,9 +376,6 @@ function Get-Youtube
             $href = $Null
             $duration = $Null
             $duration = $track.duration 
-            if($track.playlist_id){
-              $href = "https://www.youtube.com/playlist?list=$($track.playlist_id)"
-            }
             $playlist_id = $track.playlist_id
             $encodedTitle = $Null  
             $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($name)-YoutubePlaylist")
@@ -212,12 +383,6 @@ function Get-Youtube
             $track_encodedTitle = $Null  
             $track_encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($track.title)-YoutubePlaylist")
             $track_encodedTitle = [System.Convert]::ToBase64String($track_encodedBytes)     
-            write-ezlogs " | Type $($type)" -showtime -logfile:$log
-            write-ezlogs " | Playlist ID $($playlist_id)" -showtime -logfile:$log
-            write-ezlogs " | ID $($track.id)" -showtime -logfile:$log
-            write-ezlogs " | Track Total $($Tracks_Total)" -showtime -logfile:$log
-            write-ezlogs " | Track URL $($track.url)" -showtime -logfile:$log
-            write-ezlogs " | Description $($track.description)" -showtime -logfile:$log
             if($track.urls){
               $url_streams = $track.urls -split "`n"
             }else{
@@ -239,6 +404,7 @@ function Get-Youtube
             if($url){ 
               if($track.extractor -match 'twitch'){
                 $title = "Twitch Stream: $($track.uploader)"
+                write-ezlogs ">>>> Twitch Stream $($track.uploader)" -showtime -logfile:$log
                 $Group = 'Twitch'
                 if($track.live_status){
                   $live_status = $track.live_status
@@ -257,21 +423,33 @@ function Get-Youtube
                 }else{
                   $Stream_title = $Null
                 }                              
-              }else{
+              }else{             
                 $title = $track.title
                 $thumbnail = $null
                 $live_status = $null
                 $status_msg = $null
-                $Stream_title = $Null
+                $Stream_title = $Null               
                 $Group = 'Youtube'
+                if($track.playlist_id){
+                  write-ezlogs ">>> Found Youtube Playlist item $($track.title)" -showtime -logfile:$log
+                  write-ezlogs " | Playlist ID $($playlist_id)" -showtime -logfile:$log
+                  write-ezlogs " | Track Total $($Tracks_Total)" -showtime -logfile:$log
+                  $href = "https://www.youtube.com/playlist?list=$($track.playlist_id)"
+                }else{
+                  write-ezlogs ">>> Found Youtube Video $($track.title)" -showtime -logfile:$log
+                }              
                 if($track.duration){
                   [int]$hrs = $($([timespan]::Fromseconds($Track.Duration)).Hours)
                   [int]$mins = $($([timespan]::Fromseconds($Track.Duration)).Minutes)
                   [int]$secs = $($([timespan]::Fromseconds($Track.Duration)).Seconds) 
-                  [int]$milsecs = $($([timespan]::Fromseconds($Track.Duration)).TotalMilliseconds)
-                  $duration = $milsecs
+                  [int]$duration = $($([timespan]::Fromseconds($Track.Duration)).TotalMilliseconds)
                 }
-              }              
+              }
+              if($thisApp.Config.Verbose_logging){
+                write-ezlogs " | Type $($type)" -showtime -logfile:$log
+                write-ezlogs " | ID $($track.id)" -showtime -logfile:$log
+                write-ezlogs " | Track URL $($track.url)" -showtime -logfile:$log 
+              }                            
               #write-ezlogs " | Title: $($title)" -showtime          
               $newRow = New-Object PsObject -Property @{
                 'title' = $title
@@ -328,7 +506,7 @@ function Get-Youtube
             } 
             if($track.playlist_id){ 
               if($Available_Youtube_Media.id -notcontains $track.playlist_id){
-                write-ezlogs ">>>> Found Youtube Playlist $($track.playlist)" -showtime -logfile:$log
+                write-ezlogs " | Youtube Playlist $($track.playlist)" -showtime -logfile:$log
                 $encodedTitle = $Null  
                 $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($track.playlist)-YoutubePlaylist")
                 $encodedTitle = [System.Convert]::ToBase64String($encodedBytes)       
@@ -356,7 +534,7 @@ function Get-Youtube
               }                    
             }elseif($track.channel_id){
               if($track.channel_id -and $Available_Youtube_Media.playlist_tracks.id -notcontains $track.id){
-                write-ezlogs ">>>> Found Youtube Channel $($track.channel)" -showtime -logfile:$log
+                write-ezlogs " | Youtube Channel $($track.channel)" -showtime -logfile:$log
                 $encodedTitle = $Null  
                 $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($track.channel)-YoutubeChannel")
                 $encodedTitle = [System.Convert]::ToBase64String($encodedBytes)       
@@ -384,7 +562,7 @@ function Get-Youtube
               }           
             }elseif($track.extractor -match 'twitch'){
               if($Available_Youtube_Media.id -notcontains $track.id){
-                write-ezlogs ">>>> Found Twitch Channel $($track.uploader)" -showtime -logfile:$log
+                write-ezlogs " | Twitch Channel $($track.uploader)" -showtime -logfile:$log
                 $encodedTitle = $Null  
                 $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($track.uploader)-TwitchChannel")
                 $encodedTitle = [System.Convert]::ToBase64String($encodedBytes)                      

@@ -135,7 +135,49 @@ function Start-SplashScreen{
     $hash.More_Info_Msg.text= "$Splash_More_Info"
     #$hash.Background_Image.source = "$($Current_Folder)\\ByrnePlayer\DavidByrneTour.png"
     #$hash.Background_Image.Stretch = "UniformToFill"
-    
+    try{
+      if($thisApp.Config.Current_Theme -ne $null -and $thisApp.Config.Current_Theme.Name){
+        $theme = [MahApps.Metro.Theming.MahAppsLibraryThemeProvider]::new()
+        $themes = $theme.GetLibraryThemes()
+        $themeManager = [ControlzEx.Theming.ThemeManager]::new()
+        $detectTheme = $thememanager.DetectTheme($hash.Window)
+        if($thisApp.Config.Verbose_logging){write-ezlogs ">>>> Current Theme: $($detectTheme | out-string)" -showtime}
+        if($detectTheme.Name){
+          $newtheme = $themes | where {$_.Name -eq $detectTheme.Name}
+        }else{
+          $newtheme = $themes | where {$_.Name -eq $thisApp.Config.Current_Theme.Name}
+        } 
+      }
+      if($newtheme){
+        write-ezlogs "Current Theme: $($detectTheme | out-string)"
+        $thememanager.RegisterLibraryThemeProvider($newtheme.LibraryThemeProvider)
+        $thememanager.ChangeTheme($hash.Window,$newtheme.Name,$false)    
+        #$flyoutgradientbrush = $synchash.MainGrid.Background.clone()   
+        if($synchash.GameDetails_Flyout.Background){
+          #$flyoutgradientbrush.GradientStops[1].color = "$($flyoutgradientbrush.GradientStops[1].color)" -replace $("$($flyoutgradientbrush.GradientStops[1].color)").Substring(0,3),'#E9' 
+          #$flyoutgradientbrush.GradientStops[1].Offset = "0.7"  
+          $hash.Window.Background = $synchash.GameDetails_Flyout.Background
+        }else{
+          $gradientbrush = New-object System.Windows.Media.LinearGradientBrush
+          $gradientbrush.StartPoint = "0.5,0"
+          $gradientbrush.EndPoint = "0.5,1"
+          $gradientstop1 = New-object System.Windows.Media.GradientStop
+          $gradientstop1.Color = $thisApp.Config.Current_Theme.GridGradientColor1
+          $gradientstop1.Offset= "0.0"
+          $gradientstop2 = New-object System.Windows.Media.GradientStop
+          $gradientstop2.Color = $thisApp.Config.Current_Theme.GridGradientColor2
+          $gradientstop2.Offset= "0.7"  
+          $gradientstop_Collection = New-object System.Windows.Media.GradientStopCollection
+          $null = $gradientstop_Collection.Add($gradientstop1)
+          $null = $gradientstop_Collection.Add($gradientstop2)
+          $gradientbrush.GradientStops = $gradientstop_Collection  
+          $hash.Window.Background = $gradientbrush     
+          #$hash.Cancel_Button.Background = $gradientbrush
+        }
+      }
+    }catch{
+      write-ezlogs "An exception occurred changing theme for Get-loadScreen" -showtime -catcherror $_
+    }   
     $hash.Window.Add_Loaded({
         if($PlayAudio){
           try{     
@@ -226,10 +268,10 @@ function Start-SplashScreen{
           }
         }         
     }.GetNewClosure())    
-
-    [System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($hash.Window)
-    [void][System.Windows.Forms.Application]::EnableVisualStyles()   
+ 
     try{
+      #[System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($hash.Window)
+      #[void][System.Windows.Forms.Application]::EnableVisualStyles()  
       if($firstRun){
         $hash.window.TopMost = $false
       }      
@@ -247,7 +289,7 @@ function Start-SplashScreen{
   try{ 
     $Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"}  
     $Start_RunSpace_Measure = measure-command{
-      $Start_RunSpace = Start-Runspace $Splash_Pwshell -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -runspace_name $Runspace_name -logfile $Log_file -startup_stopwatch $startup_stopwatch -verboselog:$verboselog -startup_perf_timer $startup_perf_timer
+      $Start_RunSpace = Start-Runspace $Splash_Pwshell -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -runspace_name "Start_SplashScreen_$((Get-PSCallStack)[1].FunctionName)" -logfile $Log_file -startup_stopwatch $startup_stopwatch -verboselog:$verboselog -startup_perf_timer $startup_perf_timer
     }
     $Start_SplashScreen_Perf = "[$(Get-date -format 'MM/dd/yyyy h:mm:ss tt')] [$($MyInvocation.MyCommand -replace ".ps1",''):$((Get-PSCallStack)[0].ScriptLineNumber)] >>>> Start-SplashScreen:  $($startup_stopwatch.Elapsed.Seconds) seconds - $($startup_stopwatch.Elapsed.Milliseconds) Milliseconds"
     if($startup_perf_timer){

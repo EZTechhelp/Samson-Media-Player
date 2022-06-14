@@ -69,7 +69,11 @@ function Update-Notifications
   }else{
     if(!$id){
       $id = $synchash.Notifications_Grid.items.id | select -last 1
-      $id++
+      if(!$id){
+        $id = 1
+      }else{
+        $id++
+      }        
     }
   }
   if($thisApp.Config.Verbose_Logging){write-ezlogs ">>>> Updating Notifications table" -showtime -enablelogs}
@@ -112,8 +116,7 @@ function Update-Notifications
     $itemssource.LevelFontWeight  = $LevelFontWeight 
     $itemssource.Message = $Message
     $itemssource.Message_color = $Message_color
-    $itemssource.MessageFontWeight = $MessageFontWeight
-    
+    $itemssource.MessageFontWeight = $MessageFontWeight    
   }else{
     $existing = $false
     $itemssource = [pscustomobject]@{
@@ -194,7 +197,6 @@ function Update-Notifications
         }catch{
           write-ezlogs "An exception occurred adding items to notifications grid" -showtime -catcherror $_
         }      
-
     },"Normal")
   }  
   

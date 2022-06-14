@@ -5,9 +5,12 @@
          Name="Spotify_Tabitem"
          IsEnabled="true"
 >
-	<Grid Background="black" VerticalAlignment="stretch" HorizontalAlignment="stretch" Opacity="1" Margin="0,0,0,0">
+	<Grid Background="{StaticResource GridGradient}" VerticalAlignment="stretch" HorizontalAlignment="stretch" Opacity="1" Margin="0,0,0,0" AllowDrop="true">
 		<mah:ProgressRing Foreground="White" Name='SpotifyMedia_Progress_Ring' IsActive="false" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Panel.ZIndex="2"/>
-		<DataGrid Name="SpotifyTable" Margin="5,36,5,15" VerticalAlignment="Top" HorizontalAlignment="stretch" Opacity="1" SelectionUnit="FullRow" SelectionMode="Extended" ScrollViewer.CanContentScroll="false" VirtualizingPanel.IsVirtualizingWhenGrouping="True" EnableColumnVirtualization="true" EnableRowVirtualization="true" VirtualizingPanel.VirtualizationMode="Standard" MaxHeight="1600" MaxWidth="2560" RowHeight="30" VirtualizingPanel.IsVirtualizing="True" VirtualizingStackPanel.ScrollUnit="Pixel" ItemsSource="{Binding View, IsAsync=True}" PresentationOptions:Freeze="True">
+		<DataGrid Name="SpotifyTable" Margin="5,36,5,15" VerticalAlignment="Top" HorizontalAlignment="stretch" Opacity="1" SelectionUnit="FullRow" SelectionMode="Extended" ScrollViewer.CanContentScroll="false"
+		          VirtualizingPanel.IsVirtualizingWhenGrouping="True" EnableColumnVirtualization="true" EnableRowVirtualization="true" VirtualizingPanel.VirtualizationMode="Standard" MaxHeight="1600" MaxWidth="2560" RowHeight="30"
+		          VirtualizingPanel.IsVirtualizing="True" VirtualizingStackPanel.ScrollUnit="Pixel" ItemsSource="{Binding Source=View,IsAsync=True}" PresentationOptions:Freeze="True" dgx:DataGridFilter.IsAutoFilterEnabled="True"
+		          dgx:DataGridFilter.ContentFilterFactory="{StaticResource RegexContentFilterFactory}">
 			<!--             <DataGrid.GroupStyle>
                 <GroupStyle ContainerStyle="{StaticResource MahApps.Styles.GroupItem.DataGrid}">
                     <GroupStyle.HeaderTemplate>
@@ -22,10 +25,17 @@
                 </GroupStyle>
             </DataGrid.GroupStyle> -->
 			<DataGrid.Resources>
+				<ControlTemplate x:Key="{x:Static dgx:DataGridFilter.IconTemplateKey}">
+					<Path Data="M0,0 L10,0 6,4 6,9 4,9 4,4 Z" Fill="{DynamicResource MahApps.Brushes.RightArrowFill}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2,0"/>
+				</ControlTemplate>
 				<Style TargetType="ScrollViewer">
 					<Setter Property="AttachedBehavior:ScrollAnimationBehavior.IsEnabled" Value="True"/>
 					<Setter Property="AttachedBehavior:ScrollAnimationBehavior.TimeDuration" Value="00:00:00.30"/>
 					<Setter Property="AttachedBehavior:ScrollAnimationBehavior.PointsToScroll" Value="35"/>
+				</Style>
+				<Style TargetType="DataGridColumnHeader">
+					<Setter Property="Background" Value="Black"/>
+					<Setter Property="Foreground" Value="White"/>
 				</Style>
 			</DataGrid.Resources>
 			<DataGrid.CellStyle>
@@ -59,7 +69,9 @@
 							<Setter Property="Template">
 								<Setter.Value>
 									<ControlTemplate>
-										<Expander IsExpanded="True" BorderThickness="0,0,0,1" Margin="0,5,0,5" Foreground="White" mah:HeaderedControlHelper.HeaderFontWeight="Bold" mah:HeaderedControlHelper.HeaderBackground="Black" mah:HeaderedControlHelper.HeaderForeground="LightGray" mah:HeaderedControlHelper.HeaderFontSize="14" Header="{Binding Path=Name}" Uid="{Binding}" Name="SpotifyTable_Expander" ExpandDirection="Down" ScrollViewer.CanContentScroll="false" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Standard" PresentationOptions:Freeze="True" Style="{StaticResource MetroExpanderWithNormalCase}">
+										<Expander IsExpanded="True" BorderThickness="0,0,0,1" Margin="0,5,0,5" Foreground="White" mah:HeaderedControlHelper.HeaderFontWeight="Bold" mah:HeaderedControlHelper.HeaderBackground="Black" 
+										mah:HeaderedControlHelper.HeaderForeground="LightGray" mah:HeaderedControlHelper.HeaderFontSize="14" Header="{Binding Path=Name}" Uid="{Binding}" Name="SpotifyTable_Expander" ExpandDirection="Down" 
+										ScrollViewer.CanContentScroll="false" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Standard" PresentationOptions:Freeze="True" Style="{StaticResource MetroExpanderWithNormalCase}">
 											<ItemsPresenter/>
 										</Expander>
 									</ControlTemplate>
@@ -75,13 +87,27 @@
 							<ItemsPresenter  />
 						</ScrollViewer>
 					</ControlTemplate>
-				</DataGrid.Template> -->
+				</DataGrid.Template> 
+				ElementStyle="{DynamicResource MetroDataGridCheckBox}"
+				-->
 			<DataGrid.Columns>
-				<DataGridCheckBoxColumn ElementStyle="{DynamicResource MetroDataGridCheckBox}" Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay,,IsAsync=True,UpdateSourceTrigger=PropertyChanged}" Header="Select"/>
+				<DataGridCheckBoxColumn Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay,,IsAsync=True,UpdateSourceTrigger=PropertyChanged}" Header="Select" dgx:DataGridFilterColumn.IsFilterVisible="False"/>
 			</DataGrid.Columns>
 		</DataGrid>
-		<Label Content="Filter" Foreground="#ffffff" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top"/>
-		<TextBox Name="SpotifyFilterTextBox" Background="lightgray" HorizontalAlignment="Left" Height="26" Margin="78,5,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="172"/>
+		<StackPanel Orientation="Horizontal" Margin="10,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+			<Label Content="Filter" Foreground="#ffffff" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top"/>
+			<TextBox Name="SpotifyFilterTextBox" mah:TextBoxHelper.ClearTextButton="True" HorizontalAlignment="Left" Height="26" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="172"/>
+			<Label Content="Show Only" Foreground="#ffffff" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top"/>
+			<ComboBox Margin="5,0,0,0" Name='Show_SpotifyMediaArtist_ComboBox' mah:TextBoxHelper.ClearTextButton="True" VerticalAlignment="Top" MinWidth="50" Background="Transparent" mah:TextBoxHelper.UseFloatingWatermark="True"
+			          HorizontalAlignment="Left"
+			          IsEditable="False"
+			          SelectedIndex="-1">
+				<ComboBox.ContextMenu>
+					<ContextMenu IsEnabled="False"
+					             Visibility="Collapsed"/>
+				</ComboBox.ContextMenu>
+			</ComboBox>
+		</StackPanel>
 		<StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Margin="0,0,0,0" VerticalAlignment="Top">
 			<!-- 		<Button Height="23" HorizontalAlignment="Left"  
 		Name="Youtube_btnFirst" VerticalAlignment="Bottom" Width="40" 

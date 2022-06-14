@@ -53,7 +53,7 @@ VerticalAlignment="stretch"
 										 Background="Transparent"
 										 Margin="0,5,0,0"
 										 Transition="RightReplace" >
-                                            <Label Name='App_Exe_Path_Label' Content="Path to App Exe:" Visibility="Visible" VerticalAlignment="Top" Foreground="#ffffff"  BorderBrush="Red"  BorderThickness="2,0,0,0"  HorizontalAlignment="Left"/>
+                                            <Label Name='App_Exe_Path_Label' Content="Path to App Exe:" Visibility="Visible"  VerticalAlignment="Top" Foreground="#ffffff"  BorderBrush="Red"  BorderThickness="2,0,0,0"  HorizontalAlignment="Left"/>
                                         </mah:TransitioningContentControl>
                                         <mah:TransitioningContentControl Name="App_Exe_Path_Textbox_transitioningControl"
 										 VerticalAlignment="Top" 
@@ -61,7 +61,7 @@ VerticalAlignment="stretch"
 										 Background="Transparent"
 										 Margin="0,5,0,0"
 										 Transition="RightReplace" >
-                                            <TextBox Name='App_Exe_Path_textbox' Height="23" Text="" VerticalAlignment="Top" IsEnabled="false" Visibility="Visible" Background="Transparent" BorderThickness="0,0,0,0" RenderTransformOrigin="0.502,0.52" MinWidth="150"  HorizontalAlignment="Left"/>
+                                            <TextBox Name='App_Exe_Path_textbox' Height="23" Text=""  TextWrapping="Wrap"  VerticalAlignment="Top" IsEnabled="false" Visibility="Visible" Background="Transparent" BorderThickness="0,0,0,0" RenderTransformOrigin="0.502,0.52" MinWidth="150"  HorizontalAlignment="Left"/>
                                         </mah:TransitioningContentControl>
                                         <mah:TransitioningContentControl Name="App_Exe_Path_Button_transitioningControl"
 										 VerticalAlignment="Top" 
@@ -123,7 +123,7 @@ VerticalAlignment="stretch"
 										 Background="Transparent"
 										 Margin="0,0,0,0"
 										 Transition="RightReplace" >
-                                            <Label Name='Log_Path_Label' Content="Log Save Path:" Visibility="Visible" VerticalAlignment="Top" Foreground="#ffffff"  BorderBrush="Red"  BorderThickness="2,0,0,0"  HorizontalAlignment="Left"/>
+                                            <Label Name='Log_Path_Label' Content="Log Save Path:" Visibility="Visible"  VerticalAlignment="Top" Foreground="#ffffff"  BorderBrush="Red"  BorderThickness="2,0,0,0"  HorizontalAlignment="Left"/>
                                         </mah:TransitioningContentControl>
                                         <mah:TransitioningContentControl Name="Log_Textbox_transitioningControl"
 										 VerticalAlignment="Top" 
@@ -131,7 +131,7 @@ VerticalAlignment="stretch"
 										 Background="Transparent"
 										 Margin="0,0,0,0"
 										 Transition="RightReplace" >
-                                            <TextBox Name='Log_Path_textbox' Height="23" Text="" VerticalAlignment="Top" IsEnabled="True" Visibility="Visible" RenderTransformOrigin="0.502,0.52" MinWidth="150" Width="163" HorizontalAlignment="Left"/>
+                                            <TextBox Name='Log_Path_textbox' Height="23" Text="" VerticalAlignment="Top"  TextWrapping="Wrap"  IsEnabled="True" Visibility="Visible" RenderTransformOrigin="0.502,0.52" MinWidth="150" Width="163" HorizontalAlignment="Left"/>
                                         </mah:TransitioningContentControl>
                                         <mah:TransitioningContentControl Name="Log_Button_transitioningControl"
 										 VerticalAlignment="Top" 

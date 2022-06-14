@@ -10,11 +10,13 @@
 function Get-CurrentTrack {
     param (
         [string]
-        $ApplicationName
+        $ApplicationName = $thisApp.Config.App_Name
     )
 
     $Method = 'Get'
     $Uri = 'https://api.spotify.com/v1/me/player/currently-playing'
-
+    if($thisApp.Config.Verbose_logging){
+      write-ezlogs ">>>> Making request for current playing Spotify track at URL $Uri" -showtime
+    }
     Send-SpotifyCall -Method $Method -Uri $Uri -ApplicationName $ApplicationName
 }

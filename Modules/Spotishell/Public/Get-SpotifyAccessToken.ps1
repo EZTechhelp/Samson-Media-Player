@@ -21,7 +21,10 @@ function Get-SpotifyAccessToken {
     [switch]$First_Run
   )
 
-  # Get Application from the Store
+  # Get Application
+  if(!$ApplicationName -and $thisApp.Config.App_Name){
+    $ApplicationName = $thisApp.Config.App_Name
+  }
   try{
     $Application = Get-SpotifyApplication -Name $ApplicationName
   }catch{
@@ -90,6 +93,9 @@ function Get-SpotifyAccessToken {
         return $Token.access_token
       }
     }
+  }else{
+    write-ezlogs "Unable to get access token - Starting Spotify Authentication capture process - Application Token returned: $($Application.Token | out-string)" -showtime -warning
+
   }
 
   # Starting this point, neither valid access token were found nor successful refresh were done
@@ -130,8 +136,10 @@ function Get-SpotifyAccessToken {
 
   # Create an Http Server
   $Listener = [System.Net.HttpListener]::new() 
-  $Prefix = $Application.RedirectUri.Substring(0, $Application.RedirectUri.LastIndexOf('/') + 1) # keep uri until the last '/' included
-  $Listener.Prefixes.Add($Prefix)
+  if($Application.RedirectUri){
+    $Prefix = $Application.RedirectUri.Substring(0, $Application.RedirectUri.LastIndexOf('/') + 1) # keep uri until the last '/' included
+    $null = $Listener.Prefixes.Add($Prefix)
+  }
   $Listener.Start()
   if ($Listener.IsListening) {
     Write-Verbose 'HTTP Server is ready to receive Authorization Code'
@@ -141,7 +149,6 @@ function Get-SpotifyAccessToken {
     Write-Verbose 'HTTP Server is not ready. Fall back to manual method'
     $HttpServerReady = $false
   }
-
 
   # STEP 2 : Open browser to get Authorization
   if ($IsMacOS) {
@@ -161,12 +168,12 @@ function Get-SpotifyAccessToken {
         if($hashsetup.Window.isVisible){
           $hashsetup.Window.hide()
         }      
-        Show-WebLogin -SplashTitle "Spotify Account Login" -SplashMessage "Splash Message" -SplashLogo "$($thisApp.Config.Current_Folder)\\Resources\\Material-Spotify.png" -WebView2_URL $URI -thisScript $thisScript -thisApp $thisApp -verboselog -Listener $Listener -First_Run $First_Run       
+        Show-WebLogin -SplashTitle "Spotify Account Login" -Message "Please login with your Spotify account. When finished click Close to continue"  -Message_2 "NOTE: You must also login to the Windows Spotify App at least one time before being able to manage music. If spotify is not currently installed, this app will install the latest version" -SplashLogo "$($thisApp.Config.Current_Folder)\\Resources\\Material-Spotify.png" -WebView2_URL $URI -thisScript $thisScript -thisApp $thisApp -verboselog -Listener $Listener -First_Run $First_Run       
       }catch{
         write-ezlogs "[Get-SpotifyAccessToken] An exception occurred in Show-Weblogin" -showtime -catcherror $_
       }     
     }else{
-      rundll32 url.dll, FileProtocolHandler $URI
+      #rundll32 url.dll, FileProtocolHandler $URI
     }        
   }
   # STEP 3 : Get response
@@ -176,24 +183,28 @@ function Get-SpotifyAccessToken {
     $StartTime = Get-Date
     while ($Listener.IsListening -and ((Get-Date) - $StartTime) -lt '0.00:01:00' ) {
     
-      if ($null -eq $Task) {
-        $task = $Listener.GetContextAsync()
-      }
+      try{
+        if ($null -eq $Task) {
+          $task = $Listener.GetContextAsync()
+        }
     
-      if ($Task.IsCompleted) {
-        $Context = $task.Result
-        $Task = $null
-        $Response = $context.Request.Url
-        $ContextResponse = $context.Response
+        if ($Task.IsCompleted) {
+          $Context = $task.Result
+          $Task = $null
+          $Response = $context.Request.Url
+          $ContextResponse = $context.Response
     
-        [string]$html = '<script>close()</script>Thanks! You can close this window now.'
+          [string]$html = '<script>close()</script>Thanks! You can close this window now.'
     
-        $htmlBuffer = [System.Text.Encoding]::UTF8.GetBytes($html) # convert html to bytes
+          $htmlBuffer = [System.Text.Encoding]::UTF8.GetBytes($html) # convert html to bytes
     
-        $ContextResponse.ContentLength64 = $htmlBuffer.Length
-        $ContextResponse.OutputStream.Write($htmlBuffer, 0, $htmlBuffer.Length)
-        $ContextResponse.OutputStream.Close()               
-        break;
+          $ContextResponse.ContentLength64 = $htmlBuffer.Length
+          $ContextResponse.OutputStream.Write($htmlBuffer, 0, $htmlBuffer.Length)
+          $ContextResponse.OutputStream.Close()               
+          break;
+        }      
+      }catch{
+        write-ezlogs "[Get-SpotifyAccessToken] An exception occurred in Spotishell HTTP listener" -showtime -catcherror $_
       }
     }     
     $Listener.Stop()

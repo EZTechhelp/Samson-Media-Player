@@ -61,7 +61,7 @@ function Get-LocalMedia
     $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator') 
     #Enable linked connections in order to access mapped drives when running under admin context
     if(!$IsAdmin){
-      try{ 
+<#      try{ 
         if(!$(Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name EnableLinkedConnections -ErrorAction SilentlyContinue)){
           write-ezlogs " | Adding EnableLinkedConnections to registry" -showtime
           New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name EnableLinkedConnections -Value 1 -PropertyType 'DWord'
@@ -70,7 +70,7 @@ function Get-LocalMedia
         }
       }catch{
         write-ezlogs "An exception occurred setting EnableLinkedConnections registry" -showtime -catcherror $_
-      }
+      }#>
     }  
     if($Verboselog){write-ezlogs "[STARTUP] | Importing Local Media Profile: $AllMedia_Profile_File_Path" -showtime -enablelogs}
     [System.Collections.ArrayList]$Local_Available_Media = Import-CliXml -Path $AllMedia_Profile_File_Path
@@ -132,13 +132,55 @@ function Get-LocalMedia
         $media_files = $directory
       } 
       if(-not [string]::IsNullOrEmpty($media_files)){ 
-        #$found_media = $media_formats | %{ Get-ChildItem -File $mediaDirectory -Filter $_ -Recurse }
-        try{
-          foreach ($m in $media_files) {  
+        #$found_media = $media_formats | %{ Get-ChildItem -File $mediaDirectory -Filter $_ -Recurse }    
+        foreach ($m in $media_files | where {$_}) {  
+          try{
             $media = $Null
-            if([System.IO.File]::Exists($m)){  
-              $Media = [System.IO.FileInfo]::new($m) | Where{$_.Extension -match $media_pattern}             
-            }           
+            #if([System.IO.File]::Exists($m)){
+            try{
+              $Media = [System.IO.FileInfo]::new($m) #| Where{$_.Extension -match $media_pattern}  
+            }catch{
+              write-ezlogs "An exception occurrred getting fileinfo for: $($m)" -showtime -catcherror $_
+            }
+            if(!$media){
+              try{
+                $media = Get-Item $m -Force
+              }catch{
+                write-ezlogs "An exception occurred in get-item for: $($m)" -showtime -catcherror $_
+              }
+            }
+            if(!$media){
+              try{
+                $media = Get-Item -literalpath $m -Force
+              }catch{
+                write-ezlogs "An exception occurred in get-item -literalpath for: $($m)" -showtime -catcherror $_
+              }
+            }
+            if(!$media){
+              try{
+                $Shell = New-Object -COMObject Shell.Application
+                $DirName = $([System.IO.Path]::GetDirectoryName($m))
+                if($DirName){
+                  $Folder = $shell.Namespace($($DirName))
+                  $Filename = [System.IO.Path]::GetFileName($m)
+                }
+                if($Folder -and $Filename){
+                  $File = $Folder.ParseName($($Filename))
+                  if(!$file -and $filename -match '\?'){
+                    $Filename = ($Folder.Items() | where {$_.name -match $(($Filename -split '\?')[0]) -or $_.name -match $(($Filename -split '\?')[0])}).Name
+                  }
+                  if($Filename){
+                    $File = $Folder.ParseName($($Filename))
+                  }
+                  if($file.path){
+                    $Media = [System.IO.FileInfo]::new($file.path)
+                  }
+                }
+              }catch{
+                write-ezlogs "An exception occurred in getting file info from Shell.Application for: $($m)" -showtime -catcherror $_
+              }
+            }                       
+            #}           
             if($Media){              
               $name = $null           
               $name = $media.BaseName
@@ -209,11 +251,12 @@ function Get-LocalMedia
             }else{
               write-ezlogs "Provided File $_ is not a valid media type" -showtime -warning
             }
+          }catch{
+            write-ezlogs "An exception occurrred processesing media file: $($m)" -showtime -catcherror $_
           }
-          #$found_media = (Get-childitem -path "$($mediaDirectory)\*" -Filter $media_formats -Recurse -force)
-        }catch{
-          write-ezlogs "An exception occurrred processesing media files - Type: $($Media_files.gettype() | out-string) -  $($media_files | out-string)" -showtime -catcherror $_
         }
+        #$found_media = (Get-childitem -path "$($mediaDirectory)\*" -Filter $media_formats -Recurse -force)
+
       }else{
         write-ezlogs "Provided Media Directory $Directory is not valid!" -showtime -warning
       }

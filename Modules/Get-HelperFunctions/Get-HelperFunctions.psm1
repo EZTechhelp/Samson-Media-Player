@@ -151,54 +151,137 @@ Function ConvertTo-OrderedDictionary {
 } #EndFunction ConvertTo-OrderedDictionary
 
 #---------------------------------------------- 
+#region Convert-Color Function
+#----------------------------------------------
+function Convert-Color {
+  <#
+      .Synopsis
+      This color converter gives you the hexadecimal values of your RGB colors and vice versa (RGB to HEX)
+      .Description
+      This color converter gives you the hexadecimal values of your RGB colors and vice versa (RGB to HEX). Use it to convert your colors and prepare your graphics and HTML web pages.
+      .Parameter RBG
+      Enter the Red Green Blue value comma separated. Red: 51 Green: 51 Blue: 204 for example needs to be entered as 51,51,204
+      .Parameter HEX
+      Enter the Hex value to be converted. Do not use the '#' symbol. (Ex: 3333CC converts to Red: 51 Green: 51 Blue: 204)
+      .Example
+      .\convert-color -hex FFFFFF
+      Converts hex value FFFFFF to RGB
+ 
+      .Example
+      .\convert-color -RGB 123,200,255
+      Converts Red = 123 Green = 200 Blue = 255 to Hex value
+ 
+  #>
+  param(
+    [Parameter(ParameterSetName = "RGB", Position = 0)]
+    [ValidateScript( {$_ -match '^([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])$'})]
+    $RGB,
+    [Parameter(ParameterSetName = "HEX", Position = 0)]
+    [ValidateScript( {$_ -match '[A-Fa-f0-9]{6}'})]
+    [string]
+    $HEX
+  )
+  switch ($PsCmdlet.ParameterSetName) {
+    "RGB" {
+      if ($RGB[2] -eq $null) {
+        Write-error "Value missing. Please enter all three values seperated by comma."
+      }
+      $red = [convert]::Tostring($RGB[0], 16)
+      $green = [convert]::Tostring($RGB[1], 16)
+      $blue = [convert]::Tostring($RGB[2], 16)
+      if ($red.Length -eq 1) {
+        $red = '0' + $red
+      }
+      if ($green.Length -eq 1) {
+        $green = '0' + $green
+      }
+      if ($blue.Length -eq 1) {
+        $blue = '0' + $blue
+      }
+      Write-Output $red$green$blue
+    }
+    "HEX" {
+      $red = $HEX.Remove(2, 4)
+      $Green = $HEX.Remove(4, 2)
+      $Green = $Green.remove(0, 2)
+      $Blue = $hex.Remove(0, 4)
+      $Red = [convert]::ToInt32($red, 16)
+      $Green = [convert]::ToInt32($green, 16)
+      $Blue = [convert]::ToInt32($blue, 16)
+      Write-Output $red, $Green, $blue
+    }
+  }
+}
+#---------------------------------------------- 
+#endregion Convert-Color Function
+#----------------------------------------------
+
+#---------------------------------------------- 
 #region Get-SongInfo Function
 #----------------------------------------------
 function Get-SongInfo($Path)
 {
-  $Shell = New-Object -COMObject Shell.Application
-  $Folder = $shell.Namespace($([System.IO.Path]::GetDirectoryName($Path)))
-  $File = $Folder.ParseName($([System.IO.Path]::GetFileName($Path)))
-  $title = ($Folder.GetDetailsOf($File, 21))
-  $artistpattern = "(?<value>.*) by (?<value>.*)"
-  #[int]$h, [int]$m, [int]$s = ($Folder.GetDetailsOf($File, 27)).split(":")
-  $Artist = ($Folder.GetDetailsOf($File, 13))
-  if([string]::IsNullOrEmpty($artist) -and $title -match $artistpattern){   
-    $artist = ([regex]::matches($title,  $artistpattern)| %{$_.groups[1].value} )
+  if($Path){
+    try{
+      $Shell = New-Object -COMObject Shell.Application
+      $DirName = $([System.IO.Path]::GetDirectoryName($Path))
+      if($DirName){
+        $Folder = $shell.Namespace($($DirName))
+        $Filename = [System.IO.Path]::GetFileName($Path)
+      }
+      if($Folder -and $Filename){
+        $File = $Folder.ParseName($($Filename))
+        if(!$file -and $filename -match '\?'){
+          $Filename = ($Folder.Items() | where {$_.name -match $(($Filename -split '\?')[0]) -or $_.name -match $(($Filename -split '\?')[0])}).Name
+        }
+        if($Filename){
+          $File = $Folder.ParseName($($Filename))
+        }
+        $title = ($Folder.GetDetailsOf($File, 21))
+        $artistpattern = "(?<value>.*) by (?<value>.*)"
+        #[int]$h, [int]$m, [int]$s = ($Folder.GetDetailsOf($File, 27)).split(":")
+        $Artist = ($Folder.GetDetailsOf($File, 13))
+        if([string]::IsNullOrEmpty($artist) -and $title -match $artistpattern){   
+          $artist = ([regex]::matches($title,  $artistpattern)| %{$_.groups[1].value} )
+        }
+        if($Artist -match ';'){
+          $artist = ($artist -split ';')[0]
+        }
+        $filesize = ($Folder.GetDetailsOf($File, 1))
+        $comments =  ($Folder.GetDetailsOf($File,24))
+        $album = ($Folder.GetDetailsOf($File, 14))
+        #$year = ($Folder.GetDetailsOf($File, 15))
+        #$Genre = ($Folder.GetDetailsOf($File, 16))
+        <#  if($Genre -match ';'){
+            $Genre = ($Genre -split ';')[0]
+        }#>  
+        #$copyright = ($Folder.GetDetailsOf($File, 25))
+        #$length = $h*60*60 + $m*60 +$s
+        $tracknumber = ($Folder.GetDetailsOf($File, 26))
+        $duration = ($Folder.GetDetailsOf($File, 27))
+        $bitrate = ($Folder.GetDetailsOf($File, 28))
+      }
+      $meta_properties_output = New-Object -TypeName 'System.Collections.ArrayList'     
+      $newRow = New-Object PsObject -Property @{
+        'Artist' = $Artist
+        'Title' = $title
+        'Album' = $album 
+        'Year' = $year
+        'Comments' = $comments
+        'Genre' = $Genre
+        'Length' = $length
+        'Duration' = $duration
+        'FileSize' = $filesize
+        'Copyright' = $copyright
+        'TrackNumber' = $tracknumber
+        'Bitrate' = $bitrate
+      }
+      $null = $meta_properties_output.Add($newRow)
+      Write-Output $meta_properties_output   
+    }catch{
+      write-ezlogs "An exception occurred parsing info about file $Path" -showtime -catcherror $_
+    }
   }
-  if($Artist -match ';'){
-    $artist = ($artist -split ';')[0]
-  }
-  $filesize = ($Folder.GetDetailsOf($File, 1))
-  $comments =  ($Folder.GetDetailsOf($File,24))
-  $album = ($Folder.GetDetailsOf($File, 14))
-  #$year = ($Folder.GetDetailsOf($File, 15))
-  #$Genre = ($Folder.GetDetailsOf($File, 16))
-  <#  if($Genre -match ';'){
-      $Genre = ($Genre -split ';')[0]
-  }#>  
-  #$copyright = ($Folder.GetDetailsOf($File, 25))
-  #$length = $h*60*60 + $m*60 +$s
-  $tracknumber = ($Folder.GetDetailsOf($File, 26))
-  $duration = ($Folder.GetDetailsOf($File, 27))
-  $bitrate = ($Folder.GetDetailsOf($File, 28))
-
-  $meta_properties_output = New-Object -TypeName 'System.Collections.ArrayList'     
-  $newRow = New-Object PsObject -Property @{
-    'Artist' = $Artist
-    'Title' = $title
-    'Album' = $album 
-    'Year' = $year
-    'Comments' = $comments
-    'Genre' = $Genre
-    'Length' = $length
-    'Duration' = $duration
-    'FileSize' = $filesize
-    'Copyright' = $copyright
-    'TrackNumber' = $tracknumber
-    'Bitrate' = $bitrate
-  }
-  $null = $meta_properties_output.Add($newRow)
-  Write-Output $meta_properties_output
 }
 #---------------------------------------------- 
 #endregion Get-SongInfo Function
@@ -1074,7 +1157,7 @@ function Set-WindowState {
 
   [CmdletBinding(DefaultParameterSetName = 'InputObject')]
   param(
-    [Parameter(Position = 0, Mandatory = $true, ValueFromPipeline = $true)]
+    [Parameter(Position = 0, ValueFromPipeline = $true)]
     [Object[]] $InputObject,
 
     [Parameter(Position = 1)]
@@ -1116,28 +1199,30 @@ public static extern bool SetForegroundWindow(IntPtr hWnd);
   }
 
   Process {
-    foreach ($process in $InputObject) {
-      $handle = $process.MainWindowHandle
-
-      if ($handle -eq 0 -and $global:MainWindowHandles.ContainsKey($process.Id)) {
-        $handle = $global:MainWindowHandles[$process.Id]
-      }
-
-      if ($handle -eq 0) {
-        if (-not $SuppressErrors) {
-          Write-ezlogs "Main Window handle is '0'...ignoring" -showtime
+    foreach ($process in $InputObject | where {$_.MainWindowHandle -ne 0} ) {
+      try{
+        $handle = $process.MainWindowHandle
+        if ($handle -eq 0 -and $global:MainWindowHandles.ContainsKey($process.Id)) {
+          $handle = $global:MainWindowHandles[$process.Id]
         }
-        continue
+
+        if ($handle -eq 0) {
+          if (-not $SuppressErrors) {
+            Write-ezlogs "Main Window handle is '0'...ignoring" -showtime
+          }
+          continue
+        }elseif($WindowStates[$State] -ne $Null){
+          $global:MainWindowHandles[$process.Id] = $handle
+          $null = $Win32ShowWindowAsync::ShowWindowAsync($handle, $WindowStates[$State])
+          if ($SetForegroundWindow) {
+            $Win32ShowWindowAsync::SetForegroundWindow($handle) | Out-Null
+          }
+          write-ezlogs $("Set Window State '{1} on '{0}'" -f $handle, $State) -showtime
+          return
+        }
+      }catch{
+        write-ezlogs "An exception occurred processing WindowHandle states for process $($process | out-string)" -showtime -catcherror $_
       }
-
-      $global:MainWindowHandles[$process.Id] = $handle
-
-      $Win32ShowWindowAsync::ShowWindowAsync($handle, $WindowStates[$State]) | Out-Null
-      if ($SetForegroundWindow) {
-        $Win32ShowWindowAsync::SetForegroundWindow($handle) | Out-Null
-      }
-
-      Write-Verbose ("Set Window State '{1} on '{0}'" -f $MainWindowHandle, $State)
     }
   }
 }
@@ -1648,11 +1733,11 @@ Function Start-WebNavigation{
           $spotify_id = ($($uri) -split('open.spotify.com/track/'))[1].trim()
           if($thisApp.Config.Spotify_WebPlayer){
             
-<#            try{
-              $embedhtml = Get-content "$($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html"
+            <#            try{
+                $embedhtml = Get-content "$($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html"
               
-            }catch{
-              write-ezlogs "An exception occurred getting content of $($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html" -showtime -catcherror $_
+                }catch{
+                write-ezlogs "An exception occurred getting content of $($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html" -showtime -catcherror $_
             }#>
             if($embedhtml){
               $urihtml = ($embedhtml -replace '!!SPOTIFYACCESSTOKEN!!','BQB3lYEQmjzGqovJolrxq0yqslzUJhc4geBp95PwlEBrfFbiKC0l1bHXLovo0msVPOj1C5tIim8kw6K9x5ugd3GiUDMU-mGJMDE9MhIWxxYTMO0Oyl58DozujFWRqAVdGjomI1QX536ZS1aasgZEnaypNb6uRbz61Bea6e9TEMF7XqCUmPnCFLd8yB412226J5aetngHVHpmGT5451eN6DisVf8a1vwJt4vNr02XHRxEZ7jjpSNEJdejUDQcfZTvqij2teFXy1p48ih7_B8KvhYesKg6w8o' `
@@ -1667,10 +1752,10 @@ Function Start-WebNavigation{
         }elseif($uri -match 'open.spotify.com/playlist/'){
           $spotify_id = ($($uri) -split('open.spotify.com/playlist/'))[1].trim()
           if($thisApp.Config.Spotify_WebPlayer){
-<#            try{
-              $embedhtml = Get-content "$($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html"            
-            }catch{
-              write-ezlogs "An exception occurred getting content of $($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html" -showtime -catcherror $_
+            <#            try{
+                $embedhtml = Get-content "$($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html"            
+                }catch{
+                write-ezlogs "An exception occurred getting content of $($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html" -showtime -catcherror $_
             }#>
             if($embedhtml){
               $urihtml = ($embedhtml -replace '!!SPOTIFYACCESSTOKEN!!','BQB3lYEQmjzGqovJolrxq0yqslzUJhc4geBp95PwlEBrfFbiKC0l1bHXLovo0msVPOj1C5tIim8kw6K9x5ugd3GiUDMU-mGJMDE9MhIWxxYTMO0Oyl58DozujFWRqAVdGjomI1QX536ZS1aasgZEnaypNb6uRbz61Bea6e9TEMF7XqCUmPnCFLd8yB412226J5aetngHVHpmGT5451eN6DisVf8a1vwJt4vNr02XHRxEZ7jjpSNEJdejUDQcfZTvqij2teFXy1p48ih7_B8KvhYesKg6w8o' `
@@ -1706,12 +1791,12 @@ Function Start-WebNavigation{
              
         if($urihtml){
           write-ezlogs "Adding CoreWebView2InitializationCompleted with navigate to url: $($urihtml)" -enablelogs -Color cyan -showtime  
-           $synchash.Youtube_WebPlayer_URL = $urihtml
-           $synchash.Spotify_WebPlayer_URL = $urihtml
+          $synchash.Youtube_WebPlayer_URL = $urihtml
+          $synchash.Spotify_WebPlayer_URL = $urihtml
         }else{
           write-ezlogs "Adding CoreWebView2InitializationCompleted with navigate to url: $($uri)" -enablelogs -Color cyan -showtime  
-           $synchash.Youtube_WebPlayer_URL = $uri
-           $synchash.Spotify_WebPlayer_URL = $uri
+          $synchash.Youtube_WebPlayer_URL = $uri
+          $synchash.Spotify_WebPlayer_URL = $uri
         }             
          
         
@@ -2023,17 +2108,20 @@ function confirm-requirements([switch]$enablelogs,[switch]$Verboselog,$required_
   
   #region install/update required apps
   if(-not [string]::IsNullOrEmpty($required_appnames) -and $firstRun){
+
     foreach ($app in $required_appnames)
     {
       if($app -eq 'Spotify'){
         if([System.IO.File]::Exists("$($env:APPDATA)\\Spotify\\Spotify.exe")){
           $appinstalled = (Get-ItemProperty "$($env:APPDATA)\\Spotify\\Spotify.exe").VersionInfo.ProductVersion
+        }elseif((Get-appxpackage 'Spotify*')){
+          write-ezlogs ">>>> Spotify installed as appx" -showtime
+          $appinstalled = (Get-ItemProperty "$((Get-appxpackage 'Spotify*').InstallLocation)\\Spotify.exe").VersionInfo.ProductVersion
         }else{
-          #$chocoappmatch = choco list $app --localonly
           $appinstalled = ''
         } 
         $Do_Install = $thisApp.Config.Install_Spotify     
-        write-ezlogs ">>>> Skip install for $app`: $($thisApp.Config.Install_Spotify)" -showtime  
+        write-ezlogs ">>>> Auto Install $app`: $($thisApp.Config.Install_Spotify)" -showtime  
       }elseif($app -eq 'Spicetify'){      
         if([System.IO.File]::Exists("$($env:USERPROFILE)\\spicetify-cli\\spicetify.exe") -and [System.IO.File]::Exists("$($env:USERPROFILE)\\.spicetify\\config-xpui.ini")){
           $appinstalled = (Get-iniFile "$($env:USERPROFILE)\\.spicetify\\config-xpui.ini").Backup.with
@@ -2333,4 +2421,5 @@ Export-ModuleMember -Function @(
   'Test-RegistryValue',
   'ConvertTo-OrderedDictionary',
   'Set-WindowBlur',
+  'Convert-Color',
 'Use-Runas')

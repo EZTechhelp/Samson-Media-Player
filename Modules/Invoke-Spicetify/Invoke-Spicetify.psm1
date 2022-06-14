@@ -40,15 +40,34 @@ function Enable-Spicetify
     [switch]$Verboselog
   )
   try{
+    write-ezlogs ">>>> Verifying Spotify installation" -showtime
+    if([System.IO.File]::Exists("$($env:APPDATA)\\Spotify\\Spotify.exe")){
+      write-ezlogs " | Spotify is installed at $($env:APPDATA)\\Spotify\\Spotify.exe" -showtime
+      $synchash.Spotify_install_status = 'Installed'
+      $Spotify_Path = "$($env:APPDATA)\\Spotify\\Spotify.exe"
+    }elseif((Get-appxpackage 'Spotify*')){
+      write-ezlogs ">>>> Spotify installed as $Spotify_Path" -showtime
+      $Spotify_Path = "$((Get-appxpackage 'Spotify*').InstallLocation)\\Spotify.exe"
+      $synchash.Spotify_install_status = 'StoreVersion'
+      Update-Notifications -id 1 -Level 'ERROR' -Message "You are using Spotify Windows Store version, which is not supported with Spicetify.`nYou must remove the Windows Store version and install the normal version!" -VerboseLog -Message_color 'Tomato' -thisApp $thisapp -synchash $synchash -open_flyout
+      return      
+    }else{
+      write-ezlogs "Unable to find Spotify installation. Spicetify requires installing Spotify, cannot continue!" -warning
+      $synchash.Spotify_install_status = 'NotInstalled'
+      Update-Notifications -id 1 -Level 'ERROR' -Message "Unable to find Spotify installation. Spicetify requires installing Spotify, cannot continue!" -VerboseLog -Message_color 'Tomato' -thisApp $thisapp -synchash $synchash -open_flyout
+      return
+    }   
+    
     if([System.IO.File]::Exists("$($env:USERPROFILE)\\spicetify-cli\\spicetify.exe") -and [System.IO.File]::Exists("$($env:USERPROFILE)\\.spicetify\\config-xpui.ini")){
-      $appinstalled = (Get-iniFile "$($env:USERPROFILE)\\.spicetify\\config-xpui.ini").Backup.with
+      $appinstalled = (Get-iniFile "$($env:USERPROFILE)\\.spicetify\\config-xpui.ini")
       if(!$appinstalled){
         $appinstalled = "$($env:USERPROFILE)\\spicetify-cli\\spicetify.exe"
       }           
     }
     if(!$appinstalled){
       write-ezlogs ">>>> Installing Spicetify" -showtime    
-      if($hash.Window.Dispatcher){
+      start-sleep -Milliseconds 500
+      if($hash.Window.Dispatcher){       
         $hash.Window.Dispatcher.invoke([action]{
             $hash.More_Info_Msg.Visibility = 'Visible'
             $hash.More_info_Msg.text = "Installing Spicetify"
@@ -80,16 +99,26 @@ function Enable-Spicetify
     $webnowplaying_file_backup = "$($env:userprofile)\\spicetify-cli\Extensions\\webnowplaying.js.bak"  
     try{
       $custom_webnowplaying_content = Get-Content $custom_webnowplaying -ReadCount 0 -Force -Encoding UTF8 -Verbose:$thisapp.Config.Verbose_logging
-      $Spotify_pref = (Get-iniFile "$($env:userprofile)\\.spicetify\\config-xpui.ini").Setting.prefs_path      
-      if(!(Test-Path $Spotify_pref)){
-        write-ezlogs "Spicetify spotify pref path not valid at $Spotify_pref" -showtime
-        if(Test-Path "$($env:userprofile)\AppData\Roaming\Spotify\prefs"){
+      $Spotify_pref = ($appinstalled).Setting.prefs_path  
+      $Spotify_ini_Path = $appinstalled.setting.spotify_path    
+      if(!([System.IO.Directory]::Exists($Spotify_pref))){
+        write-ezlogs "Spicetify spotify pref path not valid at $Spotify_pref" -showtime -warning
+        if([System.IO.Directory]::Exists( "$($env:userprofile)\AppData\Roaming\Spotify\prefs")){
           write-ezlogs "Updating spotify pref with path $($env:userprofile)\AppData\Roaming\Spotify\prefs"
           $pref_content = Get-Content "$($env:userprofile)\\.spicetify\\config-xpui.ini" -Force
           $pref_content = $pref_content -replace [regex]::escape($Spotify_pref),"$($env:userprofile)\AppData\Roaming\Spotify\prefs"
           $pref_content | Out-File "$($env:userprofile)\\.spicetify\\config-xpui.ini" -Force          
         }
       }
+      if(!([System.IO.Directory]::Exists($Spotify_ini_Path))){
+        write-ezlogs "Spicetify spotify path not valid at $Spotify_ini_Path" -showtime -warning
+        if([System.IO.Directory]::Exists("$([System.IO.Directory]::GetParent($Spotify_Path).FullName)")){
+          write-ezlogs "Updating spotify pref with path $($env:userprofile)\AppData\Roaming\Spotify\prefs"
+          $path_content = Get-Content "$($env:userprofile)\\.spicetify\\config-xpui.ini" -Force
+          $path_content = $path_content -replace [regex]::escape($Spotify_ini_Path),"$([System.IO.Directory]::GetParent($Spotify_Path).FullName)"
+          $path_content | Out-File "$($env:userprofile)\\.spicetify\\config-xpui.ini" -Force          
+        }
+      }      
     }catch{
       write-ezlogs "An exception occurred checking spicetify spotify pref path $Spotify_pref" -showtime -catcherror $_
     }
@@ -265,17 +294,17 @@ function Enable-Spicetify
         
       try{
         write-ezlogs '>>>> Launching Spotify and letting it check for updates with argument --allow-upgrades --update-immediately'
-        if([System.IO.File]::Exists("$($env:appdata)\\Spotify\\Spotify.exe")){
-          $spotifyprocess = Start-Process "$($env:appdata)\\Spotify\\Spotify.exe" -ArgumentList '--allow-upgrades --minimized --update-immediately'
+        if([System.IO.File]::Exists("$Spotify_Path")){
+          $spotifyprocess = Start-Process $Spotify_Path -ArgumentList '--allow-upgrades --minimized --update-immediately'
           Start-Sleep 1
-        }else{write-ezlogs "Unable to find Spotify exe at path $($env:appdata)\\Spotify\\Spotify.exe" -showtime -warning}
+        }else{write-ezlogs "Unable to find Spotify exe at path $Spotify_Path" -showtime -warning}
         if(Get-Process Spotify* -ErrorAction SilentlyContinue){
           write-ezlogs ' | Waiting for Spotify to open and run...' -showtime
           Start-Sleep 5
           write-ezlogs ' | Closing and reopening Spotify' -showtime 
           Get-Process Spotify* -ErrorAction SilentlyContinue | Stop-Process -Force
           Start-Sleep 1
-          $spotifyprocess = Start-Process "$($env:appdata)\\Spotify\\Spotify.exe" -ArgumentList '--allow-upgrades --minimized --update-immediately'
+          $spotifyprocess = Start-Process $Spotify_Path -ArgumentList '--allow-upgrades --minimized --update-immediately'
           Start-Sleep 2
         }
       }catch{write-ezlogs 'An exception occurred launching Spotify' -showtime -catcherror $_}
@@ -320,9 +349,13 @@ function Enable-Spicetify
             $count++
             Write-EZLogs "$($_)" -showtime
             $pattern1 = 'Download	- (?<value>.*) MiB\/s \(raw\)'
-            $pattern2 = 'Install size: (?<value>.*) MiB'               
+            $pattern2 = 'Install size: (?<value>.*) MiB' 
+            if($_ -match  'You are using Spotify Windows Store version, which is only partly supported'){
+              write-ezlogs "You are using Spotify Windows Store version, which is only partly supported" -showtime -warning
+              $spicetify_warning = "$($_ -replace '','')"
+            }              
             if($_ -match 'Spotify is spiced up!'){
-              $spicetifyexit_code = $_ 
+              $spicetifyexit_code = "$($_)" 
             break}  
             #if($_ -match 'Number of applicable updates for the current system configuration:'){ $dellupdates_code = $_.Substring(($_.IndexOf('configuration: ')+15))}
             if($break){break}
@@ -473,7 +506,22 @@ function Disable-Spicetify
     }        
   }catch{
     write-ezlogs "An exception occurred attempting to install Spicetify" -showtime -catcherror $_
-  } 
+  }
+  write-ezlogs ">>>> Verifying Spotify installation" -showtime
+  if([System.IO.File]::Exists("$($env:APPDATA)\\Spotify\\Spotify.exe")){
+    write-ezlogs " | Spotify is installed at $($env:APPDATA)\\Spotify\\Spotify.exe" -showtime
+    $synchash.Spotify_install_status = 'Installed'
+    $Spotify_Path = "$($env:APPDATA)\\Spotify\\Spotify.exe"
+  }elseif((Get-appxpackage 'Spotify*')){
+    $Spotify_Path = "$((Get-appxpackage 'Spotify*').InstallLocation)\\Spotify.exe"
+    $synchash.Spotify_install_status = 'Installed'
+    write-ezlogs ">>>> Spotify installed as $Spotify_Path" -showtime
+  }else{
+    write-ezlogs "Unable to find Spotify installation. Spicetify requires installing Spotify, cannot continue!" -warning
+    $synchash.Spotify_install_status = 'NotInstalled'
+    Update-Notifications -id 1 -Level 'ERROR' -Message "Unable to find Spotify installation. Spicetify requires installing Spotify, cannot continue!" -VerboseLog -Message_color 'Tomato' -thisApp $thisapp -synchash $synchash
+    return
+  }   
   if($appinstalled){
     try
     {                                 

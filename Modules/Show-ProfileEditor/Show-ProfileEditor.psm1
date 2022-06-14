@@ -137,9 +137,21 @@ function Show-ProfileEditor{
     $pattern2 = "[:$illegal]"
     $pattern3 = "[`?�™$illegal]"
     $Nav_Window_XML = "$($Current_Folder)\\Views\\ProfileEditor.xaml"
-  
+    
+    #theme
+    $theme = [MahApps.Metro.Theming.MahAppsLibraryThemeProvider]::new()
+    $themes = $theme.GetLibraryThemes()
+    $themeManager = [ControlzEx.Theming.ThemeManager]::new()
+    if($synchash.Window){
+      $detectTheme = $thememanager.DetectTheme($synchash.Window)
+      $newtheme = $themes | where {$_.Name -eq $detectTheme.Name}
+    }elseif($_.Name -eq $thisApp.Config.Current_Theme.Name){
+      #$detectTheme = $thememanager.DetectTheme($hashsetup.Window)
+      $newtheme = $themes | where {$_.Name -eq $thisApp.Config.Current_Theme.Name}
+    }   
+    
     #import xml
-    [xml]$xaml = [System.IO.File]::ReadAllText($Nav_Window_XML).replace('Views/Styles.xaml',"$($Current_folder)`\Views`\Styles.xaml")
+    [xml]$xaml = [System.IO.File]::ReadAllText($Nav_Window_XML).replace('Views/Styles.xaml',"$($Current_folder)`\Views`\Styles.xaml").Replace("{StaticResource MahApps.Brushes.Accent}","$($newTheme.PrimaryAccentColor)")
     $Childreader = (New-Object System.Xml.XmlNodeReader $xaml)
     $hashedit.Window  = [Windows.Markup.XamlReader]::Load($Childreader)  
     $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | foreach {   
@@ -157,11 +169,50 @@ function Show-ProfileEditor{
     $hashedit.Window.UseNoneWindowStyle = $false
     $hashedit.Window.WindowStyle = 'none'
     $hashedit.Window.IgnoreTaskbarOnMaximize = $true  
-    $hashedit.Title_menu_Image.Source = $Logo
+    $hashedit.Window.TaskbarItemInfo.Description = $hashedit.PageTitle
+    #$hashedit.Title_menu_Image.Source = $Logo
     $hashedit.Title_menu_Image.width = "18"  
     $hashedit.Title_menu_Image.Height = "18"  
     $hashedit.EditorHelpFlyout.Document.Blocks.Clear()
 
+    if($newtheme){
+      write-ezlogs "Current Theme: $($detectTheme | out-string)"
+      #$imagecontrol = New-Object MahApps.Metro.IconPacks.BasePackIconImageExtension
+      #$imagecontrol.Kind = "MusicPlayerFill"
+      #$imagecontrol.Brush = "$($newTheme.PrimaryAccentColor)"   
+      #$hashsetup.Title_menu_Image.Source = $imagecontrol
+      #$thememanager.ChangeTheme($this, "Dark.Blue",$false)
+      $thememanager.RegisterLibraryThemeProvider($newtheme.LibraryThemeProvider)
+      $thememanager.ChangeTheme($hashedit.Window,$newtheme.Name,$false)  
+      if($synchash.MainGrid.Background){
+        $flyoutgradientbrush = $synchash.MainGrid.Background.clone()
+        $flyoutgradientbrush.GradientStops[1].color = "$($flyoutgradientbrush.GradientStops[1].color)" -replace $("$($flyoutgradientbrush.GradientStops[1].color)").Substring(0,3),'#E9' 
+        $flyoutgradientbrush.GradientStops[1].Offset = "0.7"
+      }else{
+        $flyoutgradientbrush = New-object System.Windows.Media.LinearGradientBrush
+        $flyoutgradientbrush.StartPoint = "0.5,0"
+        $flyoutgradientbrush.EndPoint = "0.5,1"
+        $gradientstop1 = New-object System.Windows.Media.GradientStop
+        $gradientstop1.Color = $thisApp.Config.Current_Theme.GridGradientColor1
+        $gradientstop1.Offset= "0.0"
+        $gradientstop2 = New-object System.Windows.Media.GradientStop
+        $gradientstop2.Color = $thisApp.Config.Current_Theme.GridGradientColor2
+        $gradientstop2.Offset= "0.5"  
+        $gradientstop_Collection = New-object System.Windows.Media.GradientStopCollection
+        $null = $gradientstop_Collection.Add($gradientstop1)
+        $null = $gradientstop_Collection.Add($gradientstop2)
+        $flyoutgradientbrush.GradientStops = $gradientstop_Collection
+      }
+      $hashedit.Window.Background = $flyoutgradientbrush
+      #$newcolor = $synchash.window.Resources["IconStyle"].Clone()
+      #$newColor.Color = "#FF76608A"
+      #$synchash.window.Resources["IconStyle"] = "#FF76608A"
+      #$synchash.window.Resources["IconStyle"] = $($newTheme.PrimaryAccentColor)
+      #$Resources = $synchash.Window.TryFindResource('IconStyle')
+      #write-ezlogs "Resources $($Resources | out-string)" -showtime
+      #write-ezlogs "Resources $($synchash.Window.Resources | out-string)" -showtime
+      $hashedit.Editor_Help_Flyout.Background = $flyoutgradientbrush 
+    }
     if([System.IO.File]::Exists($Media_to_edit.profile_path)){
       write-ezlogs ">>>> Importing all media profile: $($Media_to_edit.profile_path)" -enablelogs -showtime
       
@@ -424,14 +475,16 @@ function Show-ProfileEditor{
       [System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($hashedit.Window)
       [void][System.Windows.Forms.Application]::EnableVisualStyles()   
       $null = $hashedit.Window.ShowDialog()
-      $window_active = $hashedit.Window.Activate()          
+      $window_active = $hashedit.Window.Activate()     
+      $hashedit.appContext = New-Object System.Windows.Forms.ApplicationContext 
+      [void][System.Windows.Forms.Application]::Run($hashedit.appContext)     
     }catch{
       write-ezlogs "An exception in Show-ProfileEditor screen show dialog" -showtime -catcherror $_
     }
   }
   try{    
     $Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"} 
-    $ProfileEdit_RunSpace = Start-Runspace $hashedit_Scriptblock -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -runspace_name 'ProfileEditor_Runspace' -logfile $thisApp.Config.Log_File -verboselog:$thisApp.Config.Verbose_logging     
+    $ProfileEdit_RunSpace = Start-Runspace $hashedit_Scriptblock -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -runspace_name 'Show_ProfileEditor_Runspace' -logfile $thisApp.Config.Log_File -verboselog:$thisApp.Config.Verbose_logging -thisApp $thisApp     
   }catch{
     write-ezlogs "An exception occurred starting ProfileEditor_Runspace" -showtime -catcherror $_
   }

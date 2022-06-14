@@ -48,7 +48,10 @@ function Import-Media
     [switch]$VerboseLog = $thisApp.config.Verbose_logging 
   )
   try{
-    $synchash.LocalMedia_Progress_Ring.isActive = $true
+    $synchash.Window.Dispatcher.invokeAsync([action]{
+        $synchash.LocalMedia_Progress_Ring.isActive = $true
+        $syncHash.MediaTable.isEnabled = $false               
+    }.GetNewClosure()) 
   }catch{
     write-ezlogs "An exception occurred updating LocalMedia_Progress_Ring" -showtime -catcherror $_
   }  
@@ -98,11 +101,12 @@ function Import-Media
           write-ezlogs "Current view group: $($synchash.LocalMedia_CurrentView_Group)"  
           write-ezlogs "Total view group: $($synchash.LocalMedia_TotalView_Groups)"
         }          
-        if($synchash.LocalMedia_cbNumberOfRecords.SelectedIndex -ne -1){
+        if($synchash.LocalMedia_cbNumberOfRecords.SelectedIndex -ne -1 -and $synchash.LocalMediaFilter_Handler.name -ne 'Show_LocalMediaArtist_ComboBox' -and $synchash.LocalMediaFilter_Handler.name -ne 'FilterTextBox'){
           $selecteditem = ($synchash.LocalMedia_cbNumberOfRecords.Selecteditem -replace 'Page ').trim()
           if($thisapp.Config.Verbose_logging){write-ezlogs "Selected item $($selecteditem)"}
-          if($synchash.LocalMedia_cbNumberOfRecords.Selecteditem -ne $synchash.LocalMedia_CurrentView_Group){
-            $itemsource = ($synchash.LocalMedia_View_Groups.GetEnumerator() | select * | where {$_.Name -eq $selecteditem} | select -Last 1).value | Sort-Object -Property {$_.Group_Name},{$_.Artist},{[int]$_.Number}
+          if($synchash.LocalMedia_cbNumberOfRecords.Selecteditem){ # -ne "Page $($synchash.LocalMedia_CurrentView_Group)"         
+            #[Selected.System.Collections.DictionaryEntry]
+            $itemsource = ($synchash.LocalMedia_View_Groups | select * | where {$_.Name -eq $selecteditem} | select -Last 1).value | Sort-Object -Property {$_.Group_Name},{$_.Artist},{[int]$_.Number}
             $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($itemsource)              
             if($synchash.LocalMedia_GroupName -and $view){
               $groupdescription = New-Object  System.Windows.Data.PropertyGroupDescription
@@ -118,13 +122,10 @@ function Import-Media
               }
             }elseif($view.GroupDescriptions){$view.GroupDescriptions.Clear()}     
             $synchash.LocalMedia_CurrentView_Group = ($synchash.LocalMedia_View_Groups.GetEnumerator() | select * | where {$_.Name -eq $selecteditem} | select -last 1).Name
-            $synchash.LocalMedia_View = $view   
-            $synchash.LocalMedia_TableUpdate_timer.start()                             
-            #$synchash.MediaTable.ItemsSource = $view
-            #$synchash.LocalMedia_lblpageInformation.content = "$($($synchash.LocalMedia_CurrentView_Group)) of $($synchash.LocalMedia_TotalView_Groups)"
-            #$synchash.Media_Table_Total_Media.content = "$(@($synchash.MediaTable.ItemsSource).count) of $(@(($synchash.LocalMedia_View_Groups | select *).value).count) | Total $(@($Datatable.datatable).count)"
+            $synchash.LocalMedia_View = $view                                          
             if($thisapp.Config.Verbose_logging){write-ezlogs "Current view group after: $($synchash.LocalMedia_CurrentView_Group)"}
           }
+          $synchash.LocalMedia_TableUpdate_timer.start()  
         }          
       }catch{write-ezlogs 'An exception occurred in LocalMedia_cbNumberOfRecords selectionchanged event' -showtime -catcherror $_}   
     }.GetNewClosure()
@@ -153,16 +154,14 @@ function Import-Media
           $synchash.LocalMedia_CurrentView_Group = ($synchash.LocalMedia_View_Groups.GetEnumerator() | select * | where {$_.Name -lt $synchash.LocalMedia_CurrentView_Group -and $_.Name -ge 0} | select -last 1).Name
           $synchash.LocalMedia_View = $view   
           $synchash.LocalMedia_TableUpdate_timer.start()                             
-          #$synchash.MediaTable.ItemsSource = $view
-          #$synchash.LocalMedia_CurrentView_Group = ($synchash.LocalMedia_View_Groups.GetEnumerator() | select * | where {$_.Name -lt $synchash.LocalMedia_CurrentView_Group -and $_.Name -ge 0} | select -last 1).Name
-          #$synchash.LocalMedia_lblpageInformation.content = "$($($synchash.LocalMedia_CurrentView_Group)) of $($synchash.LocalMedia_TotalView_Groups)"  
-          #$synchash.Media_Table_Total_Media.content = "$(@($synchash.MediaTable.ItemsSource).count) of $(@(($synchash.LocalMedia_View_Groups | select *).value).count) | Total $(@($Datatable.datatable).count)"       
+       
         }   
         if($thisapp.Config.Verbose_logging){write-ezlogs "Current view group after: $($synchash.LocalMedia_CurrentView_Group)"}
       }catch{
         write-ezlogs 'An exception occurred in LocalMedia-BtnNext click event' -showtime -catcherror $_
       }    
     }.GetNewClosure()
+    #$Null =  $synchash.Show_LocalMediaArtist_ComboBox.AddHandler([System.Windows.Controls.ComboBox]::SelectionChangedEvent,$LocalMedia_ShowComboBox_Scriptblock)
     $Null = $synchash.LocalMedia_btnNext.AddHandler([System.Windows.Controls.Button]::ClickEvent,$LocalMedia_Btnnext_Scriptblock)      
     $Null = $synchash.LocalMedia_btnPrev.AddHandler([System.Windows.Controls.Button]::ClickEvent,$LocalMedia_btnPrev_Scriptblock)
     $Null = $synchash.LocalMedia_cbNumberOfRecords.AddHandler([System.Windows.Controls.ComboBox]::SelectionChangedEvent,$LocalMedia_cbNumberOfRecords_Scriptblock)     
@@ -172,34 +171,46 @@ function Import-Media
       try{
         if($Media_Path){
           write-ezlogs ">>> Getting local media from path $Media_Path" -showtime -color cyan -enablelogs
-          if([System.IO.File]::Exists($Media_Path)){ 
-            if(([System.IO.FileInfo]::new($Media_Path) | Where{$_.Extension -match $media_pattern})){
-              $Path = $Media_Path
-            }else{
-              $message = "Provided File $Media_Path is not a valid media type"
-            }
-          }elseif([System.IO.Directory]::Exists($Media_Path)){      
-            if(@([System.IO.Directory]::EnumerateFiles($Media_Path,'*','AllDirectories') | where {$_ -match $media_pattern}  ).count -lt 1){
-              $message = "Unable to find any supported media in Directory $Media_Path"
-            }else{
-              $Path = $Media_Path
-            }
+          if($Media_Path -match ','){
+            [array]$Media_Paths = $Media_Path -split ','
           }else{
-            write-ezlogs "Provided File $Media_Path is not a valid media type" -showtime -warning
+            if([System.IO.File]::Exists($Media_Path)){ 
+              if(([System.IO.FileInfo]::new($Media_Path) | Where{$_.Extension -match $media_pattern})){
+                $Path = $Media_Path
+              }else{
+                $Path = $Null
+                write-ezlogs "Provided File $Media_Path is not a valid media type" -showtime -warning
+                $message = "Provided File $Media_Path is not a valid media type"
+              }
+            }elseif([System.IO.Directory]::Exists($Media_Path)){      
+              if(([System.IO.Directory]::EnumerateFiles($Media_Path, '*', 'AllDirectories') | Where-Object { $_ -match $media_pattern } | Select-Object -First 1)){
+                $Path = $Media_Path
+                $message = "Unable to find any supported media in Directory $Media_Path"
+              }else{
+                $Path = $Null
+                write-ezlogs "Unable to find any supported media in Directory $Media_Path" -showtime -warning
+              }
+            }else{
+              write-ezlogs "Provided File $Media_Path is not a valid media type" -showtime -warning
+            }
           }
           if($Path){
             $synchash.All_local_Media = Get-LocalMedia -Media_Path $Path -Media_Profile_Directory $Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -Refresh_All_Media:$Refresh_All_Media
             #TODO: Cleanup old hashtable
             $all_local_media.media = $synchash.All_local_Media
+          }elseif($Media_Paths){
+            $synchash.All_local_Media = Get-LocalMedia -Media_directories $Media_Paths -Media_Profile_Directory $Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -Refresh_All_Media:$Refresh_All_Media
+            #TODO: Cleanup old hashtable
+            $all_local_media.media = $synchash.All_local_Media         
           }else{
-            Update-Notifications -Level 'WARNING' -Message $message -VerboseLog -Message_color "Orange" -thisApp $thisApp -synchash $synchash -Open_Flyout
+            Update-Notifications -Level 'WARNING' -Message "Provided Path $Media_Path is not valid" -VerboseLog -Message_color "Orange" -thisApp $thisApp -synchash $synchash -Open_Flyout
             return
           }
         }else{
           $Global:get_LocalMedia_Measure = measure-command {
             $synchash.All_local_Media = Get-LocalMedia -Media_directories $Media_directories -Media_Profile_Directory $Media_Profile_Directory -Import_Profile:$Import_Cache_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -startup -Refresh_All_Media:$Refresh_All_Media
           }
-          if($thisApp.Config.startup_perf_timer){write-ezlogs " | Get-LocalMedia Measure: $($get_LocalMedia_Measure | out-string)" -showtime} 
+          if($thisApp.Config.startup_perf_timer){write-ezlogs " | Get-LocalMedia Measure: $($Get_LocalMedia_Measure.Minutes)mins - $($Get_LocalMedia_Measure.Seconds)secs - $($Get_LocalMedia_Measure.Milliseconds)ms" -showtime} 
           #TODO: Cleanup old hashtable
           $all_local_media.media = $synchash.All_local_Media
         }
@@ -217,6 +228,7 @@ function Import-Media
           'Size'
           'Type'
           'Source'
+          'IsExpanded'
           'ID'
           'Group_Name'
           'Directory'
@@ -301,8 +313,7 @@ function Import-Media
               $synchash.LocalMedia_GroupName = 'Group_Name'
               #$Group_Name = 'Group_Name'
           
-              #$Sub_GroupName ='Album'
-              #$Platform_icon = "$($image_resources_dir)\\Platforms\\$($game.platform_profile.platform).ico"                 
+              #$Sub_GroupName ='Album'                 
               if($Media_title){
                 #---------------------------------------------- 
                 #region Add Properties to datatable
@@ -321,6 +332,7 @@ function Import-Media
                   $newTableRow.Type = $media.type
                   $newTableRow.Source = $media.Source
                   $newTableRow.ID = $encodedtitle
+                  $newTableRow.IsExpanded = $true
                   $newTableRow.Cover_art = $media.Cover_art        
                   $newTableRow.Group_Name = "$artist"
                   $newTableRow.Directory = $media.directory
@@ -337,11 +349,12 @@ function Import-Media
               }
             }
           }
-          if($thisApp.Config.startup_perf_timer){write-ezlogs " | Media_to_Datatable_Measure: $($media_to_Datatable_Measure | out-string)" -showtime}
+          if($thisApp.Config.startup_perf_timer){write-ezlogs " | Media_to_Datatable_Measure: $($Media_to_Datatable_Measure.Minutes)mins - $($Media_to_Datatable_Measure.Seconds)secs - $($Media_to_Datatable_Measure.Milliseconds)ms" -showtime}
         }
+
         $Global:media_paging_Measure = measure-command {
           if($thisApp.Config.MediaBrowser_Paging -ne $Null){
-            $approxGroupSize = (@($synchash.All_local_Media).count | Measure-Object -Sum).Sum / $PerPage  
+            $approxGroupSize = (@($Datatable.datatable).count | Measure-Object -Sum).Sum / $PerPage  
             #$page_size = [math]::ceiling($PerPage / $approxGroupSize) 
             $approxGroupSize = [math]::ceiling($approxGroupSize)
             #write-host ('This will create {0} groups which will be approximately {1} in size' -f $approxGroupSize, $page_size)
@@ -365,17 +378,17 @@ function Import-Media
             $synchash.LocalMedia_TotalView_Groups = ($groupmembers.GetEnumerator() | select *).count
             $synchash.LocalMedia_CurrentView_Group = ($groupmembers.GetEnumerator() | select * | select -last 1).Name    
             $itemsource = ($groupmembers.GetEnumerator() | select * | select -last 1).Value | Sort-object -Property {$_.Group_Name},{$_.Artist},{[int]$_.Number}
-            $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($itemsource) 
+            $synchash.LocalMedia_View = [System.Windows.Data.CollectionViewSource]::GetDefaultView($itemsource) 
           }else{  
-            $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($Datatable.datatable) 
+            $synchash.LocalMedia_View = [System.Windows.Data.CollectionViewSource]::GetDefaultView($Datatable.datatable) 
           }
         }  
-        if($thisApp.Config.startup_perf_timer){write-ezlogs " | Media_Paging_Measure: $($Media_Paging_Measure | out-string)" -showtime} 
-        $synchash.LocalMedia_View = $view
-        if($synchash.LocalMedia_GroupName -and $synchash.LocalMedia_View){
+        if($thisApp.Config.startup_perf_timer){write-ezlogs " | Media_Paging_Measure: $($Media_Paging_Measure.Minutes)mins - $($Media_Paging_Measure.Seconds)secs - $($Media_Paging_Measure.Milliseconds)ms" -showtime} 
+        if(($synchash.LocalMedia_View.psobject.properties.name | where {$_ -eq 'GroupDescriptions'}) -and $synchash.LocalMedia_GroupName){
           try{
+         
             $groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
-            $groupdescription.PropertyName = $synchash.LocalMedia_GroupName
+            #$groupdescription.PropertyName = "."
             if($synchash.LocalMedia_View.GroupDescriptions){
               $synchash.LocalMedia_View.GroupDescriptions.Clear()    
             }
@@ -385,6 +398,10 @@ function Import-Media
               $sub_groupdescription.PropertyName = $Sub_GroupName
               $null = $synchash.LocalMedia_View.GroupDescriptions.Add($sub_groupdescription)
             }
+            <#            $sortDescription = New-Object System.ComponentModel.SortDescription
+                $sortDescription.PropertyName = $synchash.LocalMedia_GroupName
+                $sortDescription.Direction = 'Ascending'
+            $null = $synchash.LocalMedia_View.SortDescriptions.Add($sortDescription)#>
           }catch{
             write-ezlogs "An exception occurred attempting to set group descriptions" -showtime -catcherror $_
           }
@@ -392,47 +409,20 @@ function Import-Media
           $synchash.LocalMedia_View.GroupDescriptions.Clear()
         }else{
           write-ezlogs "[Import-Media] View group descriptions not available or null! Likely CollectionViewSource was empty!" -showtime -warning
-        }  
-        if($Startup)
-        {         
-
-          $syncHash.Window.Dispatcher.invoke([action]{                     
-              $syncHash.MediaTable.CanUserReorderColumns = $true
-              $syncHash.MediaTable.FontWeight = "bold"
-              $synchash.MediaTable.CanUserSortColumns = $true
-              $synchash.MediaTable.HorizontalAlignment = "Stretch"
-              $synchash.MediaTable.CanUserAddRows = $False
-              $synchash.MediaTable.HorizontalContentAlignment = "left"
-              $synchash.MediaTable.IsReadOnly = $True  
-              if($verboselog){write-ezlogs " | Adding Media table play button and select checkbox to table" -showtime -color cyan -enablelogs} 
-              $buttonColumn = New-Object System.Windows.Controls.DataGridTemplateColumn
-              $buttonFactory = New-Object System.Windows.FrameworkElementFactory([System.Windows.Controls.Button])
-              $Null = $buttonFactory.SetValue([System.Windows.Controls.Button]::ContentProperty, "Play")
-              if($verboselog){write-ezlogs " | Setting MediaTable Play button click event" -showtime -color cyan -enablelogs} 
-              $Null = $buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
-              $dataTemplate = New-Object System.Windows.DataTemplate
-              $dataTemplate.VisualTree = $buttonFactory
-              $buttonColumn.CellTemplate = $dataTemplate
-              $buttonColumn.Header = 'Play'
-              $buttonColumn.DisplayIndex = 0
-              $null = $synchash.MediaTable.Columns.add($buttonColumn)             
-          },"Normal")  
-        }  
+        }
         $synchash.LocalMedia_TableUpdate_timer.start()       
-        if($thisApp.Config.startup_perf_timer){write-ezlogs " | Seconds to Import-Media: $($startup_stopwatch.Elapsed.TotalSeconds)" -showtime}
         if($error){
           write-ezlogs -showtime -PrintErrors -ErrorsToPrint $error
         }
       }catch{
-        write-ezlogs 'An exception occurred in import_LocalMedia_scriptblock' -showtime -catcherror $_ -logfile:$thisApp.Config.YoutubeMedia_logfile
+        write-ezlogs 'An exception occurred in import_LocalMedia_scriptblock' -showtime -catcherror $_ -logfile "$($thisApp.Config.YoutubeMedia_logfile)"
       }  
   }.GetNewClosure())
   $Variable_list = Get-Variable | where {$_.Options -notmatch 'ReadOnly' -and $_.Options -notmatch 'Constant'}
-  Start-Runspace -scriptblock $synchash.import_LocalMedia_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -Load_Modules -Script_Modules $Script_Modules -runspace_name 'import_LocalMedia_scriptblock'
+  Start-Runspace -scriptblock $synchash.import_LocalMedia_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -Load_Modules -Script_Modules $Script_Modules -runspace_name 'import_LocalMedia_scriptblock' -thisApp $thisApp -synchash $synchash
 }
 
 #---------------------------------------------- 
 #endregion Import-Media Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Import-Media')
-

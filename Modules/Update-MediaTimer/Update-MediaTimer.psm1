@@ -48,7 +48,10 @@ function Update-MediaTimer{
   $last_played = $thisapp.config.Last_Played
   $spotify_last_played = $thisapp.config.Spotify_Last_Played
   $Current_playlist_items = $synchash.PlayQueue_TreeView.Items | where {$_.Name -eq 'Play_Queue'}
-  $Current_playing = $Current_playlist_items.items | where {$_.header.id -eq $thisapp.Config.Last_Played} | select -Unique 
+  $Current_playing = $Current_playlist_items.items | where {$_.header.id -eq $synchash.Current_playing_media.id} | select -Unique 
+  if(!$Current_playing){
+    $Current_playing = $Current_playlist_items.items | where {$_.header.id -eq $thisapp.Config.Last_Played} | select -Unique
+  }
   if($synchash.vlc.mute){
     $synchash.Volume_icon.kind = 'Volumeoff' 
   }elseif($synchash.vlc.Volume -ge 75){
@@ -59,13 +62,20 @@ function Update-MediaTimer{
     $synchash.Volume_icon.kind = 'VolumeLow'
   }elseif($synchash.vlc.Volume -le 0 ){
     $synchash.Volume_icon.kind = 'Volumeoff'
-  }    
+  }  
+  if(!$Current_playing){
+    $Current_playing = $Current_playlist_items.items | where {$_.tag.Media.id -eq $thisapp.Config.Last_Played} | select -Unique
+  }     
   if(!$Current_playing){$Current_playing = $Current_playlist_items.items | where {$_.tag.Media.id -eq $thisapp.Config.Last_Played} | select -Unique}  
+  if($Current_playing){
+    $thisapp.Config.Last_Played = $synchash.Current_playing_media.id
+    $last_played = $synchash.Current_playing_media.id
+  }
   #write-ezlogs "Current playing items: $($Current_playing.header | out-string)"
   if(!$Current_playing -and $timer_maxretry -lt 25){    
     try{
       write-ezlogs "| Couldnt get current playing item with id $($thisapp.Config.Last_Played) from queue! Executing Get-Playlists" -showtime -warning
-      Get-Playlists -verboselog:$false -synchash $synchash -Media_Profile_Directory $thisapp.Config.Media_Profile_Directory -thisApp $thisapp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command -all_playlists $all_playlists           
+      Get-Playlists -verboselog:$false -synchash $synchash -Media_Profile_Directory $thisapp.Config.Media_Profile_Directory -thisApp $thisapp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -all_playlists $all_playlists           
       $timer_maxretry++    
       $Current_playlist_items = $synchash.PlayQueue_TreeView.Items | where {$_.Name -eq 'Play_Queue'}    
       $Current_playing = $Current_playlist_items.items | where {$_.header.id -eq $thisapp.Config.Last_Played} | select -Unique           
@@ -78,12 +88,12 @@ function Update-MediaTimer{
           $null = $thisapp.config.Current_Playlist.add($index,$thisapp.Config.Last_Played)         
         }else{write-ezlogs "| Play queue already contains $($thisapp.Config.Last_Played), refreshing one more time then I'm done here" -showtime -warning}
         $thisapp.config | Export-Clixml -Path $thisapp.Config.Config_Path -Force -Encoding UTF8
-        Get-Playlists -verboselog:$false -synchash $synchash -Media_Profile_Directory $thisapp.Config.Media_Profile_Directory -thisApp $thisapp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command -all_playlists $all_playlists 
+        Get-Playlists -verboselog:$false -synchash $synchash -Media_Profile_Directory $thisapp.Config.Media_Profile_Directory -thisApp $thisapp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists  -all_playlists $all_playlists 
         $Current_playlist_items = $synchash.PlayQueue_TreeView.Items | where {$_.Name -eq 'Play_Queue'}    
         $Current_playing = $Current_playlist_items.items | where {$_.header.id -eq $thisapp.Config.Last_Played} | select -Unique         
         if(!$Current_playing){
           write-ezlogs "[ERROR] | Still couldnt find $($thisapp.Config.Last_Played) in the play queue, aborting!" -showtime -color red
-          Update-Notifications -id 1 -Level 'ERROR' -Message "Couldnt find $($thisapp.Config.Last_Played) in the play queue, aborting progress timer!" -VerboseLog -Message_color 'Tomato' -thisApp $thisapp -synchash $synchash
+          #Update-Notifications -id 1 -Level 'ERROR' -Message "Couldnt find $($thisapp.Config.Last_Played) in the play queue, aborting progress timer!" -VerboseLog -Message_color 'Tomato' -thisApp $thisapp -synchash $synchash
           $synchash.MediaPlayer_Slider.Value = 0
           $synchash.timer.Stop()
         }else{write-ezlogs '| Found current playing item after adding it to the play queue and refreshing Get-Playlists, but this shouldnt have been needed!' -showtime -warning}                      
@@ -134,8 +144,8 @@ function Update-MediaTimer{
       if(@($Current_playing.header).count -gt 1){
         $Current_playing = $Current_playing | select -first 1
       }       
-      if($thisApp.Config.Enable_Marquee -and !$thisApp.Config.Use_Visualizations){
-        #if($thisapp.Config.Verbose_Logging){write-ezlogs " | Twitch Viewer count: $($thisapp.Config.streamlink.viewer_count)" -showtime -color cyan}
+      if($thisApp.Config.Enable_Marquee -and $thisapp.Config.streamlink.viewer_count){
+        write-ezlogs " | Twitch Viewer count: $($thisapp.Config.streamlink.viewer_count)" -showtime -color cyan
         $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Enable, 1) #enable marquee option
         $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Size, 24) #set the font size 
         $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Position, 8) #set the position of text
@@ -276,7 +286,7 @@ function Update-MediaTimer{
           Update-Notifications -id 1 -Level 'WARNING' -Message "Unable to find next media to play with id $next_item! Cannot continue" -VerboseLog -Message_color 'Orange' -thisApp $thisapp -synchash $synchash -open_flyout
           $syncHash.MainGrid_Background_Image_Source_transition.content = ''
           $syncHash.MainGrid_Background_Image_Source.Source = $null
-          $syncHash.MainGrid.Background = $synchash.Window.TryFindResource('MainGridBackGradient')
+          #$syncHash.MainGrid.Background = $synchash.Window.TryFindResource('MainGridBackGradient')
         }else{
           write-ezlogs "| Next to play is $($next_selected_media.title)" -showtime         
           if($next_selected_media.Spotify_Path){
@@ -299,7 +309,7 @@ function Update-MediaTimer{
         $synchash.Now_Playing_Label.content = '' 
         $syncHash.MainGrid_Background_Image_Source_transition.content = ''
         $syncHash.MainGrid_Background_Image_Source.Source = $null
-        $syncHash.MainGrid.Background = $synchash.Window.TryFindResource('MainGridBackGradient')               
+        #$syncHash.MainGrid.Background = $synchash.Window.TryFindResource('MainGridBackGradient')               
         $synchash.timer.stop()
       }   
     }catch{        

@@ -200,14 +200,9 @@ function Start-KeyWatcher{
                 }                
                 #look for spotify media
                 if(!$next_selected.media){
-                  if($synchash.All_Spotify_Media.playlist_tracks){
+                  $next_selected.media = $Spotify_Datatable.datatable | where {$_.id -eq $next_item} 
+                  if(!$next_selected.media -and $synchash.All_Spotify_Media.playlist_tracks){
                     $next_selected.media = $synchash.All_Spotify_Media.playlist_tracks | where {$_.id -eq $next_item} 
-                  }else{
-                    foreach($item in $Spotify_Datatable.datatable){
-                      if($item.id -eq $next_item){
-                        $next_selected.media = $item
-                      }
-                    }
                   }              
                 } 
                 #Look for in playlist cache

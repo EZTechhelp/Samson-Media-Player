@@ -2,9 +2,104 @@
 
 ## Unreleased
 
+## 0.4.1 - Pre-Alpha
+
+### New Core Feature: Theme System
++ First iteration of UI theme system leveraging Mahapps ThemeManager
++ 'Change theme' menu added to title bar menu with options for both Light and Dark
+   + Note: Light themes aren't fully implemented yet and are pretty unusable atm
++ Themes are saved and persist across app restarts
++ Very basic at the moment, but planned to evolve into full skinning customization
++ Some secondary UI windows may not yet update with theme change
+
+### Added
++ Stop Media option added to System Tray Menu (Testing)
++ Convert-Color function for converting RGB to HEX and vice versa
++ First iteration of Youtube API integration, adapted (and fixed) from 'Youtube' PS gallery module
+  + Not yet exposed for usage, dev testing only. Initial testing works for dragdrop yt links
+  + Youtube auth works similar to Spotishell, capturing via webview2
+  + PODE http server is used to capture responses from redirectURI. Tokens stored in Secret Vault
+  + Will eventually replace yt-dlp for everything except parsing playback stream urls
++ Dev_Override: variable to override certain defaults or settings not available to users
++ Ability to start playback via double-click on items in datagrids
++ Theme support for Splash Screen
++ InputDialog.xaml for future custom input dialog styling
++ 'Show Only' combobox on LocalMedia table for quick filtering of items by Group/Artist
+  + Only for local media table for now while in development/testing.
++ Theme Support for Show-FeedbackForm and Show-WebLogin
++ Support for playback of Youtube live streams with native player
+  + WIP and in development. Uses streamlink similar to Twitch streams
++ Get-YouTubePlaylistItems added to Youtube module for parsing youtube playlists and videos
+
+### Changed
++ Improved async binding for datatables
++ Running app conflict detection now occurs both in launcher and main startup
+  + Extra safety net and for when launching app directly from script vs exe
++ Various updates to Theme System
+  + Improved RGB/HEX color darkening accuracy for background gradients
+  + Added theme support for Audio Settings and Help Flyouts
+  + Added theme support for First Run Setup UI
+  + Button controls now updated with theme appropriately
+  + First Run title menu icon now updates with theme change
++ Enabling Import Spotify no longer triggers Spotify login window
+  + Message is displayed indicating whether auth needs to be captured with link to open it
+  + Login window will display upon Saving/Starting Setup, if not already captured beforehand
++ Improved parsing/searching of local and remote required modules paths
++ Improved performance of bindings and other updates to the local media datatable
+  + Improved search/filter text performance slightly
+  + Improved adding/deleting item performance slightly
+  + More work to be done here especially with pagination and other datatables
++ Main window no longer hidden when updating media sources
+  + Setup window and all actions from it now execute in run-spaces
++ Improved error handling for Get-Songinfo and Spotishell
++ Added theme support to Profile Editor and Weblogon windows
++ Updated Remove-SpotifyApplication to allow removing stored Spotify vault secrets
++ Various optimizations to Start-Runspace for better logging and use of MTA for non UI threads
++ New Playlist names now limited to 100 characters. A warning is displayed if over
++ Removed datagrid Filter option from the 'Play' column of Local Media Browser
++ 'Add Media' button now allows adding multiple comma delimited paths
++ Local Media table is now disabled when adding new media
++ Small changes to datagrid header template bindings for future flexibility
++ Youtube import/scan of video/playlists now use new Youtube API integration
+  + Massive performance improvement. Old with yt-dlp avg 3-5mins for 82 items, new avg 4secs!
+  + Some meta data like duration missing for playlist videos, but grabbed on playback start
+  + Get-youtube requires large refactor to separate Twitch processing and general optimization
++ Minor performance improvements to local media table filter and pagination updates
++ Various changes and cleanup to verbose logging
++ Updated included build of yt-dlp to latest version
+
+### Fixed
++ Browsing local paths via 'Open file Location' fails if invalid path characters
++ Libvlc volume doesn't update to saved/previous value until manually changing
++ Now playing title bar doesn't reset after media stops
++ Filter search fails when searching for items with illegal characters
++ More issues with some local media failing to import/scan due to illegal path characters
++ Theme resets when starting playback of Spotify media
++ Media timer doesnt start for some Spotify media if title contains illegal characters
++ Adding media paths via 'Add Media' fails if path includes quotes (and other illegal chars)
++ Browsing via 'Open File Location' fails for some media
++ Regression: UI Theme resets when starting playback of Spotify media
++ Existing notifications can sometimes be unintentionally overwritten with new ones
++ Setup sometimes never continues after clicking 'Start Setup' in the First Run Setup window
++ Setup does not properly cancel if closing First Run Setup window manually vs Cancel setup button
++ Local media table Page number combobox doesn't update when filtering or changing pages
++ Get-Spotify fails to parse playlists after implementing Secret vault for Spotify authentication
+
 ## 0.4.0 - Pre-Alpha
 
 ### Added
++ Support for Spotify Windows Store version
+  + App now checks for both Appx and normal desktop installs of Spotify
+  + Spicetify NOT compatible with Appx version, will not allow enabling if detected
+  + Appx version has no cli support so cant start minimized, among other things
+  + Seriously dont use the appx version it sucks
++ Assembly and attached property DataGridExtensions for Datagrid filtering
+  + Testing for better search ,filter options and performance
+  + Only applied to Local Media table
++ New uninstaller script for improved cleanup of components when uninstalled
+  + Confirmation Prompt is shown with list components to be removed 
+  + Only removes modules and apps that were installed at time of app install
++ Force parameter for Get-InstalledApplications to allow running under user context
 + Microsoft SecretManagement and SecretStore to required modules to install
 + WebView2 option '--autoplay-policy=no-user-gesture-required' for auto-play
 + First iteration of framework for using Spotify Web Playback SDK
@@ -14,6 +109,14 @@
 + Refresh_All_Media parameter for Get-LocalMedia and Import-Media
 
 ### Changed
++ Add Youtube Video button now executes in background runspaces
+  + Main window no longer hidden and splash screen no longer displayed
++ Refactored Import-Youtube for performance and code consolidation
+  + Now always executes in own runspace to free up the UI thread
++ FullScreen pop-out button now disabled if not playing media with video content
++ Improved error handling for Set-WindowState
++ Improved error handling and requirement verification for Invoke-Spicetify
++ Improved error handling for Spotishell
 + Refactored SpotiShell to store and retrieve credentials from encrypted SecretVault
   + Access tokens and other auth data no longer stored in local json file
 + Improved responsiveness when enumerating files/folders in first run setup
@@ -43,6 +146,8 @@
 + Minor adjustments to stacktrace and catcherror log outout
 
 ### Fixed
++ Get-playlist fails when attempting to import playlist cache file not yet created
++ Spotify media fails to play when executed from Next keypress event
 + Next keypress events fail when processing Spotify media
 + EQ not applied until enabling then disabling while media is playing
 + Exception can occur when updating current playing item in Queue for some media

@@ -42,10 +42,10 @@ function Add-TrayMenu
   #Tray Icon
   #$image =  [System.Drawing.Image]::FromStream($stream_image)
   #$icon = [System.Drawing.Icon]::FromHandle(([System.Drawing.Bitmap][System.Drawing.Image]::FromStream([System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\\Resources\\MainIcon.ico"))).GetHicon())
-  $Main_Tool_Icon = New-Object System.Windows.Forms.NotifyIcon
-  $Main_Tool_Icon.Text = "$($thisApp.Config.App_Name) - Version $($thisApp.Config.App_Version)"
-  $Main_Tool_Icon.Icon =  "$($thisApp.Config.current_folder)\\Resources\\MainIcon.ico"
-  $Main_Tool_Icon.Visible = $true
+  $Synchash.Main_Tool_Icon = New-Object System.Windows.Forms.NotifyIcon
+  $Synchash.Main_Tool_Icon.Text = "$($thisApp.Config.App_Name) - Version $($thisApp.Config.App_Version)"
+  $Synchash.Main_Tool_Icon.Icon =  "$($thisApp.Config.current_folder)\\Resources\\MainIcon.ico"
+  $Synchash.Main_Tool_Icon.Visible = $true
 
   #ContextMenu
   $contextmenu = New-Object System.Windows.Forms.ContextMenuStrip
@@ -110,7 +110,7 @@ function Add-TrayMenu
   $ForeColor = [System.Drawing.Color]::White
   $BorderColor = '#CC0078D7' #[System.Drawing.Color]::DimGray'
   $SelectionBackColor = [System.Drawing.SystemColors]::Highlight
-  $MenuSelectionColor = '#CC0078D7'#[System.Drawing.Color]::AliceBlue'
+  $MenuSelectionColor = '#FF0067B9' # '#CC0078D7'#[System.Drawing.Color]::AliceBlue'
   $SelectionForeColor = [System.Drawing.Color]::White
   $colorTable = New-Object SAPIENTypes.SAPIENColorTable -ArgumentList $ContainerColor, $BackColor, $BorderColor, $MenuSelectionColor
   $render = New-Object System.Windows.Forms.ToolStripProfessionalRenderer -ArgumentList $colorTable
@@ -118,13 +118,14 @@ function Add-TrayMenu
   #[System.Windows.Forms.ToolStripManager]::Renderer = $render
   
   # Add Open App
-  $Open_App = $contextmenu.Items.Add("Open App");
+  $Synchash.Open_App = $contextmenu.Items.Add("Open App");
+  $Synchash.Open_App.ToolTipText = 'Open App/Restore Focus'
   $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\\Resources\\MainIcon.ico") 
   $image = [System.Drawing.Image]::FromStream($stream_image)
              
   #$Open_App_Picture = $image#[System.Drawing.Image]::FromStream([System.IO.MemoryStream]::new([System.IO.File]::ReadAllBytes("$($current_folder)\\Resources\\App_Icon5.ico")))
-  $Open_App.image = $image
-  $Open_App.add_Click({
+  $Synchash.Open_App.image = $image
+  $Synchash.Open_App.add_Click({
       try{
         $synchash.Window.Show()
         if($SyncHash.Window.WindowState -eq 'Minimized'){
@@ -138,22 +139,50 @@ function Add-TrayMenu
       }
   }.GetNewClosure())
   
+  # Add menu Stop
+  $Synchash.Menu_Stop = $contextmenu.Items.Add("Stop Media");
+  $Synchash.Menu_Stop.ToolTipText = 'Stop Playback of Media'
+  $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\\Resources\\Material-Stop.png")
+  $image =  [System.Drawing.Image]::FromStream($stream_image)
+  $Synchash.Menu_Stop.image = $image #[System.Drawing.Image]::FromStream([System.IO.MemoryStream]::new([System.IO.File]::ReadAllBytes("$image_resources_dir\Material-Close.png")))
+  #$Synchash.Main_Tool_Icon.ContextMenuStrip = $contextmenu
+  #$null = $Menu_Stop.AddHandler([System.Windows.Controls.Button]::ClickEvent,$StopMedia_Command)
+  $Synchash.Menu_Stop.add_Click($Synchash.Menu_StopMedia_Command)
+  
+  # Add menu Pause
+  $Synchash.Menu_Pause = $contextmenu.Items.Add("Pause Media");
+  $Synchash.Menu_Pause.ToolTipText = 'Pause or Resume Media'
+  $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\\Resources\\Material-PauseCircle.png")
+  $image =  [System.Drawing.Image]::FromStream($stream_image)
+  $Synchash.Menu_Pause.image = $image #[System.Drawing.Image]::FromStream([System.IO.MemoryStream]::new([System.IO.File]::ReadAllBytes("$image_resources_dir\Material-Close.png")))
+  #$Synchash.Main_Tool_Icon.ContextMenuStrip = $contextmenu
+  #$null = $Menu_Stop.AddHandler([System.Windows.Controls.Button]::ClickEvent,$StopMedia_Command)
+  $Synchash.Menu_Pause.add_Click($Synchash.Menu_PauseMedia_Command)  
+  
+  # Add menu Next
+  $Synchash.Menu_Next = $contextmenu.Items.Add("Next Media");
+  $Synchash.Menu_Next.ToolTipText = 'Play Next Media in Queue'
+  $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\\Resources\\Material-SkipNext.png")
+  $image =  [System.Drawing.Image]::FromStream($stream_image)
+  $Synchash.Menu_Next.image = $image #[System.Drawing.Image]::FromStream([System.IO.MemoryStream]::new([System.IO.File]::ReadAllBytes("$image_resources_dir\Material-Close.png")))
+  $Synchash.Menu_Next.add_Click($Synchash.Menu_NextMedia_Command)  
+  
   # Add menu exit
-  $Menu_Exit = $contextmenu.Items.Add("Exit");
+  $Synchash.Menu_Exit = $contextmenu.Items.Add("Exit");
+  $Synchash.Menu_Exit.ToolTipText = 'Exit App'
   $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\\Resources\\Material-Close.png")
   $image =  [System.Drawing.Image]::FromStream($stream_image)
-  $Menu_Exit.image = $image #[System.Drawing.Image]::FromStream([System.IO.MemoryStream]::new([System.IO.File]::ReadAllBytes("$image_resources_dir\Material-Close.png")))
-  $Main_Tool_Icon.ContextMenuStrip = $contextmenu
-  $Menu_Exit.add_Click({
+  $Synchash.Menu_Exit.image = $image #[System.Drawing.Image]::FromStream([System.IO.MemoryStream]::new([System.IO.File]::ReadAllBytes("$image_resources_dir\Material-Close.png")))
+  $Synchash.Menu_Exit.add_Click({
       try{
-        $Main_Tool_Icon.Visible = $false
+        $Synchash.Main_Tool_Icon.Visible = $false
         $syncHash.Window.close()
       }catch{
         write-ezlogs "An exception ocurred in Menu_exit click event" -showtime -catcherror $_
       }
   }.GetNewClosure())  
-  
-  return $Main_Tool_Icon
+  $Synchash.Main_Tool_Icon.ContextMenuStrip = $contextmenu
+  return $Synchash.Main_Tool_Icon
 }
 #---------------------------------------------- 
 #endregion Add-TrayMenu Function

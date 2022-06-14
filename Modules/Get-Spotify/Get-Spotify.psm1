@@ -95,29 +95,36 @@ function Get-Spotify
     }
   }
 
-  #$Uri = 'https://accounts.spotify.com/api/token'
-
   #Get Devices
   $Method = 'Get'
   #$Uri = 'https://api.spotify.com/v1/me/player/devices'
   #$devices = Invoke-WebRequest -Method $Method -Headers $Header -Uri $Uri | Convertfrom-json
-  $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
+  #$devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
   if([System.IO.File]::Exists("$($env:APPDATA)\\Spotify\\Spotify.exe")){
     write-ezlogs ">>>> Checking for spotify at  $($env:APPDATA)\\Spotify\\Spotify.exe" -showtime -logfile:$log
     $Spotify_Install_Path = $("$($env:APPDATA)\\Spotify\\Spotify.exe") | Split-Path -parent
     $Spotify_Launch_Path = $("$($env:APPDATA)\\Spotify\\Spotify.exe")
   }
-
   if(!$Spotify_Install_Path){
-    write-ezlogs ">>>> Could not find Spotify, checking using Get-InstalledApplications" -showtime -logfile:$log
-    $installed_apps = Get-InstalledApplications
-    $Spotify_app = $installed_apps | where {$_.'Display Name' -eq 'Spotify'} | select -Unique
-    $Spotify_Install_Path = $Spotify_app.'Install Location'
-    $Spotify_Launch_Path = "$($Spotify_app.'Install Location')\\Spotify.exe"    
+    write-ezlogs ">>>> Could not find Spotify, checking appx packages" -showtime -logfile:$log
+    <#    $installed_apps = Get-InstalledApplications -GetAppx -Force
+        $Spotify_app = $installed_apps | where {$_.'Display Name' -eq 'Spotify' -or $_.'Display Name' -eq 'Spotify Music'} | select -Unique
+        if(@($Spotify_app).count -gt 1){
+        $Spotify_app = $Spotify_app | where {$_.type -ne 'UWP'}
+    }#>
+    if($psversiontable.PSVersion.Major -gt 5){
+      write-ezlogs " Running PowerShell $($psversiontable.PSVersion.Major), Importing Module Appx with parameter -usewindowspowershell" -showtime -warning
+      Import-module Appx -usewindowspowershell
+    }    
+    $Spotify_app = (Get-appxpackage 'Spotify*')
+    if($Spotify_app){
+      #$Spotify_Path = "$($Spotify_app.InstallLocation)\\Spotify.exe"
+      $Spotify_Install_Path = $($Spotify_app.InstallLocation)
+      $Spotify_Launch_Path = "$($Spotify_app.InstallLocation)\\Spotify.exe"
+    }    
   }
   if([System.IO.File]::Exists($Spotify_Launch_Path)){
-    write-ezlogs " | Spotify is installed at $Spotify_Launch_Path" -showtime -logfile:$log
-    #$devices = Get-AvailableDevices   
+    write-ezlogs " | Spotify is installed at $Spotify_Launch_Path" -showtime -logfile:$log 
   }else{
     write-ezlogs "Unable to find Spotify installed at path $Spotify_Launch_Path" -showtime -Warning -logfile:$log
     if($thisApp.Config.Install_Spotify){
@@ -128,10 +135,7 @@ function Get-Spotify
       $Spotify_Install_Path = $Spotify_app.'Install Location'
       $Spotify_Launch_Path = "$($Spotify_app.'Install Location')\\Spotify.exe"       
       if([System.IO.File]::Exists($Spotify_Launch_Path)){
-        write-ezlogs "[SUCCESS] Spotify installed successfully" -showtime -logfile:$log
-        #Start $Spotify_Launch_Path -NoNewWindow 
-        #wait for spotify to launch
-        #start-sleep 2     
+        write-ezlogs "[SUCCESS] Spotify installed successfully" -showtime -logfile:$log    
       }else{
         write-ezlogs "Spotify did not appear to install or unable to find, cannot continue" -showtime -warning -logfile:$log
         return
@@ -146,13 +150,33 @@ function Get-Spotify
     $Uri = 'https://api.spotify.com/v1/me/playlists?limit=50'
     $Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name
     $Method = 'Get'
-    $Header = @{
-      Authorization = 'Bearer ' + ($Spotify_Auth_app.token.access_token)
-    }    
-    $playlists = Invoke-WebRequest -Method $Method -Headers $Header -Uri $Uri -UseBasicParsing | Convertfrom-json   
+    if($Spotify_Auth_app.token.access_token){
+      try{
+        $playlists = Get-CurrentUserPlaylists -ApplicationName $thisApp.config.App_Name -thisApp $thisApp -thisScript $thisScript
+      }catch{
+        write-ezlogs "An exception occurred" -CatchError $_ -enablelogs
+      }     
+      <#      try{
+          $Header = @{
+          Authorization = 'Bearer ' + ($Spotify_Auth_app.token.access_token)
+          }    
+          $playlists = Invoke-WebRequest -Method $Method -Headers $Header -Uri $Uri -UseBasicParsing | Convertfrom-json
+          }catch{
+          write-ezlogs "An exception occurred getting spotify playlists from uri: $Uri" -showtime -catcherror $_
+          return
+      }#>
+      <#      if(!$playlists){
+          try{
+          $playlists = Get-CurrentUserPlaylists -ApplicationName $thisApp.config.App_Name -thisApp $thisApp -thisScript $thisScript
+          }catch{
+          write-ezlogs "An exception occurred getting spotify playlists from Get-CurrentUserPlaylistsi" -showtime -catcherror $_
+          }   
+      }#>
+    }
     $Available_Spotify_Media = New-Object -TypeName 'System.Collections.ArrayList'
     #Get Playlists
-    foreach($playlist in  $playlists.items)
+
+    foreach($playlist in  $playlists)
     {
       #$Local_Media_output = New-Object -TypeName 'System.Collections.ArrayList'
       $name = $null

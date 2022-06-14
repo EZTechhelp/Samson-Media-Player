@@ -64,12 +64,12 @@
          <!--  <Label Name="More_info_Msg"  Margin="5,40,0,0" HorizontalAlignment="Center" Foreground="White" Height="50"  FontSize="20"/> -->
 		 <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,5,5,5">		 
          <Button Name='Cancel_Button' FontSize="14" FontWeight="Bold" Margin="10,0,0,0" Grid.Row="2" Style="{StaticResource DetailButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Center" IsEnabled="true">
-		<Button.Background>
+<!-- 		<Button.Background>
 	<LinearGradientBrush  PresentationOptions:Freeze="True"  EndPoint="0.5,1" StartPoint="0.5,0">
 		<GradientStop Color="Black" Offset="0.0" />
 		<GradientStop Offset="1" Color="#CE0A2347"></GradientStop>
 	</LinearGradientBrush>			
-	</Button.Background>
+	</Button.Background> -->
 			<StackPanel Orientation="Horizontal">
 				<iconPacks:PackIconMaterial Kind="CloseBox"
                                     Margin="4 4 2 4"

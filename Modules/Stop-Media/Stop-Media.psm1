@@ -41,6 +41,10 @@ function Stop-Media
     $callpath = "$((Get-PSCallStack)[1].Command):$((Get-PSCallStack)[1].InvocationInfo.ScriptLineNumber):Stop-Media"
     $synchash.Timer.stop()
     $synchash.Media_URL.text = ''
+    $synchash.Current_playing_media = $Null
+    $thisApp.Config.Last_Played = ''
+    $synchash.Now_Playing_Label.content = ""
+    $synchash.Media_Length_Label.content = ""
     if($synchash.vlc.IsPlaying){
       if($thisApp.config.Verbose_Logging){write-ezlogs 'Stoping vlc playback' -showtime}
       $synchash.VLC.stop()    
@@ -97,7 +101,7 @@ function Stop-Media
     if($thisApp.config.Verbose_Logging){write-ezlogs 'Resetting background/UI' -showtime}
     $syncHash.MainGrid_Background_Image_Source_transition.content = ''
     $syncHash.MainGrid_Background_Image_Source.Source = $null
-    $syncHash.MainGrid.Background = $synchash.Window.TryFindResource('MainGridBackGradient')          
+    #$syncHash.MainGrid.Background = $synchash.Window.TryFindResource('MainGridBackGradient')          
   }catch{
     write-ezlogs 'An exception occurred in Stop-Media' -showtime -catcherror $_
   }

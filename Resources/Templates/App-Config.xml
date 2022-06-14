@@ -55,7 +55,20 @@
       <I32 N="YoutubeBrowser_Paging">50</I32>
       <I32 N="MediaBrowser_Paging">50</I32>	  
       <B N="Is_Playing">false</B>
-	  <S N="streamlink"></S>	  
+	  <S N="streamlink"></S>	
+      <Obj N="Current_Theme" RefId="55">
+        <TN RefId="4">
+          <T>System.Management.Automation.PSCustomObject</T>
+          <T>System.Object</T>
+        </TN>
+        <MS>
+          <S N="GridGradientColor2">#FF0A2347</S>
+          <S N="Name">Dark.Blue</S>
+		  <S N="Menu_Item">Theme_Blue</S>
+          <S N="GridGradientColor1">#FF000000</S>
+		  <S N="PrimaryAccentColor"></S>
+        </MS>
+      </Obj>	  
       <Obj N="Media_Directories" RefId="1">
         <TN RefId="1">
           <T>System.Object[]</T>

@@ -83,6 +83,7 @@
                         <MenuItem.Icon>
                             <Image Name="Title_menu_Image"
                                    RenderOptions.BitmapScalingMode="Fant"
+								   Source="{iconPacks:BootstrapIconsImage MusicPlayerFill, Brush={StaticResource MahApps.Brushes.Accent}}"
                                    HorizontalAlignment="Center" VerticalAlignment="Top"></Image>
                         </MenuItem.Icon>
                         <MenuItem Header="ShowInTaskbar"
@@ -91,13 +92,6 @@
                         <MenuItem Header="Topmost"
                                   IsCheckable="True"
                                   IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type mah:MetroWindow}}, Path=Topmost}" />
-                        <MenuItem Header="Ignore taskbar on maximize"
-                                  IsCheckable="True"
-                                  IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type mah:MetroWindow}}, Path=IgnoreTaskbarOnMaximize}" />
-                        <MenuItem Header="Toggle FullScreen (no taskbar, window style = none)"
-                                  Name="Toggle_FullScreen"
-                                  IsCheckable="True"
-                                  IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type mah:MetroWindow}}, Path=ToggleFullScreen}" />
                     </MenuItem>
                 </Menu>
             </Button>
@@ -105,7 +99,7 @@
     </mah:MetroWindow.LeftWindowCommands>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="12*" />
+            <RowDefinition Height="20*" />
             <RowDefinition Height="120*" />
             <RowDefinition Height="20*" />
         </Grid.RowDefinitions>
@@ -137,28 +131,35 @@
             </Image.Effect>
         </Image>
         <Grid Grid.Row="0"
+		      Margin="5,5,5,0"
               Name="Header"
               Background="Transparent">
-            <StackPanel Orientation="Horizontal"
+<!--             <StackPanel Orientation="Horizontal"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Stretch"
-                        Margin="5,5,5,0">
+                        Margin="5,5,5,0"> -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="20*" />
+        </Grid.RowDefinitions>						
                 <Image Name="Logo"
                        RenderOptions.BitmapScalingMode="Fant"
                        HorizontalAlignment="Left"
                        Margin="0,0,0,0"
                        Width="60"
-                       Height="20"
+					   Grid.Row="0"
                        VerticalAlignment="Top" />
                 <TextBlock Name="PageHeader"
                        Text="Edit Media Profile"
                        Margin="0,0,0,0"
+					   Grid.Row="1"
 					   TextWrapping="Wrap" 
                        VerticalAlignment="Top"
+					   HorizontalAlignment="Center"
                        Foreground="White"
                        FontSize="24">
                 </TextBlock>
-            </StackPanel>
+            <!-- </StackPanel> -->
         </Grid>
         <mah:MetroTabControl Style="{DynamicResource MahApps.Styles.TabControl.Animated}"
                              Name="Editor_TabControl"

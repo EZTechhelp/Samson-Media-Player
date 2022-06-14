@@ -88,10 +88,6 @@ function Show-FeedbackForm{
   )  
 
   $global:hashfeedback = [hashtable]::Synchronized(@{})  
-  $Global:Current_Folder = $($thisScript.path | Split-path -Parent)
-  if(!(Test-Path "$Current_Folder\\Views")){
-    $Global:Current_Folder = $($thisScript.path | Split-path -Parent | Split-Path -Parent)
-  }
   $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidPathChars())
   $pattern = "[™$illegal]"
   $pattern2 = "[:$illegal]"
@@ -100,83 +96,135 @@ function Show-FeedbackForm{
     try{
       [void][System.Reflection.Assembly]::LoadWithPartialName('presentationframework')
       Add-Type -AssemblyName PresentationFramework, System.Drawing, System.Windows.Forms, WindowsFormsIntegration
-      $add_Window_XML = "$($Current_Folder)\\Views\\FeedbackForm.xaml"
-      if(!(Test-Path $add_Window_XML)){
-        $Current_Folder = $($thisScript.path | Split-path -Parent | Split-Path -Parent)
-        $add_Window_XML = "$($Current_Folder)\\Views\\FeedbackForm.xaml"
-      }
-      [xml]$xaml = Get-content "$($Current_Folder)\\Views\\FeedbackForm.xaml" -Force
-      if($Verboselog){write-ezlogs ">>>> Script path: $($Current_Folder)\\Views\\FeedbackForm.xaml" -showtime -enablelogs -Color cyan}
-      $reader=(New-Object System.Xml.XmlNodeReader $xaml)
-    
-      $hashfeedback.Window=[Windows.Markup.XamlReader]::Load($reader)
-
-      [xml]$XAML = $xaml
-      $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | ForEach-Object {   
-        $hashfeedback."$($_.Name)" =  $hashfeedback.Window.FindName($_.Name)  
+      $Current_Folder = $thisApp.Config.Current_Folder
+      $Feedback_Window_XML = "$($Current_Folder)\\Views\\FeedbackForm.xaml"
+      #theme
+      $theme = [MahApps.Metro.Theming.MahAppsLibraryThemeProvider]::new()
+      $themes = $theme.GetLibraryThemes()
+      $themeManager = [ControlzEx.Theming.ThemeManager]::new()
+      if($synchash.Window){
+        $detectTheme = $thememanager.DetectTheme($synchash.Window)
+        $newtheme = $themes | where {$_.Name -eq $detectTheme.Name}
+      }elseif($_.Name -eq $thisApp.Config.Current_Theme.Name){
+        $newtheme = $themes | where {$_.Name -eq $thisApp.Config.Current_Theme.Name}
       }  
+           
+      #import xml
+      [xml]$xaml = [System.IO.File]::ReadAllText($Feedback_Window_XML).replace('Views/Styles.xaml',"$($Current_folder)`\Views`\Styles.xaml").Replace("{StaticResource MahApps.Brushes.Accent}","$($newTheme.PrimaryAccentColor)")
+      $Childreader = (New-Object System.Xml.XmlNodeReader $xaml)
+      $hashfeedback.Window  = [Windows.Markup.XamlReader]::Load($Childreader)  
+      $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | foreach {   
+        if(!$hashfeedback."$($_.Name)"){$hashfeedback."$($_.Name)" = $hashfeedback.Window.FindName($_.Name)}
+      }  
+      
+      
+      $hashfeedback.Logo.Source=$Logo
+      $hashfeedback.Window.icon = $Logo 
+      $hashfeedback.Window.title =$PageTitle
+      $hashfeedback.Window.icon.Freeze()  
+      $hashfeedback.Window.IsWindowDraggable="True"
+      $hashfeedback.Window.LeftWindowCommandsOverlayBehavior="HiddenTitleBar" 
+      $hashfeedback.Window.RightWindowCommandsOverlayBehavior="HiddenTitleBar"
+      $hashfeedback.Window.ShowTitleBar=$true
+      $hashfeedback.Window.UseNoneWindowStyle = $false
+      $hashfeedback.Window.WindowStyle = 'none'
+      $hashfeedback.Window.IgnoreTaskbarOnMaximize = $true  
+      $hashfeedback.Title_menu_Image.width = "18"  
+      $hashfeedback.Title_menu_Image.Height = "18"  
+      $hashfeedback.EditorHelpFlyout.Document.Blocks.Clear()      
+      $hashfeedback.PageNotes.text = "NOTE: A copy of the log file ($($thisApp.Config.Log_file)) will automatically be included with your submission"
+      $hashfeedback.PageNotes.FontStyle="Italic"      
+      if($newtheme){
+        write-ezlogs "Current Theme: $($detectTheme | out-string)"
+        $thememanager.RegisterLibraryThemeProvider($newtheme.LibraryThemeProvider)
+        $thememanager.ChangeTheme($hashfeedback.Window,$newtheme.Name,$false)  
+        if($synchash.MainGrid.Background){
+          $flyoutgradientbrush = $synchash.MainGrid.Background.clone()
+          $flyoutgradientbrush.GradientStops[1].color = "$($flyoutgradientbrush.GradientStops[1].color)" -replace $("$($flyoutgradientbrush.GradientStops[1].color)").Substring(0,3),'#E9' 
+          $flyoutgradientbrush.GradientStops[1].Offset = "0.7"
+        }else{
+          $flyoutgradientbrush = New-object System.Windows.Media.LinearGradientBrush
+          $flyoutgradientbrush.StartPoint = "0.5,0"
+          $flyoutgradientbrush.EndPoint = "0.5,1"
+          $gradientstop1 = New-object System.Windows.Media.GradientStop
+          $gradientstop1.Color = $thisApp.Config.Current_Theme.GridGradientColor1
+          $gradientstop1.Offset= "0.0"
+          $gradientstop2 = New-object System.Windows.Media.GradientStop
+          $gradientstop2.Color = $thisApp.Config.Current_Theme.GridGradientColor2
+          $gradientstop2.Offset= "0.5"  
+          $gradientstop_Collection = New-object System.Windows.Media.GradientStopCollection
+          $null = $gradientstop_Collection.Add($gradientstop1)
+          $null = $gradientstop_Collection.Add($gradientstop2)
+          $flyoutgradientbrush.GradientStops = $gradientstop_Collection
+        }
+        $hashfeedback.Window.Background = $flyoutgradientbrush
+        $hashfeedback.Editor_Help_Flyout.Background = $flyoutgradientbrush 
+      }         
     }
     catch
     {
-      write-ezlogs "An exception occurred when loading xaml -- $_" -CatchError
-      
+      write-ezlogs "An exception occurred when loading xaml" -CatchError $_
+      return
     }      
-    $hashfeedback.Logo.Source=$Logo
-    $hashfeedback.Window.title =$PageTitle
-    $hashfeedback.PageNotes.text = "NOTE: A copy of the log file ($($thisApp.Config.Log_file)) will automatically be included with your submission"
-    $hashfeedback.PageNotes.FontStyle="Italic"
-    $hashfeedback.Feedback_Subject_textbox.Add_TextChanged({
-        if($hashfeedback.Feedback_Subject_textbox.text -eq "")
-        {
-          $hashfeedback.Feedback_Subject_Label.BorderBrush = "Red"
-        }       
-        else
-        {          
-          $hashfeedback.Feedback_Subject_Label.BorderBrush = "Green"
-        }
-    })  
-    $hashfeedback.Feedback_Details.Add_TextChanged({
-        if($hashfeedback.Feedback_Details.document.blocks.inlines.text -eq "")
-        {
-          $hashfeedback.Feedback_Details_Label.BorderBrush = "Red"
-        }       
-        else
-        {          
-          $hashfeedback.Feedback_Details_Label.BorderBrush = "Green"
-        }
-    })      
-    $hashfeedback.Feedback_ComboBox.add_SelectionChanged({
-        if($hashfeedback.Feedback_ComboBox.selectedindex -eq -1)
-        {
-          $hashfeedback.FeedBack_Category.BorderBrush = "Red"
-        }       
-        else
-        {
-          $hashfeedback.FeedBack_Category.BorderBrush = "Green"
-        }      
-    })  
-    $hashfeedback.File_Path_Browse.add_click({
-        $File_Path_Browse = Open-FileDialog -Title "Select a file to include with your submission (Ex: Screenshot..etc)" -Multiselect
-        write-ezlogs "Selected Path: $($File_Path_Browse)" -showtime -color cyan
-        #$File_Path_Browse = $File_Path_Browse -join ","
-        if(-not [string]::IsNullOrEmpty($File_Path_Browse)){
-          $hashfeedback.File_Path_textbox.text = $File_Path_Browse
-        }
-    }) 
-    $hashfeedback.File_Path_textbox.Add_TextChanged({
-        if($hashfeedback.File_Path_textbox.text -eq "")
-        {
-          $hashfeedback.File_Path_Label.BorderBrush = "Orange"
-        }       
-        elseif([System.IO.File]::Exists($hashfeedback.File_Path_textbox.text))
-        {          
-          $hashfeedback.File_Path_Label.BorderBrush = "Green"
-        }
-        elseif(![System.IO.File]::Exists($hashfeedback.File_Path_textbox.text))
-        {
-          $hashfeedback.File_Path_Label.BorderBrush = "Red"
-        }
-    })          
+    try{
+      $hashfeedback.Feedback_Subject_textbox.Add_TextChanged({
+          if($hashfeedback.Feedback_Subject_textbox.text -eq "")
+          {
+            $hashfeedback.Feedback_Subject_Label.BorderBrush = "Red"
+          }       
+          else
+          {          
+            $hashfeedback.Feedback_Subject_Label.BorderBrush = "Green"
+          }
+      })  
+      $hashfeedback.Feedback_Details.Add_TextChanged({
+          if($hashfeedback.Feedback_Details.document.blocks.inlines.text -eq "")
+          {
+            $hashfeedback.Feedback_Details_Label.BorderBrush = "Red"
+          }       
+          else
+          {          
+            $hashfeedback.Feedback_Details_Label.BorderBrush = "Green"
+          }
+      })      
+      $hashfeedback.Feedback_ComboBox.add_SelectionChanged({
+          if($hashfeedback.Feedback_ComboBox.selectedindex -eq -1)
+          {
+            $hashfeedback.FeedBack_Category.BorderBrush = "Red"
+          }       
+          else
+          {
+            $hashfeedback.FeedBack_Category.BorderBrush = "Green"
+          }      
+      })  
+      $hashfeedback.File_Path_Browse.add_click({
+          $File_Path_Browse = Open-FileDialog -Title "Select a file to include with your submission (Ex: Screenshot..etc)" -Multiselect
+          write-ezlogs "Selected Path: $($File_Path_Browse)" -showtime -color cyan
+          #$File_Path_Browse = $File_Path_Browse -join ","
+          if(-not [string]::IsNullOrEmpty($File_Path_Browse)){
+            $hashfeedback.File_Path_textbox.text = $File_Path_Browse
+          }
+      }) 
+      $hashfeedback.File_Path_textbox.Add_TextChanged({
+          if($hashfeedback.File_Path_textbox.text -eq "")
+          {
+            $hashfeedback.File_Path_Label.BorderBrush = "Orange"
+          }       
+          elseif([System.IO.File]::Exists($hashfeedback.File_Path_textbox.text))
+          {          
+            $hashfeedback.File_Path_Label.BorderBrush = "Green"
+          }
+          elseif(![System.IO.File]::Exists($hashfeedback.File_Path_textbox.text))
+          {
+            $hashfeedback.File_Path_Label.BorderBrush = "Red"
+          }
+      })
+    }
+    catch{
+      write-ezlogs "An exception occurred setting event handlers" -CatchError $_
+      return
+    } 
+       
     #Update-EditorHelp  
     function update-EditorHelp{    
       param (
@@ -221,26 +269,72 @@ function Show-FeedbackForm{
           if(-not [string]::IsNullOrEmpty($RichTextRange2.text) -and -not [string]::IsNullOrEmpty($hashfeedback.Feedback_Subject_textbox.text) -and $hashfeedback.Feedback_ComboBox.selectedindex -ne -1 )
           {
             #submit feedback
-            try{
-              try
-              {
-                $email_settings = Import-Clixml "$($thisApp.Config.Current_folder)\\Resources\\Email\\365Mail.xml"
-                $emailusername = $email_settings.EmailUser
-                $encrypted = (Get-Content "$($thisApp.Config.Current_folder)\\Resources\\Email\\365Auth.txt" -ReadCount 0 -Force) | ConvertTo-SecureString
-                $credential = New-Object System.Management.Automation.PsCredential($emailusername, $encrypted)
-                $EmailFrom = $email_settings.EmailFrom
-                $EmailTo = $email_settings.EmailTo
-                $Smtpport = $email_settings.Smtpport
-                $SMTPServer = $email_settings.SmtpServer 
+
+            try
+            {
+              #$email_settings = Import-Clixml "$($thisApp.Config.Current_folder)\\Resources\\Email\\365Mail.xml"
+              <#                $emailusername = $email_settings.EmailUser
+                  $encrypted = (Get-Content "$($thisApp.Config.Current_folder)\\Resources\\Email\\365Auth.txt" -Force) | ConvertTo-SecureString
+                  if($encrypted){
+                  $credential = New-Object System.Management.Automation.PsCredential($emailusername, $encrypted)
+                  $EmailFrom = $email_settings.EmailFrom
+                  $EmailTo = $email_settings.EmailTo
+                  $Smtpport = $email_settings.Smtpport
+                  $SMTPServer = $email_settings.SmtpServer 
+              }#>
+              if([System.IO.File]::Exists("$($thisApp.Config.Current_Folder)\\Resources\\API\\Trello-API-Config.xml")){
+                $auth = Import-Clixml "$($thisApp.Config.Current_Folder)\\Resources\\API\\Trello-API-Config.xml"
               }
-              catch
-              {
-                write-ezlogs "An exception occurred sending email to $EmailTo" -showtime -catcherror $_
-                $emailstatus = "[ERROR] Sending email failed!"
-                $notificationstatus = "[ERROR] An issue occurred while attempting to submit your feedback/issue! Please try again or contact support@eztechhelp.com"
-                $emailcolor = "red"
+              if($auth.client_Secret){
+                if($($hashfeedback.Feedback_ComboBox.selecteditem.content) -match 'Bug/Issue'){
+                  $listname = '❗ Issues'
+                }else{
+                  $listname = '💭 Feedback/General'
+                } 
+                try
+                {
+                  $CreateCard = Create-trellocard -BoardName $($thisApp.Config.App_name) -ListName $listname -CardName $($hashfeedback.Feedback_Subject_textbox.text) -CardDesc $($RichTextRange2.text) -auth $auth
+                  if($CreateCard.id){
+                    write-ezlogs "[SUCCESS] Feedback successfuly sent!" -showtime
+                    write-ezlogs "New Card Created: $($CreateCard | out-string)" -showtime
+                    $emailstatus = "[SUCCESS] Feedback successfuly sent!" 
+                    $notificationstatus = "[SUCCESS] Your feedback/issue was successsfully submitted!"
+                    $emailcolor = "green"
+                    Show-NotifyBalloon -Message $notificationstatus -Title 'FeedBack/Issue Submission' -TipIcon Info -Icon_path "$($current_folder)\\Resources\\MusicPlayerFill.ico"
+                  }else{
+                    write-ezlogs "Sending Feedback failed!" -showtime -warning
+                    $emailstatus = "[ERROR] Sending Feedback failed!"
+                    $notificationstatus = "[ERROR] An issue occurred while attempting to submit your feedback/issue! Please try again or contact support@eztechhelp.com"
+                    $emailcolor = "red"
+                    Show-NotifyBalloon -Message "[WARNING] Unable to send Feedback/Issue, invalid email credentials!" -Title 'FeedBack/Issue Submission' -TipIcon Warning -Icon_path "$($current_folder)\\Resources\\MusicPlayerFill.ico"
+                  }
+                }
+                catch
+                {
+                  write-ezlogs "An exception occurred sending Feedback" -showtime -catcherror $_
+                  $emailstatus = "[ERROR] Sending Feedback failed!"
+                  $notificationstatus = "[ERROR] An issue occurred while attempting to submit your feedback/issue! Please try again or contact support@eztechhelp.com"
+                  $emailcolor = "red"
+                }             
+                write-ezlogs "[FEEDBACK-SUBJECT] $($hashfeedback.Feedback_Subject_textbox.text)" -showtime -linesbefore 1           
+                write-ezlogs "[FEEDBACK] $($RichTextRange2.text)" -showtime
+                $hashfeedback.Save_setup_textblock.text = "$emailstatus"
+                $hashfeedback.Save_setup_textblock.foreground = "$emailcolor"
+                $hashfeedback.Save_setup_textblock.FontSize = 14     
+                $hashfeedback.Feedback_ComboBox.selectedindex = -1    
+                $hashfeedback.File_Path_textbox.text = ''  
+                $hashfeedback.Feedback_Details.Document.Blocks.Clear()
+                $hashfeedback.Feedback_Subject_textbox.clear()
               }
-              if($credential){
+            }
+            catch
+            {
+              write-ezlogs "An exception occurred sending Feedback" -showtime -catcherror $_
+              $emailstatus = "[ERROR] Sending Feedback failed!"
+              $notificationstatus = "[ERROR] An issue occurred while attempting to submit your feedback/issue! Please try again or contact support@eztechhelp.com"
+              $emailcolor = "red"
+            }
+            <#              if($credential){
                 $Subject = "$($thisScript.Name) - $($thisScript.Version) - Feedback/Issue"  
                 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
                 # Create the email.
@@ -249,26 +343,26 @@ function Show-FeedbackForm{
                 $email.Subject = $Subject
                 $email.IsBodyHtml = $true
                 $email.Body = @"
-<h2>This was submitted from the feedback/issue form of $($thisScript.Name)</h2><br>Version: $($thisScript.Version)<br>Date: $(Get-Date -Format $logdateformat)<br>User: $($env:username)<br>Computer: $($env:computername)<br><br><b>Category: </b> $($hashfeedback.Feedback_ComboBox.selecteditem.content)<br><b>Subject: </b> $($hashfeedback.Feedback_Subject_textbox.text)<br><b>Details: </b>$($RichTextRange2.text)
-"@
+                <h2>This was submitted from the feedback/issue form of $($thisScript.Name)</h2><br>Version: $($thisScript.Version)<br>Date: $(Get-Date -Format $logdateformat)<br>User: $($env:username)<br>Computer: $($env:computername)<br><br><b>Category: </b> $($hashfeedback.Feedback_ComboBox.selecteditem.content)<br><b>Subject: </b> $($hashfeedback.Feedback_Subject_textbox.text)<br><b>Details: </b>$($RichTextRange2.text)
+                "@
                 write-ezlogs "Sending email via $SmtpServer\:$Smtpport" -showtime 
                 #endregion Attach HTML report
                 if($thisApp.Config.Log_file)
                 {
-                  $emaillog =  [System.IO.Path]::Combine($env:temp, "$($thisScript.Name)-$($thisScript.Version)-EM.zip")
-                  write-ezlogs -text "Attaching Log File ($emaillog)" -ShowTime
-                  $null = copy-item $thisApp.Config.Log_file -Destination $emaillog -Force
-                  Compress-Archive -LiteralPath $thisApp.Config.Log_file -DestinationPath $emaillog -Force 
-                  Write-Output "[$(Get-Date -Format $logdateformat)] Sending Email...."  | Out-File -FilePath $emaillog -Encoding unicode -Append
-                  Write-Output "###################### Logging Finished - [$(Get-Date -Format $logdateformat)] ######################`n" | Out-File -FilePath $emaillog -Encoding unicode -Append
-                  start-sleep 1
+                $emaillog =  [System.IO.Path]::Combine($env:temp, "$($thisScript.Name)-$($thisScript.Version)-EM.zip")
+                write-ezlogs -text "Attaching Log File ($emaillog)" -ShowTime
+                $null = copy-item $thisApp.Config.Log_file -Destination $emaillog -Force
+                Compress-Archive -LiteralPath $thisApp.Config.Log_file -DestinationPath $emaillog -Force 
+                Write-Output "[$(Get-Date -Format $logdateformat)] Sending Email...."  | Out-File -FilePath $emaillog -Encoding unicode -Append
+                Write-Output "###################### Logging Finished - [$(Get-Date -Format $logdateformat)] ######################`n" | Out-File -FilePath $emaillog -Encoding unicode -Append
+                start-sleep 1
                 }                
                 if([System.IO.File]::Exists($hashfeedback.File_Path_textbox.text)){
-                  write-ezlogs -text "Attaching File $($hashfeedback.File_Path_textbox.text)" -ShowTime
-                  Compress-Archive -LiteralPath $hashfeedback.File_Path_textbox.text -DestinationPath $emaillog -update                  
+                write-ezlogs -text "Attaching File $($hashfeedback.File_Path_textbox.text)" -ShowTime
+                Compress-Archive -LiteralPath $hashfeedback.File_Path_textbox.text -DestinationPath $emaillog -update                  
                 }
                 if($emaillog){
-                  $email.attachments.add($emaillog)
+                $email.attachments.add($emaillog)
                 } 
                 # Send the email.
                 $SMTPClient=New-Object System.Net.Mail.SmtpClient( $SmtpServer , $SmtpPort )
@@ -276,59 +370,56 @@ function Show-FeedbackForm{
                 $SMTPClient.Credentials = $credential
                 try
                 {
-                  $SMTPClient.Send( $email )
-                  $emailstatus = "[SUCCESS] Email successfuly sent!" 
-                  $notificationstatus = "[SUCCESS] Your feedback/issue was successsfully submitted!"
-                  $emailcolor = "green"
+                $SMTPClient.Send( $email )
+                $emailstatus = "[SUCCESS] Email successfuly sent!" 
+                $notificationstatus = "[SUCCESS] Your feedback/issue was successsfully submitted!"
+                $emailcolor = "green"
                 }
                 catch
                 {
-                  write-ezlogs "An exception occurred sending email to $EmailTo" -showtime -catcherror $_
-                  $emailstatus = "[ERROR] Sending email failed!"
-                  $notificationstatus = "[ERROR] An issue occurred while attempting to submit your feedback/issue! Please try again or contact support@eztechhelp.com"
-                  $emailcolor = "red"
+                write-ezlogs "An exception occurred sending email to $EmailTo" -showtime -catcherror $_
+                $emailstatus = "[ERROR] Sending email failed!"
+                $notificationstatus = "[ERROR] An issue occurred while attempting to submit your feedback/issue! Please try again or contact support@eztechhelp.com"
+                $emailcolor = "red"
                 }
                 $email.Dispose();
                 write-ezlogs $emailstatus -showtime -color:$emailcolor
                 if($emaillog)
                 {
-                  $Null = Remove-item $emaillog -Force
+                $Null = Remove-item $emaillog -Force
                 }
                 Show-NotifyBalloon -Message $notificationstatus -Title 'FeedBack/Issue Submission' -TipIcon Info -Icon_path "$($current_folder)\\Resources\\MusicPlayerFill.ico"
-              }else{
+                }else{
                 write-ezlogs "[Show-FeedBackForm] Unable to get email credentials! Unable to send" -showtime -warning
                 Show-NotifyBalloon -Message "[WARNING] Unable to send Feedback/Issue, invalid email credentials!" -Title 'FeedBack/Issue Submission' -TipIcon Warning -Icon_path "$($current_folder)\\Resources\\MusicPlayerFill.ico"
-              }
+            }#>
 
-              <#              $spotify_startapp = Get-startapps *mail
-                  if($spotify_startapp){
-                  $spotify_appid = $spotify_startapp.AppID
-                  }else{
-                  $spotify_appid = $Spotify_Path
-              }  #>              
-              #New-BurntToastNotification -AppID $spotify_appid -Text $Message -AppLogo $applogo
+            <#              $spotify_startapp = Get-startapps *mail
+                if($spotify_startapp){
+                $spotify_appid = $spotify_startapp.AppID
+                }else{
+                $spotify_appid = $Spotify_Path
+            }  #>              
+            #New-BurntToastNotification -AppID $spotify_appid -Text $Message -AppLogo $applogo
               
-              #Update-Notifications -id 1 -Level 'Info' -Message $notificationstatus -VerboseLog -Message_color $emailcolor -thisApp $thisApp -synchash $synchash -open_flyout
-              Remove-Variable -Name credential -Force
-              Remove-Variable -Name SMTPClient -Force
-              Remove-Variable -Name Subject -Force
-              Remove-Variable -Name EmailFrom -Force
-              Remove-Variable -Name EmailTo -Force
-              Remove-Variable -Name emailusername -Force
-              Remove-Variable -Name encrypted -Force
-              Remove-Variable -Name email -Force
-            }catch{
-              write-ezlogs "An exception occurred sending email to $EmailTo" -showtime -catcherror $_
-            }
-            write-ezlogs "[FEEDBACK-SUBJECT] $($hashfeedback.Feedback_Subject_textbox.text)" -showtime -linesbefore 1           
-            write-ezlogs "[FEEDBACK] $($RichTextRange2.text)" -showtime
-            $hashfeedback.Save_setup_textblock.text = "Feedback submitted"
-            $hashfeedback.Save_setup_textblock.foreground = "LightGreen"
-            $hashfeedback.Save_setup_textblock.FontSize = 14     
-            $hashfeedback.Feedback_ComboBox.selectedindex = -1    
-            $hashfeedback.File_Path_textbox.text = ''  
-            $hashfeedback.Feedback_Details.Document.Blocks.Clear()
-            $hashfeedback.Feedback_Subject_textbox.clear()
+            #Update-Notifications -id 1 -Level 'Info' -Message $notificationstatus -VerboseLog -Message_color $emailcolor -thisApp $thisApp -synchash $synchash -open_flyout
+            <#              Remove-Variable -Name credential -Force
+                Remove-Variable -Name SMTPClient -Force
+                Remove-Variable -Name Subject -Force
+                Remove-Variable -Name EmailFrom -Force
+                Remove-Variable -Name EmailTo -Force
+                Remove-Variable -Name emailusername -Force
+                Remove-Variable -Name encrypted -Force
+            Remove-Variable -Name email -Force#>
+            <#            write-ezlogs "[FEEDBACK-SUBJECT] $($hashfeedback.Feedback_Subject_textbox.text)" -showtime -linesbefore 1           
+                write-ezlogs "[FEEDBACK] $($RichTextRange2.text)" -showtime
+                $hashfeedback.Save_setup_textblock.text = "$emailstatus"
+                $hashfeedback.Save_setup_textblock.foreground = "$emailcolor"
+                $hashfeedback.Save_setup_textblock.FontSize = 14     
+                $hashfeedback.Feedback_ComboBox.selectedindex = -1    
+                $hashfeedback.File_Path_textbox.text = ''  
+                $hashfeedback.Feedback_Details.Document.Blocks.Clear()
+            $hashfeedback.Feedback_Subject_textbox.clear()#>
           }
           else
           {
@@ -383,13 +474,13 @@ function Show-FeedbackForm{
         }
           
     }.GetNewClosure())    
-
-    [System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($hashfeedback.Window)
-    [void][System.Windows.Forms.Application]::EnableVisualStyles()   
+   
     try{
       if($firstRun){
         $hash.window.TopMost = $false
-      }         
+      }     
+      [System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($hashfeedback.Window)
+      [void][System.Windows.Forms.Application]::EnableVisualStyles()    
       $null = $hashfeedback.window.ShowDialog()
       $window_active = $hashfeedback.Window.Activate() 
       $hashfeedbackContext = New-Object System.Windows.Forms.ApplicationContext 
@@ -399,7 +490,7 @@ function Show-FeedbackForm{
     }       
   }
   $Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"}
-  Start-Runspace $feedback_Pwshell -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -logfile $thisapp.config.log_file 
+  Start-Runspace $feedback_Pwshell -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -logfile $thisapp.config.log_file -thisApp $thisApp -runspace_name 'Show_FeedBack_Runspace'
 }
 #---------------------------------------------- 
 #endregion Show-FeedbackForm Function

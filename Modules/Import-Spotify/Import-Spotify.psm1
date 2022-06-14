@@ -48,7 +48,10 @@ function Import-Spotify
     [switch]$VerboseLog
   )
   try{
-    $Synchash.spotifyMedia_Progress_Ring.isActive = $true
+    $synchash.Window.Dispatcher.invoke([action]{
+        $Synchash.spotifyMedia_Progress_Ring.isActive = $true 
+         $syncHash.SpotifyTable.isEnabled = $false         
+    },'Normal')  
   }catch{
     write-ezlogs "An exception occurred updating SpotifyMedia_Progress_Ring" -showtime -catcherror $_
   }   
@@ -64,9 +67,9 @@ function Import-Spotify
         if($synchash.Spotify_CurrentView_Group -eq $synchash.Spotify_TotalView_Groups){
           if($thisapp.Config.Verbose_logging){write-ezlogs "Last page of $($synchash.Spotify_TotalView_Groups) reached" -showtime -warning -logfile:$thisApp.Config.SpotifyMedia_logfile}
         }else{
-          $itemsource = ($synchash.Spotify_View_Groups.GetEnumerator() | select * | where {$_.Name -gt $synchash.Spotify_CurrentView_Group -and $_.Name -le $synchash.Spotify_TotalView_Groups} | select -Last 1).value | Sort-Object -Property {$_.Playlist},{[int]$_.Track_Number}
+          $itemsource = ($synchash.Spotify_View_Groups.GetEnumerator() | select * | where {$_.Name -gt $synchash.Spotify_CurrentView_Group -and $_.Name -le $synchash.Spotify_TotalView_Groups} | select -Last 1).value | Sort-Object -Property {$_.Group_Name},{$_.Playlist},{[int]$_.Track_Number}
           $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($itemsource)           
-          if($synchash.Spotify_GroupName){
+          if($synchash.Spotify_GroupName -and $view){
             $groupdescription = New-Object  System.Windows.Data.PropertyGroupDescription
             $groupdescription.PropertyName = $synchash.Spotify_GroupName
             $view.GroupDescriptions.Clear()
@@ -92,11 +95,11 @@ function Import-Spotify
           write-ezlogs "Current view group: $($synchash.Spotify_CurrentView_Group)" -showtime -logfile:$thisApp.Config.SpotifyMedia_logfile 
           write-ezlogs "Total view group: $($synchash.Spotify_TotalView_Groups)" -showtime -logfile:$thisApp.Config.SpotifyMedia_logfile
         }          
-        if($synchash.Spotify_cbNumberOfRecords.SelectedIndex -ne -1){
+        if($synchash.Spotify_cbNumberOfRecords.SelectedIndex -ne -1 -and $synchash.SpotifyFilter_Handler.name -ne 'Show_SpotifyMediaArtist_ComboBox' -and $synchash.SpotifyFilter_Handler.name -ne 'SpotifyFilterTextBox'){
           $selecteditem = ($synchash.Spotify_cbNumberOfRecords.Selecteditem -replace 'Page ').trim()
           if($thisapp.Config.Verbose_logging){write-ezlogs "Selected item $($selecteditem)" -showtime -logfile:$thisApp.Config.SpotifyMedia_logfile}
-          if($synchash.Spotify_cbNumberOfRecords.Selecteditem -ne $synchash.Spotify_CurrentView_Group){
-            $itemsource = ($synchash.Spotify_View_Groups.GetEnumerator() | select * | where {$_.Name -eq $selecteditem} | select -Last 1).value | Sort-Object -Property {$_.Playlist},{[int]$_.Track_Number}
+          if($synchash.Spotify_cbNumberOfRecords.Selecteditem){
+            $itemsource = ($synchash.Spotify_View_Groups | select * | where {$_.Name -eq $selecteditem} | select -Last 1).value | Sort-Object -Property {$_.Group_Name},{$_.Playlist},{[int]$_.Track_Number}
             $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($itemsource)              
             if($synchash.Spotify_GroupName -and $view){
               $groupdescription = New-Object  System.Windows.Data.PropertyGroupDescription
@@ -112,8 +115,6 @@ function Import-Spotify
             $synchash.Spotify_CurrentView_Group = ($synchash.Spotify_View_Groups.GetEnumerator() | select * | where {$_.Name -eq $selecteditem} | select -last 1).Name                 
             $synchash.SpotifyMedia_View = $view      
             $synchash.SpotifyMedia_TableUpdate_timer.start() 
-            #$synchash.Spotify_lblpageInformation.content = "$($($synchash.Spotify_CurrentView_Group)) of $($synchash.Spotify_TotalView_Groups)"
-            #$synchash.Spotify_Table_Total_Media.content = "$(@($synchash.SpotifyTable.ItemsSource).count) of $(@(($synchash.Spotify_View_Groups | select *).value).count) | Total $(@($Spotify_Datatable.datatable).count)"
             if($thisapp.Config.Verbose_logging){write-ezlogs "Current view group after: $($synchash.Spotify_CurrentView_Group)" -showtime -logfile:$thisApp.Config.SpotifyMedia_logfile}
           }
         }          
@@ -128,7 +129,7 @@ function Import-Spotify
         if($synchash.Spotify_CurrentView_Group -le 1){
           if($thisapp.Config.Verbose_logging){write-ezlogs "Last page of $($synchash.Spotify_TotalView_Groups) reached" -showtime -warning -logfile:$thisApp.Config.SpotifyMedia_logfile}
         }else{
-          $itemsource = ($synchash.Spotify_View_Groups.GetEnumerator() | select * | where {$_.Name -lt $synchash.Spotify_CurrentView_Group -and $_.Name -ge 0} | select -Last 1).value | Sort-Object -Property {$_.Playlist},{[int]$_.Track_Number}
+          $itemsource = ($synchash.Spotify_View_Groups.GetEnumerator() | select * | where {$_.Name -lt $synchash.Spotify_CurrentView_Group -and $_.Name -ge 0} | select -Last 1).value | Sort-Object -Property {$_.Group_Name},{$_.Playlist},{[int]$_.Track_Number}
           $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($itemsource)          
           if($synchash.Spotify_GroupName){
             $groupdescription = New-Object  System.Windows.Data.PropertyGroupDescription
@@ -144,9 +145,6 @@ function Import-Spotify
           $synchash.Spotify_CurrentView_Group = ($synchash.Spotify_View_Groups.GetEnumerator() | select * | where {$_.Name -lt $synchash.Spotify_CurrentView_Group -and $_.Name -ge 0} | select -last 1).Name   
           $synchash.SpotifyMedia_View = $view      
           $synchash.SpotifyMedia_TableUpdate_timer.start()            
-          #$synchash.SpotifyTable.ItemsSource = $view        
-          #$synchash.Spotify_lblpageInformation.content = "$($($synchash.Spotify_CurrentView_Group)) of $($synchash.Spotify_TotalView_Groups)"     
-          #$synchash.Spotify_Table_Total_Media.content = "$(@($synchash.SpotifyTable.ItemsSource).count) of $(@(($synchash.Spotify_View_Groups | select *).value).count) | Total $(@($Spotify_Datatable.datatable).count)"  
         }   
         if($thisapp.Config.Verbose_logging){write-ezlogs "Current view group after: $($synchash.Spotify_CurrentView_Group)" -showtime -logfile:$thisApp.Config.SpotifyMedia_logfile}
       }catch{
@@ -331,17 +329,16 @@ function Import-Spotify
         $synchash.Spotify_View_Groups = $groupmembers.GetEnumerator() | select *
         $synchash.Spotify_TotalView_Groups = ($groupmembers.GetEnumerator() | select *).count
         $synchash.Spotify_CurrentView_Group = ($groupmembers.GetEnumerator() | select * | select -last 1).Name    
-        $itemsource = ($groupmembers.GetEnumerator() | select * | select -last 1).Value | Sort-object -Property {$_.Playlist},{[int]$_.Track_Number}
-        $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($itemsource)   
+        $itemsource = ($groupmembers.GetEnumerator() | select * | select -last 1).Value | Sort-object -Property {$_.Group_Name},{$_.Playlist},{[int]$_.Track_Number}
+        $synchash.SpotifyMedia_View = [System.Windows.Data.CollectionViewSource]::GetDefaultView($itemsource)   
       }else{  
-        $view = [System.Windows.Data.CollectionViewSource]::GetDefaultView($Spotify_Datatable.datatable)     
+        $synchash.SpotifyMedia_View = [System.Windows.Data.CollectionViewSource]::GetDefaultView($Spotify_Datatable.datatable)     
       }
-      $synchash.SpotifyMedia_View = $view
-      if($synchash.Spotify_GroupName -and $synchash.SpotifyMedia_View){
+      if(($synchash.SpotifyMedia_View.psobject.properties.name | where {$_ -eq 'GroupDescriptions'}) -and $synchash.Spotify_GroupName){
         $syncHash.Window.Dispatcher.invoke([action]{
             $groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
             $groupdescription.PropertyName = $synchash.Spotify_GroupName
-            $view.GroupDescriptions.Clear()
+            $synchash.SpotifyMedia_View.GroupDescriptions.Clear()
             $null = $synchash.SpotifyMedia_View.GroupDescriptions.Add($groupdescription)
             if($Sub_GroupName){
               $sub_groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
@@ -369,7 +366,7 @@ function Import-Spotify
   
       if($Startup)
       {     
-        $syncHash.Window.Dispatcher.invoke([action]{
+<#        $syncHash.Window.Dispatcher.invoke([action]{
             $syncHash.SpotifyTable.CanUserReorderColumns = $true
             $synchash.SpotifyTable.CanUserSortColumns = $true
             $syncHash.SpotifyTable.FontWeight = "bold"
@@ -389,13 +386,13 @@ function Import-Spotify
             $buttonColumn.Header = 'Play'
             $buttonColumn.DisplayIndex = 0
             $null = $synchash.SpotifyTable.Columns.add($buttonColumn) 
-        },"Normal")     
+        },"Normal") #>    
         if($thisApp.Config.startup_perf_timer){write-ezlogs " | Seconds to Import-Spotify: $($startup_stopwatch.Elapsed.TotalSeconds)" -showtime}           
       }
       $synchash.SpotifyMedia_TableUpdate_timer.start() 
   })
   $Variable_list = Get-Variable | where {$_.Options -notmatch 'ReadOnly' -and $_.Options -notmatch 'Constant'}
-  Start-Runspace -scriptblock $synchash.import_SpotifyMedia_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -Load_Modules -Script_Modules $Script_Modules -runspace_name 'Import_SpotifyMedia_Runspace'
+  Start-Runspace -scriptblock $synchash.import_SpotifyMedia_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -Load_Modules -Script_Modules $Script_Modules -runspace_name 'Import_SpotifyMedia_Runspace' -thisApp $thisApp -synchash $synchash
 }
 
 #---------------------------------------------- 

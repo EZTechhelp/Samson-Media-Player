@@ -45,6 +45,7 @@ function Get-InstalledApplications()
     [switch]$VerboseLog,
     [switch]$enable_stopwatch,
     [switch]$GetAppx,
+    [switch]$Force,
     [switch]$GetAppxOnly,
     [switch]$VerboseDebug
   )
@@ -63,12 +64,17 @@ function Get-InstalledApplications()
   
   # Check if running with Administrative privileges if required
   $RunningAsAdmin = (New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-  if ($RunningAsAdmin -eq $false) 
+  if ($RunningAsAdmin -eq $false -and !$Force) 
   {
-    Write-EZLogs 'Finding all user applications requires administrative privileges' -color red -showtime -LogFile $logfile
+    Write-EZLogs 'Finding all user applications requires administrative privileges' -showtime -warning
     break
+  }elseif(!$RunningAsAdmin -and $Force){
+    Write-EZLogs 'Finding all user applications requires administrative privileges, Force option applied, continuing anyway' -showtime -warning
   }
-  
+  if($psversiontable.PSVersion.Major -gt 5){
+     if ($VerboseLog){write-ezlogs "Running PowerShell $($psversiontable.PSVersion.Major), Importing Module Appx with parameter -usewindowspowershell" -showtime -warning}
+    Import-module Appx -usewindowspowershell
+  }
   # Empty array to store applications
   $Apps = @()
   $32BitPath = 'SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
@@ -126,42 +132,44 @@ function Get-InstalledApplications()
       {
         Write-EZLogs "-> Mounting hive at $Hive" -ShowTime  -LogFile $logfile
       }
-      if (Test-Path $Hive) 
-      {
-        try
+      if($RunningAsAdmin){
+        if (Test-Path $Hive) 
         {
-          $null = Invoke-Command  {
-            reg.exe LOAD HKU\temp $Hive
-          } 2> $null   
-          $Apps += Get-ItemProperty -Path "Registry::\HKEY_USERS\temp\$32BitPath"
-          $Apps += Get-ItemProperty -Path "Registry::\HKEY_USERS\temp\$64BitPath"
-        }
-        catch
-        {
-          if ($VerboseLog)
+          try
           {
-            Write-EZLogs "[ERROR] Unable to mount hive at $Hive - $($PSItem.Exception.Message)" -showtime -color red -LogFile $logfile
-          }           
-        }            
-        try
-        {
-          $null = Invoke-Command  {
-            reg.exe UNLOAD HKU\temp
-          } 2> $null
-        }
-        catch
-        {
-          if ($VerboseLog)
-          {
-            Write-EZLogs "[ERROR] Unable to unload hive at $hive - $($PSItem.Exception.Message)" -showtime -color red -LogFile $logfile
+            $null = Invoke-Command  {
+              reg.exe LOAD HKU\temp $Hive
+            } 2> $null   
+            $Apps += Get-ItemProperty -Path "Registry::\HKEY_USERS\temp\$32BitPath"
+            $Apps += Get-ItemProperty -Path "Registry::\HKEY_USERS\temp\$64BitPath"
           }
-        }      
-      }
-      else 
-      {
-        if ($VerboseLog)
+          catch
+          {
+            if ($VerboseLog)
+            {
+              Write-EZLogs "[ERROR] Unable to mount hive at $Hive - $($PSItem.Exception.Message)" -showtime -color red -LogFile $logfile
+            }           
+          }            
+          try
+          {
+            $null = Invoke-Command  {
+              reg.exe UNLOAD HKU\temp
+            } 2> $null
+          }
+          catch
+          {
+            if ($VerboseLog)
+            {
+              Write-EZLogs "[ERROR] Unable to unload hive at $hive - $($PSItem.Exception.Message)" -showtime -color red -LogFile $logfile
+            }
+          }      
+        }
+        else 
         {
-          Write-EZLogs "Unable to access registry hive at $Hive" -ShowTime -color Red  -LogFile $logfile
+          if ($VerboseLog)
+          {
+            Write-EZLogs "Unable to access registry hive at $Hive" -ShowTime -color Red  -LogFile $logfile
+          }
         }
       }
     }
@@ -177,7 +185,11 @@ function Get-InstalledApplications()
     {
       Write-EZLogs 'Getting Appx Packages from all user profiles' -showtime -LogFile $logfile
     }
-    $Appx = Get-AppxPackage -AllUsers | Select-Object -ErrorAction Continue
+    if($RunningAsAdmin){
+      $Appx = Get-AppxPackage -AllUsers | Select-Object -ErrorAction Continue
+    }else{
+      $Appx = Get-AppxPackage | Select-Object -ErrorAction Continue
+    }   
     if(!$Appx)
     {
       Write-EZLogs '[ERROR] Getting appx packages failed for all users' -ShowTime -color red -LogFile $logfile
@@ -622,7 +634,11 @@ public class IndirectStrings
         $test_path = test-path $config_file -PathType Leaf
         if($test_path -and $displayname -ne "Xbox Console Companion"){
           if($VerboseLog){write-ezlogs " | Found XboxPC appx package $displayname config file: $config_file" -enablelogs -showtime -color Green}
-          $appx_manifest = (Get-AppxPackage $a.DisplayNameRaw -AllUsers | Get-AppxPackageManifest).package
+          if($RunningAsAdmin){
+            $appx_manifest = (Get-AppxPackage $a.DisplayNameRaw -AllUsers | Get-AppxPackageManifest).package
+          }else{
+            $appx_manifest = (Get-AppxPackage $a.DisplayNameRaw | Get-AppxPackageManifest).package
+          }         
           $Executable = $appx_manifest.applications.application.Executable
           #$StoreIDs = $appx_manifest.applications.application.Id
           $AppType = 'Game' 

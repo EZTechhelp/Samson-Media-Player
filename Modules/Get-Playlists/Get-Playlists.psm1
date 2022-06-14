@@ -65,10 +65,15 @@ function Get-Playlists
   $syncHash.PlayQueue_TreeView.items.Clear()
   $syncHash.Playlists_TreeView.items.Clear()
   
-  if($Import_Playlists_Cache){
-    $all_playlists = [hashtable]::Synchronized(@{})
-    $all_playlists.playlists = Import-Clixml "$($thisApp.config.Playlist_Profile_Directory)\\All-Playlists-Cache.xml"
-  }elseif($startup -or (@($all_playlists).count -lt 2)){
+  if($Import_Playlists_Cache){   
+    if(([System.IO.File]::Exists("$($thisApp.config.Playlist_Profile_Directory)\\All-Playlists-Cache.xml"))){
+      $all_playlists = [hashtable]::Synchronized(@{})
+      $all_playlists.playlists = Import-Clixml "$($thisApp.config.Playlist_Profile_Directory)\\All-Playlists-Cache.xml"
+    }else{
+      write-ezlogs "Unable to find All playlists cache, generating new one" -showtime -warning
+    }  
+  }
+  if($startup -or (@($all_playlists).count -lt 2)){
     $all_playlists = [hashtable]::Synchronized(@{})
     $all_playlists.playlists = New-Object -TypeName 'System.Collections.ArrayList'
     $playlist_pattern = [regex]::new('$(?<=((?i)Playlist.xml))')
@@ -76,7 +81,7 @@ function Get-Playlists
       $profile_path = $null
       if([System.IO.File]::Exists($_)){
         $profile_path = $_
-        write-ezlogs ">>>> Importing Playlist profile $profile_path" -showtime -enablelogs -color cyan
+        if($VerboseLog){write-ezlogs ">>>> Importing Playlist profile $profile_path" -showtime -enablelogs -color cyan}
         try{
           if([System.IO.File]::Exists($profile_path)){
             $Playlist_profile = Import-CliXml -Path $profile_path
@@ -455,28 +460,75 @@ function Get-Playlists
           if($d.Handled){
             $synchash.Youtube_Progress_Ring.isActive = $true
             if($PlayLink_OnDrop){
+              if($youtube_id){
+                try{
+                  $video_info = Get-YouTubeVideo -Id $youtube_id
+                }catch{
+                  write-ezlogs "An exception occurred executing Get-YoutubeVideo" -showtime -catcherror $_
+                }
+               
+                if($video_info){
+                  $title = $video_info.localizations.en.title
+                  $description = $video_info.localizations.en.description
+                  $channel_id = $video_info.snippet.channelId
+                  if($channel_id){
+                    #$channel_info = Get-YouTubeChannel -Id $channel_id -raw
+                  }
+                  $channel_title = $video_info.snippet.channelTitle                 
+                  $images = $video_info.snippet.thumbnails
+                  if($channel_info.items.BrandingSettings.image.bannerExternalUrl){
+                    $thumbnail = $channel_info.items.BrandingSettings.image.bannerExternalUrl
+                  }else{
+                    $thumbnail = $video_info.snippet.thumbnails.medium.url
+                  }
+                  if($video_info.contentDetails.duration){
+                    $TimeValues = $video_info.contentDetails.duration
+                    if($TimeValues -match 'H'){
+                      $hr = [regex]::matches($TimeValues, "PT(?<value>.*)H")| %{$_.groups[1].value}
+                      $mins = [regex]::matches($TimeValues, "PT(?<value>.*)H(?<value>.*)M")| %{$_.groups[1].value}
+                      $Secs = [regex]::matches($TimeValues, "M(?<value>.*)S")| %{$_.groups[1].value}
+                    }elseif($TimeValues -match 'M'){
+                      $hr = 0
+                      $mins = [regex]::matches($TimeValues, "PT(?<value>.*)M")| %{$_.groups[1].value}
+                      $Secs = [regex]::matches($TimeValues, "M(?<value>.*)S")| %{$_.groups[1].value}
+                    }elseif($TimeValues -match 'S'){
+                      $hr = 0
+                      $mins = 0
+                      $Secs = [regex]::matches($TimeValues, "PT(?<value>.*)S")| %{$_.groups[1].value}
+                    }else{
+                      $hr = 0
+                      $mins = 0
+                      $secs = 0
+                    }
+                    $duration = [TimeSpan]::Parse("$hr`:$mins`:$secs").TotalMilliseconds
+                  }
+                  $viewcount = $video_info.statistics.viewCount              
+                }else{
+                  $title = "Youtube Video - $youtube_id"
+                }                
+              }
               $track_encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($LinkDrop)-YoutubeLinkDrop")
               $track_encodedTitle = [System.Convert]::ToBase64String($track_encodedBytes)
               $media = New-Object PsObject -Property @{
-                'title' = "Youtube Video - $youtube_id"
-                'description' = ''
+                'title' =  $title
+                'description' = $description
                 'playlist_index' = ''
-                'channel_id' = ''
+                'channel_id' = $channel_id
                 'id' = $youtube_id
-                'duration' = 0
+                'duration' = $duration
                 'encodedTitle' = $track_encodedTitle
                 'url' = $url
-                'urls' = $LinkDrop
+                'urls' = $LinkDrop                
                 'webpage_url' = $LinkDrop
-                'thumbnail' = ''
-                'view_count' = ''
+                'thumbnail' = $thumbnail
+                'view_count' = $viewcount
                 'manifest_url' = ''
-                'uploader' = ''
+                'uploader' = $channel_title
                 'webpage_url_domain' = $url.Host
                 'type' = ''
                 'availability' = ''
                 'Tracks_Total' = ''
-                'images' = ''
+                'images' = $images
                 'Playlist_url' = ''
                 'playlist_id' = $youtube_id
                 'Profile_Path' =''
@@ -484,29 +536,26 @@ function Get-Playlists
                 'Source' = 'YoutubePlaylist_item'
                 'Group' = $Group
               }            
-              Start-Media -Media $media -thisApp $thisApp -synchash $synchash -Show_notification -Script_Modules $Script_Modules -use_WebPlayer
+              Start-Media -Media $media -thisApp $thisApp -synchash $synchash -Show_notification -Script_Modules $Script_Modules -use_WebPlayer:$thisapp.config.Youtube_WebPlayer
             }
-            $synchash.import_Youtube_scriptblock = ({
+            #$synchash.import_Youtube_scriptblock = ({
+            try{
+              Import-Youtube -Youtube_URL $LinkDrop -verboselog:$thisapp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisapp.config.Media_Profile_Directory -thisApp $thisapp -use_runspace
+              if($thisApp.Config.PlayLink_OnDrop){
+                write-ezlogs ">>>> Starting WebPlayer_Playing timer" -showtime
                 try{
-                  Import-Youtube -Youtube_URL $LinkDrop -verboselog:$thisapp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisapp.config.Media_Profile_Directory -thisApp $thisapp -use_runspace -Youtube_Btnnext_Scriptblock $Youtube_Btnnext_Scriptblock -Youtube_btnPrev_Scriptblock $Youtube_btnPrev_Scriptblock -Youtube_cbNumberOfRecords_Scriptblock $Youtube_cbNumberOfRecords_Scriptblock
-                  if($thisApp.Config.PlayLink_OnDrop){
-                    write-ezlogs ">>>> Starting WebPlayer_Playing timer" -showtime
-                    try{
-                      $synchash.update_status_timer.start()
-                      $synchash.WebPlayer_Playing_timer.Start() 
-                    }catch{
-                      write-ezlogs "An exception occurred executing update_status_timer and WebPlayer_Playing_timer" -showtime -catcherror $_
-                    }
-                  }
-                  if($error){
-                    write-ezlogs -showtime -PrintErrors -ErrorsToPrint $error
-                  }
+                  $synchash.update_status_timer.start()
+                  $synchash.WebPlayer_Playing_timer.Start() 
                 }catch{
-                  write-ezlogs 'An exception occurred in import_Youtube_scriptblock' -showtime -catcherror $_ -logfile:$thisApp.Config.YoutubeMedia_logfile
+                  write-ezlogs "An exception occurred executing update_status_timer and WebPlayer_Playing_timer" -showtime -catcherror $_
                 }
-            }.GetNewClosure())
-            $Variable_list = Get-Variable | where {$_.Options -notmatch 'ReadOnly' -and $_.Options -notmatch 'Constant'}
-            Start-Runspace -scriptblock $synchash.import_Youtube_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -Load_Modules -Script_Modules $Script_Modules -runspace_name 'import_Youtube_scriptblock'          
+              }
+            }catch{
+              write-ezlogs 'An exception occurred in import_Youtube_scriptblock' -showtime -catcherror $_ -logfile:$thisApp.Config.YoutubeMedia_logfile
+            }
+            #}.GetNewClosure())
+            #$Variable_list = Get-Variable | where {$_.Options -notmatch 'ReadOnly' -and $_.Options -notmatch 'Constant'}
+            #Start-Runspace -scriptblock $synchash.import_Youtube_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -Load_Modules -Script_Modules $Script_Modules -runspace_name 'import_Youtube_scriptblock'          
           }        
         }else{
           write-ezlogs "The provided URL is not valid or was not provided! -- $LinkDrop" -showtime -warning

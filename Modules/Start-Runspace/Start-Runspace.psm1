@@ -37,13 +37,15 @@ function Start-Runspace
     $Variable_list,
     $logfile = $thisApp.Config.Log_File,
     $thisScript,
-    $runspace_name,
+    [string]$runspace_name,
     [switch]$cancel_runspace,
     $synchash,
     [switch]$startup_perf_timer,
     $modules_list,
+    [int]$maxRunspaces = [int]$env:NUMBER_OF_PROCESSORS + 1,
     $Script_Modules,
     $startup_stopwatch,
+    [switch]$Wait,
     [switch]$verboselog
   )
   if($StartRunspaceJobHandler -and !$JobCleanup)
@@ -91,38 +93,41 @@ function Start-Runspace
         Do 
         {  
           try
-          {   
-            Foreach($runspace in $jobs) 
+          {  
+            $temphash = $jobs.clone() 
+            Foreach($runspace in $temphash) 
             {            
               If ($runspace.Runspace.isCompleted) 
               {
-                if($thisApp.Config.Log_File){$logfile = $thisApp.Config.Log_File}elseif($thisScript){$logfile = "$env:SystemDrive\\Logs\\$($thisScript.Name)-$($thisScript.Version).log"}
+                if(!$logfile){
+                  if($thisApp.Config.Log_File){$logfile = $thisApp.Config.Log_File}elseif($thisScript){$logfile = "$env:appdata\\$($thisScript.Name)\\Logs\\$($thisScript.Name)-$($thisScript.Version).log"}
+                }
                 #$logfile = 'c:\logs\EZT-MediaPlayer-0.1.5.log'
-                $verboselog = $false              
+                #$verboselog = $false              
              
                 #$endinvoke = $runspace.powershell.EndInvoke($runspace.Runspace)
                 if($verboselog){write-output "[$(Get-date -format $logdateformat)] >>>> Runspace '$($runspace.powershell.runspace.name)' Completed" | out-file $logfile -Force -Append -Encoding unicode}            
                 if($runspace.powershell.HadErrors){
-                  write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].Command):$((Get-PSCallStack)[1].InvocationInfo.ScriptLineNumber):$($runspace.powershell.runspace.name)] [-----RUNSPACE $($runspace.powershell.runspace.name) HAD ERRORS------]" | out-file $logfile -Force -Append -Encoding unicode
-                  write-output "[$(Get-date -format $logdateformat)] $($runspace.powershell.Streams | out-string)" | out-file $logfile -Force -Append -Encoding unicode
+                  write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].Command):$((Get-PSCallStack)[1].InvocationInfo.ScriptLineNumber):$($runspace.powershell.runspace.name)] [-----RUNSPACE $($runspace.powershell.runspace.name) HAD ERRORS------]" | out-file $logfile -Force -Append -Encoding unicode                  
                   $e_index = 0
                   foreach ($e in $runspace.powershell.Streams.Error)
                   {
                     $e_index++
                     write-output "[$(Get-date -format $logdateformat)] [ERROR $e_index Message] ========================================================================= $($e | out-string)" | out-file $logfile -Force -Append -Encoding unicode
-                  }                 
+                  }
+                  write-output "[$(Get-date -format $logdateformat)] Information: $($runspace.powershell.Streams.information | out-string)" | out-file $logfile -Force -Append -Encoding unicode                 
                   write-output "[$(Get-date -format $logdateformat)] -----------------" | out-file $logfile -Force -Append -Encoding unicode
                   #$error.Clear()
                 }
                 $runspace.powershell.Runspace.Dispose()
                 $runspace.powershell.dispose()
-                if($verboselog){write-output "[$(Get-date -format $logdateformat)] | Status: $($runspace.powershell.runspace | out-string)" | out-file $logfile -Force -Append -Encoding unicode}
+                #if($verboselog){write-output "[$(Get-date -format $logdateformat)] | Status: $($runspace.powershell.runspace | out-string)" | out-file $logfile -Force -Append -Encoding unicode}
                 $runspace.Runspace = $null
                 $runspace.powershell = $null 
               } 
             }
             #Clean out unused runspace jobs
-            $temphash = $jobs.clone()
+
             $temphash | where {$_.runspace -eq $Null} | foreach {
               $jobs.remove($_)
             } 
@@ -139,12 +144,16 @@ function Start-Runspace
     $jobCleanup.Thread = $jobCleanup.PowerShell.BeginInvoke()
     #return $jobCleanup
   }
+  if(![system.io.file]::Exists($logfile)){
+    if([system.io.file]::Exists($thisApp.Config.Log_File)){$logfile = $thisApp.Config.Log_File}elseif($thisScript.Name){$logfile = "$env:appdata\\$($thisScript.Name)\\Logs\\$($thisScript.Name)-$($thisScript.Version).log"}else{$logfile = ($Variable_list | where {$_.name -eq 'Logfile'}).value}
+  }
   if($cancel_runspace -and $runspace_name){
     $existingjob_check = $Jobs | where {$_.powershell.runspace.name -eq $Runspace_Name}
     if($existingjob_check){
       try{
-        if(($existingjob_check.powershell.runspace) -and $existingjob_check.runspace.isCompleted -eq $false -and $Runspace_Name -ne 'Start_SplashScreen'){
+        if(($existingjob_check.powershell.runspace) -and $existingjob_check.runspace.isCompleted -eq $false -and $Runspace_Name -ne 'Start_SplashScreen' -and $Runspace_Name -notmatch 'Show_'){
           write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].Command):$((Get-PSCallStack)[1].InvocationInfo.ScriptLineNumber):$Runspace_Name] [WARNING] Existing Runspace '$Runspace_Name' found, attempting to cancel" | out-file $logfile -Force -Append -Encoding unicode 
+          write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].Command):$((Get-PSCallStack)[1].InvocationInfo.ScriptLineNumber):$Runspace_Name] [WARNING] Runspace Output: $($existingjob_check.powershell.Streams | out-string)" | out-file $logfile -Force -Append -Encoding unicode
           $existingjob_check.powershell.stop()      
           $existingjob_check.powershell.Runspace.Dispose()
           $existingjob_check.powershell.dispose()
@@ -159,7 +168,7 @@ function Start-Runspace
   $existingjob_check = $Jobs | where {$_.powershell.runspace.name -eq $Runspace_Name}
   if($existingjob_check){
     try{
-      if(($existingjob_check.powershell.runspace) -and $existingjob_check.runspace.isCompleted -eq $false -and $Runspace_Name -notmatch 'Start_SplashScreen' -and $Runspace_Name -ne 'Show_WebLogin'){
+      if(($existingjob_check.powershell.runspace) -and $existingjob_check.runspace.isCompleted -eq $false -and $Runspace_Name -notmatch 'Start_SplashScreen' -and $Runspace_Name -ne 'Show_WebLogin' -and $Runspace_Name -notmatch 'Show_'){
         write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].Command):$((Get-PSCallStack)[1].InvocationInfo.ScriptLineNumber):$Runspace_Name] [WARNING] Existing Runspace '$Runspace_Name' found as busy, stopping before starting new" | out-file $logfile -Force -Append -Encoding unicode  
         start-sleep -Milliseconds 100
         write-ezlogs "Streams: $($existingjob_check.powershell.Streams.Information  | out-string)" -Warning
@@ -187,7 +196,12 @@ function Start-Runspace
   } 
   #Create the runspace
   $new_Runspace =[runspacefactory]::CreateRunspace($InitialSessionState)
-  $new_Runspace.ApartmentState = "STA"
+  write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].Command):$((Get-PSCallStack)[1].InvocationInfo.ScriptLineNumber):$Runspace_Name] RUNSPACE NAME: $Runspace_Name" | out-file $logfile -Force -Append -Encoding unicode
+  if($Runspace_Name -notmatch 'Start_SplashScreen' -and $Runspace_Name -notmatch 'Show_WebLogin' -and $runspace_name -notmatch 'ProfileEditor_Runspace' -and $runspace_name -notmatch 'Show_'){
+    $new_Runspace.ApartmentState = "MTA"
+  }else{
+    $new_Runspace.ApartmentState = "STA"
+  }
   $new_Runspace.ThreadOptions = "ReuseThread"         
   $new_Runspace.Open()
   if($Runspace_Name){
@@ -212,6 +226,7 @@ function Start-Runspace
   $null = $Jobs.Add((
       [pscustomobject]@{
         PowerShell = $psCmd
+        Name = $Runspace_Name
         Runspace = $psCmd.BeginInvoke($InputObject,$OutputObject)
         OutputObject = $OutputObject
       }
@@ -225,4 +240,3 @@ function Start-Runspace
 #endregion Start Runspace Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Start-Runspace')
-
