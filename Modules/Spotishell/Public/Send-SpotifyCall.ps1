@@ -31,17 +31,17 @@ function Send-SpotifyCall {
 
     [string]
     $ApplicationName,
-    $thisApp,
     $thisScript,
+
     [switch]$First_Run,
     [switch]$Verboselog = $thisApp.Config.Verbose_logging        
   )
-  
+
   # Prepare header
   try{
     if($thisApp){
       $Header = @{
-        Authorization = 'Bearer ' + (Get-SpotifyAccessToken -ApplicationName $ApplicationName -thisApp $thisApp -thisScript $thisScript)
+        Authorization = 'Bearer ' + (Get-SpotifyAccessToken -ApplicationName $ApplicationName -thisScript $thisScript)
       }
     }else{
       $Header = @{
@@ -56,7 +56,7 @@ function Send-SpotifyCall {
   $ProgressPreference = 'SilentlyContinue'
   if($header){
     try {
-      if($Body){
+      if($Body -and $Body.GetType() -notmatch 'Switch'){
         $Response = Invoke-WebRequest -Method $Method -Headers $Header -Body $Body -Uri $Uri -UseBasicParsing
       }else{
         $Response = Invoke-WebRequest -Method $Method -Headers $Header -Uri $Uri -UseBasicParsing
@@ -86,10 +86,13 @@ function Send-SpotifyCall {
   } #> 
   $ProgressPreference = 'Continue'
   if($Response.Content){
-    if($verboselog){Write-ezlogs 'We got an API response' -showtime}
+    if($verboselog){Write-ezlogs 'We got an API JSON response' -showtime}
     return $Response.Content | ConvertFrom-Json
+  }elseif($Response){
+    if($verboselog){Write-ezlogs "We got an API JSON response - URI $($Uri) - body $($body | out-string) - header $($Header | out-string)" -showtime}
+    return $Response | ConvertFrom-Json
   }else{
-    if($verboselog){Write-ezlogs 'We did not get a valid API response' -showtime -warning}
+    Write-ezlogs "We did not get a valid API response - URI $($Uri) - body $($body | out-string) - header $($Header | out-string)" -showtime -warning
     return $false
   }
 }

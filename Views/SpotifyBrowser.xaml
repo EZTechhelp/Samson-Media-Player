@@ -1,16 +1,29 @@
 <TabItem
- Header="Spotify Browser"
+ Header="Spotify"
          BorderBrush="gray"
          Visibility="Visible"
          Name="Spotify_Tabitem"
          IsEnabled="true"
 >
+<TabItem.HeaderTemplate>
+	<DataTemplate>
+		<StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Black">
+			<iconPacks:PackIconMaterial Kind="Spotify"
+			                            Margin="2 5 2 0"
+			                            Width="24"
+			                            Height="24"
+										Foreground="#FF1ED760"
+			                            VerticalAlignment="Top"/>
+			<Label Name="MediaPlayer_Links_Label" Content="Spotify" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="18"/>
+		</StackPanel>
+	</DataTemplate>
+</TabItem.HeaderTemplate>
 	<Grid Background="{StaticResource GridGradient}" VerticalAlignment="stretch" HorizontalAlignment="stretch" Opacity="1" Margin="0,0,0,0" AllowDrop="true">
-		<mah:ProgressRing Foreground="White" Name='SpotifyMedia_Progress_Ring' IsActive="false" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Panel.ZIndex="2"/>
+		<mah:ProgressRing Foreground="White" Name='SpotifyMedia_Progress_Ring' IsActive="false" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Panel.ZIndex="4"/>
 		<DataGrid Name="SpotifyTable" Margin="5,36,5,15" VerticalAlignment="Top" HorizontalAlignment="stretch" Opacity="1" SelectionUnit="FullRow" SelectionMode="Extended" ScrollViewer.CanContentScroll="false"
-		          VirtualizingPanel.IsVirtualizingWhenGrouping="True" EnableColumnVirtualization="true" EnableRowVirtualization="true" VirtualizingPanel.VirtualizationMode="Standard" MaxHeight="1600" MaxWidth="2560" RowHeight="30"
+		          VirtualizingPanel.IsVirtualizingWhenGrouping="True" EnableColumnVirtualization="false" EnableRowVirtualization="true" VirtualizingPanel.VirtualizationMode="Standard" MaxHeight="1600" RowHeight="30"
 		          VirtualizingPanel.IsVirtualizing="True" VirtualizingStackPanel.ScrollUnit="Pixel" ItemsSource="{Binding Source=View,IsAsync=True}" PresentationOptions:Freeze="True" dgx:DataGridFilter.IsAutoFilterEnabled="True"
-		          dgx:DataGridFilter.ContentFilterFactory="{StaticResource RegexContentFilterFactory}">
+		          dgx:DataGridFilter.ContentFilterFactory="{StaticResource RegexContentFilterFactory}" MaxWidth="{Binding ElementName=MediaLibrary_FlyoutControl, Path=Width}" MinHeight="{Binding ElementName=MediaLibrary_FlyoutControl, Path=Height}" HorizontalScrollBarVisibility="Auto" dd:DragDrop.IsDragSource="True" dd:DragDrop.DropHandler="{Binding}">
 			<!--             <DataGrid.GroupStyle>
                 <GroupStyle ContainerStyle="{StaticResource MahApps.Styles.GroupItem.DataGrid}">
                     <GroupStyle.HeaderTemplate>
@@ -69,9 +82,11 @@
 							<Setter Property="Template">
 								<Setter.Value>
 									<ControlTemplate>
-										<Expander IsExpanded="True" BorderThickness="0,0,0,1" Margin="0,5,0,5" Foreground="White" mah:HeaderedControlHelper.HeaderFontWeight="Bold" mah:HeaderedControlHelper.HeaderBackground="Black" 
-										mah:HeaderedControlHelper.HeaderForeground="LightGray" mah:HeaderedControlHelper.HeaderFontSize="14" Header="{Binding Path=Name}" Uid="{Binding}" Name="SpotifyTable_Expander" ExpandDirection="Down" 
-										ScrollViewer.CanContentScroll="false" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Standard" PresentationOptions:Freeze="True" Style="{StaticResource MetroExpanderWithNormalCase}">
+										<Expander IsExpanded="True" BorderThickness="0,0,0,1" Margin="0,0,0,5" Foreground="White" mah:HeaderedControlHelper.HeaderFontWeight="Bold" mah:HeaderedControlHelper.HeaderBackground="Black" 
+										  Header="{Binding Path=Name}" Uid="{Binding}" Name="SpotifyTable_Expander" ExpandDirection="Down" ScrollViewer.CanContentScroll="false" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Standard" PresentationOptions:Freeze="True" Style="{StaticResource MetroExpanderWithNormalCase}">
+											<Expander.Header>
+												<TextBlock Text="{Binding Path=Name,IsAsync=True}" Foreground="LightGray" FontSize="14" Background="Transparent" FontWeight="Bold" HorizontalAlignment="Left"/>
+											</Expander.Header>										
 											<ItemsPresenter/>
 										</Expander>
 									</ControlTemplate>
@@ -91,14 +106,14 @@
 				ElementStyle="{DynamicResource MetroDataGridCheckBox}"
 				-->
 			<DataGrid.Columns>
-				<DataGridCheckBoxColumn Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay,,IsAsync=True,UpdateSourceTrigger=PropertyChanged}" Header="Select" dgx:DataGridFilterColumn.IsFilterVisible="False"/>
+				<DataGridCheckBoxColumn Width="SizeToCells" Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay,,IsAsync=True,UpdateSourceTrigger=PropertyChanged}" dgx:DataGridFilterColumn.IsFilterVisible="False"/>
 			</DataGrid.Columns>
 		</DataGrid>
-		<StackPanel Orientation="Horizontal" Margin="10,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+		<StackPanel Orientation="Horizontal" Margin="5,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
 			<Label Content="Filter" Foreground="#ffffff" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top"/>
-			<TextBox Name="SpotifyFilterTextBox" mah:TextBoxHelper.ClearTextButton="True" HorizontalAlignment="Left" Height="26" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="172"/>
+			<TextBox Name="SpotifyFilterTextBox" mah:TextBoxHelper.ClearTextButton="True" HorizontalAlignment="Left" Height="26" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="100"/>
 			<Label Content="Show Only" Foreground="#ffffff" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top"/>
-			<ComboBox Margin="5,0,0,0" Name='Show_SpotifyMediaArtist_ComboBox' mah:TextBoxHelper.ClearTextButton="True" VerticalAlignment="Top" MinWidth="50" Background="Transparent" mah:TextBoxHelper.UseFloatingWatermark="True"
+			<ComboBox Margin="5,0,0,0" Name='Show_SpotifyMediaArtist_ComboBox' mah:TextBoxHelper.ClearTextButton="True" VerticalAlignment="Top" MinWidth="50" MaxWidth="100" Background="Transparent" mah:TextBoxHelper.UseFloatingWatermark="True"
 			          HorizontalAlignment="Left"
 			          IsEditable="False"
 			          SelectedIndex="-1">
@@ -112,20 +127,20 @@
 			<!-- 		<Button Height="23" HorizontalAlignment="Left"  
 		Name="Youtube_btnFirst" VerticalAlignment="Bottom" Width="40" 
 		Content="&lt;&lt;" Opacity="0.75" Margin="5,0,0,0"/> -->
-			<Button Height="23" VerticalAlignment="Top"
-			        Name="Spotify_btnPrev" Width="40"
+			<Button Height="5" VerticalAlignment="Top"
+			        Name="Spotify_btnPrev" Width="20"
 			        Opacity="0.75" Content="&lt;" Margin="5,5,0,0"/>
 			<Label Name="Spotify_lblpageInformation" HorizontalContentAlignment="Center"
 			       HorizontalAlignment="Left" Height="30" Width="60"
 			       VerticalContentAlignment="Center" VerticalAlignment="Top"/>
-			<Button Height="23" HorizontalAlignment="Right"
-			        Name="Spotify_btnNext" VerticalAlignment="Top" Width="40"
+			<Button Height="5" HorizontalAlignment="Right"
+			        Name="Spotify_btnNext" VerticalAlignment="Top" Width="20"
 			        Content="&gt;" Opacity="0.75" Margin="5,5,0,0"/>
 			<!-- 		<Button Height="23" HorizontalAlignment="Right"  
 		VerticalAlignment="Bottom" Width="40" Name="Youtube_btnLast" 
 		 Opacity="0.75" Content="&gt;&gt;" Margin="5,0,0,0"/> -->
 			<ComboBox Name="Spotify_cbNumberOfRecords" HorizontalAlignment="Left"
-			          VerticalAlignment="Top" Width="120" SelectedIndex="0" Margin="5,5,0,0"
+			          VerticalAlignment="Top" SelectedIndex="0" Margin="5,5,0,0"
 			          Opacity="0.75"/>
 			<Label Name="Spotify_Table_Total_Media" Content="Total Media |" HorizontalAlignment="Right" FontSize="16" Margin="10,0,0,0" Foreground="#ffffff" VerticalAlignment="Top"/>
 		</StackPanel>

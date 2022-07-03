@@ -24,7 +24,7 @@ function Invoke-SeekPositionCurrentTrack {
         $DeviceId,
 
         [string]
-        $ApplicationName
+        $ApplicationName = $thisApp.Config.App_Name
     )
 
     $Method = 'Put'

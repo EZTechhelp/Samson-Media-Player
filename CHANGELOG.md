@@ -2,6 +2,318 @@
 
 ## Unreleased
 
+## Version: 0.4.7.1
+- Branch: Pre-Alpha
+
+### Added
++ 'Find on Youtube' contextmenu option to search Youtube for selected media
+  + Opens youtube with internal web browser, searching for media title
++ Ability to download Youtube videos directly from internal web browser
+  + While browsing youtube, right click on video and select download
+  + Will also add the media to the local library when download finishes
++ First iteration of a Special Easter Egg, that does things and stuff....
+
+### Changed
++ Sys tray icon text now updates in sync with Now Player label
++ Updated editor window sizing and style to adjust better to content
+
+### Fixed
++ Editor window can sometimes freeze or cause whole app to crash
++ Start-Media fails when parsing null media duration time
++ Viewer count changes incorrectly for Twitch media when auto update is on
++ Whole queue disappears until refreshing after removing an item
++ Text input for Media player not working when open in separate window
++ Download menu option missing for youtube items in queue and playlists
++ Downloading Youtube videos can fail under certain situations
+
+### Build Updates
++ EZT-MediaPlayer-Setup.exe
++ No version bump
+
+## 0.4.7 - Pre-Alpha
+
+### Added
++ First iteration of new file scanning with module Find-FilesFast
+  + Uses inline VBS to access low-level WIN32_FIND_DATA API for fast enumeration
+  + Initial tests show nearly 50% performance boost and better error rates
+  + Filters out files with attributes Hidden, System, and Reparse Point
++ Mahapps SimpleChildWindow assembly for potential futuer use
+  + Can create independent, movable windows within main UI visual tree (widgets!)
+
+### Changed
++ Improved reliability and start playback speed of Spotify Web player media
+ + SDK java now initialized with AddScriptToExecuteOnDocumentCreatedAsync
+ + Spotify's API/SDK seem very flaky (many timeouts), lots of similiar reports
+
+### Fixed
++ Restart media skips to next in queue instead of restarting for some media
+
+### Build Updates
++ EZT-MediaPlayer-Setup.exe
+
+## 0.4.6 - Pre-Alpha
+
+### Added
++ Assembly Hardcodet.NotifyIcon.Wpf for potential replacement of NotifyIcon
+  + Nothing implemented yet. May provide better control/features for tray menu
++ Ability to take Snapshots of app windows and optionally videos
+  + First iteration. New Snapshot button/icon in top right command bar
+  + 'Saved Snapshots path' option: Directory where snapshots are saved
+  + 'Enable Video Snapshots' option: snapshots any playing video when capturing
+  + Takes separate snapshots for each app window that is open
+  + Each window is brought into focus quickly to ensure clean snapshot
+  + Window captures mostly for testing/support. Video snapshots can have handy uses
++ Ability to 'undock' and move Media Library into a separate window
+  + Mimics mini-player behavior, still operates in same UI thread
+  + Media player can still be collapsed/expanded when 'docked' into main window
++ Added 'Dismiss All' button for notifications flyout
++ Ability to choose media to play from playlists in system tray menu
+  + Limited to the 25 latest playlists and 25 latest tracks for each playlist
+
+### Changed
++ Updated Splash Screen for support of...um...things
++ Further adjustments to dynamic sizing of UI elements under various conditions
++ Separation of GetPlaylists and Get-PlayQueue now completed
++ Restyled Audio and Playlist flyout buttons as Toggle Buttons
++ Improved memory and resource management
++ Various minor adjustments to Show-FeedbackForm and Trello API posting
++ Current playing Spotify track now displayed on windows volume overlay
+  + Only works when using Spotify Web Player
++ Media Library and Managed sources button moved to top right
++ Refactored Add_to_PlaylistCommand to use dispatcher timer
++ Temp Moved PreviewDrop_command into global for future refactor
++ Main UI window no longer hidden when Show-Weblogin is displayed
+
+### Fixed
++ Duplicate items sometimes can get added to play queue
++ Play icon animation always active even if not playing causing CPU/GPU idle usage
++ Queue disappears until new media is added after media has stopped or ended
++ Unable to dragmove the splash screen under some conditions
++ Notifications with long text cutoff/unable to scroll horizontally to read
++ Navigation with Hyperlink_RequestNavigate fails for some paths 
++ Saved/current volume not applied to some new vlc instances
++ Initialize-webplayer fails when Webbrowser tab not enabled
++ Main UI window resizes incorrectly when starting playback of new media
++ Update-MediaTimer fails on next track selection when chat view is enabled
+
+### Build Updates
++ EZT-MediaPlayer-Setup.exe
+
+## 0.4.5 - Pre-Alpha
+
+### Added
++ Ability to add media to library by opening it with EZT-Mediaplayer.exe
+  + First iteration of basic cli support, more features to be added
+  + PLANNED: Ability to start playback of file opened with player
+  + PLANNED: File association mapping and 'open with' context menu option
++ HasVideo property on media profiles for identifying content type (future)
+
+### Changed
++ Disabled icon animation for current playing item in queue
+  + Temporary, animation was causing cpu/gpu resource issues
+  + Was always playing for all items in queue, even when icon not in view 
++ Refactored launcher to allow support of cli/parameters passed to main app
+  + IEXPRESS no longer used, now built with ISESteriods exe packager
++ First iteration of Datagrid XAML refactor for Media library
+  + Only applied to Local media datatable,no longer uses 
+  + Autocolumngeneration replaced with XAML datagrid template columns
+  + Will allow more flexible styling and data binding vs using code behind
++ Media tables and playlist minheight now bound to tabcontrol height
++ Moved Get-Songinfo from Get-HelperFunctions to Get-LocalMedia module
++ No longer storing picture byte data from taglib in profiles
+  + Too much data, no need to store. Data now parsed at playback runtime
+
+### Fixed
++ Entire app freezes when enabling Import Youtube for the first time
+  + Enabling still has a sec or 2 lag (to be fixed) but 'should' work now
++ Partial Fix: Media tables blank when there is only 1 media item
+  + Row now shows up with play button, but all column fields still missing
+  + As soon as there are 2 or more items, all works properly
++ Artist name missing or incorrect even when available from taglib parse
++ Progress indicator not showing when adding local media in first run table
++ First run prompts about keep existing playlists even when none exist
++ All_media cache xml sometimes exports as psobject instead of arraylist
++ Regression: Some youtube media tries to play with streamlink
++ Enumeration failure sometimes occurs when checking existing runspace jobs
++ Youtube auth prompts again after first run even when auth was successful
+  + Not 100% on this fix, may still occur under some conditions
+
+### Build Updates
++ EZT-MediaPlayer.exe
++ EZT-MediaPlayer-Setup.exe
+
+## 0.4.4 - Pre-Alpha
+
+### Added
++ EXPERIMENTAL: Taglibsharp assembly for read/write of metadata (Find Credit: Woody)
+  + Potentially to replace Shell.Application in Get-Songinfo
+  + Initial tests show avg 50% performance improvement vs Shell.Application
+  + Now extracting embedded image data from files (directory images now a fallback)
++ Status label text for MediaTable in-progress indicator
+
+### Changed
++ Refactored Chat_Webview2 into Initialize-ChatView function
+  + Chat Webview2 instance now only initialized when chat content available
++ Expand/Shrink button now closes fullscreen window if open when 'shrinking'
++ Minor improvements to startup performance via async initialization of webview2 
++ Restyled and moved Playlists flyout button to top control bar
++ Minor changes to themes and style colors
++ Various adjustments to flyout and grid dynamic sizing and animations
+
+### Fixed
++ Play queue, playlists and media library styles don't update when changing theme
++ Adding youtube media via web browser fails when parsing duration timespan
++ Local media table doesnt update when removing directory paths from Manage Sources
++ Spotify auth window randomly pops up with 'missing client_id' message
++ Playing some local media fails due to trying to parse with streamlink
++ Various app freezes when starting playback of some media with invalid duration
++ UI background/cover image, and progress slider doesnt reset when Stopping media
+
+### Build Updates
++ EZT-MediaPlayer-Setup.exe
++ Future compiled builds to be automatically posted to 'Builds' list in Trello
+
+## 0.4.3 - Pre-Alpha
+
+### Added
++ EXPERIMENTAL: Ability to add media directly from Webview2 contextmenu
+  + Allows browsing YT web interface to search then add to playlist/library
+  + Unsure if will stay, or if Web Browser itself will stay. For science.
++ Ability to play/pause by clicking anywhere in video viewer
++ Ability to collapse Playlist and Media Tables (now called Media library)
+  + New Media Library button expands/collapses all bottom tabs
+  + New Playlists button to expand/collapse playlist tab (within bottom grid)
+  + Current implementation mostly for concept testing, not final design
++ New custom WPF attached behavior for animating resize of grid columns
++ Ability to add entire playlists to queue using drag/drop of playlist header
++ 'Playlists' Menu in Tray for quick playback start of playlists (Max 50)
+  + Allows quick way to start playing a playlist without app in focus
++ 'Playback Options' menu in Tray for quick toggle of various settings
+  + Currently only Shuffle option available, more to be added
++ Ability to add media to playlists via drag/drop from Media library tables
++ Get-CurrentWindow for finding current active Window properties
+  + Not yet used for anything, will be useful for multi-window management
+
+### Changed
++ Greatly improved buffering, stutter and smooth playback for video streams
+  + Enabled twitch low latency support in streamlink for Twitch streams
+  + Adjusted network/file caching, clock-jitter, and clock-sync for libvlc
++ Refactored Webview2 initialization code into module Initialize-WebView2
+  + Web Browser now separate webview2 instance vs sharing with web player
++ Removed 'Select' column and restyled Play column from media datagrids
++ All selected items are now always added to playlists when using context menu
++ Max Height for main UI window now set to detected primary screen Height
++ Chat button now only enabled if playing media with supported chat
++ Refactor and UI style resdesign for First Run Setup window
+  + Added Next/Prev button for navigation through tabs/setup options
+  + Setup/save button still visible without having to go through all tabs
+  + Design/function not final, to help 'Guide' new users through setup
++ Multiple changes, additions and refactor for Show-FeedbackForm
+  + Feedback form now sends to Trello via API
+  + Option added to allow sending current copy of logs, with link to review
+  + Ability to send multiple attachments via multiselect in Browse dialog
++ Removed all_playlists synchashtable and merged into synchash.all_playlists
+  + Mostly for easier scoping and general code sanity
++ Add-TrayMenu now executed using dispatcherTimer to prevent thread issues
++ Replaced MediaLibrary and Playlist flyout buttons with ToggleButton
++ Reorganized, consolidated and other changes to Inno Setup pages
+  + Changelog and Readme are now links to latest versions on github
+
+### Fixed
++ Unable to sort datagrid columns for media browsers when using paging
++ Open in Webbrowser fails for youtube media
++ Total/Current duration missing or invalid when using YT web player
++ Media starts then immediately skips to next in queue when using web player
++ Various issues with current playing media not adding or updating in queue
++ Youtube web player error/failures when playing embedded playlists
++ First run setup doesn't trigger when running new versions for first time
++ Invalid or blank entries sometimes added to Play Queue/Playlists
++ Adding youtube urls fail when url contains timestamp parameter
++ Various issues with Drag/Drop for Playlist items
++ Existing youtube playlist/sources get cleared upon setup of new version
++ 'Play All' from playlists fails to add media to queue or start playback
++ Various adjustments for grid/flyout sizing issues
++ Get-YouTubePlaylists fails API DNS lookups on some machines
+  + Some dns fail for googleapis.com, but youtube.googleapis.com is fine
++ Spotify API calls fail due to weird switch variable issue
+  + Strange, somehow a switch param is triggered even when not set
++ 'Import from Youtube' button never enables after Youtube auth capture
++ Show-WebLogin fails to load for Youtube auth capture during First Run
+
+### Build Updates
++ EZT-MediaPlayer-Setup.exe
+
+## 0.4.2 - Pre-Alpha
+
+### Added
++ Ability to automatically import youtube playlists from provided youtube account
+  + New button 'Import from Youtube' on Youtube importing tab of setup window
+  + Button allows manually importing or refreshing/checking for changes
+  + New module Get-YouTubePlaylists, separated from 'Youtube' module
+  + Separate profiles now created for each yt playlist (not yet used anywhere)
++ First iteration of new authentication capture for Youtube Oauth2 API integration
+  + Presents login web page similar to Spotify, auth and refresh tokens stored in Secure Vault
+  + Auth can be removed/updated anytime from Manage Sources
+  + Youtube API used for all youtube parsing except during playback/download which requires yt-dlp
+  + Ability to automatically import playlists from youtube account not yet implemented (WIP)
++ First iteration of separate Twitch Media import management
+  + Twitch import options added to first run (NOT YET FUNCTIONAL)
+  + Currently Twitch media is processed as part of youtube, will be separated with own profiles
+  + PLANNED: Twitch oauth2 and ability to automatically import subscribed streams
++ 'Show Only' combobox on Spotify and Youtube tables for quick filtering of items by Group/Playlist
++ Datagridextension column filters added to Spotify and Youtube datagrids
++ Pause Media option added to System Tray menu
++ Next Media option added to System Tray menu
++ Next Media button added to primary playback control bar
++ Refactored Show-FeedbackForm with integration with Trello with ability to send attachments
+
+### Changed
++ First iteration of resdesign and refactor of Play Queue and playlists modules
+  + Play Queue converted to datagrid as using treeview no longer made sense
+  + Queue panel is now a flyout control, with ability to hide/show using button in control bar
+  + Ordered Index/key displayed for each item which updates accordingly when rearranging/adding.etc
+  + Playlists moved to separate tab control at bottom grid with splitter between media tables
+  + Added icon with Storyboard animation for current playing item in queue (record/disk spinning)
+  + Refactored drag/drop to support new queue
+  + Restyled tab headers for playlist and media tables
+  + Still much more to do..
++ Open with Web Browser option added to contextmenu for any media with valid web url
++ Now only new youtube URLs are processed when added instead of reimporting all of them
++ Various updates and changes to WPF styles and controls
++ First iteration of resdesign and refactor for First Run Setup
+  + Import options now separated into tabs
+  + Setup like navigation planned, with added summary final page 
++ Refactored PauseMedia routed event and moved code into new module Pause-Media
++ Color for Main window Title menu icon now changes to match current selected theme
++ Minor performance improvements to filtering on Spotify and Youtube datagrids
++ Disabled adding EnableLinkedConnections to registry automatically
++ Improved performance when checking for valid media in paths for Import-Media (Credit: Woody)
++ Media tables are now only displayed when its associated import media option is enabled
++ Various adjustments and small changes to UI styles
++ Various code and comment cleanup
+
+### Fixed
++ closing the pop-out player with web player enabled doesnt restore video to the app window
++ Multiple issues with drag/drop for playlists and queue
++ Multiple issues with failed Spotiy API calls due to issues accessing tokens from secure vault
++ Currently playing item in play queue doesnt update properly for Spotify playback
++ Some Spotify media starts playback then stops after a few seconds
++ Spotify app (appx version) pops up and doesnt disappear when starting spotify playback
++ Playing media with web players enabled sometimes fail to load
++ Now Playing title bar doesnt update when playing media with web players enabled
++ Twitch view count display becomes inaccurate after switching between streams or other media
++ Title missing when adding youtube links via drag/drop
++ Stopping or Pausing then Playing media causes media to be removed from Queue
++ Volume resets when using Restart Media button 
++ Various Pagination issues for Spotify and Youtube tables
++ Page combobox for datagrids do not update when changing page via next/prev buttons or filtering
++ App freezes when displaying modal dialogs after using the Profile editor 
++ App freezes when runspace cleanup attempts to close runspaces containing UI threads
++ Some Spotify API calls fail to get current access token from Secret Vault
++ Spotify media playback timer fails to start or times out waiting for playback to begin
+
+### Build Updates
+
 ## 0.4.1 - Pre-Alpha
 
 ### New Core Feature: Theme System

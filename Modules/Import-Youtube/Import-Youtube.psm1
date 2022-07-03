@@ -34,6 +34,7 @@ function Import-Youtube
     [switch]$Clear,
     [switch]$Startup,
     [switch]$use_Runspace,
+    [switch]$refresh,
     $synchash,
     [string]$Youtube_URL,
     $all_available_Media,
@@ -87,7 +88,7 @@ function Import-Youtube
               }
             }elseif($view.GroupDescriptions){$view.GroupDescriptions.Clear()}       
           }                  
-          $synchash.Youtube_CurrentView_Group = ($synchash.Youtube_View_Groups.GetEnumerator() | select * | where {$_.Name -gt $synchash.Youtube_CurrentView_Group -and $_.Name -le $synchash.Youtube_TotalView_Groups} | select -last 1).Name        
+          $synchash.Youtube_CurrentView_Group = ($synchash.Youtube_View_Groups | select * | where {$_.Name -gt $synchash.Youtube_CurrentView_Group -and $_.Name -le $synchash.Youtube_TotalView_Groups} | select -last 1).Name        
           #$synchash.Youtube_CurrentView_Group = ($synchash.Youtube_View_Groups.GetEnumerator() | select * | where {$_.Name -lt $synchash.Youtube_CurrentView_Group -and $_.Name -ge 0} | select -last 1).Name   
           $synchash.YoutubeMedia_View = $view      
           $synchash.YoutubeMedia_TableUpdate_timer.start()                
@@ -126,7 +127,7 @@ function Import-Youtube
                 }
               }elseif($view.GroupDescriptions){$view.GroupDescriptions.Clear()}       
             }
-            $synchash.Youtube_CurrentView_Group = ($synchash.Youtube_View_Groups.GetEnumerator() | select * | where {$_.Name -eq $selecteditem} | select -last 1).Name                                        
+            $synchash.Youtube_CurrentView_Group = ($synchash.Youtube_View_Groups | select * | where {$_.Name -eq $selecteditem} | select -last 1).Name                                        
             $synchash.YoutubeMedia_View = $view        
             $synchash.YoutubeMedia_TableUpdate_timer.start()  
             if($thisapp.Config.Verbose_logging){write-ezlogs "Current view group after: $($synchash.Youtube_CurrentView_Group)" -showtime -logfile:$thisApp.Config.YoutubeMedia_logfile}
@@ -162,7 +163,7 @@ function Import-Youtube
               }
             }elseif($view.GroupDescriptions){$view.GroupDescriptions.Clear()}       
           }
-          $synchash.Youtube_CurrentView_Group = ($synchash.Youtube_View_Groups.GetEnumerator() | select * | where {$_.Name -lt $synchash.Youtube_CurrentView_Group -and $_.Name -ge 0} | select -last 1).Name   
+          $synchash.Youtube_CurrentView_Group = ($synchash.Youtube_View_Groups | select * | where {$_.Name -lt $synchash.Youtube_CurrentView_Group -and $_.Name -ge 0} | select -last 1).Name   
           $synchash.YoutubeMedia_View = $view      
           $synchash.YoutubeMedia_TableUpdate_timer.start()   
         }   
@@ -179,10 +180,10 @@ function Import-Youtube
       if($thisApp.Config.Verbose_Logging){write-ezlogs "#### Getting Youtube Media ####" -linesbefore 1 -logfile:$log}
       $Get_Youtube_Measure = measure-command {
         if($Youtube_URL){
-          $synchash.All_Youtube_Media = Get-Youtube -Youtube_URL $Youtube_URL -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -import_browser_auth $thisApp.config.Youtube_Browser -log:$log
+          $synchash.All_Youtube_Media = Get-Youtube -Youtube_URL $Youtube_URL -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -import_browser_auth $thisApp.config.Youtube_Browser -log:$log -refresh:$refresh
         }else{
           Add-Type -AssemblyName System.Web    
-          $synchash.All_Youtube_Media = Get-Youtube -Youtube_playlists $Youtube_playlists -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -import_browser_auth $thisApp.config.Youtube_Browser -startup:$Startup -log:$log
+          $synchash.All_Youtube_Media = Get-Youtube -Youtube_playlists $Youtube_playlists -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -import_browser_auth $thisApp.config.Youtube_Browser -startup:$Startup -log:$log -refresh:$refresh
         }
       }
       if($thisApp.Config.startup_perf_timer){write-ezlogs ">>>> Get-Youtube Measure: $($Get_Youtube_Measure.Minutes)mins - $($Get_Youtube_Measure.Seconds)secs - $($Get_Youtube_Measure.Milliseconds)ms" -showtime} 
@@ -268,6 +269,9 @@ function Import-Youtube
             #$Sub_GroupName = 'Artist_Name'
             foreach($Track in $Playlist_tracks){
               if($Track.id){
+                if($Track.id -match '&t='){
+                  $Track.id = ($($Track.id) -split('&t='))[0].trim()
+                }               
                 $track_encodedtitle = $Null 
                 $track_encodedtitle = $track.encodedtitle  
                 try{
@@ -282,7 +286,7 @@ function Import-Youtube
                   $Playlist_name = $Media.Group
                 }   
                 if($verboselog){write-ezlogs " | Adding track: $($Track.title) - $($Track.id)" -showtime -logfile:$log}      
-                write-ezlogs "Playlist: $($Playlist_name) - Media.name $($Media.name) - Title: $($Track.title) - Group: $($Media.Group)"       
+                #write-ezlogs "Playlist: $($Playlist_name) - Media.name $($Media.name) - Title: $($Track.title) - Group: $($Media.Group)"       
                 #---------------------------------------------- 
                 #region Add Properties to datatable
                 #----------------------------------------------

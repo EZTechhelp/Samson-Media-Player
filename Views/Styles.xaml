@@ -5,7 +5,6 @@
                     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
-                    xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
                     xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
                     xmlns:wf="clr-namespace:Microsoft.Web.WebView2.WinForms;assembly=Microsoft.Web.WebView2.WinForms"
                     xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
@@ -15,11 +14,12 @@
                     xmlns:vsm="clr-namespace:System.Windows;assembly=System.Windows"
                     xmlns:AttachedBehavior="clr-namespace:ScrollAnimateBehavior.AttachedBehaviors"
                     xmlns:Dialog="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
+                    xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
                     xmlns:aero="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
                     xmlns:system="clr-namespace:System;assembly=mscorlib"
                     xmlns:dgx="clr-namespace:DataGridExtensions;assembly=DataGridExtensions"
                     xmlns:src="clr-namespace:DataGridExtensionsSample"
-					xmlns:controls="clr-namespace:MahApps.Metro.Controls"
+                    xmlns:controls="clr-namespace:MahApps.Metro.Controls"
 >
 	<ResourceDictionary.MergedDictionaries>
 		<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.GridSplitter.xaml"/>
@@ -46,12 +46,31 @@
     </Style> -->
 	<dgx:RegexContentFilterFactory x:Key="RegexContentFilterFactory"/>
 	<dgx:SimpleContentFilterFactory x:Key="SimpleContentFilterFactory"/>
-
+	<Storyboard x:Key="PlayIconStoryBoard">
+		<DoubleAnimation Storyboard.TargetName="PlayIcon_Transform" Storyboard.TargetProperty="(RotateTransform.Angle)" From="0.0" To="360" Duration="0:0:0.3" RepeatBehavior="Forever" AutoReverse="false"/>
+	</Storyboard>		
+	<Style x:Key="AnimationImageStyle" TargetType="{x:Type iconPacks:PackIconFontAwesome}">
+		<Style.Triggers>
+			<DataTrigger Binding="{Binding RelativeSource={x:Static RelativeSource.Self}, Path=IsVisible}"
+			             Value="True">
+				<DataTrigger.EnterActions>
+					<BeginStoryboard Name="PlayIcon_Storyboard">
+						<Storyboard>
+							<DoubleAnimation Storyboard.TargetProperty="(RotateTransform.Angle)" From="0.0" To="360" Duration="0:0:0.3" RepeatBehavior="Forever" AutoReverse="false"/>
+						</Storyboard>
+					</BeginStoryboard>
+				</DataTrigger.EnterActions>
+				<DataTrigger.ExitActions>
+					<StopStoryboard BeginStoryboardName="PlayIcon_Storyboard" />
+				</DataTrigger.ExitActions>				
+			</DataTrigger>
+		</Style.Triggers>
+	</Style>
 	<!-- Template for a simple integer dgx control. -->
 	<ControlTemplate x:Key="IntegerFilter">
 		<src:IntegerGreatherThanFilterControl Filter="{Binding Path=Filter, UpdateSourceTrigger=PropertyChanged, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgx:DataGridFilterColumnControl}}"/>
 	</ControlTemplate>
-
+   
 	<ControlTemplate x:Key="FilterWithPopup">
 		<src:FilterWithPopupControl Filter="{Binding Path=Filter, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=dgx:DataGridFilterColumnControl}}"/>
 	</ControlTemplate>
@@ -61,7 +80,7 @@
 	</Style>
 	<Style x:Key="MetroDataGridCheckBox" TargetType="{x:Type CheckBox}">
 		<Setter Property="Style" Value="{DynamicResource MetroDataGridCheckBox}"/>
-	</Style>	
+	</Style>
 	<LinearGradientBrush x:Key="MainGridGradient" PresentationOptions:Freeze="True" EndPoint="0.5,1" StartPoint="0.5,0">
 		<GradientStop Color="Black" Offset="0.0"/>
 		<GradientStop Offset="1" Color="#FF0A2347"/>
@@ -93,7 +112,49 @@
 			</Trigger>
 		</Style.Triggers>
 	</Style>
-	<SolidColorBrush x:Key="IconStyle" Color="{StaticResource MahApps.Colors.SystemAccent}" />
+	<LinearGradientBrush x:Key="TransparentBackgroundStyle" PresentationOptions:Freeze="True" EndPoint="0.5,1" StartPoint="0.5,0">
+		<GradientStop Color="Transparent" Offset="0"/>
+		<GradientStop Color="Transparent" Offset="0.3"/>
+	</LinearGradientBrush>
+	<Style x:Key="PlayGridButtonStyle" TargetType="ToggleButton">
+		<Setter Property="OverridesDefaultStyle" Value="True"/>
+		<Setter Property="Margin" Value="1"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ToggleButton">
+					<Border Name="border" BorderBrush="Transparent" Padding="4,2" CornerRadius="3" BorderThickness="1" SnapsToDevicePixels="true" PresentationOptions:Freeze="True" Background="{TemplateBinding Background}">
+						<Grid Height="20" SnapsToDevicePixels="true" Margin="0,0,0,0">
+							<iconPacks:PackIconMaterial Name="PlayMediaButtonIcon" Kind="PlayCircleOutline" Height="20" HorizontalAlignment="Center" Margin="0,0,0,0" BorderThickness="0" RenderTransformOrigin="0.5,0.5">
+								<iconPacks:PackIconMaterial.RenderTransform>
+									<RotateTransform x:Name="PlayGrid_Transform"/>
+								</iconPacks:PackIconMaterial.RenderTransform>
+							</iconPacks:PackIconMaterial>
+						</Grid>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="border" Property="BorderBrush" Value="DarkGray"/>
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter Property="Background" Value="transparent"/>
+							<!-- <Setter TargetName="PlayMediaButtonIcon" Property="Kind" Value="Pause"/> -->
+							<Setter Property="RenderTransform">
+								<Setter.Value>
+									<ScaleTransform ScaleX="0.90" ScaleY="0.90"/>
+								</Setter.Value>
+							</Setter>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Background" Value="DarkGray"/>
+							<Setter Property="Opacity" Value="0.8"/>
+							<Setter Property="Foreground" Value="Gray"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<SolidColorBrush x:Key="IconStyle" Color="{StaticResource MahApps.Colors.SystemAccent}"/>
 	<Style x:Key="VideoViewButtonStyle" TargetType="Button">
 		<Setter Property="OverridesDefaultStyle" Value="True"/>
 		<Setter Property="Margin" Value="5"/>
@@ -118,9 +179,64 @@
 			</Setter.Value>
 		</Setter>
 	</Style>
+	<Style x:Key="ToggleButtonStyle" TargetType="ToggleButton">
+		<Setter Property="OverridesDefaultStyle" Value="True"/>
+		<Setter Property="Margin" Value="1"/>
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="Effect">
+			<Setter.Value>
+				<DropShadowEffect ShadowDepth="2" PresentationOptions:Freeze="True"/>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ToggleButton">
+					<Border Name="border"
+					        BorderThickness="1"
+					        Padding="4,2"
+					        CornerRadius="3"
+					        PresentationOptions:Freeze="True"
+					        Background="{TemplateBinding Background}">
+						<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="border" Property="BorderBrush" Value="DarkGray"/>
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent}"/>
+							<Setter Property="RenderTransform">
+								<Setter.Value>
+									<ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+								</Setter.Value>
+							</Setter>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Background" Value="DarkGray"/>
+							<Setter Property="Opacity" Value="0.8"/>
+							<Setter Property="Foreground" Value="Gray"/>
+						</Trigger>
+						<Trigger Property="IsChecked" Value="True">
+							<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent}"/>
+							<Setter Property="Effect">
+								<Setter.Value>
+									<DropShadowEffect ShadowDepth="0" PresentationOptions:Freeze="True"/>
+								</Setter.Value>
+							</Setter>
+							<Setter Property="RenderTransform">
+								<Setter.Value>
+									<ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+								</Setter.Value>
+							</Setter>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
 	<Style x:Key="FilterButtonStyle" TargetType="Button">
 		<Setter Property="OverridesDefaultStyle" Value="True"/>
-		<Setter Property="Margin" Value="5"/>
+		<Setter Property="Margin" Value="1"/>
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="Button">
@@ -137,6 +253,62 @@
 						<Trigger Property="IsMouseOver" Value="True">
 							<Setter TargetName="border" Property="BorderBrush" Value="DarkGray"/>
 						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent}"/>
+							<Setter Property="RenderTransform">
+								<Setter.Value>
+									<ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+								</Setter.Value>
+							</Setter>
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Background" Value="DarkGray"/>
+							<Setter Property="Opacity" Value="0.8"/>
+							<Setter Property="Foreground" Value="Gray"/>
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<Style x:Key="GridButtonStyle" TargetType="Button">
+		<Setter Property="OverridesDefaultStyle" Value="True"/>
+		<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent3}"/>
+		<Setter Property="BorderBrush" Value="Gray"/>
+		<Setter Property="Height" Value="20"/>
+		<Setter Property="MaxWidth" Value="50"/>
+		<Setter Property="Foreground" Value="#FFF5F5F5"/>
+		<Setter Property="Margin" Value="0"/>
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="Button">
+					<Border Name="border"
+					        BorderThickness="1"
+					        Padding="2,2"
+					        BorderBrush="{DynamicResource MahApps.Brushes.Button.Border}"
+					        CornerRadius="1"
+					        PresentationOptions:Freeze="True"
+					        Background="{TemplateBinding Background}">
+						<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="border" Property="BorderBrush" Value="White"/>
+							<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.SystemControlHighlightAccent}"/>
+						</Trigger>
+						<Trigger Property="IsPressed" Value="True">
+							<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent}"/>
+							<Setter Property="RenderTransform">
+								<Setter.Value>
+									<ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+								</Setter.Value>
+							</Setter>
+							<!-- 							<Setter Property="Effect">
+								<Setter.Value>
+									<DropShadowEffect ShadowDepth="0" PresentationOptions:Freeze="True"/>
+								</Setter.Value>
+							</Setter> -->
+						</Trigger>
 						<Trigger Property="IsEnabled" Value="False">
 							<Setter Property="Background" Value="DarkGray"/>
 							<Setter Property="Opacity" Value="0.8"/>
@@ -149,7 +321,6 @@
 	</Style>
 	<Style x:Key="DetailButtonStyle" TargetType="Button">
 		<Setter Property="OverridesDefaultStyle" Value="True"/>
-		<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent3}"/>
 		<Setter Property="BorderBrush" Value="Gray"/>
 		<Setter Property="Foreground" Value="#FFF5F5F5"/>
 		<Setter Property="Margin" Value="5"/>
@@ -177,11 +348,11 @@
 									<ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
 								</Setter.Value>
 							</Setter>
-							<Setter Property="Effect">
+							<!-- 							<Setter Property="Effect">
 								<Setter.Value>
 									<DropShadowEffect ShadowDepth="0" PresentationOptions:Freeze="True"/>
 								</Setter.Value>
-							</Setter>							
+							</Setter> -->
 						</Trigger>
 						<Trigger Property="IsEnabled" Value="False">
 							<Setter Property="Background" Value="DarkGray"/>
@@ -563,27 +734,28 @@
 		</Setter>
 	</Style>
 	<Style x:Key="DropDownMenuStyle" BasedOn="{StaticResource MahApps.Styles.ContextMenu}" TargetType="{x:Type ContextMenu}">
+	    <Setter Property="OverridesDefaultStyle" Value="True"/>
 		<Setter Property="HasDropShadow" Value="False"/>
-		<Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>
+		<Setter Property="Background" Value="#FF252525"/>
+		<Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.IdealForeground}"/>
+<Setter Property="Template">
+<Setter.Value>
+<ControlTemplate TargetType="{x:Type ContextMenu}">
+<Border Background="#FF222120" CornerRadius="7, 7, 8, 8" BorderBrush="{DynamicResource MahApps.Brushes.Accent}" BorderThickness="1" Opacity="1">
+<StackPanel ClipToBounds="True" Orientation="Vertical" IsItemsHost="True" Margin="5,4,5,4"/>
+</Border>
+</ControlTemplate>
+		</Setter.Value>
+	</Setter>		
 	</Style>
 	 
 	<Style x:Key="DropDownMenuitemStyle" BasedOn="{StaticResource MahApps.Styles.MenuItem}" TargetType="MenuItem">
-		<Setter Property="OverridesDefaultStyle" Value="True"/>
-		<Setter Property="Background" Value="Black"/>
-		<Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>
-		<Setter Property="Template">
-			<Setter.Value>
-				<ControlTemplate TargetType="{x:Type MenuItem}">
-					<ControlTemplate.Triggers>
-						<Trigger Property="IsMouseOver" Value="True">
-							<Setter Property="Background" Value="{StaticResource MahApps.Brushes.Accent}"/>
-						</Trigger>
-					</ControlTemplate.Triggers>
-				</ControlTemplate>
-			</Setter.Value>
-		</Setter>
+		<Setter Property="OverridesDefaultStyle" Value="True"/> 
+		<Setter Property="BorderThickness" Value="1"/>
+		<Setter Property="Background" Value="#FF252525"/>
+		<Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.IdealForeground}"/>	
 	</Style>
-	<system:Double x:Key="MahApps.Sizes.ScrollBar.Width">10</system:Double>
+	<system:Double x:Key="MahApps.Sizes.ScrollBar.Width">8</system:Double>
 	<Style x:Key="MahApps.Styles.RepeatButton.ScrollBarSmall" TargetType="{x:Type RepeatButton}">
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Focusable" Value="False"/>
@@ -830,7 +1002,7 @@
 	<LinearGradientBrush x:Key="IconGradient" PresentationOptions:Freeze="True" EndPoint="0.5,1" StartPoint="0.5,0">
 		<GradientStop Color="{DynamicResource MahApps.Brushes.AccentBase}" Offset="0"/>
 		<GradientStop Color="{DynamicResource MahApps.Brushes.AccentBase}" Offset="0.3"/>
-	</LinearGradientBrush>	
+	</LinearGradientBrush>
 	<LinearGradientBrush x:Key="FlyoutGradient" PresentationOptions:Freeze="True" StartPoint="0,0" EndPoint="0,1">
 		<GradientStop Color="#FF0A2347" Offset="0"/>
 		<GradientStop Color="#FF0A2347" Offset="0.9"/>
@@ -868,6 +1040,10 @@
 		<GradientStop Color="Black" Offset="0.0"/>
 		<GradientStop Offset="0.5" Color="#FF0A2347"/>
 	</LinearGradientBrush>
+	<LinearGradientBrush x:Key="PlaylistGridBackGradient" PresentationOptions:Freeze="True" EndPoint="0.5,1" StartPoint="0.5,0">
+		<GradientStop Color="Black" Offset="0.0"/>
+		<GradientStop Offset="0.5" Color="#C2191A1A"/>
+	</LinearGradientBrush>
 	<!-- 	<LinearGradientBrush x:Key="MainGridBackGradient" PresentationOptions:Freeze="True"  EndPoint="0.5,1" StartPoint="0.5,0">
 		<GradientStop Color="Black" Offset="0"/>
 		<GradientStop Color="#FF0A2347" Offset="0.1"/>
@@ -895,6 +1071,16 @@
 	<DropShadowBitmapEffect x:Key="SeparatorDropShadow" Color="Black" Direction="320" ShadowDepth="15" Softness="1" PresentationOptions:Freeze="True"/>
 	<DropShadowBitmapEffect x:Key="ExpanderDropShadow" Color="Black" Direction="260" ShadowDepth="5" Softness="0.5" PresentationOptions:Freeze="True"/>
 	<DropShadowEffect x:Key="DropShadow" PresentationOptions:Freeze="True"/>
+	<Style x:Key="HyperlinkStyle" TargetType="TextBlock">
+	  <Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.IdealForeground}"/>
+	   <Setter Property="HorizontalAlignment" Value="Center"/>
+		<Style.Triggers>
+			<Trigger Property="IsMouseOver" Value="True">
+				<Setter Property="Foreground" Value="Blue"/>
+			</Trigger>
+		</Style.Triggers>
+	</Style>	
+	
 	<Style x:Key="DropDownStyle" TargetType="mah:DropDownButton">
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="Effect">
@@ -922,126 +1108,126 @@
 
 	<Style TargetType="{x:Type Dialog:InputDialog}"
 	       x:Key="NewCustomDialogStyle"
-	       BasedOn="{StaticResource {x:Type Dialog:BaseMetroDialog}}">   
+	       BasedOn="{StaticResource {x:Type Dialog:BaseMetroDialog}}">
 		<Setter Property="Template">
 			<Setter.Value>
-    <ControlTemplate x:Key="MahApps.Templates.InputDialog" TargetType="{x:Type Dialog:InputDialog}">
-        <Grid Background="{TemplateBinding Background}">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+				<ControlTemplate x:Key="MahApps.Templates.InputDialog" TargetType="{x:Type Dialog:InputDialog}">
+					<Grid Background="{TemplateBinding Background}">
+						<Grid.RowDefinitions>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="*"/>
+							<RowDefinition Height="Auto"/>
+						</Grid.RowDefinitions>
 
-            <ContentPresenter x:Name="PART_Top"
-                              Grid.Row="0"
-                              AutomationProperties.Name="Dialog top"
-                              Content="{TemplateBinding DialogTop}"
-                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+						<ContentPresenter x:Name="PART_Top"
+						                  Grid.Row="0"
+						                  AutomationProperties.Name="Dialog top"
+						                  Content="{TemplateBinding DialogTop}"
+						                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
 
-            <Grid Grid.Row="1" Margin="{TemplateBinding Padding}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="{TemplateBinding DialogContentMargin}" />
-                    <ColumnDefinition Width="{TemplateBinding DialogContentWidth}" />
-                    <ColumnDefinition Width="{TemplateBinding DialogContentMargin}" />
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
+						<Grid Grid.Row="1" Margin="{TemplateBinding Padding}">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="{TemplateBinding DialogContentMargin}"/>
+								<ColumnDefinition Width="{TemplateBinding DialogContentWidth}"/>
+								<ColumnDefinition Width="{TemplateBinding DialogContentMargin}"/>
+							</Grid.ColumnDefinitions>
+							<Grid.RowDefinitions>
+								<RowDefinition Height="Auto"/>
+								<RowDefinition Height="*"/>
+							</Grid.RowDefinitions>
 
-                <ContentControl x:Name="PART_Icon"
-                                Grid.Row="1"
-                                Grid.Column="0"
-                                HorizontalAlignment="Center"
-                                AutomationProperties.Name="Dialog icon"
-                                Content="{TemplateBinding Icon}"
-                                ContentTemplate="{TemplateBinding IconTemplate}"
-                                Focusable="False"
-                                UseLayoutRounding="False" />
+							<ContentControl x:Name="PART_Icon"
+							                Grid.Row="1"
+							                Grid.Column="0"
+							                HorizontalAlignment="Center"
+							                AutomationProperties.Name="Dialog icon"
+							                Content="{TemplateBinding Icon}"
+							                ContentTemplate="{TemplateBinding IconTemplate}"
+							                Focusable="False"
+							                UseLayoutRounding="False"/>
 
-                <TextBlock x:Name="PART_Title"
-                           Grid.Row="0"
-                           Grid.Column="1"
-                           AutomationProperties.Name="Dialog title"
-                           FontSize="{TemplateBinding DialogTitleFontSize}"
-                           Foreground="{TemplateBinding Foreground}"
-                           Text="{TemplateBinding Title}"
-                           TextWrapping="Wrap" />
+							<TextBlock x:Name="PART_Title"
+							           Grid.Row="0"
+							           Grid.Column="1"
+							           AutomationProperties.Name="Dialog title"
+							           FontSize="{TemplateBinding DialogTitleFontSize}"
+							           Foreground="{TemplateBinding Foreground}"
+							           Text="{TemplateBinding Title}"
+							           TextWrapping="Wrap"/>
 
-                <Grid x:Name="PART_Content"
-                      Grid.Row="1"
-                      Grid.Column="1"
-                      Margin="0 10 0 0"
-                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                      AutomationProperties.Name="Dialog content"
-                      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" MinHeight="20" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
+							<Grid x:Name="PART_Content"
+							      Grid.Row="1"
+							      Grid.Column="1"
+							      Margin="0 10 0 0"
+							      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+							      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+							      AutomationProperties.Name="Dialog content"
+							      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+								<Grid.RowDefinitions>
+									<RowDefinition Height="Auto" MinHeight="20"/>
+									<RowDefinition Height="Auto"/>
+									<RowDefinition Height="*"/>
+									<RowDefinition Height="Auto"/>
+								</Grid.RowDefinitions>
 
-                    <TextBlock x:Name="PART_MessageTextBlock"
-                               Grid.Row="0"
-                               Margin="0 5 0 0"
-                               FontSize="{TemplateBinding DialogMessageFontSize}"
-                               Foreground="{TemplateBinding Foreground}"
-                               Text="{TemplateBinding Message}"
-                               TextWrapping="Wrap" />
+								<TextBlock x:Name="PART_MessageTextBlock"
+								           Grid.Row="0"
+								           Margin="0 5 0 0"
+								           FontSize="{TemplateBinding DialogMessageFontSize}"
+								           Foreground="{TemplateBinding Foreground}"
+								           Text="{TemplateBinding Message}"
+								           TextWrapping="Wrap"/>
 
-                    <TextBox x:Name="PART_TextBox"
-                             Grid.Row="1"
-                             Margin="0 5 0 0"
-                             mah:ControlsHelper.FocusBorderBrush="{DynamicResource MahApps.Brushes.Accent}"
-                             mah:TextBoxHelper.SelectAllOnFocus="True"
-                             FontSize="{TemplateBinding DialogMessageFontSize}"
-                             Foreground="{TemplateBinding Foreground}"
-                             Text="{Binding Input, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=PropertyChanged}"
-                             TextWrapping="Wrap" />
+								<TextBox x:Name="PART_TextBox"
+								         Grid.Row="1"
+								         Margin="0 5 0 0"
+								         mah:ControlsHelper.FocusBorderBrush="{DynamicResource MahApps.Brushes.Accent}"
+								         mah:TextBoxHelper.SelectAllOnFocus="True"
+								         FontSize="{TemplateBinding DialogMessageFontSize}"
+								         Foreground="{TemplateBinding Foreground}"
+								         Text="{Binding Input, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=PropertyChanged}"
+								         TextWrapping="Wrap"/>
 
-                    <StackPanel Grid.Row="3"
-                                MinHeight="85"
-                                HorizontalAlignment="Right"
-                                Orientation="Horizontal">
-                        <Button x:Name="PART_AffirmativeButton"
-                                Margin="0 0 5 0"
-                                Content="{TemplateBinding AffirmativeButtonText}"
-                                FontSize="{TemplateBinding DialogButtonFontSize}"
-                                Style="{DynamicResource MahApps.Styles.Button.Dialogs.Accent}" />
-                        <Button x:Name="PART_NegativeButton"
-                                Margin="5 0 5 0"
-                                Content="{TemplateBinding NegativeButtonText}"
-                                FontSize="{TemplateBinding DialogButtonFontSize}"
-                                Style="{DynamicResource MahApps.Styles.Button.Dialogs}" />
-                    </StackPanel>
-                </Grid>
-            </Grid>
+								<StackPanel Grid.Row="3"
+								            MinHeight="85"
+								            HorizontalAlignment="Right"
+								            Orientation="Horizontal">
+									<Button x:Name="PART_AffirmativeButton"
+									        Margin="0 0 5 0"
+									        Content="{TemplateBinding AffirmativeButtonText}"
+									        FontSize="{TemplateBinding DialogButtonFontSize}"
+									        Style="{DynamicResource MahApps.Styles.Button.Dialogs.Accent}"/>
+									<Button x:Name="PART_NegativeButton"
+									        Margin="5 0 5 0"
+									        Content="{TemplateBinding NegativeButtonText}"
+									        FontSize="{TemplateBinding DialogButtonFontSize}"
+									        Style="{DynamicResource MahApps.Styles.Button.Dialogs}"/>
+								</StackPanel>
+							</Grid>
+						</Grid>
 
-            <ContentPresenter x:Name="PART_Bottom"
-                              Grid.Row="2"
-                              AutomationProperties.Name="Dialog bottom"
-                              Content="{TemplateBinding DialogBottom}"
-                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
-        </Grid>
-        <ControlTemplate.Triggers>
-            <Trigger Property="ColorScheme" Value="Accented">
-                <Setter TargetName="PART_NegativeButton" Property="Style" Value="{DynamicResource MahApps.Styles.Button.Dialogs.AccentHighlight}" />
-                <Setter TargetName="PART_TextBox" Property="Foreground" Value="{DynamicResource MahApps.Brushes.ThemeForeground}" />
-                <Setter TargetName="PART_TextBox" Property="mah:ControlsHelper.FocusBorderBrush" Value="{DynamicResource MahApps.Brushes.TextBox.Border.Focus}" />
-            </Trigger>
-            <Trigger Property="Title" Value="{x:Null}">
-                <Setter TargetName="PART_Title" Property="Visibility" Value="Collapsed" />
-            </Trigger>
-            <EventTrigger RoutedEvent="Loaded">
-                <EventTrigger.Actions>
-                    <BeginStoryboard Storyboard="{StaticResource MahApps.Storyboard.Dialogs.Show}" />
-                </EventTrigger.Actions>
-            </EventTrigger>
-        </ControlTemplate.Triggers>
-    </ControlTemplate>
+						<ContentPresenter x:Name="PART_Bottom"
+						                  Grid.Row="2"
+						                  AutomationProperties.Name="Dialog bottom"
+						                  Content="{TemplateBinding DialogBottom}"
+						                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+					</Grid>
+					<ControlTemplate.Triggers>
+						<Trigger Property="ColorScheme" Value="Accented">
+							<Setter TargetName="PART_NegativeButton" Property="Style" Value="{DynamicResource MahApps.Styles.Button.Dialogs.AccentHighlight}"/>
+							<Setter TargetName="PART_TextBox" Property="Foreground" Value="{DynamicResource MahApps.Brushes.ThemeForeground}"/>
+							<Setter TargetName="PART_TextBox" Property="mah:ControlsHelper.FocusBorderBrush" Value="{DynamicResource MahApps.Brushes.TextBox.Border.Focus}"/>
+						</Trigger>
+						<Trigger Property="Title" Value="{x:Null}">
+							<Setter TargetName="PART_Title" Property="Visibility" Value="Collapsed"/>
+						</Trigger>
+						<EventTrigger RoutedEvent="Loaded">
+							<EventTrigger.Actions>
+								<BeginStoryboard Storyboard="{StaticResource MahApps.Storyboard.Dialogs.Show}"/>
+							</EventTrigger.Actions>
+						</EventTrigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
 			</Setter.Value>
 		</Setter>
 	</Style>

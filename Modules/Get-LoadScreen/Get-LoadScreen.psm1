@@ -71,6 +71,7 @@ function Start-SplashScreen{
   if(!$log_file){
     $log_file = $thisApp.Config.Log_File
   }
+  $brynePlayer = $true
   $splash_logo = "$($current_folder)\\Resources\\MusicPlayerFilltest.ico"
   if($Startup){
     try{       
@@ -126,22 +127,31 @@ function Start-SplashScreen{
     #$hash.Logo = $hash.window.FindName("Logo")
     $hash.Window.icon = $splash_logo
     $hash.Logo.Source=$splash_logo
-    $hash.SplashTitle = $hash.window.FindName("SplashTitle")
-    $hash.WindowSplash = $hash.window.FindName("WindowSplash")
-    $hash.More_Info_Msg = $hash.window.FindName("More_info_Msg")
+    #$hash.SplashTitle = $hash.window.FindName("SplashTitle")
+    #$hash.WindowSplash = $hash.window.FindName("WindowSplash")
+    #$hash.More_Info_Msg = $hash.window.FindName("More_info_Msg")
     $hash.window.title =$SplashTitle
     $hash.SplashTitle.Content=$SplashTitle
     $hash.LoadingLabel.Content= $SplashMessage
     $hash.More_Info_Msg.text= "$Splash_More_Info"
-    #$hash.Background_Image.source = "$($Current_Folder)\\ByrnePlayer\DavidByrneTour.png"
-    #$hash.Background_Image.Stretch = "UniformToFill"
+    $hash.Window.IsWindowDraggable="True"
+    if($brynePlayer){  
+      $hash.Background_Image.source = "$($Current_Folder)\\ByrnePlayer\DavidByrneTour.png"
+      $hash.Background_Image.Opacity = 0.15
+      $hash.Background_Image.Stretch = "UniformToFill"
+      #$hash.LoadingLabel.Visibility = 'Hidden'
+      #$hash.SplashTitle.Visibility = 'Hidden'
+      #$hash.SplashProgress.Visibility = 'Hidden'
+    }
     try{
       if($thisApp.Config.Current_Theme -ne $null -and $thisApp.Config.Current_Theme.Name){
         $theme = [MahApps.Metro.Theming.MahAppsLibraryThemeProvider]::new()
         $themes = $theme.GetLibraryThemes()
         $themeManager = [ControlzEx.Theming.ThemeManager]::new()
         $detectTheme = $thememanager.DetectTheme($hash.Window)
-        if($thisApp.Config.Verbose_logging){write-ezlogs ">>>> Current Theme: $($detectTheme | out-string)" -showtime}
+        if($thisApp.Config.Verbose_logging){
+          write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] >>>> Current Theme: $($detectTheme | out-string)" | out-file $log_file -Force -Append -Encoding unicode
+        }
         if($detectTheme.Name){
           $newtheme = $themes | where {$_.Name -eq $detectTheme.Name}
         }else{
@@ -149,7 +159,7 @@ function Start-SplashScreen{
         } 
       }
       if($newtheme){
-        write-ezlogs "Current Theme: $($detectTheme | out-string)"
+        if($thisApp.Config.Verbose_logging){write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] >>>> Current Theme: $($newtheme | out-string)" | out-file $log_file -Force -Append -Encoding unicode}
         $thememanager.RegisterLibraryThemeProvider($newtheme.LibraryThemeProvider)
         $thememanager.ChangeTheme($hash.Window,$newtheme.Name,$false)    
         #$flyoutgradientbrush = $synchash.MainGrid.Background.clone()   
@@ -177,7 +187,22 @@ function Start-SplashScreen{
       }
     }catch{
       write-ezlogs "An exception occurred changing theme for Get-loadScreen" -showtime -catcherror $_
-    }   
+    }  
+
+    $hash.Window.add_MouseLeftButtonDown({
+        $sender = $args[0]
+        [System.Windows.Input.MouseButtonEventArgs]$e = $args[1]
+        try{
+          #write-ezlogs "$($e | out-string)"
+          if ($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Left -and $e.ButtonState -eq [System.Windows.Input.MouseButtonState]::Pressed -and $e.RoutedEvent.Name -eq 'MouseLeftButtonDown')
+          {
+            $hash.Window.DragMove()
+            $e.handled = $true
+          }
+        }catch{
+          write-ezlogs "An exception occurred in Window MouseLeftButtonDown event" -showtime -catcherror $_
+        }
+    })     
     $hash.Window.Add_Loaded({
         if($PlayAudio){
           try{     
@@ -203,7 +228,7 @@ function Start-SplashScreen{
               })    
               $Media_Element.add_MediaFailed({
                   param($Sender) 
-                  write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] An exception occurred in medial element $($sender | out-string)" | out-file $log_file -Force -Append -Encoding unicode
+                  write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].FunctionName) - $((Get-PSCallStack).Position.StartLineNumber)] An exception occurred in media element $($sender | out-string)" | out-file $log_file -Force -Append -Encoding unicode
                   $this.Stop()
                   $this.tag = $Null
                   $this.close()                   

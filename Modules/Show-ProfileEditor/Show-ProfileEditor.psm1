@@ -123,9 +123,10 @@ function Show-ProfileEditor{
     $Media_to_edit,
     [switch]$Verboselog,
     [string]$SplashMessage
-  )    
+  ) 
+  $global:hashedit = [hashtable]::Synchronized(@{})    
   $hashedit_Scriptblock = {
-    $global:hashedit = [hashtable]::Synchronized(@{}) 
+    $hashedit = $hashedit
     $thisApp = $thisApp
     $hashedit.PageTitle = $PageTitle
     $Logo = $Logo
@@ -326,7 +327,9 @@ function Show-ProfileEditor{
         $hashedit.Media_Album_textbox.text = ""
         $hashedit.Media_Album_Label.BorderBrush = "Red"
       }    
-                                                          
+      
+      #Type  
+                                                 
       if($profile.type -eq 'Available'){ 
         $hashedit.Media_Type_ComboBox.selectedindex = 1
         $hashedit.Media_Type_Label.BorderBrush = "Green"
@@ -444,12 +447,13 @@ function Show-ProfileEditor{
             $synchash.YoutubeFilter_timer.start()        
           }                     
           $hashedit.Save_status_transitioningControl.content = ""
-          $hashedit.Save_status_Label.content = "Saved Profile Successfully!"
-          $hashedit.Save_status_Label.foreground = "LightGreen"
-          $hashedit.Save_status_transitioningControl.content = $hashedit.Save_status_Label       
+
+          $hashedit.Save_status_textblock.text = "Saved Profile Successfully!"
+          $hashedit.Save_status_textblock.foreground = "LightGreen"
+          $hashedit.Save_status_transitioningControl.content = $hashedit.Save_status_textblock      
         }catch{
-          $hashedit.Save_status_Label.content = "An exception occurred when saving the profile!`n$_"
-          $hashedit.Save_status_Label.foreground = "Red"
+          $hashedit.Save_status_textblock.text = "An exception occurred when saving the profile!`n$_"
+          $hashedit.Save_status_textblock.foreground = "Red"
           write-ezlogs "An exception occurred when saving the profile $($profile.profile_path)" -CatchError $_ -showtime
         }
     })
@@ -472,7 +476,7 @@ function Show-ProfileEditor{
     }.GetNewClosure())   
   
     try{    
-      [System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($hashedit.Window)
+      #[System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($hashedit.Window)
       [void][System.Windows.Forms.Application]::EnableVisualStyles()   
       $null = $hashedit.Window.ShowDialog()
       $window_active = $hashedit.Window.Activate()     

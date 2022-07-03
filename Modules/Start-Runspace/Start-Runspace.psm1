@@ -165,7 +165,8 @@ function Start-Runspace
     }
     return
   }
-  $existingjob_check = $Jobs | where {$_.powershell.runspace.name -eq $Runspace_Name}
+  $existingjobs = $jobs.clone()
+  $existingjob_check = $existingjobs | where {$_.powershell.runspace.name -eq $Runspace_Name -or $_.Name -eq $Runspace_Name}
   if($existingjob_check){
     try{
       if(($existingjob_check.powershell.runspace) -and $existingjob_check.runspace.isCompleted -eq $false -and $Runspace_Name -notmatch 'Start_SplashScreen' -and $Runspace_Name -ne 'Show_WebLogin' -and $Runspace_Name -notmatch 'Show_'){
@@ -196,7 +197,7 @@ function Start-Runspace
   } 
   #Create the runspace
   $new_Runspace =[runspacefactory]::CreateRunspace($InitialSessionState)
-  write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].Command):$((Get-PSCallStack)[1].InvocationInfo.ScriptLineNumber):$Runspace_Name] RUNSPACE NAME: $Runspace_Name" | out-file $logfile -Force -Append -Encoding unicode
+  write-output "[$(Get-date -format $logdateformat)] [$((Get-PSCallStack)[1].Command):$((Get-PSCallStack)[1].InvocationInfo.ScriptLineNumber):$((Get-PSCallStack)[0].Command):$((Get-PSCallStack)[0].InvocationInfo.ScriptLineNumber)] Starting new runspace: $Runspace_Name" | out-file $logfile -Force -Append -Encoding unicode
   if($Runspace_Name -notmatch 'Start_SplashScreen' -and $Runspace_Name -notmatch 'Show_WebLogin' -and $runspace_name -notmatch 'ProfileEditor_Runspace' -and $runspace_name -notmatch 'Show_'){
     $new_Runspace.ApartmentState = "MTA"
   }else{

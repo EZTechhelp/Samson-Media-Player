@@ -217,77 +217,6 @@ function Convert-Color {
 #----------------------------------------------
 
 #---------------------------------------------- 
-#region Get-SongInfo Function
-#----------------------------------------------
-function Get-SongInfo($Path)
-{
-  if($Path){
-    try{
-      $Shell = New-Object -COMObject Shell.Application
-      $DirName = $([System.IO.Path]::GetDirectoryName($Path))
-      if($DirName){
-        $Folder = $shell.Namespace($($DirName))
-        $Filename = [System.IO.Path]::GetFileName($Path)
-      }
-      if($Folder -and $Filename){
-        $File = $Folder.ParseName($($Filename))
-        if(!$file -and $filename -match '\?'){
-          $Filename = ($Folder.Items() | where {$_.name -match $(($Filename -split '\?')[0]) -or $_.name -match $(($Filename -split '\?')[0])}).Name
-        }
-        if($Filename){
-          $File = $Folder.ParseName($($Filename))
-        }
-        $title = ($Folder.GetDetailsOf($File, 21))
-        $artistpattern = "(?<value>.*) by (?<value>.*)"
-        #[int]$h, [int]$m, [int]$s = ($Folder.GetDetailsOf($File, 27)).split(":")
-        $Artist = ($Folder.GetDetailsOf($File, 13))
-        if([string]::IsNullOrEmpty($artist) -and $title -match $artistpattern){   
-          $artist = ([regex]::matches($title,  $artistpattern)| %{$_.groups[1].value} )
-        }
-        if($Artist -match ';'){
-          $artist = ($artist -split ';')[0]
-        }
-        $filesize = ($Folder.GetDetailsOf($File, 1))
-        $comments =  ($Folder.GetDetailsOf($File,24))
-        $album = ($Folder.GetDetailsOf($File, 14))
-        #$year = ($Folder.GetDetailsOf($File, 15))
-        #$Genre = ($Folder.GetDetailsOf($File, 16))
-        <#  if($Genre -match ';'){
-            $Genre = ($Genre -split ';')[0]
-        }#>  
-        #$copyright = ($Folder.GetDetailsOf($File, 25))
-        #$length = $h*60*60 + $m*60 +$s
-        $tracknumber = ($Folder.GetDetailsOf($File, 26))
-        $duration = ($Folder.GetDetailsOf($File, 27))
-        $bitrate = ($Folder.GetDetailsOf($File, 28))
-      }
-      $meta_properties_output = New-Object -TypeName 'System.Collections.ArrayList'     
-      $newRow = New-Object PsObject -Property @{
-        'Artist' = $Artist
-        'Title' = $title
-        'Album' = $album 
-        'Year' = $year
-        'Comments' = $comments
-        'Genre' = $Genre
-        'Length' = $length
-        'Duration' = $duration
-        'FileSize' = $filesize
-        'Copyright' = $copyright
-        'TrackNumber' = $tracknumber
-        'Bitrate' = $bitrate
-      }
-      $null = $meta_properties_output.Add($newRow)
-      Write-Output $meta_properties_output   
-    }catch{
-      write-ezlogs "An exception occurred parsing info about file $Path" -showtime -catcherror $_
-    }
-  }
-}
-#---------------------------------------------- 
-#endregion Get-SongInfo Function
-#----------------------------------------------
-
-#---------------------------------------------- 
 #region ConvertFrom-Roman Function
 #----------------------------------------------
 function ConvertFrom-Roman {
@@ -954,8 +883,55 @@ function Show-NotifyBalloon
     $Balloon.ShowBalloonTip(1000)
   }           
 }
-#---------------------------------------------- 
+#---------------------------------------------
 #endregion Show-NotifyBallon Function
+#---------------------------------------------
+
+#--------------------------------------------- 
+#region Get-CurrentWindow Function
+#---------------------------------------------
+function Get-CurrentWindow {
+  <#
+      .LINK
+      https://stackoverflow.com/questions/46351885/how-to-grab-the-currently-active-foreground-window-in-powershell
+  #>
+
+  param(
+
+  )
+
+  Begin {
+
+    Add-Type  @"
+ using System;
+ using System.Runtime.InteropServices;
+ using System.Text;
+public class APIFuncs
+   {
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+   public static extern int GetWindowText(IntPtr hwnd,StringBuilder
+lpString, int cch);
+    [DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Auto)]
+   public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Auto)]
+       public static extern Int32 GetWindowThreadProcessId(IntPtr hWnd,out
+Int32 lpdwProcessId);
+    [DllImport("user32.dll", SetLastError=true, CharSet=CharSet.Auto)]
+       public static extern Int32 GetWindowTextLength(IntPtr hWnd);
+    }
+"@
+  }
+
+  Process {
+    $w = [apifuncs]::GetForegroundWindow()
+    $len = [apifuncs]::GetWindowTextLength($w)
+    $sb = New-Object text.stringbuilder -ArgumentList ($len + 1)
+    $rtnlen = [apifuncs]::GetWindowText($w,$sb,$sb.Capacity)
+    return $($sb.tostring())
+  }
+}
+#--------------------------------------------- 
+#endregion Get-CurrentWindow Function
 #---------------------------------------------
 
 function Test-KeyPress
@@ -1261,6 +1237,9 @@ function Add-WPFMenu {
         }
       }else{
         $menuItem = new-object System.Windows.Controls.MenuItem -property @{Header = $item.Header}
+        if(-not [string]::IsNullOrEmpty($item.Style)){
+          $menuItem.Style = $synchash.Window.TryFindResource($item.Style)
+        }
         if(-not [string]::IsNullOrEmpty($item.FontWeight)){
           $menuItem.FontWeight = $item.FontWeight
         }
@@ -1271,6 +1250,9 @@ function Add-WPFMenu {
           $menuItem.ToolTip = $item.ToolTip
         }
         $menuItem.Foreground = $item.color
+        if(-not [string]::IsNullOrEmpty($item.BackGround)){
+          $menuItem.BackGround = $item.BackGround
+        }                
         #$menuItem.Style = $synchash.Window.TryFindResource("DropDownMenuItemStyle")
         $menuItem.IsEnabled = $item.enabled
         $menuItem.Tag = $control.datacontext
@@ -1314,6 +1296,9 @@ function Add-WPFMenu {
               $null = $menuItem.Items.Add($menu_separator)
             }else{
               $SubmenuItem = new-object System.Windows.Controls.MenuItem -property @{Header = $SubItem.header}
+              if(-not [string]::IsNullOrEmpty($subitem.Style)){
+                $SubmenuItem.Style = $synchash.Window.TryFindResource($subitem.Style)
+              }
               if(-not [string]::IsNullOrEmpty($subitem.FontWeight)){
                 $SubmenuItem.FontWeight = $subitem.FontWeight
               } 
@@ -1323,9 +1308,16 @@ function Add-WPFMenu {
               if(-not [string]::IsNullOrEmpty($subitem.ToolTip)){
                 $SubmenuItem.ToolTip = $subitem.ToolTip
               }
-              $SubmenuItem.Foreground = $subitem.color
+              if(-not [string]::IsNullOrEmpty($subitem.ForegroundStyle)){
+                $SubmenuItem.Foreground = $synchash.Window.TryFindResource($subitem.ForegroundStyle)
+              }else{
+                $SubmenuItem.Foreground = $subitem.color
+              }
               if(-not [string]::IsNullOrEmpty($subitem.tag)){
                 $SubmenuItem.tag = $subitem.tag
+              }
+              if(-not [string]::IsNullOrEmpty($subitem.BackGround)){
+                $SubmenuItem.BackGround = $subitem.BackGround
               }
               #$SubmenuItem.Style = $synchash.Window.TryFindResource("DropDownMenuItemStyle")
               $SubmenuItem.IsEnabled = $subitem.enabled
@@ -1366,6 +1358,9 @@ function Add-WPFMenu {
               if(-not [string]::IsNullOrEmpty($subitem.Sub_items)){
                 foreach($subitem_lvl2 in $subitem.Sub_items){
                   $SubmenuItem_lvl2 = new-object System.Windows.Controls.MenuItem -property @{Header = $SubItem_lvl2.header}
+                  if(-not [string]::IsNullOrEmpty($subitem_lvl2.Style)){
+                    $SubmenuItem_lvl2.Style = $synchash.Window.TryFindResource($subitem_lvl2.Style)
+                  }
                   if(-not [string]::IsNullOrEmpty($subitem_lvl2.FontWeight)){
                     $SubmenuItem_lvl2.FontWeight = $subitem_lvl2.FontWeight
                   } 
@@ -1375,9 +1370,16 @@ function Add-WPFMenu {
                   if(-not [string]::IsNullOrEmpty($subitem_lvl2.ToolTip)){
                     $SubmenuItem_lvl2.ToolTip = $subitem_lvl2.ToolTip
                   }
-                  $SubmenuItem_lvl2.Foreground = $subitem_lvl2.color
+                  if(-not [string]::IsNullOrEmpty($subitem_lvl2.ForegroundStyle)){
+                    $SubmenuItem_lvl2.Foreground = $synchash.Window.TryFindResource($subitem_lvl2.ForegroundStyle)
+                  }else{
+                    $SubmenuItem_lvl2.Foreground = $subitem_lvl2.color
+                  }
                   if(-not [string]::IsNullOrEmpty($subitem_lvl2.tag)){
                     $SubmenuItem_lvl2.tag = $subitem_lvl2.tag
+                  }
+                  if(-not [string]::IsNullOrEmpty($subitem_lvl2.BackGround)){
+                    $SubmenuItem_lvl2.BackGround = $subitem_lvl2.BackGround
                   }
                   $SubmenuItem_lvl2.IsEnabled = $subitem_lvl2.enabled
                   if($SubItem_lvl2.IsCheckable){
@@ -1402,7 +1404,7 @@ function Add-WPFMenu {
                     if($Subitem_lvl2.icon_margin){
                       $SubmenuItem_lvl2_imagecontrol.margin = $Subitem_lvl2.icon_margin
                     }      
-                    $SubmenuItem_lvl2.icon = $SubmenuItem_lvl2_imagecontrol
+                    $SubmenuItem_lvl2.icon = $Subitem_lvl2.icon_image
                   }
                   if(-not [string]::IsNullOrEmpty($subitem_lvl2.binding)){
                     $Binding = New-Object System.Windows.Data.Binding
@@ -1708,66 +1710,180 @@ Function Start-WebNavigation{
           $uri = "https://$($uri)"
         }
       }
+      if($thisApp.Config.Spotify_WebPlayer){
+        [uri]$synchash.Spotify_WebPlayer_HTML = "$($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayerTemplate.html"
+      }
       #Lets not support youtube so use Invidious which also lets us do fullscreen embed
       if($uri -match "youtube.com"){
-        if($uri -match "v="){
+        if($uri -match "v=" -and $uri -notmatch 'embed'){
           $youtube_id = ($($uri) -split('v='))[1].trim()
           if($thisApp.Config.Use_invidious){
-            $uri = "https://yewtu.be/embed/$youtube_id`?&autoplay=1"
+            $uri = "https://yewtu.be/embed/$youtube_id`&autoplay=1"
+            $synchash.Use_invidious_url = $uri
           }else{
-            $uri = "https://www.youtube.com/embed/$youtube_id`?&autoplay=1"
+            $uri = "https://www.youtube.com/embed/$youtube_id`&autoplay=1&enablejsapi=1"
           }
-        }elseif($uri -match 'list='){
+        }elseif($uri -match 'list=' -and $uri -notmatch 'embed'){
           $playlist_id = ($($uri) -split('list='))[1].trim()
           if($thisApp.Config.Use_invidious){            
-            $uri = "https://yewtu.be/embed/videoseries?list=$playlist_id`?&autoplay=1"            
+            $uri = "https://yewtu.be/embed/videoseries?list=$playlist_id`&autoplay=1"
+            $synchash.Use_invidious_url = $uri            
           }else{
-            $uri = "https://www.youtube.com/embed/videoseries?list=$youtube_id`?&autoplay=1"
+            $uri = "https://www.youtube.com/embed/videoseries?list=$youtube_id`?&autoplay=1&enablejsapi=1"
           }                   
         }
-        <#        elseif($uri -notmatch '/embed/'){
-            $uri = "https://yewtu.be/"
-        } #>
       }elseif($uri -match "spotify.com"){
         if($uri -match 'open.spotify.com/track/'){
           $spotify_id = ($($uri) -split('open.spotify.com/track/'))[1].trim()
           if($thisApp.Config.Spotify_WebPlayer){
-            
-            <#            try{
-                $embedhtml = Get-content "$($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html"
-              
-                }catch{
-                write-ezlogs "An exception occurred getting content of $($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html" -showtime -catcherror $_
-            }#>
-            if($embedhtml){
-              $urihtml = ($embedhtml -replace '!!SPOTIFYACCESSTOKEN!!','BQB3lYEQmjzGqovJolrxq0yqslzUJhc4geBp95PwlEBrfFbiKC0l1bHXLovo0msVPOj1C5tIim8kw6K9x5ugd3GiUDMU-mGJMDE9MhIWxxYTMO0Oyl58DozujFWRqAVdGjomI1QX536ZS1aasgZEnaypNb6uRbz61Bea6e9TEMF7XqCUmPnCFLd8yB412226J5aetngHVHpmGT5451eN6DisVf8a1vwJt4vNr02XHRxEZ7jjpSNEJdejUDQcfZTvqij2teFXy1p48ih7_B8KvhYesKg6w8o' `
-              -replace '!!SPOTIFYMEDIAID!!',$spotify_id -replace '!!SPOTIFYMEDIATYPE!!','track' | out-string)
-              $synchash.Spotify_WebPlayer_URL = $urihtml
+            #$spotify_WebplayerHTML = "$($thisApp.Config.Temp_Folder)\\SpotifyWebPlayer.html"
+            #$spotify_WebplayerTemplateHTML = "$($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayerTemplate.html"           
+            try{
+              $Spotify_accesstoken = (Get-SpotifyAccessToken -ApplicationName $thisApp.Config.App_name -thisScript $thisScript)      
+              #$urihtml = Get-content $synchash.Spotify_WebPlayer_HTML -Force    
+            }catch{
+              write-ezlogs "An exception occurred getting spotifyaccesstoken" -showtime -catcherror $_
+            }
+            if($synchash.Spotify_WebPlayer_HTML -and $Spotify_accesstoken){
+              $synchash.Session_SpotifyToken = $Spotify_accesstoken
+              $synchash.Session_SpotifyId = $spotify_id
+              $synchash.Session_Spotifytype = 'track'
+              <#              $urihtml = ($embedhtml -replace '!!SPOTIFYACCESSTOKEN!!',$Spotify_accesstoken `
+                  -replace '!!SPOTIFYMEDIAID!!',$spotify_id -replace '!!SPOTIFYMEDIATYPE!!','track' | out-string)
+              $urihtml | out-file $spotify_WebplayerHTML -Force -encoding utf8#>
+              [uri]$uri = [uri]$synchash.Spotify_WebPlayer_HTML.AbsoluteUri
+              $synchash.Spotify_WebPlayer_URL = [uri]$synchash.Spotify_WebPlayer_HTML.AbsoluteUri
             }else{
               $uri = "https://open.spotify.com/embed/track/$spotify_id"
               $synchash.Spotify_WebPlayer_URL = $uri
-              $urihtml = $Null
+              $synchash.Spotify_WebPlayer_HTML = $Null
+              $synchash.Session_SpotifyToken = $null
             }          
           }           
         }elseif($uri -match 'open.spotify.com/playlist/'){
           $spotify_id = ($($uri) -split('open.spotify.com/playlist/'))[1].trim()
           if($thisApp.Config.Spotify_WebPlayer){
-            <#            try{
-                $embedhtml = Get-content "$($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html"            
-                }catch{
-                write-ezlogs "An exception occurred getting content of $($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayer.html" -showtime -catcherror $_
-            }#>
-            if($embedhtml){
-              $urihtml = ($embedhtml -replace '!!SPOTIFYACCESSTOKEN!!','BQB3lYEQmjzGqovJolrxq0yqslzUJhc4geBp95PwlEBrfFbiKC0l1bHXLovo0msVPOj1C5tIim8kw6K9x5ugd3GiUDMU-mGJMDE9MhIWxxYTMO0Oyl58DozujFWRqAVdGjomI1QX536ZS1aasgZEnaypNb6uRbz61Bea6e9TEMF7XqCUmPnCFLd8yB412226J5aetngHVHpmGT5451eN6DisVf8a1vwJt4vNr02XHRxEZ7jjpSNEJdejUDQcfZTvqij2teFXy1p48ih7_B8KvhYesKg6w8o' `
-              -replace '!!SPOTIFYMEDIAID!!',$spotify_id -replace '!!SPOTIFYMEDIATYPE!!','playlist' -replace '!!SPOTIFYMEDIATYPE!!','track' | out-string)
-              $synchash.Spotify_WebPlayer_URL = $urihtml
+            try{
+              #$spotify_WebplayerHTML = "$($thisApp.Config.Temp_Folder)\\SpotifyWebPlayer.html"
+              #$spotify_WebplayerTemplateHTML = "$($thisApp.Config.Current_Folder)\\Resources\\Spotify\\SpotifyWebPlayerTemplate.html"
+              $Spotify_accesstoken = (Get-SpotifyAccessToken -ApplicationName $thisApp.Config.App_name -thisScript $thisScript)            
+            }catch{
+              write-ezlogs "An exception occurred getting spotifyaccesstoken" -showtime -catcherror $_
+            }
+            if($synchash.Spotify_WebPlayer_HTML -and $Spotify_accesstoken){
+              $synchash.Session_SpotifyToken = $Spotify_accesstoken
+              $synchash.Session_SpotifyId = $spotify_id
+              $synchash.Session_Spotifytype = 'playlist'
+              <#              $urihtml = ($embedhtml -replace '!!SPOTIFYACCESSTOKEN!!',$Spotify_accesstoken `
+                  -replace '!!SPOTIFYMEDIAID!!',$spotify_id -replace '!!SPOTIFYMEDIATYPE!!','playlist' -replace '!!SPOTIFYMEDIATYPE!!','track' | out-string)
+              $urihtml | out-file $spotify_WebplayerHTML -Force -encoding utf8#>
+              #$synchash.Spotify_WebPlayer_URL = $synchash.Spotify_WebPlayer_HTML
+              [uri]$uri = [uri]$synchash.Spotify_WebPlayer_HTML.AbsoluteUri
+              $synchash.Spotify_WebPlayer_URL = [uri]$synchash.Spotify_WebPlayer_HTML.AbsoluteUri
             }else{
               $uri = "https://open.spotify.com/embed/track/$spotify_id"
               $synchash.Spotify_WebPlayer_URL = $uri
-              $urihtml = $Null
+              $synchash.Spotify_WebPlayer_HTML = $Null
+              $synchash.Session_SpotifyToken = $null
             }          
           }          
         }
+        [uri]$logo = "$($thisapp.Config.Current_Folder)\Resources\MusicPlayerFilltest.ico"
+        if($synchash.Volume_Slider.Value){
+          $volume = $synchash.Volume_Slider.Value / 100
+        }elseif($thisapp.Config.Media_Volume){
+          $Volume = $thisapp.Config.Media_Volume / 100
+        }
+
+        if($synchash.SpotifyStartScript_Webview2){
+          $synchash.Webview2.CoreWebview2.RemoveScriptToExecuteOnDocumentCreated($synchash.SpotifyStartScript_Webview2)
+        }
+        if($synchash.Session_SpotifyToken){
+          $synchash.SpotifyStartScript_Webview2 = @"
+const hash = window.location.hash
+.substring(1)
+.split('&')
+.reduce(function (initial, item) {
+  if (item) {
+    var parts = item.split('=');
+    initial[parts[0]] = decodeURIComponent(parts[1]);
+  }
+  return initial;
+}, {});
+window.location.hash = '';
+// Set token
+let _token = '$($synchash.Session_SpotifyToken)';
+
+// Set up the Web Playback SDK
+  var currState = {}
+  var SpotifyWeb = {}
+
+window.onSpotifyWebPlaybackSDKReady = () => {
+  SpotifyWeb.player = new Spotify.Player({
+    name: 'EZT-MediaPlayer',
+    getOAuthToken: cb => { cb(_token); }
+  });
+
+  // Error handling
+  SpotifyWeb.player.on('initialization_error', e => console.error(e));
+  SpotifyWeb.player.on('authentication_error', e => console.error(e));
+  SpotifyWeb.player.on('account_error', e => console.error(e));
+  SpotifyWeb.player.on('playback_error', e => console.error(e));
+
+  // Playback status updates
+  SpotifyWeb.currState = {}
+  SpotifyWeb.player.on('player_state_changed', state => {
+    //console.log(state);
+    //`$('#current-track').attr('src', state.track_window.current_track.album.images[0].url);
+      `$('#current-track-name').text(```${state.track_window.current_track.name} - EZT-MediaPlayer``);
+     SpotifyWeb.currState.current_track = state.track_window.current_track  
+     SpotifyWeb.currState.position = state.position;   
+     SpotifyWeb.currState.duration = state.duration;
+     SpotifyWeb.currState.updateTime = performance.now()
+     SpotifyWeb.currState.current_track = state.track_window.current_track;
+     let previous = state.track_window.previous_tracks[0];
+     console.log(state.track_window.current_track);
+     console.log(previous);
+    if (
+        SpotifyWeb.currState 
+        && previous
+        && previous.uid == state.track_window.current_track.uid
+        && state.paused
+        ) {
+        console.log('Track ended');
+        SpotifyWeb.currState.playbackstate = 0
+      } else{
+        SpotifyWeb.currState.playbackstate = 1
+        SpotifyWeb.currState.paused = state.paused;
+      }   
+    //console.log(state.track_window.previous_tracks);
+  });
+//SpotifyWeb.player.addListener('player_state_changed', state => {
+
+//});
+  // Ready
+  SpotifyWeb.player.on('ready', data => {
+    console.log('Ready with Device ID', data.device_id);
+    
+    // Play a track using our new device ID
+    play(data.device_id);
+  });
+
+  // Connect to the player!
+  SpotifyWeb.player.connect();
+
+}
+
+"@
+
+
+          $synchash.Webview2.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync($synchash.SpotifyStartScript_Webview2) 
+
+          write-ezlogs "$($synchash.Webview2.CoreWebView2.psobject.methods | where {$_ -match 'Add_'} | out-string)"
+
+        }
+
+        #write-ezlogs "Scriptid: $($scriptid | out-string)" -showtime
       }
       if($WebView2 -ne $null -and $WebView2.CoreWebView2 -ne $null){
         if($uri -match 'youtube.com' -or $uri -match 'google.com'){
@@ -1788,7 +1904,9 @@ Function Start-WebNavigation{
         #$synchash.WebView2.CoreWebView2.Navigate($synchash.Youtube_WebPlayer_URL)
       }
       else{
-             
+        if($webview.name -eq 'WebBrowser'){
+          $synchash.WebBrowser_url = $uri
+        }
         if($urihtml){
           write-ezlogs "Adding CoreWebView2InitializationCompleted with navigate to url: $($urihtml)" -enablelogs -Color cyan -showtime  
           $synchash.Youtube_WebPlayer_URL = $urihtml
@@ -2409,7 +2527,6 @@ Export-ModuleMember -Function @(
   'Grant-Ownership',
   'Open-FileDialog',
   'Open-FolderDialog',
-  'Get-SongInfo',
   'Test-KeyPress',
   'Show-NotifyBalloon',
   'Set-WindowState',

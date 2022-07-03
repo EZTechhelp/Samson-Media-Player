@@ -1,15 +1,28 @@
 <TabItem
- Header="Youtube Browser"
+ Header="Youtube"
          BorderBrush="gray"
          Visibility="Visible"
          Name="Youtube_Tabitem"
          IsEnabled="true"
 >
+<TabItem.HeaderTemplate>
+	<DataTemplate>
+		<StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Black">
+			<iconPacks:PackIconMaterial Kind="Youtube"
+			                            Margin="2 5 2 0"
+			                            Width="24"
+			                            Height="24"
+										Foreground="#FFFF3737"
+			                            VerticalAlignment="Top"/>
+			<Label Name="MediaPlayer_Links_Label" Content="Youtube" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="18"/>
+		</StackPanel>
+	</DataTemplate>
+</TabItem.HeaderTemplate>
 	<Grid Background="{StaticResource GridGradient}" VerticalAlignment="stretch" HorizontalAlignment="stretch" Opacity="1" Margin="0,0,0,0" AllowDrop="true">
-		<mah:ProgressRing Foreground="White" Name='Youtube_Progress_Ring' IsActive="false" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Panel.ZIndex="2"/>
+		<mah:ProgressRing Foreground="White" Name='Youtube_Progress_Ring' IsActive="false" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Panel.ZIndex="4"/>
 		<DataGrid Name="YoutubeTable" Margin="5,36,5,15" VerticalAlignment="Top" HorizontalAlignment="stretch" Opacity="1" SelectionUnit="FullRow" SelectionMode="Extended" AreRowDetailsFrozen="True" ScrollViewer.CanContentScroll="false"
-		          ItemsSource="{Binding Source=View,IsAsync=True}" EnableRowVirtualization="True" EnableColumnVirtualization="True" PresentationOptions:Freeze="True" MaxHeight="1600" MaxWidth="2560" VirtualizingStackPanel.ScrollUnit="Pixel"
-		          VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Standard" AllowDrop="true" dgx:DataGridFilter.IsAutoFilterEnabled="True" dgx:DataGridFilter.ContentFilterFactory="{StaticResource RegexContentFilterFactory}">
+		          ItemsSource="{Binding Source=View,IsAsync=True}" EnableRowVirtualization="True" EnableColumnVirtualization="false" PresentationOptions:Freeze="True" MaxHeight="1600" VirtualizingStackPanel.ScrollUnit="Pixel"
+		          VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Standard" AllowDrop="true" dgx:DataGridFilter.IsAutoFilterEnabled="True" dgx:DataGridFilter.ContentFilterFactory="{StaticResource RegexContentFilterFactory}" MaxWidth="{Binding ElementName=MediaLibrary_FlyoutControl, Path=Width}" MinHeight="{Binding ElementName=MediaLibrary_FlyoutControl, Path=Height}" HorizontalScrollBarVisibility="Auto" dd:DragDrop.IsDragSource="True" dd:DragDrop.DropHandler="{Binding}">
 			<!--             <DataGrid.GroupStyle>
                 <GroupStyle ContainerStyle="{StaticResource MahApps.Styles.GroupItem.DataGrid}">
                     <GroupStyle.HeaderTemplate>
@@ -70,7 +83,7 @@
 							<Setter Property="Template">
 								<Setter.Value>
 									<ControlTemplate>
-										<Expander IsExpanded="True" BorderThickness="0,0,0,1" Margin="0,5,0,5" Foreground="White" mah:HeaderedControlHelper.HeaderFontWeight="Bold" mah:HeaderedControlHelper.HeaderBackground="Black" 
+										<Expander IsExpanded="True" BorderThickness="0,0,0,1" Margin="0,0,0,5" Foreground="White" mah:HeaderedControlHelper.HeaderFontWeight="Bold" mah:HeaderedControlHelper.HeaderBackground="Black" 
 										mah:HeaderedControlHelper.HeaderForeground="LightGray" mah:HeaderedControlHelper.HeaderFontSize="14" Header="{Binding Path=Name}" Uid="{Binding}" Name="YoutubeTable_Expander" ExpandDirection="Down" 
 										ScrollViewer.CanContentScroll="false" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Standard" PresentationOptions:Freeze="True" Style="{StaticResource MetroExpanderWithNormalCase}">
 											<ItemsPresenter/>
@@ -83,7 +96,7 @@
 				</GroupStyle>
 			</DataGrid.GroupStyle>
 			<DataGrid.Columns>
-				<DataGridCheckBoxColumn EditingElementStyle="{DynamicResource MetroDataGridCheckBox}" Header="Select" Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay,IsAsync=True,UpdateSourceTrigger=PropertyChanged}" dgx:DataGridFilterColumn.IsFilterVisible="False"/>
+				<DataGridCheckBoxColumn Width="SizeToCells" EditingElementStyle="{DynamicResource MetroDataGridCheckBox}" Header=" " Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay,IsAsync=True,UpdateSourceTrigger=PropertyChanged}" dgx:DataGridFilterColumn.IsFilterVisible="False"/>
 			</DataGrid.Columns>
 			<!-- 				<DataGrid.Template>
 					<ControlTemplate>
@@ -93,11 +106,11 @@
 					</ControlTemplate>
 				</DataGrid.Template>	 -->
 		</DataGrid>
-		<StackPanel Orientation="Horizontal" Margin="10,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+		<StackPanel Orientation="Horizontal" Margin="5,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
 			<Label Content="Filter" Foreground="#ffffff" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top"/>
-			<TextBox Name="YoutubeFilterTextBox" mah:TextBoxHelper.ClearTextButton="True" HorizontalAlignment="Left" Height="26" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="172"/>
+			<TextBox Name="YoutubeFilterTextBox" mah:TextBoxHelper.ClearTextButton="True" HorizontalAlignment="Left" Height="26" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="100"/>
 			<Label Content="Show Only" Foreground="#ffffff" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top"/>
-			<ComboBox Margin="5,0,0,0" Name='Show_YoutubeMediaArtist_ComboBox' mah:TextBoxHelper.ClearTextButton="True" VerticalAlignment="Top" MinWidth="50" Background="Transparent" mah:TextBoxHelper.UseFloatingWatermark="True"
+			<ComboBox Margin="5,0,0,0" Name='Show_YoutubeMediaArtist_ComboBox' mah:TextBoxHelper.ClearTextButton="True" VerticalAlignment="Top" MinWidth="50" MaxWidth="100" Background="Transparent" mah:TextBoxHelper.UseFloatingWatermark="True"
 			          HorizontalAlignment="Left"
 			          IsEditable="False"
 			          SelectedIndex="-1">
@@ -106,14 +119,13 @@
 					             Visibility="Collapsed"/>
 				</ComboBox.ContextMenu>
 			</ComboBox>
-			<Button Name='Add_youtubeMedia_Button' FontSize="12" FontWeight="Bold" Margin="20,0,0,0" Height="25" Style="{StaticResource DetailButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Left" IsEnabled="true">
+			<Button Name='Add_youtubeMedia_Button' FontSize="12" FontWeight="Bold" Margin="20,0,0,0" Height="22" Style="{StaticResource DetailButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Left" IsEnabled="true">
 				<StackPanel Orientation="Horizontal">
-					<iconPacks:PackIconMaterial Kind="Plus"
-					                            Margin="4 4 2 4"
-					                            Width="16"
-					                            Height="16"
-					                            VerticalAlignment="Center"/>
-					<TextBlock Text="Add Youtube Video" Margin="2 2 2 2" VerticalAlignment="Center"/>
+					<iconPacks:PackIconMaterial Kind="PlusCircleOutline"
+												Margin="4 0 2 0"
+												Width="14"
+												Height="14" VerticalAlignment="Center"/>
+					<TextBlock Text="Add Video" Margin="2 2 2 2" VerticalAlignment="Center"/>
 				</StackPanel>
 			</Button>
 		</StackPanel>
@@ -121,20 +133,20 @@
 			<!-- 		<Button Height="23" HorizontalAlignment="Left"  
 		Name="Youtube_btnFirst" VerticalAlignment="Bottom" Width="40" 
 		Content="&lt;&lt;" Opacity="0.75" Margin="5,0,0,0"/> -->
-			<Button Height="23" VerticalAlignment="Top"
-			        Name="Youtube_btnPrev" Width="40"
+			<Button Height="5" VerticalAlignment="Top"
+			        Name="Youtube_btnPrev" Width="20"
 			        Opacity="0.75" Content="&lt;" Margin="5,5,0,0"/>
 			<Label Name="Youtube_lblpageInformation" HorizontalContentAlignment="Center"
 			       HorizontalAlignment="Left" Height="30" Width="60"
 			       VerticalContentAlignment="Center" VerticalAlignment="Top"/>
-			<Button Height="23" HorizontalAlignment="Right"
-			        Name="Youtube_btnNext" VerticalAlignment="Top" Width="40"
+			<Button Height="5" HorizontalAlignment="Right"
+			        Name="Youtube_btnNext" VerticalAlignment="Top" Width="20"
 			        Content="&gt;" Opacity="0.75" Margin="5,5,0,0"/>
 			<!-- 		<Button Height="23" HorizontalAlignment="Right"  
 		VerticalAlignment="Bottom" Width="40" Name="Youtube_btnLast" 
 		 Opacity="0.75" Content="&gt;&gt;" Margin="5,0,0,0"/> -->
 			<ComboBox Name="Youtube_cbNumberOfRecords" HorizontalAlignment="Left"
-			          VerticalAlignment="Top" Width="120" SelectedIndex="0" Margin="5,5,0,0"
+			          VerticalAlignment="Top" SelectedIndex="0" Margin="5,5,0,0"
 			          Opacity="0.75"/>
 			<Label Name="Youtube_Table_Total_Media" Content="Total Media |" HorizontalAlignment="Right" FontSize="16" Margin="10,0,0,0" Foreground="#ffffff" VerticalAlignment="Top"/>
 		</StackPanel>

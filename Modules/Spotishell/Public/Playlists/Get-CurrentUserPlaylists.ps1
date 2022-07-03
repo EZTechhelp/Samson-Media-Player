@@ -11,7 +11,6 @@ function Get-CurrentUserPlaylists {
   param(
     [string]
     $ApplicationName,
-    $thisApp,
     $thisScript,
     [switch]$First_Run      
   )
@@ -24,7 +23,7 @@ function Get-CurrentUserPlaylists {
 
   While ($Response.next) {
     if($thisApp){
-      $Response = Send-SpotifyCall -Method $Method -Uri $Response.next -ApplicationName $ApplicationName -thisApp $thisApp -thisScript $thisScript -First_Run $First_Run
+      $Response = Send-SpotifyCall -Method $Method -Uri $Response.next -ApplicationName $ApplicationName -thisScript $thisScript -First_Run $First_Run
     }else{
       $Response = Send-SpotifyCall -Method $Method -Uri $Response.next -ApplicationName $ApplicationName
     }    

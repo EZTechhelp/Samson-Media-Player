@@ -49,6 +49,7 @@ function Import-Media
   )
   try{
     $synchash.Window.Dispatcher.invokeAsync([action]{
+        $synchash.LocalMedia_Progress_Label.Visibility = 'Visible'
         $synchash.LocalMedia_Progress_Ring.isActive = $true
         $syncHash.MediaTable.isEnabled = $false               
     }.GetNewClosure()) 
@@ -121,7 +122,7 @@ function Import-Media
                 $null = $view.GroupDescriptions.Add($sub_groupdescription)
               }
             }elseif($view.GroupDescriptions){$view.GroupDescriptions.Clear()}     
-            $synchash.LocalMedia_CurrentView_Group = ($synchash.LocalMedia_View_Groups.GetEnumerator() | select * | where {$_.Name -eq $selecteditem} | select -last 1).Name
+            $synchash.LocalMedia_CurrentView_Group = ($synchash.LocalMedia_View_Groups | select * | where {$_.Name -eq $selecteditem} | select -last 1).Name
             $synchash.LocalMedia_View = $view                                          
             if($thisapp.Config.Verbose_logging){write-ezlogs "Current view group after: $($synchash.LocalMedia_CurrentView_Group)"}
           }
@@ -194,7 +195,7 @@ function Import-Media
               write-ezlogs "Provided File $Media_Path is not a valid media type" -showtime -warning
             }
           }
-          if($Path){
+          if($Path){          
             $synchash.All_local_Media = Get-LocalMedia -Media_Path $Path -Media_Profile_Directory $Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -Refresh_All_Media:$Refresh_All_Media
             #TODO: Cleanup old hashtable
             $all_local_media.media = $synchash.All_local_Media
@@ -223,6 +224,8 @@ function Import-Media
           'Artist'
           'Album'
           'Duration'
+          'hasVideo'
+          'Duration_ms'
           'Cover_art'
           'URL'
           'Size'
@@ -230,6 +233,7 @@ function Import-Media
           'Source'
           'IsExpanded'
           'ID'
+          'PlayCommand'
           'Group_Name'
           'Directory'
           'Profile_Path'
@@ -293,17 +297,19 @@ function Import-Media
                     }else{
                     $file_count = "NA"
                 }#>     
-                if($media.songinfo.duration){
+                if($media.songinfo.duration_ms){
+                  $duration = $media.songinfo.duration_ms
+                  $duration_ms = $media.songinfo.duration_ms
+                }elseif($media.songinfo.duration){
                   $duration = $media.songinfo.duration
-                }elseif($media.songinfo.length){
-                  $duration = $media.songinfo.length
+                  $duration_ms = $Null
                 }else{
                   $duration = $Null
                 }
                 if($media.songinfo.filesize){
                   $filesize = $media.songinfo.filesize
                 }elseif($media.length){
-                  $filesize = $media.length
+                  $filesize = [math]::round($media.Length /1mb, 2)
                 }else{
                   $filesize = $null
                 }
@@ -312,8 +318,12 @@ function Import-Media
               }      
               $synchash.LocalMedia_GroupName = 'Group_Name'
               #$Group_Name = 'Group_Name'
-          
-              #$Sub_GroupName ='Album'                 
+              #$Sub_GroupName ='Album'       
+              if($media.hasVideo -or $media.SongInfo.MediaTypes -match 'Video'){
+                $hasVideo = $true
+              }else{
+                $hasVideo = $false
+              }          
               if($Media_title){
                 #---------------------------------------------- 
                 #region Add Properties to datatable
@@ -327,6 +337,8 @@ function Import-Media
                   $newTableRow.Artist = $artist    
                   $newTableRow.Album = $media.songinfo.album
                   $newTableRow.Duration = $duration
+                  $newTableRow.hasVideo = $hasVideo
+                  $newTableRow.Duration_ms = $duration_ms
                   $newTableRow.URL = $media.url
                   $newTableRow.Size = $filesize
                   $newTableRow.Type = $media.type
@@ -353,7 +365,7 @@ function Import-Media
         }
 
         $Global:media_paging_Measure = measure-command {
-          if($thisApp.Config.MediaBrowser_Paging -ne $Null){
+          if($thisApp.Config.MediaBrowser_Paging -ne $Null -and @($Datatable.datatable).count -gt 1){
             $approxGroupSize = (@($Datatable.datatable).count | Measure-Object -Sum).Sum / $PerPage  
             #$page_size = [math]::ceiling($PerPage / $approxGroupSize) 
             $approxGroupSize = [math]::ceiling($approxGroupSize)
@@ -380,13 +392,12 @@ function Import-Media
             $itemsource = ($groupmembers.GetEnumerator() | select * | select -last 1).Value | Sort-object -Property {$_.Group_Name},{$_.Artist},{[int]$_.Number}
             $synchash.LocalMedia_View = [System.Windows.Data.CollectionViewSource]::GetDefaultView($itemsource) 
           }else{  
-            $synchash.LocalMedia_View = [System.Windows.Data.CollectionViewSource]::GetDefaultView($Datatable.datatable) 
+            $synchash.LocalMedia_View = $Datatable.datatable
           }
         }  
         if($thisApp.Config.startup_perf_timer){write-ezlogs " | Media_Paging_Measure: $($Media_Paging_Measure.Minutes)mins - $($Media_Paging_Measure.Seconds)secs - $($Media_Paging_Measure.Milliseconds)ms" -showtime} 
         if(($synchash.LocalMedia_View.psobject.properties.name | where {$_ -eq 'GroupDescriptions'}) -and $synchash.LocalMedia_GroupName){
-          try{
-         
+          try{        
             $groupdescription = New-object  System.Windows.Data.PropertyGroupDescription
             #$groupdescription.PropertyName = "."
             if($synchash.LocalMedia_View.GroupDescriptions){
@@ -408,7 +419,8 @@ function Import-Media
         }elseif($synchash.LocalMedia_View.GroupDescriptions){
           $synchash.LocalMedia_View.GroupDescriptions.Clear()
         }else{
-          write-ezlogs "[Import-Media] View group descriptions not available or null! Likely CollectionViewSource was empty!" -showtime -warning
+          $synchash.LocalMedia_View = $Datatable.datatable
+          write-ezlogs "[Import-Media] View group descriptions not available, setting view to datatable" -showtime -warning
         }
         $synchash.LocalMedia_TableUpdate_timer.start()       
         if($error){

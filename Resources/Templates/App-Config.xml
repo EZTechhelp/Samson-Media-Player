@@ -14,6 +14,7 @@
 	  <S N="Image_Cache_Path">$($thisScript.TempFolder)\\Images</S>
 	  <S N="EQPreset_Profile_Directory">%appdata%\EZT-MediaPlayer\\EQPresets</S>
 	  <S N="Playlist_Profile_Directory">%appdata%\EZT-MediaPlayer\\PlaylistProfiles</S>
+	  <S N="Temp_Folder">$($thisScript.TempFolder)</S>
       <B N="Use_Profile_Cache">true</B>
 	  <S N="Log_File"></S>
       <B N="Remove_webcache_onExit">false</B>
@@ -98,7 +99,16 @@
         </TN>
         <LST>
         </LST>
-      </Obj>  	  
+      </Obj>  	 
+      <Obj N="Twitch_Playlists" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+        </LST>
+      </Obj>	  
       <Obj N="Current_Playlist" RefId="1">
         <TN RefId="1">
           <T>System.Object[]</T>

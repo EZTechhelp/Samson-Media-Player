@@ -37,13 +37,16 @@ Add-Type -AssemblyName WindowsFormsIntegration
 #region close-WebLogin Function
 #----------------------------------------------
 function close-WebLogin (){
-
+  Param (
+    [switch]$Force
+  )
   try{
-    $MahDialog_hash.window.Dispatcher.Invoke("Normal",[action]{ 
-        $MahDialog_hash.window.close()
-        $MahDialog_hash.Dialog_WebView2.Dispose() 
-    })
-    #$null = $MahDialog_hash.window.close()  
+    if($MahDialog_hash.Window.isVisible -or $Force){
+      $MahDialog_hash.window.Dispatcher.Invoke("Normal",[action]{ 
+          $MahDialog_hash.window.close()
+          $MahDialog_hash.Dialog_WebView2.Dispose() 
+      })        
+    }
   }catch{
     write-ezlogs "An exception occurred in close-weblogin" -showtime -catcherror $_
   }
@@ -74,7 +77,7 @@ function Wait-Task {
 #---------------------------------------------- 
 #region Show-WebLogin Function
 #----------------------------------------------
-$global:MahDialog_hash = [hashtable]::Synchronized(@{})
+
 function Show-WebLogin{
   Param (
     [string]$SplashTitle,
@@ -84,12 +87,13 @@ function Show-WebLogin{
     [string]$Message,
     [switch]$First_Run,
     $Listener,
+    $Global:MahDialog_hash = [hashtable]::Synchronized(@{}),
     [string]$Message_2,
     [switch]$Verboselog,
     $thisApp,
     $thisScript
   )  
-  
+
   #Create session state for runspace
   $Global:Current_Folder = "$($thisApp.Config.Current_Folder)"
   if(!([System.IO.Directory]::Exists("$Current_Folder\\Views"))){
@@ -193,6 +197,9 @@ function Show-WebLogin{
       $MahDialog_hash.Dialog_WebView2.Add_NavigationCompleted(
         [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs]]{
           write-ezlogs "Navigation completed: $($MahDialog_hash.Dialog_WebView2.source | out-string)" -showtime 
+          if($MahDialog_hash.Dialog_WebView2.source.host -eq 'localhost' -and $MahDialog_hash.Dialog_WebView2.source.LocalPath -match '/auth/complete'){
+           close-WebLogin
+          }
           #$synchash.WebView2.CoreWebView2.PostWebMessageAsString("copy");  
         }
       )    
@@ -282,6 +289,9 @@ function Show-WebLogin{
       <#      if($hashsetup.Window.isVisible){
           $hashsetup.Window.Dispatcher.Invoke("Normal",[action]{ $hashsetup.Window.close() })
       }#>
+      if($synchash){
+        $synchash.MahDialog_hash = $MahDialog_hash
+      }
       [System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($MahDialog_hash.Window)
       [void][System.Windows.Forms.Application]::EnableVisualStyles()  
       $null = $MahDialog_hash.window.ShowDialog()

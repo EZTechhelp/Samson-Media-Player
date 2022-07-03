@@ -5,7 +5,8 @@
                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                  xmlns:sys="clr-namespace:System;assembly=mscorlib"
-                 xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+                 xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
+                 xmlns:cmd="clr-namespace:GalaSoft.MvvmLight.Command;assembly=GalaSoft.MvvmLight.Extras.WPF4"
                  xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
                  xmlns:wf="clr-namespace:Microsoft.Web.WebView2.WinForms;assembly=Microsoft.Web.WebView2.WinForms"
                  xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
@@ -20,18 +21,23 @@
                  xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
                  xmlns:vsm="clr-namespace:System.Windows;assembly=System.Windows"
                  xmlns:dgx="clr-namespace:DataGridExtensions;assembly=DataGridExtensions"
-                 xmlns:javiwpfcontrols="clr-namespace:Javi.ExplorerTreeView;assembly=Javi.ExplorerTreeView"
                  xmlns:controlzEx="urn:controlzex"
+				 xmlns:tb="http://www.hardcodet.net/taskbar"
+                 xmlns:simpleChildWindow="clr-namespace:MahApps.Metro.SimpleChildWindow;assembly=MahApps.Metro.SimpleChildWindow"				 
                  Name='Window'
                  VerticalAlignment="Stretch"
                  WindowStartupLocation="CenterScreen"
                  WindowTransitionsEnabled="True"
-                 BorderThickness="0"
+                 BorderThickness="1"
                  ShowTitleBar="True"
                  ShowSystemMenu="True"
                  Background="#EA000000"
                  MinWidth="900"
-                 MinHeight="600"
+				 Height="800"
+				 Width="1400"
+                 MinHeight="500"
+                 MaxWidth="{x:Static SystemParameters.PrimaryScreenWidth}"
+                 MaxHeight="{x:Static SystemParameters.PrimaryScreenHeight}"
                  ShowSystemMenuOnRightClick="True"
                  IsWindowDraggable="True"
                  UseNoneWindowStyle="true"
@@ -40,7 +46,9 @@
                  Title="{Binding Path=WindowTitle,IsAsync=True}"
                  LeftWindowCommandsOverlayBehavior="HiddenTitleBar"
                  RightWindowCommandsOverlayBehavior="HiddenTitleBar">
-
+	<!--   <WindowChrome.WindowChrome>
+    <WindowChrome NonClientFrameEdges="None" CornerRadius="3" />
+  </WindowChrome.WindowChrome> -->
 	<Window.TaskbarItemInfo>
 		<TaskbarItemInfo/>
 	</Window.TaskbarItemInfo>
@@ -65,11 +73,11 @@
 				      Margin="0,0,0,0"
 				      Background="Transparent"
 				      Grid.ColumnSpan="1"
-				      Name="Title_menu"
->
+				      Name="Title_menu">
 					<MenuItem Name="Title_menu_title" Width="30" Height="30" Background="Transparent">
 						<MenuItem.Icon>
-							<Image Name="Title_bar_Image" Source="{iconPacks:BootstrapIconsImage MusicPlayerFill, Brush={StaticResource MahApps.Brushes.Accent}}" RenderOptions.BitmapScalingMode="Fant" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+							<iconPacks:PackIconMaterial Name="Title_bar_Image" Kind="Menu" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+							<!-- <Image Name="Title_bar_Image" Source="{iconPacks:BootstrapIconsImage MusicPlayerFill, Brush={StaticResource MahApps.Brushes.Accent}}" RenderOptions.BitmapScalingMode="Fant" HorizontalAlignment="Center" VerticalAlignment="Top"/> -->
 						</MenuItem.Icon>
 						<MenuItem Header="Hide Title Bar" IsCheckable="True" IsChecked="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type mah:MetroWindow}}, Path=UseNoneWindowStyle}"/>
 						<MenuItem Header="ShowInTaskbar"
@@ -89,14 +97,6 @@
 							<MenuItem Header="Light"
 							          Name="Theme_Light">
 							</MenuItem>
-							<!-- 							<MenuItem Header="Blue"
-						          Name="Theme_Blue" IsCheckable="True" />
-							<MenuItem Header="Red"
-						          Name="Theme_Red" IsCheckable="True" />	
-							<MenuItem Header="Purple"
-						          Name="Theme_Purple" IsCheckable="True"/>	
-							<MenuItem Header="Emerald"
-						          Name="Theme_Emerald" IsCheckable="True"/>	 -->
 						</MenuItem>
 						<Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Effect="{StaticResource DropShadow}" OpacityMask="{StaticResource SeparatorGradient}" Height="1" VerticalAlignment="Bottom" Margin="0,0,0,0"/>
 						<MenuItem Header="Submit Feedback/Issues"
@@ -111,10 +111,11 @@
 			</DockPanel>
 		</mah:WindowCommands>
 	</mah:MetroWindow.LeftWindowCommands>
+	<Border>
 	<Grid Name="RootGrid" HorizontalAlignment="stretch" VerticalAlignment="Stretch" Background="#FF000000">
 		<Grid.RowDefinitions>
 			<RowDefinition Height="*"/>
-			<RowDefinition Height="400*"/>
+			<RowDefinition Height="200*"/>
 		</Grid.RowDefinitions>
 		<Grid.ColumnDefinitions>
 			<ColumnDefinition Name="RootGrid_Column1" Width="200*"/>
@@ -123,14 +124,14 @@
 		<Grid HorizontalAlignment="stretch" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Stretch" Name="MainGrid" Background="{StaticResource MainGridBackGradient}">
 			<Grid.RowDefinitions>
 				<RowDefinition Name="MainGrid_Row1" Height="0*"/>
-				<RowDefinition Name="MainGrid_Row2" Height="400*"/>
-				<RowDefinition Name="MainGrid_Row3" Height="400*"/>
+				<RowDefinition Name="MainGrid_Row2" Height="100*" MinHeight="50"/>
+				<RowDefinition Name="MainGrid_Row3" Height="100*" MinHeight="50"/>
 			</Grid.RowDefinitions>
 			<Grid.ColumnDefinitions>
-				<ColumnDefinition Name="MainGrid_Column1" Width="200*"/>
+				<ColumnDefinition Name="MainGrid_Column1" Width="100*"/>
 				<ColumnDefinition Name="MainGrid_Column2" Width="1*"/>
 				<ColumnDefinition Name="MainGrid_Column3" Width="200*"/>
-			</Grid.ColumnDefinitions>
+			</Grid.ColumnDefinitions>			
 			<mah:TransitioningContentControl Name="MainGrid_Background_Image_Source_transition" Grid.ColumnSpan="3" Grid.RowSpan="3" CustomVisualStatesName="CustomTransition" Transition="Custom">
 				<mah:TransitioningContentControl.CustomVisualStates>
 					<VisualState x:Name="CustomTransition">
@@ -169,7 +170,20 @@
 						<Setter Property="mah:TabControlHelper.UnderlineBrush" Value="White"/>
 					</Style>
 				</TabControl.Resources>
-				<TabItem Header="Media Player" BorderThickness="0,0,0,1" BorderBrush="Gray">
+				<TabItem Header="Media Player" BorderThickness="0,0,0,0" BorderBrush="Gray">
+					<TabItem.HeaderTemplate>
+						<DataTemplate>
+							<StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Black">
+								<iconPacks:PackIconBootstrapIcons Kind="MusicPlayerFill"
+								                                  Margin="2 5 2 0"
+								                                  Width="24"
+								                                  Height="24"
+								                                  Foreground="{DynamicResource MahApps.Brushes.Accent}"
+								                                  VerticalAlignment="Top"/>
+								<Label Name="MediaPlayer_Links_Label" Content="Media Player" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="18"/>
+							</StackPanel>
+						</DataTemplate>
+					</TabItem.HeaderTemplate>
 					<Grid Name="MediaPlayer_Grid" Background="Transparent" VerticalAlignment="stretch" HorizontalAlignment="stretch" Opacity="1">
 						<Grid.RowDefinitions>
 							<RowDefinition Height="70"/>
@@ -177,9 +191,55 @@
 							<RowDefinition Height="200*"/>
 						</Grid.RowDefinitions>
 						<Grid.ColumnDefinitions>
-							<ColumnDefinition Name="playlist_column" Width="200*"/>
+							<ColumnDefinition Name="playlist_column" Width="200*">
+								<ColumnDefinition.Style>
+									<Style>
+										<Style.Triggers>
+											<DataTrigger Binding="{Binding ElementName=PlayQueueFlyout, Path=IsOpen}" Value="True">
+												<DataTrigger.EnterActions>
+													<BeginStoryboard>
+														<Storyboard>
+															<WpfExtensions:GridLengthAnimation Storyboard.TargetProperty="Width" From="0" To="100*" Duration="0:0:0.2"/>
+														</Storyboard>
+													</BeginStoryboard>
+												</DataTrigger.EnterActions>
+												<DataTrigger.ExitActions>
+													<BeginStoryboard>
+														<Storyboard>
+															<WpfExtensions:GridLengthAnimation Storyboard.TargetProperty="Width" From="100*" To="0" Duration="0:0:0.2"/>
+														</Storyboard>
+													</BeginStoryboard>
+												</DataTrigger.ExitActions>
+											</DataTrigger>
+										</Style.Triggers>
+									</Style>
+								</ColumnDefinition.Style>
+							</ColumnDefinition>
 							<ColumnDefinition Name="VideoView_Column" Width="200*"/>
-							<ColumnDefinition Name="chat_column" Width="*"/>
+							<ColumnDefinition Name="chat_column" Width="*" MaxWidth="400" >
+								<ColumnDefinition.Style>
+									<Style>
+										<Style.Triggers>
+											<DataTrigger Binding="{Binding ElementName=chat_WebView2, Path=Visibility}" Value="Visible">
+												<DataTrigger.EnterActions>
+													<BeginStoryboard>
+														<Storyboard>
+															<WpfExtensions:GridLengthAnimation Storyboard.TargetProperty="Width" From="0" To="75" Duration="0:0:0.2"/>
+														</Storyboard>
+													</BeginStoryboard>
+												</DataTrigger.EnterActions>
+												<DataTrigger.ExitActions>
+													<BeginStoryboard>
+														<Storyboard>
+															<WpfExtensions:GridLengthAnimation Storyboard.TargetProperty="Width" From="75" To="0" Duration="0:0:0.2"/>
+														</Storyboard>
+													</BeginStoryboard>
+												</DataTrigger.ExitActions>
+											</DataTrigger>
+										</Style.Triggers>
+									</Style>
+								</ColumnDefinition.Style>
+							</ColumnDefinition>
 						</Grid.ColumnDefinitions>
 						<DockPanel Name="MediaPlayer_DockPanel" Grid.Row="0" VerticalAlignment="Top" Grid.ColumnSpan="4" HorizontalAlignment="Stretch">
 							<ToolBar DockPanel.Dock="Top" Height="40" HorizontalAlignment="Stretch">
@@ -195,10 +255,15 @@
 								<Button Name="Play_Media" ToolTip="Start Playback">
 									<iconPacks:PackIconMaterial Kind="Play" Width="16" Height="16"/>
 								</Button>
-								<Separator Margin="10,0,0,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Height="20"/>
-								<Button Name='Shuffle_Playback_Button' ToolTip="Shuffle Playback" Margin="10,5,0,0" BorderThickness="0" Style="{StaticResource FilterButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Left" IsEnabled="true">
-									<iconPacks:PackIconMaterial Kind="ShuffleDisabled" Width="16" Height="16" Name="Shuffle_Icon"/>
+								<Button Name="Next_Media" ToolTip="Skip to Next Media">
+									<iconPacks:PackIconMaterial Kind="SkipNext" Width="16" Height="16"/>
 								</Button>
+								<Separator Margin="10,0,0,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Height="20"/>
+								<StackPanel Orientation="Horizontal" Margin="0,0,0,0" HorizontalAlignment="Left">
+									<Button Name='Shuffle_Playback_Button' ToolTip="Shuffle Playback" BorderThickness="0" Margin="10,0,0,0" Background="Transparent" Style="{StaticResource FilterButtonStyle}" IsEnabled="true">
+										<iconPacks:PackIconMaterial Kind="ShuffleDisabled" Width="16" Height="16" Name="Shuffle_Icon"/>
+									</Button>
+								</StackPanel>
 								<Separator Margin="10,0,0,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Height="20"/>
 								<StackPanel Orientation="Horizontal" Margin="0,0,0,0" HorizontalAlignment="Left">
 									<Button Name="Volume_button" Style="{StaticResource FilterButtonStyle}" ToolTip="Volume" Margin="10,0,0,0" Background="Transparent" BorderThickness="0">
@@ -208,11 +273,27 @@
 								</StackPanel>
 								<Separator Margin="10,0,0,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Height="20"/>
 								<StackPanel Orientation="Horizontal" Margin="0,0,0,0" HorizontalAlignment="Left">
-									<Button Name="Options_button" Style="{StaticResource FilterButtonStyle}" ToolTip="Media Options" Margin="10,0,0,0" Background="Transparent" BorderThickness="0">
-										<iconPacks:PackIconEvaIcons Name="Options_icon" Kind="OptionsOutline" Width="16" Height="16"/>
-									</Button>
+								<ToggleButton Name="Options_button" Style="{StaticResource ToggleButtonStyle}" ToolTip="Audio Options" Margin="10,0,0,0" Height="30" Width="30" IsEnabled="true" HorizontalAlignment="Left">
+										<iconPacks:PackIconEvaIcons Name="Options_icon" Kind="OptionsOutline" Width="16" Height="16" Margin="0 2 0 0"/>										
+									</ToggleButton>										
 								</StackPanel>
+								<Separator Margin="10,0,0,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Height="20"/>						
+									<ToggleButton Name="PlayQueue_button" Style="{StaticResource ToggleButtonStyle}" ToolTip="Play Queue" Margin="10,0,0,0" Height="30" Width="30" IsEnabled="true" HorizontalAlignment="Left">
+										<iconPacks:PackIconMaterial Name="PlayQueue_icon" Kind="AnimationPlayOutline" Width="16" Height="16" Margin="0 2 0 0"/>
+									</ToggleButton>					
 								<Separator Margin="10,0,0,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Height="20"/>
+								<ToggleButton Name='Show_Playlists_Button' FontWeight="Bold" Height="30" Width="30" Margin="10,0,0,0" ToolTip="Playlists" Style="{StaticResource ToggleButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Left" IsEnabled="true" >
+									<StackPanel Orientation="Horizontal">
+										<iconPacks:PackIconMaterial Kind="PlaylistMusic"
+																	Margin="0 2 0 0"
+																	Width="16"
+																	Height="16"
+																	Name="Show_Playlists_Button_icon"
+																	VerticalAlignment="Center"/>
+										<!-- <TextBlock Text="Playlists" Margin="2 2 2 2" VerticalAlignment="Center"/> -->
+									</StackPanel>
+								</ToggleButton>		
+								<Separator Margin="10,0,0,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Height="20"/>								
 								<TextBox Name="Media_URL" Margin="10,0,0,0" MaxWidth="400" ToolTip="Media URL" BorderThickness="0" IsReadOnly="true" Background="Transparent" HorizontalAlignment="Left"/>
 							</ToolBar>
 						</DockPanel>
@@ -226,142 +307,304 @@
 							<Separator Margin="0,0,0,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Height="20"/>
 							<Button Name='Chat_View_Button' BorderThickness="0" DockPanel.Dock="Right" Style="{StaticResource FilterButtonStyle}" IsEnabled="true" Background="Transparent">
 								<iconPacks:PackIconMaterial Kind="Chat" ToolTip="Chat View" Width="16" Height="16" Name="Chat_Icon"/>
-							</Button>
+							</Button>							
 						</StackPanel>
-						<StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="5,20,0,0" VerticalAlignment="Bottom" Background="Transparent">
-							<iconPacks:PackIconMaterial Kind="PlaylistMusic"
-							                            Margin="2 5 2 0"
-							                            Width="32"
-							                            Height="32"
-							                            VerticalAlignment="Top"/>
-							<Label Name="MediaPlayer_Links_Label" Content="Playlists" FontWeight="Bold" HorizontalAlignment="Center" FontSize="14"/>
-						</StackPanel>
-						<ScrollViewer VerticalAlignment="Stretch" VerticalScrollBarVisibility="Visible" AttachedBehavior:ScrollAnimationBehavior.IsEnabled="True" AttachedBehavior:ScrollAnimationBehavior.TimeDuration="00:00:00.30" AttachedBehavior:ScrollAnimationBehavior.PointsToScroll="30" Style="{StaticResource MahApps.Styles.ScrollViewer}" Background="Transparent" Grid.Column="0" Grid.Row="1" Margin="0,5,0,0" WpfExtensions:DragDropExtension.ScrollOnDragDrop="True" HorizontalAlignment="Stretch">
-							<TreeView Margin="2,0,0,0"
-							          MinWidth="100"
-							          BorderThickness="1"
-							          Name='PlayQueue_TreeView'
-							          AllowDrop="True"
-							          HorizontalAlignment="Stretch"
-							          Background="Transparent"
-							          dd:DragDrop.IsDragSource="True"
-							          dd:DragDrop.IsDropTarget="True"
-							          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-							          ScrollViewer.VerticalScrollBarVisibility="Disabled"
-							          dd:DragDrop.DropHandler="{Binding}"
-							          Style="{StaticResource MahApps.Styles.TreeView.Virtualized}">
-								<TreeView.Resources>
-									<!-- <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="SteelBlue" /> -->
-									<Style TargetType="{x:Type TreeViewItem}">
+						<Grid Name="PlayQueue_Flyout_Grid" VerticalAlignment="Stretch" Grid.Column="0" Grid.Row="0" Grid.RowSpan="3" Margin="0,40,0,0" MinWidth="100">
+							<mah:FlyoutsControl Name="PlayQueue_Flyout" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" BorderThickness="0,1,1,0" BorderBrush="Black">
+								<mah:Flyout Header="Play Queue" Background="Transparent" HorizontalContentAlignment="Left" Position="Left" IsOpen="True" MinWidth="100" Name="PlayQueueFlyout" AnimateOpacity="True" CloseButtonVisibility="hidden" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" TitleVisibility="Hidden" Theme="Adapt">
+									<mah:Flyout.HeaderTemplate>
+										<DataTemplate>
+										</DataTemplate>
+									</mah:Flyout.HeaderTemplate>
+									<StackPanel Margin="0,0,0,0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Stretch">
+										<Button Name="PlayQueueFlyout_button" Style="{StaticResource FilterButtonStyle}" HorizontalAlignment="Left" ToolTip="Close Play Queue" Margin="0,3,0,0" Background="Transparent" VerticalAlignment="Top" BorderThickness="0">
+											<iconPacks:PackIconMaterial Kind="ChevronLeftCircleOutline" Width="16" Height="16" Name="PlayQueueFlyout_Icon"/>
+										</Button>
+										<DataGrid Name="PlayQueue_TreeView" Margin="0,5,0,0" Background="Transparent" VerticalAlignment="stretch" HorizontalAlignment="stretch" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto"
+										          SelectionUnit="FullRow" SelectionMode="Single" IsEnabled="True" ScrollViewer.CanContentScroll="false" VirtualizingStackPanel.ScrollUnit="Pixel" VirtualizingPanel.IsVirtualizingWhenGrouping="True" dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True" dd:DragDrop.DropHandler="{Binding}"
+										          VirtualizingPanel.VirtualizationMode="Standard" AllowDrop="true" MaxWidth="{Binding ElementName=PlayQueue_Flyout, Path=ActualWidth}" ColumnWidth="Auto">
+											<DataGrid.Resources>
+												<Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}" TargetType="{x:Type DataGridColumnHeader}">
+													<Setter Property="Background" Value="Transparent"/>
+													<Setter Property="BorderThickness" Value="2"/>
+												</Style>
+												<Style TargetType="{x:Type TextBlock}" x:Key="WrapText">
+													<Setter Property="TextWrapping" Value="Wrap"/>
+												</Style>
+												<Style TargetType="ScrollViewer">
+													<Setter Property="AttachedBehavior:ScrollAnimationBehavior.IsEnabled" Value="True"/>
+													<Setter Property="AttachedBehavior:ScrollAnimationBehavior.TimeDuration" Value="00:00:00.30"/>
+													<Setter Property="AttachedBehavior:ScrollAnimationBehavior.PointsToScroll" Value="35"/>
+												</Style>
+												<Style TargetType="DataGridCell">
+													<Style.Triggers>
+														<Trigger Property="IsSelected"
+														         Value="True">
+															<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent}"/>
+															<Setter Property="BorderThickness" Value="0"/>
+															<Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.IdealForeground}"/>
+															<Setter Property="BorderBrush" Value="Transparent"/>
+														</Trigger>
+													</Style.Triggers>
+												</Style>
+												<!-- 								<Style TargetType="{x:Type DataGridRow}">
+									<Style.Resources>
+										<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+										<SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent"/>
+										<SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="Black"/>
+										<SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="Black"/>
+									</Style.Resources>
+								</Style> -->
+												<!-- 	<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/> -->
+											</DataGrid.Resources>
+											<DataGrid.RowStyle>
+												<Style TargetType="DataGridRow">
+													<Style.Triggers>
+														<Trigger Property="IsSelected" Value="True">
+															<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent}"/>
+															<Setter Property="BorderThickness" Value="0"/>
+															<Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.IdealForeground}"/>
+															<Setter Property="BorderBrush" Value="Transparent"/>
+														</Trigger>
+													</Style.Triggers>
+												</Style>
+											</DataGrid.RowStyle>
+											<DataGrid.ColumnHeaderStyle>
+												<Style TargetType="{x:Type DataGridColumnHeader}">
+													<Setter Property="FontWeight" Value="Bold"/>
+													<Setter Property="FontSize" Value="14"/>
+													<Setter Property="HorizontalAlignment" Value="Left"/>
+													<Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.IdealForeground}"/>
+													<Setter Property="Background" Value="Transparent"/>
+													<Setter Property="HorizontalContentAlignment" Value="Center"/>
+												</Style>
+											</DataGrid.ColumnHeaderStyle>
+											<DataGrid.Columns>
+												<!-- 								<DataGridTextColumn Binding="{Binding Path=Header.Number,IsAsync=True}" Width="SizeToCells">
+									<DataGridTextColumn.Header>
+										<TextBlock FontWeight="Bold" Text="#"/>
+									</DataGridTextColumn.Header>
+								</DataGridTextColumn> -->
+	
+												<DataGridTemplateColumn Header="Play Queue" Width="SizeToCells" MinWidth="80" IsReadOnly="True">
+													<DataGridTemplateColumn.CellTemplate>
+														<DataTemplate>
+															<!-- 																		<DoubleAnimation  Storyboard.TargetName="PlayIcon_Transform"  Storyboard.TargetProperty="(ScaleTransform.ScaleX)" From="0.95" To="1.2" Duration="0:0:0.5" RepeatBehavior="Forever" AutoReverse="True"/>  
+																		<DoubleAnimation  Storyboard.TargetName="PlayIcon_Transform"  Storyboard.TargetProperty="(ScaleTransform.ScaleY)" From="0.95" To="1.2" Duration="0:0:0.5" RepeatBehavior="Forever" AutoReverse="True"/> -->
+															<!--RoutedEvent="Button.Click" -->
+															<Border BorderBrush="{Binding Path=Header.BorderBrush,IsAsync=True}" Height="25" BorderThickness="{Binding Path=Header.BorderThickness,IsAsync=True}" SnapsToDevicePixels="true">
+																<StackPanel Orientation="Horizontal">
+																	<Button IsEnabled="{Binding Path=Header.PlayIconEnabled,IsAsync=True}" Height="25" Name="PlayIconButton" VerticalAlignment="Center" Command="{Binding Path=Header.PlayCommand}" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}" RenderTransformOrigin="0.5,0.5">
+																		<Grid SnapsToDevicePixels="true" Margin="0,0,0,0">
+																			<TextBlock Text="{Binding Path=Header.Number,IsAsync=True}" HorizontalAlignment="Center" FontSize="{Binding Path=Header.NumberFontSize,IsAsync=True}" Visibility="{Binding Path=Header.NumberVisibility,IsAsync=True}" RenderTransformOrigin="0.5,0.5"/>
+																			<iconPacks:PackIconFontAwesome Kind="{Binding Path=Header.PlayIconPause,IsAsync=True}" HorizontalAlignment="Left" Visibility="{Binding Path=Header.PlayIconPauseVisibility,IsAsync=True}" Margin="0,0,0,0" BorderThickness="0" RenderTransformOrigin="0.5,0.5"/>
+																			<iconPacks:PackIconFontAwesome Kind="{Binding Path=Header.PlayIcon,IsAsync=True}" HorizontalAlignment="Left" Visibility="{Binding Path=Header.PlayIconVisibility,IsAsync=True}" Margin="0,0,0,0" BorderThickness="0" RenderTransformOrigin="0.5,0.5" Style="{StaticResource AnimationImageStyle}">
+										                                        <iconPacks:PackIconFontAwesome.RenderTransform>
+																					<RotateTransform x:Name="PlayIcon_Transform" />
+																				</iconPacks:PackIconFontAwesome.RenderTransform> 
+																				<iconPacks:PackIconFontAwesome.Triggers>																		
+															                     <EventTrigger RoutedEvent="Loaded" >
+																						<BeginStoryboard Name="PlayIcon_Storyboard">
+																							<Storyboard>
+																								<DoubleAnimation Storyboard.TargetName="PlayIcon_Transform" Storyboard.TargetProperty="(RotateTransform.Angle)" From="0.0" To="360" Duration="0:0:0.3" RepeatBehavior="{Binding Path=Header.PlayIconRepeat,Mode=OneWay}" AutoReverse="false"/>
+																							</Storyboard>
+																						</BeginStoryboard>
+																					</EventTrigger> 
+													                             <EventTrigger RoutedEvent="Unloaded">
+																						<StopStoryboard BeginStoryboardName="PlayIcon_Storyboard" />
+																					</EventTrigger> 																					
+																				</iconPacks:PackIconFontAwesome.Triggers> 
+																			</iconPacks:PackIconFontAwesome>
+																		</Grid>
+																	</Button>
+																	<Image Source="{Binding Path=Uid,IsAsync=True}" Height="18" Width="18" Stretch="Uniform"/>
+																	<TextBlock Text="{Binding Path=Header.Title,IsAsync=True}" FontSize="{Binding Path=Header.FontSize,IsAsync=True}" FontWeight="{Binding Path=Header.FontWeight,IsAsync=True}" ToolTip="{Binding Path=Header.Title,IsAsync=True}" Margin="5,3,0,0"/>
+																	<TextBlock Text="{Binding Path=Header.Status,IsAsync=True}" FontStyle="{Binding Path=Header.FontStyle,IsAsync=True}" Foreground="{Binding Path=Header.FontColor,IsAsync=True}" FontWeight="{Binding Path=Header.FontWeight,IsAsync=True}" FontSize="{Binding Path=Header.FontSize,IsAsync=True}" Margin="5,3,0,0"/>
+																	<TextBlock Text="{Binding Path=Header.Status_Msg,IsAsync=True}" FontStyle="{Binding Path=Header.Status_FontStyle,IsAsync=True}" Foreground="{Binding Path=Header.Status_FontColor,IsAsync=True}" FontWeight="{Binding Path=Header.Status_FontWeight,IsAsync=True}" FontSize="{Binding Path=Header.Status_FontSize,IsAsync=True}" Margin="5,3,0,0"/>
+																</StackPanel>
+															</Border>
+														</DataTemplate>
+													</DataGridTemplateColumn.CellTemplate>
+												</DataGridTemplateColumn>
+												<!-- 								<DataGridTextColumn Binding="{Binding Path=Header.Title,IsAsync=True}" Width="SizeToCells">
+									<DataGridTextColumn.Header>
+										<TextBlock FontWeight="Bold" Text="Title"/>
+									</DataGridTextColumn.Header>
+								</DataGridTextColumn> -->
+											</DataGrid.Columns>
+										</DataGrid>
+									</StackPanel>
+								</mah:Flyout>
+							</mah:FlyoutsControl>					
+						</Grid>					
+						<!-- <GridSplitter Name="PlaylistSplitter" Height="3" Background="#D82E3E55" Opacity="0.8" HorizontalAlignment="Stretch" Margin="0,5,0,0" ResizeDirection="Rows" Grid.Row="2" VerticalAlignment="Top" OpacityMask="{StaticResource SeparatorGradient}"/> -->
+						<!-- 						<GridSplitter Name="Playlist_GridSplitter" Width="4" Background="#D82E3E55" Opacity="0.8" HorizontalAlignment='Right' Margin="0,0,0,0" ResizeDirection="Columns" Grid.Row="1" Grid.RowSpan="2" VerticalAlignment="Stretch" Grid.Column="0" OpacityMask="{StaticResource VerticalSeparatorGradient}"/> -->
+						<Grid Name="VLC_Grid" Background="#01000000" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="1" Grid.RowSpan="2" Visibility="Visible" VerticalAlignment="Stretch" Margin="0,0,0,20">
+							<Grid.RowDefinitions>
+								<RowDefinition Name="VLC_Grid_Row0" Height="200*"/>
+								<RowDefinition Name="VLC_Grid_Row1" Height="*"/>
+								<RowDefinition Name="VLC_Grid_Row2" Height="*"/>
+							</Grid.RowDefinitions>		
+								<mah:FlyoutsControl Name="VideoView_Flyout" Background="#02000000" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Visibility='Hidden' Margin="0,0,0,0" OpacityMask="{StaticResource SeparatorGradient}" Panel.ZIndex="5">
+										<mah:Flyout IsModal="false" HorizontalContentAlignment="Stretch" Position="Bottom" IsOpen="false" Name="VideoViewFlyout" AnimateOpacity="True" CloseButtonVisibility="Hidden" VerticalAlignment="Bottom" HorizontalAlignment="Center" TitleVisibility="Visible">
+											<Grid VerticalAlignment="stretch" Background="{StaticResource VideoViewGradient}" HorizontalAlignment="Stretch">
+												<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+													<Button Name='VideoView_Play_Button' IsEnabled="true" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Width="42" Style="{StaticResource VideoViewButtonStyle}">
+														<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Play_Icon' Kind="PauseCircleOutline" Height="32" Width="32" BorderThickness="0"/>
+													</Button>
+													<Button Name='VideoView_Stop_Button' IsEnabled="true" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Width="42" Style="{StaticResource VideoViewButtonStyle}">
+														<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Stop_Icon' Kind="StopCircleOutline" Height="32" Width="32" BorderThickness="0"/>
+													</Button>
+													<Button Name='VideoView_LargePlayer_Button' IsEnabled="true" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Width="42" Style="{StaticResource VideoViewButtonStyle}">
+														<iconPacks:PackIconCodicons Style="{StaticResource VideoViewCodiconsStyle}" Name='VideoView_LargePlayer_Icon' Kind="ScreenFull" Height="32" Width="32" BorderThickness="0"/>
+																														
+													</Button>
+												</StackPanel>
+											</Grid>
+										</mah:Flyout>
+									</mah:FlyoutsControl> 							
+							<Image Name="MediaView_Image" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Stretch="Uniform" MaxWidth="600" Panel.ZIndex="5"/>							
+							<vlc:VideoView x:Name="VideoView" Grid.Row="0" HorizontalAlignment="Stretch" Background="#01000000" Visibility="hidden">
+								<Grid x:Name="VideoView_Grid" Background="#02000000" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="-10,0,65,0">	
+							
+
+								</Grid>
+							</vlc:VideoView>
+							<TextBlock Name="MediaView_TextBlock" HorizontalAlignment="Center" FontSize="14" VerticalAlignment="Center" Grid.Row="2" Margin="0,0,0,0"/>
+						</Grid>
+						<Slider Minimum="0" Name="MediaPlayer_Slider" Value="{Binding Value,IsAsync=True}" AutoToolTipPlacement="BottomRight" TickPlacement="BottomRight" TickFrequency="1" VerticalAlignment="Bottom" Background="Transparent" Margin="10,45,10,5" Grid.Row="2" Grid.Column="1" Orientation="Horizontal" MaxWidth="{Binding ElementName=VideoViewFlyout, Path=Width}" Style="{DynamicResource MahApps.Styles.Slider.Flat}"/>
+<!-- 						<GridSplitter Name="Chat_GridSplitter" Width="3" Background="#D82E3E55" HorizontalAlignment='Left' Margin="0,0,0,0" ResizeDirection="Columns" Grid.Row="1" Grid.RowSpan="2" VerticalAlignment="Stretch" Grid.Column="2" OpacityMask="{StaticResource VerticalSeparatorGradient}" Opacity="0.8"/> -->
+						<!--             <Separator Name = "Chat_View_Separator" Margin="10,0,0,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Visibility="{Binding ElementName=Chat_View, Path=Visibility}"/> -->
+						<Grid Name="ChatWebview2_Grid" Grid.Column="2" Grid.Row="1"  Grid.RowSpan="2" Margin="10,0,5,0" MaxHeight="{Binding ElementName=MediaPlayer_Grid, Path=ActualHeight}">
+							 <wv2:WebView2  Name="chat_WebView2" MaxWidth="500" Visibility="hidden" VerticalAlignment="Stretch"/> 
+						</Grid>												
+					</Grid>
+				</TabItem>
+				<Tabitem Name="WebBrowser_REPLACE_ME"/>
+				<Tabitem Name="SETTINGS_REPLACE_ME"/>
+			</mah:MetroTabControl>
+			<GridSplitter Name="GridSplitter" Height="4" Panel.ZIndex="3" Background="#D82E3E55" HorizontalAlignment="Stretch" Margin="0,0,0,0" ResizeDirection="Rows" Grid.Row="2" VerticalAlignment="Top" Grid.ColumnSpan="4" OpacityMask="{StaticResource SeparatorGradient}" Opacity="0.9"/>
+			<StackPanel Orientation="Horizontal" Margin="10,15,10,0" Grid.ColumnSpan="4" Grid.Row="1" HorizontalAlignment="Right" Panel.ZIndex="3">	
+				<Button Name='Brew_Button' FontSize="12" FontWeight="Bold" Height="25" Style="{StaticResource FilterButtonStyle}" Background="transparent" VerticalAlignment="Top" IsEnabled="true" ToolTip="Take Screenshot of Current Video and App" >
+					<StackPanel Orientation="Horizontal">
+						<iconPacks:PackIconMaterial Kind="Beer"
+						                            Margin="0 0 0 0"
+						                            Width="16"
+						                            Height="16"
+						                            VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>			
+				<Button Name='ScreenShot_Button' FontSize="12" FontWeight="Bold" Height="25" Style="{StaticResource FilterButtonStyle}" Background="transparent" VerticalAlignment="Top" IsEnabled="true" ToolTip="Take Screenshot of Current Video and App" >
+					<StackPanel Orientation="Horizontal">
+						<iconPacks:PackIconMaterial Kind="MonitorScreenshot"
+						                            Margin="0 0 0 0"
+						                            Width="16"
+						                            Height="16"
+						                            VerticalAlignment="Center"/>
+					</StackPanel>
+				</Button>			
+				<ToggleButton Name='Show_Library_Button' FontSize="12" FontWeight="Bold" Height="25" Style="{StaticResource ToggleButtonStyle}" VerticalAlignment="Top" IsEnabled="true" >
+					<StackPanel Orientation="Horizontal">
+						<iconPacks:PackIconMaterial Kind="FilmstripBoxMultiple"
+						                            Margin="0 0 0 0"
+						                            Width="16"
+						                            Height="16"
+						                            VerticalAlignment="Center"/>
+						<TextBlock Text="Media Library" Margin="2 2 2 2" VerticalAlignment="Center"/>
+					</StackPanel>
+				</ToggleButton>
+				<ToggleButton  Name='Add_Media_Button' FontSize="12" FontWeight="Bold" Height="25" Style="{StaticResource ToggleButtonStyle}" VerticalAlignment="Top" IsEnabled="true">
+					<StackPanel Orientation="Horizontal">
+						<iconPacks:PackIconBootstrapIcons Kind="CollectionFill"
+						                                  Margin="0 0 0 0"
+						                                  Width="16"
+						                                  Height="16"
+						                                  VerticalAlignment="Center"/>
+						<TextBlock Text="Manage Sources" Margin="2 2 2 2" VerticalAlignment="Center"/>
+					</StackPanel>
+				</ToggleButton >
+			</StackPanel>
+			<StackPanel Orientation="Horizontal" Margin="10,15,10,0" Grid.Column="2" Grid.Row="2" HorizontalAlignment="Right" Panel.ZIndex="3">		
+				<ToggleButton Name='Expand_Library_Button' FontSize="12" FontWeight="Bold" Height="25" Style="{StaticResource ToggleButtonStyle}" VerticalAlignment="Top" IsEnabled="true" >
+					<StackPanel Orientation="Horizontal">
+						<iconPacks:PackIconMaterial Kind="ArrowCollapseDown"
+													Name="Expand_Library_Icon"
+						                            Margin="0 0 0 0"
+						                            Width="16"
+						                            Height="16"
+						                            VerticalAlignment="Center"/>
+						<TextBlock Text="Media Library" Margin="2 2 2 2" VerticalAlignment="Center"/>
+					</StackPanel>
+				</ToggleButton>
+			</StackPanel>			
+			<mah:FlyoutsControl Name="MediaLibrary_FlyoutControl" Background="Transparent" HorizontalAlignment="Stretch"  VerticalAlignment="Stretch" Panel.ZIndex="2" Grid.Row="2" Grid.ColumnSpan="3">
+				<mah:Flyout IsModal="false" HorizontalContentAlignment="Stretch" Position="Bottom" IsOpen="true" Margin="0,0,0,0" Name="MediaLibrary_Flyout" AnimateOpacity="True" CloseButtonVisibility="Hidden" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" TitleVisibility="Hidden" Background="Transparent">
+                <Grid Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+					<Grid.ColumnDefinitions>
+							<ColumnDefinition Name="MediaLibrary_Column1" Width="100*">
+								<ColumnDefinition.Style>
+									<Style>
 										<Style.Triggers>
-											<Trigger Property="IsSelected" Value="True">
-												<Setter Property="Foreground" Value="{x:Static SystemColors.HighlightTextBrush}"/>
-											</Trigger>
-											<MultiTrigger>
-												<MultiTrigger.Conditions>
-													<Condition Property="IsSelected" Value="true"/>
-													<Condition Property="IsSelectionActive" Value="false"/>
-												</MultiTrigger.Conditions>
-												<Setter Property="Foreground" Value="Black"/>
-											</MultiTrigger>
+											<DataTrigger Binding="{Binding ElementName=Playlists_Flyout, Path=IsOpen}" Value="True">
+												<DataTrigger.EnterActions>
+													<BeginStoryboard>
+														<Storyboard>
+															<WpfExtensions:GridLengthAnimation Storyboard.TargetProperty="Width" From="0" To="100*" Duration="0:0:0.2"/>
+														</Storyboard>
+													</BeginStoryboard>
+												</DataTrigger.EnterActions>
+												<DataTrigger.ExitActions>
+													<BeginStoryboard>
+														<Storyboard>
+															<WpfExtensions:GridLengthAnimation Storyboard.TargetProperty="Width" From="100*" To="0" Duration="0:0:0.2"/>
+														</Storyboard>
+													</BeginStoryboard>
+												</DataTrigger.ExitActions>
+											</DataTrigger>
 										</Style.Triggers>
-										<Setter Property="HeaderTemplate">
-											<Setter.Value>
-												<DataTemplate>
-													<StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-														<Image Name="img"
-														       Width="20"
-														       Height="20"
-														       Stretch="Uniform"
-														       Source="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Uid}"
-/>
-														<TextBlock Text="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.Title}"
-														           FontWeight="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.FontWeight}"
-														           ToolTip="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.Title}" Margin="5,0"/>
-														<TextBlock Text="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.Status}"
-														           FontStyle="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.FontStyle}"
-														           Foreground="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.FontColor}"
-														           FontWeight="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.FontWeight}"
-														           FontSize="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.FontSize}" Margin="5,0"/>
-														<TextBlock Text="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.Status_msg}"
-														           FontStyle="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.Status_FontStyle}"
-														           Foreground="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.Status_FontColor}"
-														           FontWeight="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.Status_FontWeight}"
-														           FontSize="{Binding
-												   RelativeSource={RelativeSource
-												   Mode=FindAncestor,
-												   AncestorType={x:Type TreeViewItem}},
-												   Path=Header.Status_FontSize}" Margin="0,0"/>
-													</StackPanel>
-												</DataTemplate>
-											</Setter.Value>
-										</Setter>
 									</Style>
-								</TreeView.Resources>
-								<TreeView.Template>
-									<ControlTemplate>
-										<Border BorderBrush="{TemplateBinding BorderBrush}" Grid.ColumnSpan="2" BorderThickness="0" SnapsToDevicePixels="true">
-											<ItemsPresenter/>
-										</Border>
-									</ControlTemplate>
-								</TreeView.Template>
-							</TreeView>
-						</ScrollViewer>
-						<GridSplitter Name="PlaylistSplitter" Height="3" Background="#D82E3E55" Opacity="0.8" HorizontalAlignment="Stretch" Margin="0,5,0,0" ResizeDirection="Rows" Grid.Row="2" VerticalAlignment="Top" OpacityMask="{StaticResource SeparatorGradient}"/>
-						<ScrollViewer VerticalAlignment="Stretch" VerticalScrollBarVisibility="Visible" AttachedBehavior:ScrollAnimationBehavior.IsEnabled="True" AttachedBehavior:ScrollAnimationBehavior.TimeDuration="00:00:00.30" AttachedBehavior:ScrollAnimationBehavior.PointsToScroll="30" Background="Transparent" Grid.Column="0" Grid.Row="2" Margin="0,10,5,0" WpfExtensions:DragDropExtension.ScrollOnDragDrop="True">
-							<StackPanel>
+								</ColumnDefinition.Style>
+							</ColumnDefinition>						
+						<ColumnDefinition Name="MediaLibrary_Column2" Width="1*"/>
+						<ColumnDefinition Name="MediaLibrary_Column3" Width="200*"/>
+					</Grid.ColumnDefinitions>
+			<mah:FlyoutsControl Name="Playlists_FlyoutControl" Background="Transparent" HorizontalAlignment="Stretch"  Margin="10,5,0,10"  VerticalAlignment="Stretch"  Grid.Column="0" >
+				<mah:Flyout IsModal="false" HorizontalContentAlignment="Stretch" Position="Left" IsOpen="true" Margin="0,0,0,0" Name="Playlists_Flyout" AnimateOpacity="True" CloseButtonVisibility="Hidden" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" TitleVisibility="Hidden" Background="Transparent">
+			<mah:MetroTabControl Style="{DynamicResource MahApps.Styles.TabControl.Animated}" Effect="{StaticResource DropShadow}" Name="Playlist_TabControl" Background="Black" VerticalAlignment="Bottom" BorderThickness="0,1,0,0" BorderBrush="#050607" HorizontalAlignment="stretch"  mah:TabControlHelper.Underlined="SelectedTabitem" TabStripPlacement="Top" MinHeight="{Binding ElementName=Playlists_FlyoutControl, Path=ActualHeight}">
+				<TabControl.Resources>
+					<Style TargetType="{x:Type TabItem}" BasedOn="{StaticResource {x:Type TabItem}}">
+						<Setter Property="mah:TabControlHelper.Underlined" Value="TabPanel"/>
+						<Setter Property="mah:TabControlHelper.UnderlinePlacement" Value="Right"/>
+						<Setter Property="mah:TabControlHelper.UnderlineBrush" Value="White"/>
+					</Style>
+				</TabControl.Resources>
+				<TabItem Header="Playlists" Name="Playlist_Tab" Background="Black" >
+					<TabItem.HeaderTemplate>
+						<DataTemplate>
+							<StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Black">
+								<iconPacks:PackIconMaterial Kind="PlaylistMusic"
+								                            Margin="2 5 2 0"
+								                            Width="32"
+								                            Height="32"
+								                            VerticalAlignment="Top"/>
+								<Label Name="MediaPlayer_Links_Label" Content="Playlists" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="16"/>
+							</StackPanel>
+						</DataTemplate>
+					</TabItem.HeaderTemplate>
+					<Grid Background="{StaticResource GridGradient}" Name="Playlist_Grid" VerticalAlignment="stretch" HorizontalAlignment="stretch" Opacity="1" Margin="0,0,0,0" AllowDrop="true" >
+						<mah:ProgressRing Foreground="White" Name='Playlist_Progress_Ring' IsActive="false" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Panel.ZIndex="2"/>
+						<Button Name='New_Playlist_Button' FontSize="12" ToolTip="New Playlist" FontWeight="Bold" Margin="5,3,0,0" Height="22" Style="{StaticResource FilterButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Left" IsEnabled="true">
+							<StackPanel Orientation="Horizontal">
+								<iconPacks:PackIconMaterial Kind="PlaylistPlus"
+								                            Margin="2 2 2 0"
+								                            Width="16"
+								                            Height="16"
+								                            VerticalAlignment="Center"/>
+								<TextBlock Text="Playlist" Margin="2 0 2 0" VerticalAlignment="Center"/>
+							</StackPanel>
+						</Button>
+						<ScrollViewer Name="Playlists_ScrollViewer" VerticalAlignment="Top" HorizontalAlignment="stretch" Background="#FF252525" VerticalScrollBarVisibility="Visible" AttachedBehavior:ScrollAnimationBehavior.IsEnabled="True" BorderBrush="Black" BorderThickness="1,1,1,1" AttachedBehavior:ScrollAnimationBehavior.TimeDuration="00:00:00.30" AttachedBehavior:ScrollAnimationBehavior.PointsToScroll="30" Margin="5,30,5,15" WpfExtensions:DragDropExtension.ScrollOnDragDrop="True" MinHeight="{Binding ElementName=Playlists_FlyoutControl, Path=Height}">
+							<StackPanel Name="Playlists_StackPanel">
 								<!-- 						<javiwpfcontrols:ExplorerTreeView  
 							  Root="{Binding RootSelection}"
 							  SelectedFolder="{Binding SelectedFolder, Mode=OneWayToSource}"
@@ -485,430 +728,233 @@
 									</TreeView.Template>
 								</TreeView>
 							</StackPanel>
-
 						</ScrollViewer>
-						<GridSplitter Name="Playlist_GridSplitter" Width="4" Background="#D82E3E55" Opacity="0.8" HorizontalAlignment='Right' Margin="0,0,0,0" ResizeDirection="Columns" Grid.Row="1" Grid.RowSpan="2" VerticalAlignment="Stretch" Grid.Column="0" OpacityMask="{StaticResource VerticalSeparatorGradient}"/>
-						<Grid Name="VLC_Grid" Background="#01000000" HorizontalAlignment="Stretch" Grid.Column="1" Grid.Row="1" Grid.RowSpan="2" Visibility="Visible" VerticalAlignment="Stretch" Margin="0,0,0,20">
-							<Grid.RowDefinitions>
-								<RowDefinition Name="VLC_Grid_Row0" Height="200*"/>
-								<RowDefinition Name="VLC_Grid_Row1" Height="*"/>
-								<RowDefinition Name="VLC_Grid_Row2" Height="*"/>
-							</Grid.RowDefinitions>
-							<vlc:VideoView x:Name="VideoView" Grid.Row="0" HorizontalAlignment="Stretch" Background="#01000000" Visibility="hidden">
-								<Grid x:Name="VideoView_Grid" Background="#02000000" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="-10,0,65,0">
-									<mah:FlyoutsControl Name="Test_Flyout" Background="#02000000" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,0" OpacityMask="{StaticResource SeparatorGradient}" Panel.ZIndex="2">
-										<mah:Flyout IsModal="false" HorizontalContentAlignment="Stretch" Position="Bottom" IsOpen="false" Name="TestFlyout" AnimateOpacity="True" CloseButtonVisibility="Hidden" VerticalAlignment="Bottom" HorizontalAlignment="Center" TitleVisibility="Visible">
-											<Grid VerticalAlignment="stretch" Background="{StaticResource VideoViewGradient}" HorizontalAlignment="Stretch">
-												<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-													<Button Name='VideoView_Play_Button' IsEnabled="true" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Width="42" Style="{StaticResource VideoViewButtonStyle}">
-														<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Play_Icon' Kind="PauseCircleOutline" Height="32" Width="32" BorderThickness="0"/>
-													</Button>
-													<Button Name='VideoView_Stop_Button' IsEnabled="true" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Width="42" Style="{StaticResource VideoViewButtonStyle}">
-														<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Stop_Icon' Kind="StopCircleOutline" Height="32" Width="32" BorderThickness="0"/>
-													</Button>
-													<Button Name='VideoView_LargePlayer_Button' IsEnabled="true" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Width="42" Style="{StaticResource VideoViewButtonStyle}">
-														<iconPacks:PackIconCodicons Style="{StaticResource VideoViewCodiconsStyle}" Name='VideoView_LargePlayer_Icon' Kind="ScreenFull" Height="32" Width="32" BorderThickness="0"/>
-														<!-- ScreenNormal -->
-													</Button>
-												</StackPanel>
-											</Grid>
-										</mah:Flyout>
-									</mah:FlyoutsControl>
-								</Grid>
-							</vlc:VideoView>
-							<Image Name="MediaView_Image" HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Stretch="Uniform" MaxWidth="600"/>
-							<TextBlock Name="MediaView_TextBlock" HorizontalAlignment="Center" FontSize="14" VerticalAlignment="Center" Grid.Row="2" Margin="0,0,0,0"/>
-						</Grid>
-						<Slider Minimum="0" Name="MediaPlayer_Slider" Value="{Binding Value,IsAsync=True}" AutoToolTipPlacement="BottomRight" TickPlacement="BottomRight" TickFrequency="2" VerticalAlignment="Bottom" Background="Transparent" Grid.Column="1" Margin="10,45,10,5" Grid.Row="2" Orientation="Horizontal" Style="{DynamicResource MahApps.Styles.Slider.Flat}"/>
-						<GridSplitter Name="Chat_GridSplitter" Width="3" Background="#D82E3E55" HorizontalAlignment='Left' Margin="0,0,0,0" ResizeDirection="Columns" Grid.Row="1" Grid.RowSpan="2" VerticalAlignment="Stretch" Grid.Column="2" OpacityMask="{StaticResource VerticalSeparatorGradient}" Opacity="0.8"/>
-						<!--             <Separator Name = "Chat_View_Separator" Margin="10,0,0,0" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Visibility="{Binding ElementName=Chat_View, Path=Visibility}"/> -->
-						<wv2:WebView2 Name="chat_WebView2" Grid.Column="2" Grid.Row="1" Grid.RowSpan="2" Margin="10,0,5,0" Visibility="hidden" VerticalAlignment="Stretch"/>
 					</Grid>
 				</TabItem>
-				<Tabitem Name="WebBrowser_REPLACE_ME"/>
-				<Tabitem Name="SETTINGS_REPLACE_ME"/>
 			</mah:MetroTabControl>
-			<GridSplitter Name="GridSplitter" Height="4" Background="#D82E3E55" HorizontalAlignment="Stretch" Margin="0,0,0,0" ResizeDirection="Rows" Grid.Row="2" VerticalAlignment="Top" Grid.ColumnSpan="4" OpacityMask="{StaticResource SeparatorGradient}" Opacity="0.9"/>
-			<Button Name='Add_Media_Button' FontSize="12" FontWeight="Bold" Margin="700,15,0,0" Grid.ColumnSpan="3" Height="25" Style="{StaticResource DetailButtonStyle}" Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Left" IsEnabled="true">
-				<StackPanel Orientation="Horizontal">
-					<iconPacks:PackIconBootstrapIcons Kind="CollectionFill"
-					                                  Margin="4 4 2 4"
-					                                  Width="16"
-					                                  Height="16"
-					                                  VerticalAlignment="Center"/>
-					<TextBlock Text="Manage Sources" Margin="2 2 2 2" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button>
-			<mah:MetroTabControl Style="{StaticResource MahApps.Styles.TabControl}" Effect="{StaticResource DropShadow}" Name="MainGrid_Bottom_TabControl" Margin="10,5,10,10" Background="black" VerticalAlignment="stretch" BorderThickness="0,1,0,0" BorderBrush="#050607" HorizontalAlignment="stretch" Grid.Row="2" Grid.ColumnSpan="4" mah:TabControlHelper.Underlined="SelectedTabitem" TabStripPlacement="Top">
-				<TabControl.Resources>
-					<Style TargetType="{x:Type TabItem}" BasedOn="{StaticResource {x:Type TabItem}}">
-						<Setter Property="mah:TabControlHelper.Underlined" Value="TabPanel"/>
-						<Setter Property="mah:TabControlHelper.UnderlinePlacement" Value="Right"/>
-						<Setter Property="mah:TabControlHelper.UnderlineBrush" Value="White"/>
-					</Style>
-				</TabControl.Resources>
-				<TabItem Header="Local Media Browser">
-					<Grid Background="{StaticResource GridGradient}" Name="Local_Media_Grid" VerticalAlignment="stretch" HorizontalAlignment="stretch" Opacity="1" Margin="0,0,0,0" AllowDrop="true">
-						<mah:ProgressRing Foreground="White" Name='LocalMedia_Progress_Ring' IsActive="false" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Panel.ZIndex="2"/>
-						<DataGrid Name="MediaTable" Margin="5,36,5,15" VerticalAlignment="Top" HorizontalAlignment="stretch" Opacity="1" SelectionUnit="FullRow" SelectionMode="Extended" ScrollViewer.CanContentScroll="false"
-						          VirtualizingPanel.IsVirtualizingWhenGrouping="True" EnableColumnVirtualization="true" EnableRowVirtualization="true" VirtualizingPanel.VirtualizationMode="Standard" MaxHeight="1600" MaxWidth="2560" RowHeight="30"
-						          AllowDrop="true" PresentationOptions:Freeze="True" VirtualizingStackPanel.ScrollUnit="Pixel" ItemsSource="{Binding Source=View,IsAsync=True}" dgx:DataGridFilter.IsAutoFilterEnabled="True"
-						          dgx:DataGridFilter.ContentFilterFactory="{StaticResource RegexContentFilterFactory}">
-							<DataGrid.Resources>
-								<ControlTemplate x:Key="{x:Static dgx:DataGridFilter.IconTemplateKey}">
-									<Path Data="M0,0 L10,0 6,4 6,9 4,9 4,4 Z" Fill="{DynamicResource MahApps.Brushes.RightArrowFill}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2,0"/>
-								</ControlTemplate>
-								<Style TargetType="ScrollViewer">
-									<Setter Property="AttachedBehavior:ScrollAnimationBehavior.IsEnabled" Value="True"/>
-									<Setter Property="AttachedBehavior:ScrollAnimationBehavior.TimeDuration" Value="00:00:00.30"/>
-									<Setter Property="AttachedBehavior:ScrollAnimationBehavior.PointsToScroll" Value="35"/>
+				</mah:Flyout>
+			</mah:FlyoutsControl>					
+<!-- 						<GridSplitter Name="BottomGridSplitter" Width="4" Background="#D82E3E55" HorizontalAlignment="Center" Margin="0,0,0,0" ResizeDirection="Columns"  VerticalAlignment="Stretch" Grid.Column="1" OpacityMask="{StaticResource VerticalSeparatorGradient}" Opacity="0.9"/>  -->				
+						<mah:MetroTabControl Style="{DynamicResource MahApps.Styles.TabControl.Animated}" Effect="{StaticResource DropShadow}" Name="MainGrid_Bottom_TabControl" Grid.Column="2" Margin="10,5,10,10" Background="black" VerticalAlignment="Stretch" BorderThickness="0,1,0,0" BorderBrush="#050607" HorizontalAlignment="Stretch" mah:TabControlHelper.Underlined="SelectedTabitem" TabStripPlacement="Top" MinHeight="{Binding ElementName=MediaLibrary_FlyoutControl, Path=ActualHeight}" >
+							<TabControl.Resources>
+								<Style TargetType="{x:Type TabItem}" BasedOn="{StaticResource {x:Type TabItem}}">
+									<Setter Property="mah:TabControlHelper.Underlined" Value="TabPanel"/>
+									<Setter Property="mah:TabControlHelper.UnderlinePlacement" Value="Right"/>
+									<Setter Property="mah:TabControlHelper.UnderlineBrush" Value="White"/>
 								</Style>
-								<Style TargetType="DataGridColumnHeader">
-									<Setter Property="Background" Value="Black"/>
-									<Setter Property="Foreground" Value="White"/>
-								</Style>
-							</DataGrid.Resources>
-							<DataGrid.CellStyle>
-								<Style TargetType="DataGridCell">
-									<Style.Triggers>
-										<Trigger Property="IsSelected"
-										         Value="True">
-											<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent}"/>
-											<Setter Property="BorderBrush" Value="Transparent"/>
-											<Setter Property="BorderThickness" Value="0"/>
-											<Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.IdealForeground}"/>
-										</Trigger>
-									</Style.Triggers>
-								</Style>
-							</DataGrid.CellStyle>
-							<DataGrid.RowStyle>
-								<Style TargetType="DataGridRow">
-									<Style.Triggers>
-										<Trigger Property="IsSelected" Value="True">
-											<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent}"/>
-											<Setter Property="BorderThickness" Value="0"/>
-											<Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.IdealForeground}"/>
-											<Setter Property="BorderBrush" Value="Transparent"/>
-										</Trigger>
-									</Style.Triggers>
-								</Style>
-							</DataGrid.RowStyle>
-							<DataGrid.GroupStyle>
-								<GroupStyle>
-									<GroupStyle.ContainerStyle>
-										<Style TargetType="{x:Type GroupItem}">
-											<Setter Property="Template">
-												<Setter.Value>
-													<ControlTemplate>
-														<Expander IsExpanded="{Binding Items[0].IsExpanded,IsAsync=True}" BorderThickness="0,0,0,1" Margin="0,0,0,5" Foreground="White" mah:HeaderedControlHelper.HeaderForeground="LightGray" mah:HeaderedControlHelper.HeaderFontSize="14"
-														          Uid="{Binding}" Name="MediaTable_Expander" ExpandDirection="Down" ScrollViewer.CanContentScroll="false" Background="Transparent"
-														          VirtualizingPanel.IsVirtualizingWhenGrouping="True" mah:HeaderedControlHelper.HeaderBackground="Black" VirtualizingPanel.VirtualizationMode="Standard" PresentationOptions:Freeze="True" Style="{StaticResource MetroExpanderWithNormalCase}">
-															<Expander.Header>
-																<!-- <StackPanel Orientation="Horizontal" Margin="0,0,0,0" HorizontalAlignment="Stretch" Background="Transparent"> -->
-																<!-- <Image Source="{Binding Items[0].Cover_Art,IsAsync=True}" Height="20" Width="20" Margin="0,5,0,0" RenderOptions.BitmapScalingMode="Fant" HorizontalAlignment="Left" VerticalAlignment="Center"/> -->
-																<TextBlock Text="{Binding Items[0].Artist,IsAsync=True}" Foreground="LightGray" FontSize="14" Background="Transparent" FontWeight="Bold" HorizontalAlignment="Left"/>
-																<!-- </StackPanel> -->
-															</Expander.Header>
-															<ItemsPresenter/>
-														</Expander>
-													</ControlTemplate>
-												</Setter.Value>
-											</Setter>
-										</Style>
-									</GroupStyle.ContainerStyle>
-								</GroupStyle>
-							</DataGrid.GroupStyle>
-							<DataGrid.Columns>
-								<DataGridCheckBoxColumn  Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay,,IsAsync=True,UpdateSourceTrigger=PropertyChanged}" Header="Select" dgx:DataGridFilterColumn.IsFilterVisible="False"/>
-							</DataGrid.Columns>
-						</DataGrid>
-						<StackPanel Orientation="Horizontal" Margin="10,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
-						<Label Content="Filter" Foreground="#ffffff" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top"/>
-						<TextBox Name="FilterTextBox" mah:TextBoxHelper.ClearTextButton="True" HorizontalAlignment="Left" Height="26"  TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="172"/>
-						<Label Content="Show Only" Foreground="#ffffff" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top"/>
-						<ComboBox Margin="5,0,0,0" Name='Show_LocalMediaArtist_ComboBox' mah:TextBoxHelper.ClearTextButton="True" VerticalAlignment="Top" MinWidth="50" Background="Transparent" mah:TextBoxHelper.UseFloatingWatermark="True"
-						          HorizontalAlignment="Left"
-						          IsEditable="False"
-						          SelectedIndex="-1">
-							<ComboBox.ContextMenu>
-								<ContextMenu IsEnabled="False"
-								             Visibility="Collapsed"/>
-							</ComboBox.ContextMenu>
-						</ComboBox>
-						<Button Name='Add_localMedia_Button' FontSize="12" FontWeight="Bold" Margin="20,0,0,0" Height="25" Style="{StaticResource DetailButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Left" IsEnabled="true">
-							<StackPanel Orientation="Horizontal">
-								<iconPacks:PackIconMaterial Kind="Plus"
-								                            Margin="4 4 2 4"
-								                            Width="16"
-								                            Height="16"
-								                            VerticalAlignment="Center"/>
-								<TextBlock Text="Add Media" Margin="2 2 2 2" VerticalAlignment="Center"/>
-							</StackPanel>
-						</Button>						
-						</StackPanel>
-						<StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Margin="0,0,0,0" VerticalAlignment="Top">
-							<!-- 		<Button Height="23" HorizontalAlignment="Left"  
+							</TabControl.Resources>
+							<TabItem Header="Local Media" Name="LocalMedia_Browser_Tab" HorizontalAlignment="stretch" Margin="0,0,0,0" >
+								<TabItem.HeaderTemplate>
+									<DataTemplate>
+										<StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Black">
+											<iconPacks:PackIconMaterial Kind="Harddisk"
+											                            Margin="2 5 2 0"
+											                            Width="24"
+											                            Height="24"
+											                            VerticalAlignment="Top"/>
+											<Label Name="MediaPlayer_Links_Label" Content="Local Media" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="18"/>
+										</StackPanel>
+									</DataTemplate>
+								</TabItem.HeaderTemplate>
+								<Grid Background="{StaticResource GridGradient}" Name="Local_Media_Grid" VerticalAlignment="stretch"  Opacity="1" Margin="0,0,0,0" AllowDrop="true">
+								  <StackPanel Name="LocalMedia_Progress_StackPanel" Grid.Row="1" Grid.ColumnSpan="2" VerticalAlignment="Center" Panel.ZIndex="4">
+								   <Label Name="LocalMedia_Progress_Label" Content="Scanning Local Media..." FontWeight="Bold" Visibility="Hidden" VerticalAlignment="Center" Foreground="White" FontSize="18" HorizontalAlignment="Center"/>
+									<mah:ProgressRing Foreground="White" Name='LocalMedia_Progress_Ring' IsActive="false" VerticalAlignment="Center" />								  
+								  </StackPanel>
+									<DataGrid Name="MediaTable" Margin="5,36,5,15" VerticalAlignment="Top" HorizontalAlignment="stretch" Opacity="1" SelectionUnit="FullRow" SelectionMode="Extended" ScrollViewer.CanContentScroll="false"
+									          VirtualizingPanel.IsVirtualizingWhenGrouping="True" EnableColumnVirtualization="false" EnableRowVirtualization="true" VirtualizingPanel.VirtualizationMode="Standard"  RowHeight="30"
+									          AllowDrop="true" PresentationOptions:Freeze="True" VirtualizingStackPanel.ScrollUnit="Pixel" ItemsSource="{Binding}" dgx:DataGridFilter.IsAutoFilterEnabled="True"
+									          dgx:DataGridFilter.ContentFilterFactory="{StaticResource RegexContentFilterFactory}" MaxWidth="{Binding ElementName=MediaLibrary_FlyoutControl, Path=Width}" MinHeight="{Binding ElementName=MediaLibrary_FlyoutControl, Path=Height}" HorizontalScrollBarVisibility="Auto" dd:DragDrop.IsDragSource="True" dd:DragDrop.DropHandler="{Binding}" dd:DragDrop.UseDefaultDragAdorner="True"> 
+										<DataGrid.Resources>
+											<ControlTemplate x:Key="{x:Static dgx:DataGridFilter.IconTemplateKey}">
+												<Path Data="M0,0 L10,0 6,4 6,9 4,9 4,4 Z" Fill="{DynamicResource MahApps.Brushes.RightArrowFill}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="2,0"/>
+											</ControlTemplate>
+											<Style TargetType="ScrollViewer">
+												<Setter Property="AttachedBehavior:ScrollAnimationBehavior.IsEnabled" Value="True"/>
+												<Setter Property="AttachedBehavior:ScrollAnimationBehavior.TimeDuration" Value="00:00:00.30"/>
+												<Setter Property="AttachedBehavior:ScrollAnimationBehavior.PointsToScroll" Value="35"/>
+											</Style>
+											<Style TargetType="DataGridColumnHeader">
+												<Setter Property="Background" Value="Black"/>
+												<Setter Property="Foreground" Value="White"/>
+											</Style>
+										</DataGrid.Resources>
+										<DataGrid.CellStyle>
+											<Style TargetType="DataGridCell">
+												<Style.Triggers>
+													<Trigger Property="IsSelected"
+													         Value="True">
+														<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent}"/>
+														<Setter Property="BorderBrush" Value="Transparent"/>
+														<Setter Property="BorderThickness" Value="0"/>
+														<Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.IdealForeground}"/>
+													</Trigger>
+												</Style.Triggers>
+											</Style>
+										</DataGrid.CellStyle>
+										<DataGrid.RowStyle>
+											<Style TargetType="DataGridRow">
+												<Style.Triggers>
+													<Trigger Property="IsSelected" Value="True">
+														<Setter Property="Background" Value="{DynamicResource MahApps.Brushes.Accent}"/>
+														<Setter Property="BorderThickness" Value="0"/>
+														<Setter Property="Foreground" Value="{DynamicResource MahApps.Brushes.IdealForeground}"/>
+														<Setter Property="BorderBrush" Value="Transparent"/>
+													</Trigger>
+												</Style.Triggers>
+											</Style>
+										</DataGrid.RowStyle>
+										<DataGrid.GroupStyle>
+											<GroupStyle>
+												<GroupStyle.ContainerStyle>
+													<Style TargetType="{x:Type GroupItem}">
+														<Setter Property="Template">
+															<Setter.Value>
+																<ControlTemplate>
+																	<Expander IsExpanded="{Binding Items[0].IsExpanded,IsAsync=True}" BorderThickness="0,0,0,1" Margin="0,0,0,5" Foreground="White" mah:HeaderedControlHelper.HeaderForeground="LightGray" mah:HeaderedControlHelper.HeaderFontSize="14"
+																	          Uid="{Binding}" Name="MediaTable_Expander" ExpandDirection="Down" ScrollViewer.CanContentScroll="false" Background="Transparent"
+																	          VirtualizingPanel.IsVirtualizingWhenGrouping="True" mah:HeaderedControlHelper.HeaderBackground="Black" VirtualizingPanel.VirtualizationMode="Standard" PresentationOptions:Freeze="True" Style="{StaticResource MetroExpanderWithNormalCase}">
+																		<Expander.Header>
+																			<!-- <StackPanel Orientation="Horizontal" Margin="0,0,0,0" HorizontalAlignment="Stretch" Background="Transparent"> -->
+																			<!-- <Image Source="{Binding Items[0].Cover_Art,IsAsync=True}" Height="20" Width="20" Margin="0,5,0,0" RenderOptions.BitmapScalingMode="Fant" HorizontalAlignment="Left" VerticalAlignment="Center"/> -->
+																			<TextBlock Text="{Binding Items[0].Artist,IsAsync=True}" Foreground="LightGray" FontSize="14" Background="Transparent" FontWeight="Bold" HorizontalAlignment="Left"/>
+																			<!-- </StackPanel> -->
+																		</Expander.Header>
+																		<ItemsPresenter/>
+																	</Expander>
+																</ControlTemplate>
+															</Setter.Value>
+														</Setter>
+													</Style>
+												</GroupStyle.ContainerStyle>
+											</GroupStyle>
+										</DataGrid.GroupStyle>
+										<DataGrid.Columns>
+											<DataGridCheckBoxColumn Width="SizeToCells" Visibility = 'Hidden' Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected, Mode=TwoWay,,IsAsync=True,UpdateSourceTrigger=PropertyChanged}" dgx:DataGridFilterColumn.IsFilterVisible="False"/>
+												<DataGridTemplateColumn Header="Title" Width="SizeToCells" MinWidth="80" IsReadOnly="True">
+													<DataGridTemplateColumn.CellTemplate>
+														<DataTemplate>
+															<!-- 																		<DoubleAnimation  Storyboard.TargetName="PlayIcon_Transform"  Storyboard.TargetProperty="(ScaleTransform.ScaleX)" From="0.95" To="1.2" Duration="0:0:0.5" RepeatBehavior="Forever" AutoReverse="True"/>  
+																		<DoubleAnimation  Storyboard.TargetName="PlayIcon_Transform"  Storyboard.TargetProperty="(ScaleTransform.ScaleY)" From="0.95" To="1.2" Duration="0:0:0.5" RepeatBehavior="Forever" AutoReverse="True"/> -->
+															<!--RoutedEvent="Button.Click" -->
+																<StackPanel Orientation="Horizontal">
+																	<Image Source="{Binding Path=Uid,IsAsync=True}" Height="18" Width="18" Stretch="Uniform"/>
+																	<TextBlock Text="{Binding Path=Title,IsAsync=True}"  Margin="5,3,0,0"/>
+																</StackPanel>
+														</DataTemplate>
+													</DataGridTemplateColumn.CellTemplate>
+												</DataGridTemplateColumn>
+												<DataGridTemplateColumn Header="Track" Width="SizeToCells" MinWidth="85" IsReadOnly="True">
+													<DataGridTemplateColumn.CellTemplate>
+														<DataTemplate>
+																<StackPanel Orientation="Horizontal">
+																	<TextBlock Text="{Binding Path=Track,IsAsync=True}"  Margin="5,3,0,0"/>
+																</StackPanel>
+														</DataTemplate>
+													</DataGridTemplateColumn.CellTemplate>
+												</DataGridTemplateColumn>												
+												<DataGridTemplateColumn Header="Artist" Width="SizeToCells" MinWidth="90" IsReadOnly="True">
+													<DataGridTemplateColumn.CellTemplate>
+														<DataTemplate>
+																<StackPanel Orientation="Horizontal">
+																	<TextBlock Text="{Binding Path=Artist,IsAsync=True}"  Margin="5,3,0,0"/>
+																</StackPanel>
+														</DataTemplate>
+													</DataGridTemplateColumn.CellTemplate>
+												</DataGridTemplateColumn>	
+												<DataGridTemplateColumn Header="Album" Width="SizeToCells" MinWidth="90" IsReadOnly="True">
+													<DataGridTemplateColumn.CellTemplate>
+														<DataTemplate>
+																<StackPanel Orientation="Horizontal">
+																	<TextBlock Text="{Binding Path=Album,IsAsync=True}"  Margin="5,3,0,0"/>
+																</StackPanel>
+														</DataTemplate>
+													</DataGridTemplateColumn.CellTemplate>
+												</DataGridTemplateColumn>	
+												<DataGridTemplateColumn Header="Duration" Width="SizeToCells" MinWidth="110" IsReadOnly="True">
+													<DataGridTemplateColumn.CellTemplate>
+														<DataTemplate>
+																<StackPanel Orientation="Horizontal">
+																	<TextBlock Text="{Binding Path=Duration,IsAsync=True}"  Margin="5,3,0,0"/>
+																</StackPanel>
+														</DataTemplate>
+													</DataGridTemplateColumn.CellTemplate>
+												</DataGridTemplateColumn>												
+												<DataGridTemplateColumn Header="Type" Width="SizeToCells" MinWidth="80" IsReadOnly="True">
+													<DataGridTemplateColumn.CellTemplate>
+														<DataTemplate>
+																<StackPanel Orientation="Horizontal">
+																	<TextBlock Text="{Binding Path=Type,IsAsync=True}"  Margin="5,3,0,0"/>
+																</StackPanel>
+														</DataTemplate>
+													</DataGridTemplateColumn.CellTemplate>
+												</DataGridTemplateColumn>												
+												<DataGridTemplateColumn Header="Directory" Width="SizeToCells" MinWidth="110" IsReadOnly="True">
+													<DataGridTemplateColumn.CellTemplate>
+														<DataTemplate>
+																<StackPanel Orientation="Horizontal">
+																	<TextBlock Text="{Binding Path=Directory,IsAsync=True}"  Margin="5,3,0,0"/>
+																</StackPanel>
+														</DataTemplate>
+													</DataGridTemplateColumn.CellTemplate>
+												</DataGridTemplateColumn>												
+										</DataGrid.Columns>
+									</DataGrid>
+									<StackPanel Orientation="Horizontal" Margin="5,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+										<Label Content="Filter" Foreground="#ffffff" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top"/>
+										<TextBox Name="FilterTextBox" mah:TextBoxHelper.ClearTextButton="True" HorizontalAlignment="Left" Height="26" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="100"/>
+										<Label Content="Show Only" Foreground="#ffffff" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top"/>
+										<ComboBox Margin="5,0,0,0" Name='Show_LocalMediaArtist_ComboBox' mah:TextBoxHelper.ClearTextButton="True" VerticalAlignment="Top" MinWidth="50" MaxWidth="100" Background="Transparent" mah:TextBoxHelper.UseFloatingWatermark="True"
+										          HorizontalAlignment="Left"
+										          IsEditable="False"
+										          SelectedIndex="-1">
+											<ComboBox.ContextMenu>
+												<ContextMenu IsEnabled="False"
+												             Visibility="Collapsed"/>
+											</ComboBox.ContextMenu>
+										</ComboBox>
+										<Button Name='Add_localMedia_Button' FontSize="12" ToolTip="Add Local Media Path" FontWeight="Bold" Margin="20,0,0,0" Height="22" Style="{StaticResource DetailButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Left" IsEnabled="true">
+											<StackPanel Orientation="Horizontal">
+												<iconPacks:PackIconMaterial Kind="PlusCircleOutline"
+												                            Margin="4 0 2 0"
+												                            Width="14"
+												                            Height="14"
+												                            VerticalAlignment="Center"/>
+												<TextBlock Text="Media" Margin="2 2 2 2" VerticalAlignment="Center"/>
+											</StackPanel>
+										</Button>
+									</StackPanel>
+									<StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Margin="0,0,0,0" VerticalAlignment="Top">
+										<!-- 		<Button Height="23" HorizontalAlignment="Left"  
 					Name="Youtube_btnFirst" VerticalAlignment="Bottom" Width="40" 
 					Content="&lt;&lt;" Opacity="0.75" Margin="5,0,0,0"/> -->
-							<Button Height="23" VerticalAlignment="Top"
-							        Name="LocalMedia_btnPrev" Width="40"
-							        Opacity="0.75" Content="&lt;" Margin="5,5,0,0"/>
-							<Label Name="LocalMedia_lblpageInformation" HorizontalContentAlignment="Center"
-							       HorizontalAlignment="Left" Height="30" Width="60"
-							       VerticalContentAlignment="Center" VerticalAlignment="Top"/>
-							<Button Height="23" HorizontalAlignment="Right"
-							        Name="LocalMedia_btnNext" VerticalAlignment="Top" Width="40"
-							        Content="&gt;" Opacity="0.75" Margin="5,5,0,0"/>
-							<!-- 		<Button Height="23" HorizontalAlignment="Right"  
+										<Button Height="5" VerticalAlignment="Top"
+										        Name="LocalMedia_btnPrev" Width="20"
+										        Opacity="0.75" Content="&lt;" Margin="5,5,0,0" />
+										<Label Name="LocalMedia_lblpageInformation" HorizontalContentAlignment="Center"
+										       HorizontalAlignment="Left" Height="30" Width="60"
+										       VerticalContentAlignment="Center" VerticalAlignment="Top"/>
+										<Button Height="5" HorizontalAlignment="Right"
+										        Name="LocalMedia_btnNext" VerticalAlignment="Top" Width="20"
+										        Content="&gt;" Opacity="0.75" Margin="5,5,0,0"/>
+										<!-- 		<Button Height="23" HorizontalAlignment="Right"  
 					VerticalAlignment="Bottom" Width="40" Name="Youtube_btnLast" 
 					 Opacity="0.75" Content="&gt;&gt;" Margin="5,0,0,0"/> -->
-							<ComboBox Name="LocalMedia_cbNumberOfRecords" HorizontalAlignment="Left"
-							          VerticalAlignment="Top" Width="120" SelectedIndex="0" Margin="5,5,0,0"
-							          Opacity="0.75"/>
-							<Label Name="Media_Table_Total_Media" Content="Total Media |" HorizontalAlignment="Right" FontSize="16" Margin="10,0,0,0" Foreground="#ffffff" VerticalAlignment="Top"/>
-						</StackPanel>
-					</Grid>
-				</TabItem>
-				<Tabitem Name="SPOTIFYBROWSER_REPLACE_ME"/>
-				<Tabitem Name="YOUTUBEBROWSER_REPLACE_ME"/>
-			</mah:MetroTabControl>
-			<mah:FlyoutsControl Name="Audio_Flyout_Control" Panel.ZIndex="2" Effect="{StaticResource DropShadow}" Grid.Row="2" Grid.ColumnSpan="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.RowSpan="4" Margin="10,0,10,0">
-				<mah:Flyout Header="Audio Settings" BorderThickness="1,1,1,1" BorderBrush="Gray" HorizontalContentAlignment="Stretch" Position="Bottom" Name="Audio_Flyout" AnimateOpacity="True" CloseButtonVisibility="visible" VerticalAlignment="stretch" HorizontalAlignment="Stretch" TitleVisibility="visible" Background="#E20A2347">
-					<Border Name='AudioBorder' BorderThickness="0,1,0,0" BorderBrush="Gray" Margin="0,0,0,0" Background="Transparent" VerticalAlignment="stretch" HorizontalAlignment="Stretch">
-						<StackPanel Grid.Column="0"
-						            Margin="10 0"
-						            Orientation="Horizontal" HorizontalAlignment="Center">
-							<mah:ToggleSwitch Content="Enable EQ" Name="Enable_EQ_Toggle" Margin="10,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="#ffffff"/>
-							<Label Name="EQ_Preset_Label" Content="Presets" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14"/>
-							<StackPanel VerticalAlignment="Center">
-								<ComboBox
- Margin="0,0,20,0"
-								          Name='EQ_Preset_ComboBox'
-								          mah:TextBoxHelper.ClearTextButton="True"
-								          VerticalAlignment="Center"
-								          Background="Transparent"
-								          Width="150"
-								          mah:TextBoxHelper.UseFloatingWatermark="True"
-								          HorizontalAlignment="Left"
-								          IsEditable="False"
-								          SelectedIndex="-1">
-									<ComboBox.ContextMenu>
-										<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
-									</ComboBox.ContextMenu>
-								</ComboBox>
-								<Button Name='Save_CustomEQ_Button' FontSize="12" FontWeight="Bold" Margin="5,5,0,0" Height="30" Style="{StaticResource DetailButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Left" IsEnabled="true">
-									<StackPanel Orientation="Horizontal">
-										<iconPacks:PackIconMaterial Kind="ContentSave"
-										                            Margin="4 4 2 4"
-										                            Width="16"
-										                            Height="16"
-										                            VerticalAlignment="Center"/>
-										<TextBlock Text="Save New Preset" Margin="2 2 2 2" VerticalAlignment="Center"/>
+										<ComboBox Name="LocalMedia_cbNumberOfRecords" HorizontalAlignment="Left"
+										          VerticalAlignment="Top" SelectedIndex="0" Margin="5,5,0,0"
+										          Opacity="0.75"/>
+										<Label Name="Media_Table_Total_Media" Content="Total Media |" HorizontalAlignment="Right" FontSize="16" Margin="10,0,0,0" Foreground="#ffffff" VerticalAlignment="Top"/>
 									</StackPanel>
-								</Button>
-							</StackPanel>
-							<StackPanel Margin="10,4,10,0">
-								<Slider Height="150"
-								        Margin="2"
-								        Name="Preamp_Slider"
-								        Width="25"
-								        HorizontalAlignment="Center"
-								        LargeChange="10"
-								        AutoToolTipPlacement="BottomRight"
-								        Maximum="20"
-								        Minimum="-20"
-								        Orientation="Vertical"
-								        SmallChange="1"
-								        TickFrequency="5"
-								        TickPlacement="TopLeft"
-								        Value="0"/>
-								<TextBlock Name="Preamp_Text" Text="Preamp" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-							</StackPanel>
-							<StackPanel Margin="4">
-								<Slider Height="150"
-								        Margin="2"
-								        Name="EQ_0"
-								        Width="25"
-								        HorizontalAlignment="Center"
-								        LargeChange="10"
-								        AutoToolTipPlacement="BottomRight"
-								        Maximum="20"
-								        Minimum="-20"
-								        Orientation="Vertical"
-								        SmallChange="1"
-								        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
-								        TickFrequency="5"
-								        TickPlacement="TopLeft"
-								        Value="0"/>
-								<TextBlock Name="EQ_0_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-							</StackPanel>
-							<StackPanel Margin="4">
-								<Slider Height="150"
-								        Margin="2"
-								        Name="EQ_1"
-								        Width="25"
-								        HorizontalAlignment="Center"
-								        LargeChange="10"
-								        AutoToolTipPlacement="BottomRight"
-								        Maximum="20"
-								        Minimum="-20"
-								        Orientation="Vertical"
-								        SmallChange="1"
-								        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
-								        TickFrequency="5"
-								        TickPlacement="TopLeft"
-								        Value="0"/>
-								<TextBlock Name="EQ_1_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-							</StackPanel>
-							<StackPanel Margin="4">
-								<Slider Height="150"
-								        Margin="2"
-								        Name="EQ_2"
-								        Width="25"
-								        HorizontalAlignment="Center"
-								        LargeChange="10"
-								        AutoToolTipPlacement="BottomRight"
-								        Maximum="20"
-								        Minimum="-20"
-								        Orientation="Vertical"
-								        SmallChange="1"
-								        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
-								        TickFrequency="5"
-								        TickPlacement="TopLeft"
-								        Value="0"/>
-								<TextBlock Name="EQ_2_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-							</StackPanel>
-							<StackPanel Margin="4">
-								<Slider Height="150"
-								        Margin="2"
-								        Name="EQ_3"
-								        Width="25"
-								        HorizontalAlignment="Center"
-								        LargeChange="10"
-								        AutoToolTipPlacement="BottomRight"
-								        Maximum="20"
-								        Minimum="-20"
-								        Orientation="Vertical"
-								        SmallChange="1"
-								        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
-								        TickFrequency="5"
-								        TickPlacement="TopLeft"
-								        Value="0"/>
-								<TextBlock Name="EQ_3_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-							</StackPanel>
-							<StackPanel Margin="4">
-								<Slider Height="150"
-								        Margin="2"
-								        Name="EQ_4"
-								        Width="25"
-								        HorizontalAlignment="Center"
-								        LargeChange="10"
-								        AutoToolTipPlacement="BottomRight"
-								        Maximum="20"
-								        Minimum="-20"
-								        Orientation="Vertical"
-								        SmallChange="1"
-								        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
-								        TickFrequency="5"
-								        TickPlacement="TopLeft"
-								        Value="0"/>
-								<TextBlock Name="EQ_4_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-							</StackPanel>
-							<StackPanel Margin="4">
-								<Slider Height="150"
-								        Margin="2"
-								        Name="EQ_5"
-								        Width="25"
-								        HorizontalAlignment="Center"
-								        LargeChange="10"
-								        AutoToolTipPlacement="BottomRight"
-								        Maximum="20"
-								        Minimum="-20"
-								        Orientation="Vertical"
-								        SmallChange="1"
-								        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
-								        TickFrequency="5"
-								        TickPlacement="TopLeft"
-								        Value="0"/>
-								<TextBlock Name="EQ_5_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-							</StackPanel>
-							<StackPanel Margin="4">
-								<Slider Height="150"
-								        Margin="2"
-								        Name="EQ_6"
-								        Width="25"
-								        HorizontalAlignment="Center"
-								        LargeChange="10"
-								        AutoToolTipPlacement="BottomRight"
-								        Maximum="20"
-								        Minimum="-20"
-								        Orientation="Vertical"
-								        SmallChange="1"
-								        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
-								        TickFrequency="5"
-								        TickPlacement="TopLeft"
-								        Value="0"/>
-								<TextBlock Name="EQ_6_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-							</StackPanel>
-							<StackPanel Margin="4">
-								<Slider Height="150"
-								        Margin="2"
-								        Name="EQ_7"
-								        Width="25"
-								        HorizontalAlignment="Center"
-								        LargeChange="10"
-								        AutoToolTipPlacement="BottomRight"
-								        Maximum="20"
-								        Minimum="-20"
-								        Orientation="Vertical"
-								        SmallChange="1"
-								        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
-								        TickFrequency="5"
-								        TickPlacement="TopLeft"
-								        Value="0"/>
-								<TextBlock Name="EQ_7_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-							</StackPanel>
-							<StackPanel Margin="4">
-								<Slider Height="150"
-								        Margin="2"
-								        Name="EQ_8"
-								        Width="25"
-								        HorizontalAlignment="Center"
-								        LargeChange="10"
-								        AutoToolTipPlacement="BottomRight"
-								        Maximum="20"
-								        Minimum="-20"
-								        Orientation="Vertical"
-								        SmallChange="1"
-								        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
-								        TickFrequency="5"
-								        TickPlacement="TopLeft"
-								        Value="0"/>
-								<TextBlock Name="EQ_8_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-							</StackPanel>
-							<StackPanel Margin="4">
-								<Slider Height="150"
-								        Margin="2"
-								        Name="EQ_9"
-								        Width="25"
-								        HorizontalAlignment="Center"
-								        LargeChange="10"
-								        AutoToolTipPlacement="BottomRight"
-								        Maximum="20"
-								        Minimum="-20"
-								        Orientation="Vertical"
-								        SmallChange="1"
-								        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
-								        TickFrequency="5"
-								        TickPlacement="TopLeft"
-								        Value="0"/>
-								<TextBlock Name="EQ_9_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-							</StackPanel>
-						</StackPanel>
-					</Border>
+								</Grid>
+							</TabItem>
+							<Tabitem Name="SPOTIFYBROWSER_REPLACE_ME"/>
+							<Tabitem Name="YOUTUBEBROWSER_REPLACE_ME"/>
+							<!-- <Tabitem Name="TWITCHBROWSER_REPLACE_ME"/> -->
+						</mah:MetroTabControl>
+</Grid>
 				</mah:Flyout>
 			</mah:FlyoutsControl>
-			<mah:FlyoutsControl Name="LogWindow_Flyout" Effect="{StaticResource DropShadow}" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Grid.Row="2" Grid.RowSpan="2" Margin="10,10,10,10">
+			<!-- 			<mah:FlyoutsControl Name="LogWindow_Flyout" Effect="{StaticResource DropShadow}" Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Grid.Row="2" Grid.RowSpan="2" Margin="10,10,10,10">
 				<mah:Flyout Header="Log Window" HorizontalContentAlignment="Stretch" Position="Right" IsOpen="{Binding ElementName=LogWindow_Toggle, Path=IsOn}" Name="Flyout" AnimateOpacity="True" CloseButtonVisibility="visible" VerticalAlignment="stretch" HorizontalAlignment="Stretch" TitleVisibility="visible" Background="{StaticResource GameDetailsBackGradient}">
 					<Border Name='LogBorder' BorderThickness="2,2,2,2" BorderBrush="White" Margin="0,0,0,0" Background="Black" VerticalAlignment="stretch" HorizontalAlignment="Stretch">
 						<RichTextBox Name='LogWindow' VerticalScrollBarVisibility="Visible" Background="black" Padding="0,0,0,0" IsReadOnly="True" VerticalAlignment="stretch" BorderThickness="0,0,0,0">
@@ -922,15 +968,252 @@
 						</RichTextBox>
 					</Border>
 				</mah:Flyout>
-			</mah:FlyoutsControl>
+			</mah:FlyoutsControl> -->
 		</Grid>
+		<mah:FlyoutsControl Name="Audio_Flyout_Control" Panel.ZIndex="2" Effect="{StaticResource DropShadow}" Grid.Row="1" Grid.ColumnSpan="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Grid.RowSpan="2" Margin="10,0,10,0">
+			<mah:Flyout Header="Audio Settings" BorderThickness="1,1,1,1" BorderBrush="Gray" HorizontalContentAlignment="Stretch" Position="Bottom" Name="Audio_Flyout" AnimateOpacity="True" CloseButtonVisibility="visible" VerticalAlignment="stretch" HorizontalAlignment="Stretch" TitleVisibility="visible" Background="#E20A2347">
+				<Border Name='AudioBorder' BorderThickness="0,1,0,0" BorderBrush="Gray" Margin="0,0,0,0" Background="Transparent" VerticalAlignment="stretch" HorizontalAlignment="Stretch">
+					<StackPanel Grid.Column="0"
+					            Margin="10 0"
+					            Orientation="Horizontal" HorizontalAlignment="Center">
+						<mah:ToggleSwitch Content="Enable EQ" Name="Enable_EQ_Toggle" Margin="10,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="#ffffff"/>
+						<Label Name="EQ_Preset_Label" Content="Presets" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="14"/>
+						<StackPanel VerticalAlignment="Center">
+							<ComboBox
+ Margin="0,0,20,0"
+							          Name='EQ_Preset_ComboBox'
+							          mah:TextBoxHelper.ClearTextButton="True"
+							          VerticalAlignment="Center"
+							          Background="Transparent"
+							          Width="150"
+							          mah:TextBoxHelper.UseFloatingWatermark="True"
+							          HorizontalAlignment="Left"
+							          IsEditable="False"
+							          SelectedIndex="-1">
+								<ComboBox.ContextMenu>
+									<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+								</ComboBox.ContextMenu>
+							</ComboBox>
+							<Button Name='Save_CustomEQ_Button' FontSize="12" FontWeight="Bold" Margin="5,5,0,0" Height="30" Style="{StaticResource DetailButtonStyle}" VerticalAlignment="Center" HorizontalAlignment="Left" IsEnabled="true">
+								<StackPanel Orientation="Horizontal">
+									<iconPacks:PackIconMaterial Kind="ContentSave"
+									                            Margin="4 4 2 4"
+									                            Width="16"
+									                            Height="16"
+									                            VerticalAlignment="Center"/>
+									<TextBlock Text="Save New Preset" Margin="2 2 2 2" VerticalAlignment="Center"/>
+								</StackPanel>
+							</Button>
+						</StackPanel>
+						<StackPanel Margin="10,4,10,0">
+							<Slider Height="150"
+							        Margin="2"
+							        Name="Preamp_Slider"
+							        Width="25"
+							        HorizontalAlignment="Center"
+							        LargeChange="10"
+							        AutoToolTipPlacement="BottomRight"
+							        Maximum="20"
+							        Minimum="-20"
+							        Orientation="Vertical"
+							        SmallChange="1"
+							        TickFrequency="5"
+							        TickPlacement="TopLeft"
+							        Value="0"/>
+							<TextBlock Name="Preamp_Text" Text="Preamp" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Margin="4">
+							<Slider Height="150"
+							        Margin="2"
+							        Name="EQ_0"
+							        Width="25"
+							        HorizontalAlignment="Center"
+							        LargeChange="10"
+							        AutoToolTipPlacement="BottomRight"
+							        Maximum="20"
+							        Minimum="-20"
+							        Orientation="Vertical"
+							        SmallChange="1"
+							        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
+							        TickFrequency="5"
+							        TickPlacement="TopLeft"
+							        Value="0"/>
+							<TextBlock Name="EQ_0_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Margin="4">
+							<Slider Height="150"
+							        Margin="2"
+							        Name="EQ_1"
+							        Width="25"
+							        HorizontalAlignment="Center"
+							        LargeChange="10"
+							        AutoToolTipPlacement="BottomRight"
+							        Maximum="20"
+							        Minimum="-20"
+							        Orientation="Vertical"
+							        SmallChange="1"
+							        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
+							        TickFrequency="5"
+							        TickPlacement="TopLeft"
+							        Value="0"/>
+							<TextBlock Name="EQ_1_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Margin="4">
+							<Slider Height="150"
+							        Margin="2"
+							        Name="EQ_2"
+							        Width="25"
+							        HorizontalAlignment="Center"
+							        LargeChange="10"
+							        AutoToolTipPlacement="BottomRight"
+							        Maximum="20"
+							        Minimum="-20"
+							        Orientation="Vertical"
+							        SmallChange="1"
+							        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
+							        TickFrequency="5"
+							        TickPlacement="TopLeft"
+							        Value="0"/>
+							<TextBlock Name="EQ_2_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Margin="4">
+							<Slider Height="150"
+							        Margin="2"
+							        Name="EQ_3"
+							        Width="25"
+							        HorizontalAlignment="Center"
+							        LargeChange="10"
+							        AutoToolTipPlacement="BottomRight"
+							        Maximum="20"
+							        Minimum="-20"
+							        Orientation="Vertical"
+							        SmallChange="1"
+							        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
+							        TickFrequency="5"
+							        TickPlacement="TopLeft"
+							        Value="0"/>
+							<TextBlock Name="EQ_3_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Margin="4">
+							<Slider Height="150"
+							        Margin="2"
+							        Name="EQ_4"
+							        Width="25"
+							        HorizontalAlignment="Center"
+							        LargeChange="10"
+							        AutoToolTipPlacement="BottomRight"
+							        Maximum="20"
+							        Minimum="-20"
+							        Orientation="Vertical"
+							        SmallChange="1"
+							        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
+							        TickFrequency="5"
+							        TickPlacement="TopLeft"
+							        Value="0"/>
+							<TextBlock Name="EQ_4_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Margin="4">
+							<Slider Height="150"
+							        Margin="2"
+							        Name="EQ_5"
+							        Width="25"
+							        HorizontalAlignment="Center"
+							        LargeChange="10"
+							        AutoToolTipPlacement="BottomRight"
+							        Maximum="20"
+							        Minimum="-20"
+							        Orientation="Vertical"
+							        SmallChange="1"
+							        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
+							        TickFrequency="5"
+							        TickPlacement="TopLeft"
+							        Value="0"/>
+							<TextBlock Name="EQ_5_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Margin="4">
+							<Slider Height="150"
+							        Margin="2"
+							        Name="EQ_6"
+							        Width="25"
+							        HorizontalAlignment="Center"
+							        LargeChange="10"
+							        AutoToolTipPlacement="BottomRight"
+							        Maximum="20"
+							        Minimum="-20"
+							        Orientation="Vertical"
+							        SmallChange="1"
+							        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
+							        TickFrequency="5"
+							        TickPlacement="TopLeft"
+							        Value="0"/>
+							<TextBlock Name="EQ_6_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Margin="4">
+							<Slider Height="150"
+							        Margin="2"
+							        Name="EQ_7"
+							        Width="25"
+							        HorizontalAlignment="Center"
+							        LargeChange="10"
+							        AutoToolTipPlacement="BottomRight"
+							        Maximum="20"
+							        Minimum="-20"
+							        Orientation="Vertical"
+							        SmallChange="1"
+							        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
+							        TickFrequency="5"
+							        TickPlacement="TopLeft"
+							        Value="0"/>
+							<TextBlock Name="EQ_7_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Margin="4">
+							<Slider Height="150"
+							        Margin="2"
+							        Name="EQ_8"
+							        Width="25"
+							        HorizontalAlignment="Center"
+							        LargeChange="10"
+							        AutoToolTipPlacement="BottomRight"
+							        Maximum="20"
+							        Minimum="-20"
+							        Orientation="Vertical"
+							        SmallChange="1"
+							        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
+							        TickFrequency="5"
+							        TickPlacement="TopLeft"
+							        Value="0"/>
+							<TextBlock Name="EQ_8_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</StackPanel>
+						<StackPanel Margin="4">
+							<Slider Height="150"
+							        Margin="2"
+							        Name="EQ_9"
+							        Width="25"
+							        HorizontalAlignment="Center"
+							        LargeChange="10"
+							        AutoToolTipPlacement="BottomRight"
+							        Maximum="20"
+							        Minimum="-20"
+							        Orientation="Vertical"
+							        SmallChange="1"
+							        Style="{DynamicResource MahApps.Styles.Slider.Flat}"
+							        TickFrequency="5"
+							        TickPlacement="TopLeft"
+							        Value="0"/>
+							<TextBlock Name="EQ_9_Text" Text="" Margin="0 2 0 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+						</StackPanel>
+					</StackPanel>
+				</Border>
+			</mah:Flyout>
+		</mah:FlyoutsControl>
 		<mah:FlyoutsControl Name="Notifications_Flyout" Effect="{StaticResource DropShadow}" MaxWidth="1000" MaxHeight="200" VerticalAlignment="top" Grid.ColumnSpan="4" Margin="10,0,10,10" Grid.Row="0" Grid.RowSpan="2">
-			<mah:Flyout Header="Notifications" IsModal="false" Background="{StaticResource NotificationsGradient}" HorizontalContentAlignment="Left" Position="Top" IsOpen="False" Name="NotificationFlyout" AnimateOpacity="True" CloseButtonVisibility="visible" VerticalAlignment="stretch" HorizontalAlignment="Stretch" TitleVisibility="Visible">
+			<mah:Flyout Header="Notifications" IsModal="false" Background="{StaticResource NotificationsGradient}" HorizontalContentAlignment="Left" Position="Top" IsOpen="False" Name="NotificationFlyout" AnimateOpacity="True" CloseButtonVisibility="visible" VerticalAlignment="stretch" HorizontalAlignment="Stretch" TitleVisibility="Visible">			
 				<Grid VerticalAlignment="stretch" Background="Transparent" HorizontalAlignment="stretch">
-					<DataGrid Name="Notifications_Grid" Margin="10,5,10,0" Background="Transparent" VerticalAlignment="stretch" HorizontalAlignment="stretch" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" SelectionUnit="FullRow" SelectionMode="Single">
+					<DataGrid Name="Notifications_Grid" Margin="10,5,10,0" Background="Transparent" VerticalAlignment="stretch" HorizontalAlignment="stretch" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto" SelectionUnit="FullRow" SelectionMode="Single" MaxWidth="800">
 						<DataGrid.Resources>
 							<Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}" TargetType="{x:Type DataGridColumnHeader}">
 								<Setter Property="Background" Value="Transparent"/>
+								<Setter Property="BorderThickness" Value="5"/>
 							</Style>
 							<Style TargetType="{x:Type TextBlock}" x:Key="WrapText">
 								<Setter Property="TextWrapping" Value="Wrap"/>
@@ -978,7 +1261,37 @@
 			</mah:Flyout>
 		</mah:FlyoutsControl>
 		<CheckBox Name="Refresh_Playlist_Hidden_Checkbox" IsChecked="False" Visibility="Hidden" IsEnabled="False" Height="0" Width="0"/>
+		<!-- 		<StackPanel Grid.RowSpan="4" VerticalAlignment="Bottom">  
+    <CheckBox Name="PCheckBox" Margin="10,10,0,0"  
+          Content="Popup Window"/>  
+    <Popup IsOpen="{Binding ElementName=PCheckBox,Path=IsChecked}"   
+       PlacementTarget="{Binding ElementName=PCheckBox}"              
+       AllowsTransparency="True"  
+       PopupAnimation="Slide"  
+       HorizontalOffset="150"  
+       VerticalOffset="100">  
+        <Canvas Width="100" Height="100" Background="Green" Margin="150">  
+            <Canvas.RenderTransform>  
+                <RotateTransform x:Name="theTransform" />  
+            </Canvas.RenderTransform>  
+            <TextBlock TextWrapping="Wrap" Foreground="LightGray">  
+      Rotating Popup  
+    </TextBlock>  
+        </Canvas>  
+    </Popup>  
+</StackPanel> -->
+		<Grid Name="Webview2_Grid" Visibility="hidden" Height="0" Width="0">
+			<wv2:WebView2 x:Name="WebView2"/>
+			<WindowsFormsHost Visibility="Hidden"/>
+		</Grid>
+<!--     <tb:TaskbarIcon Name="myNotifyIcon"
+                    Visibility="Visible"
+					IconSource="{DynamicResource TrayIcon}"
+                    ToolTipText="{Binding ElementName=Now_Playing_Label,Path=Content}" 
+      /> -->		
+		  
 	</Grid>
+   </Border>	
 	<mah:MetroWindow.RightWindowCommands>
 		<mah:WindowCommands Margin="0,0,15,0" Background="Transparent">
 			<mah:Badged Name="Notifications_Badge" Badge="" BadgePlacementMode="Right" Margin="0,0,15,0" BadgeBackground="Red" Background="Transparent" BadgeForeground="White">

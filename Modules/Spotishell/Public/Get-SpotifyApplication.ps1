@@ -24,9 +24,9 @@ function Get-SpotifyApplication {
     $All
   )
 
-  if (!$Name) { $Name = 'default' }
+  if (!$Name) { $Name = 'EZT-MediaPlayer' }
   try{
-    write-ezlogs "Getting secretvault $Name " -showtime
+    #write-ezlogs "Getting secretvault $Name " -showtime
     $secretstore = Get-SecretVault -Name $Name -ErrorAction SilentlyContinue
   }catch{
     write-ezlogs "An exception occurred getting SecretStore $name" -showtime -catcherror $_
@@ -39,17 +39,17 @@ function Get-SpotifyApplication {
       write-ezlogs "An exception occurred getting Secret SpotyRedirectUri" -showtime -catcherror $_
     }
     try{
-      $ClientId = Get-secret -name SpotyClientId -AsPlainText -Vault $secretstore -ErrorAction SilentlyContinue
+      $ClientId = Get-secret -name SpotyClientId -AsPlainText -Vault $secretstore -ErrorAction Continue
     }catch{
       write-ezlogs "An exception occurred getting Secret SpotyClientId" -showtime -catcherror $_
     }   
     try{
-      $ClientSecret = Get-secret -name SpotyClientSecret -AsPlainText -Vault $secretstore -ErrorAction SilentlyContinue
+      $ClientSecret = Get-secret -name SpotyClientSecret -AsPlainText -Vault $secretstore -ErrorAction Continue
     }catch{
       write-ezlogs "An exception occurred getting Secret SpotyClientSecret" -showtime -catcherror $_
     }    
     try{
-      $access_token = Get-secret -name Spotyaccess_token -AsPlainText -Vault $secretstore -ErrorAction SilentlyContinue
+      $access_token = Get-secret -name Spotyaccess_token -AsPlainText -Vault $secretstore -ErrorAction Continue
     }catch{
       write-ezlogs "An exception occurred getting Secret Spotyaccess_token" -showtime -catcherror $_
     }    
@@ -60,24 +60,40 @@ function Get-SpotifyApplication {
         $scope = Get-secret -name Spotyscope -AsPlainText -Vault $secretstore -ErrorAction Continue   
         $refresh_token = Get-secret -name Spotyrefresh_token -AsPlainText -Vault $secretstore -ErrorAction Continue
         $token_type = Get-secret -name Spotytoken_type -AsPlainText -Vault $secretstore -ErrorAction Continue
+        $Token = New-Object PsObject -Property @{
+          'expires' = $expires
+          'scope' = $scope
+          'refresh_token' = $refresh_token
+          'token_type' = $token_type
+          'access_token' = $access_token
+        }             
       }catch{
         write-ezlogs "An exception occurred getting Secrets for Access_Token" -showtime -catcherror $_
       }        
-    }
-    $Token = New-Object PsObject -Property @{
-      'expires' = $expires
-      'scope' = $scope
-      'refresh_token' = $refresh_token
-      'token_type' = $token_type
-      'access_token' = $access_token
-    }      
+    }else{
+      write-ezlogs "Unable to find Spotify Access Token from Secret Vault $name - Clientid $ClientId!" -showtime -warning
+      $Secrets = Get-secretinfo -Name $Name
+      write-ezlogs "Secrets for $name`: $($Secrets | out-string)"
+      $APIXML = "$($thisApp.Config.Current_folder)\\Resources\API\Spotify-API-Config.xml"
+      write-ezlogs "Importing API XML $APIXML" -showtime
+      if([System.IO.File]::Exists($APIXML)){
+        $Spotify_API = Import-Clixml $APIXML
+        $clientID = $Spotify_API.ClientID
+        $clientsecret = $Spotify_API.ClientSecret
+        $redirecturi = $Spotify_API.Redirect_URLs
+      }
+    } 
     $Auth = New-Object PsObject -Property @{
       'RedirectUri' = $RedirectUri
       'Name' = $Name
       'ClientId' = $ClientId
       'ClientSecret' = $ClientSecret
       'Token' = $Token
+    }  
+    if($synchash){
+      $synchash.Spotify_Current_Auth = $auth  
     }
+      
     return $auth                
   }else{
     Write-ezlogs "No SecretStore found called $Name, you need to create a Spotify Application first" -warning -showtime

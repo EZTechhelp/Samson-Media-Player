@@ -34,6 +34,8 @@ function Invoke-DownloadMedia{
 
   param (
     $Media,
+    [string]$Download_URL,
+    [string]$Title_name,
     $synchash,
     $thisScript,
     $Download_Path,
@@ -45,18 +47,32 @@ function Invoke-DownloadMedia{
     $Script_Modules,
     [switch]$Verboselog
   )
-  write-ezlogs ">>>> Selected Media to download $($media | out-string)" -showtime
-  $mediatitle = $($Media.title)
+
+  if($Media.title){
+    $title = $Media.title
+  }elseif($Media.name){
+    $title = $Media.name
+  }elseif($Title_name){
+    $title = $Title_name
+  }
+
+  #$mediatitle = $($Media.title)
   #$encodedtitle = $media.id
-  $artist = $Media.Artist
-  $url = $($Media.url)
+  #$artist = $Media.Artist
+  if($Download_URL){
+    $media_link = $($Download_URL).trim()
+  }else{
+    if(!$Media -and $synchash.Media_URL.text){
+      $media_link = $($synchash.Media_URL.text).trim()
+    }elseif(-not [string]::IsNullOrEmpty($Media.url)){
+      $media_link = $($Media.url).trim()
+    }elseif(-not [string]::IsNullOrEmpty($Media.webpage_url)){
+      $media_link = $($Media.webpage_url).trim()
+    }
+  }
+  write-ezlogs ">>>> Selected Media to download $($title) -- $media_link" -showtime
   #$length = $($Media.songinfo.length  | out-string)
 
-  if(!$Media -and $synchash.Media_URL.text){
-    $media_link = $($synchash.Media_URL.text).trim()
-  }elseif(-not [string]::IsNullOrEmpty($url)){
-    $media_link = $($url).trim()
-  }
   $thisApp.config.Download_message = ''
   $vlc_scriptblock = {
     $media_formats = @(
@@ -84,36 +100,36 @@ function Invoke-DownloadMedia{
     $youtubedl_path = "$($thisApp.config.Current_folder)\Resources\youtube-dl"
     $env:Path += ";$youtubedl_path"   
     
-    $yt_dlp_tempfile = "$($thisScript.tempfolder)\\yt_dlp.log"     
-    $thisApp.config.Download_logfile = $yt_dlp_tempfile 
-    if($media.type -eq 'YoutubePlaylist_item' -or $media_link -match 'youtube' -or $media_link -match 'yewtu.be'){   
-      if($media.webpage_url){
-        if($media.webpage_url -match "youtube.com"){
-          if($media.webpage_url -match "v="){
-            $youtube_id = ($($media.webpage_url) -split('v='))[1].trim()
-          }elseif($media.webpage_url -match 'list='){
-            $youtube_id = ($($media.webpage_url) -split('list='))[1].trim()
-          }else{
-            $youtube_id = $Null
-          } 
-        }       
-        write-ezlogs " | Getting best quality video and audio links from yt_dlp" -showtime 
-        if(-not [string]::IsNullOrEmpty($thisApp.config.Youtube_Browser)){
-          #$yt_dlp = yt-dlp -f bestvideo+bestaudio/best -g $media.webpage_url --rm-cache-dir -o '*' -j --cookies-from-browser $thisApp.config.Youtube_Browser
-          #$yt_dlp = yt-dlp -f b -g $media.webpage_url -P "C:/Audio" -o "%(title)s.%(ext)s"  -j --cookies-from-browser $thisApp.config.Youtube_Browser --audio-quality 0 --embed-thumbnail --add-metadata
-          #$yt_dlp = yt-dlp -f bestvideo+bestaudio $media.webpage_url -P $Download_Path -o "%(title)s.%(ext)s" --cookies-from-browser $thisApp.config.Youtube_Browser --audio-quality 0 --embed-thumbnail --add-metadata
-          $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\\yt-dlp.exe`" -f bestvideo+bestaudio $($media.webpage_url) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --cookies-from-browser $($thisApp.config.Youtube_Browser) --audio-quality 0 --embed-thumbnail --add-metadata --sponsorblock-remove all *>'$yt_dlp_tempfile'"
-        }else{
-          #$yt_dlp = yt-dlp -f bestvideo+bestaudio/best -g $media.webpage_url --rm-cache-dir -o '*' -j
-          #$yt_dlp = yt-dlp -f b -g $media.webpage_url -P "C:/Audio" -o "%(title)s.%(ext)s"  -j --audio-quality 0 --embed-thumbnail --add-metadata
-          #$yt_dlp = yt-dlp -f bestvideo+bestaudio $media.webpage_url -P $Download_Path -o "%(title)s.%(ext)s" --audio-quality 0 --embed-thumbnail --add-metadata
-          $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\\yt-dlp.exe`" -f bestvideo+bestaudio $($media.webpage_url) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --audio-quality 0 --embed-thumbnail --add-metadata --sponsorblock-remove all *>'$yt_dlp_tempfile'"
-        }  
-      }     
-    }
+    $yt_dlp_tempfile = "$($thisApp.config.Temp_folder)\\yt_dlp.log"     
+    $thisApp.config.Download_logfile = $yt_dlp_tempfile  
+    if($media_link -match 'youtube' -or $media_link -match 'yewtu.be'){
+      if($media_link -match "v="){
+        $youtube_id = ($($media_link) -split('v='))[1].trim()
+      }elseif($media_link -match 'list='){
+        $youtube_id = ($($media_link) -split('list='))[1].trim()
+      }else{
+        $youtube_id = $Null
+      }      
+      write-ezlogs " | Getting best quality video and audio links from yt_dlp" -showtime 
+      if(-not [string]::IsNullOrEmpty($thisApp.config.Youtube_Browser)){
+        #$yt_dlp = yt-dlp -f bestvideo+bestaudio/best -g $media.webpage_url --rm-cache-dir -o '*' -j --cookies-from-browser $thisApp.config.Youtube_Browser
+        #$yt_dlp = yt-dlp -f b -g $media.webpage_url -P "C:/Audio" -o "%(title)s.%(ext)s"  -j --cookies-from-browser $thisApp.config.Youtube_Browser --audio-quality 0 --embed-thumbnail --add-metadata
+        #$yt_dlp = yt-dlp -f bestvideo+bestaudio $media.webpage_url -P $Download_Path -o "%(title)s.%(ext)s" --cookies-from-browser $thisApp.config.Youtube_Browser --audio-quality 0 --embed-thumbnail --add-metadata
+        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\\yt-dlp.exe`" -f bestvideo+bestaudio $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --cookies-from-browser $($thisApp.config.Youtube_Browser) --audio-quality 0 --embed-thumbnail --add-metadata --sponsorblock-remove all *>'$yt_dlp_tempfile'"
+      }else{
+        #$yt_dlp = yt-dlp -f bestvideo+bestaudio/best -g $media.webpage_url --rm-cache-dir -o '*' -j
+        #$yt_dlp = yt-dlp -f b -g $media.webpage_url -P "C:/Audio" -o "%(title)s.%(ext)s"  -j --audio-quality 0 --embed-thumbnail --add-metadata
+        #$yt_dlp = yt-dlp -f bestvideo+bestaudio $media.webpage_url -P $Download_Path -o "%(title)s.%(ext)s" --audio-quality 0 --embed-thumbnail --add-metadata
+        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\\yt-dlp.exe`" -f bestvideo+bestaudio $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --audio-quality 0 --embed-thumbnail --add-metadata --sponsorblock-remove all *>'$yt_dlp_tempfile'"
+      }  
+    }else{
+      write-ezlogs "No valid youtube URL was provided!" -showtime -warning
+      Update-Notifications  -Level 'WARNING' -Message "No valid youtube URL was provided or found ($media_link)" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout
+      return
+    }     
     try{
       $UID = (Get-Random)
-      Update-Notifications -id $UID -Level 'INFO' -Message "Downloading $($Media.Title)" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout
+      Update-Notifications -id $UID -Level 'INFO' -Message "Downloading $($title)" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout
     }catch{
       write-ezlogs "An exception occurred adding items to notifications grid" -showtime -catcherror $_
     }
@@ -186,7 +202,7 @@ function Invoke-DownloadMedia{
             if($progress){
               try{
                 $thisApp.config.Download_status = $true
-                $thisApp.config.Download_message = "($progress%) Downloading $($Media.Title) at $speed - Download Size: $download_size - ETA $eta"
+                $thisApp.config.Download_message = "($progress%) Downloading $($title) at $speed - Download Size: $download_size - ETA $eta"
                 $thisApp.config.Download_UID = $UID
               }catch{
                 write-ezlogs "An exception occurred updating the notification and message with ID $UID" -showtime -catcherror
@@ -202,23 +218,29 @@ function Invoke-DownloadMedia{
               }            
               #if(!$(get-process yt_dlp -ErrorAction SilentlyContinue)){write-ezlogs "Ended due to yt_dlp process ending ending" -showtime;break }
             }
-            if($_ -match "\[Metadata\] Adding metadata to `"(?<value>.*)`""){
-              $downloaded_File = $([regex]::matches($_, "\[Metadata\] Adding metadata to `"(?<value>.*)`"") | %{$_.groups[1].value})  
+            if($_ -match "\[EmbedThumbnail\] (?<value>.*): Adding thumbnail to `"(?<value>.*)`""){
+              $downloaded_File = $([regex]::matches($_, "\[EmbedThumbnail\] (?<value>.*): Adding thumbnail to `"(?<value>.*)`"") | %{$_.groups[1].value})  
               $downloaded_File = ($downloaded_File).trim()   
               if([System.IO.File]::Exists($downloaded_File)){
                 write-ezlogs "[SUCCESS] Media downloaded to $downloaded_File" -showtime -color green
                 $message = "[SUCCESS] Media downloaded to $downloaded_File"
-                $thisApp.config.Download_message = $message             
+                $thisApp.config.Download_message = $message                           
               }
-              #if(!$(get-process yt_dlp -ErrorAction SilentlyContinue)){write-ezlogs "Ended due to yt_dlp process ending ending" -showtime;break } 
+              if(!$(get-process yt_dlp -ErrorAction SilentlyContinue)){
+                write-ezlogs "Ended due to job or process ending";
+                $synchash.window.Dispatcher.invoke([action]{
+                    $Synchash.downloadTimer.stop()
+                })             
+                break
+              } 
             }  
             #if($_ -match 'Number of applicable updates for the current system configuration:'){ $dellupdates_code = $_.Substring(($_.IndexOf('configuration: ')+15))}
-            if($(Get-Job -State Running).count -eq 0){
-              write-ezlogs "Ended due to job ending";
+            if($(Get-Job -State Running).count -eq 0 -or !(Get-Process 'yt-dlp*' -ErrorAction SilentlyContinue)){
+              write-ezlogs "Ended due to job or process ending";
               $synchash.window.Dispatcher.invoke([action]{
                   $Synchash.downloadTimer.stop()
               })             
-              break 
+              break
             }
             #if(!$(get-process yt_dlp -ErrorAction SilentlyContinue)){write-ezlogs "Ended due to yt_dlp process ending ending" -showtime;break }
           }
@@ -242,17 +264,25 @@ function Invoke-DownloadMedia{
     Write-EZLogs '---------------END Log Entries---------------' -enablelogs
     Write-EZLogs -text ">>>> yt_dlp. Final loop count: $count" -showtime            
     if(![System.IO.File]::Exists($downloaded_File)){
-      $downloaded_File = [System.IO.Path]::Combine($Download_Path,"$($media.Title).mkv")
+      $downloaded_File = [System.IO.Path]::Combine($Download_Path,"$($title).mkv")
     }
     if(![System.IO.File]::Exists($downloaded_File)){
       write-ezlogs "Unable to verify successful download of media file $downloaded_File" -showtime -warning
       $message = "[WARNING] Unable to verify successful download of media file $downloaded_File"
       Update-Notifications -id $UID -Level 'WARNING' -Message $message -VerboseLog -Message_color "Orange" -thisApp $thisApp -synchash $synchash -clear -Open_Flyout
     }elseif([System.IO.File]::Exists($downloaded_File)){
-     
       if($youtube_id)
       { 
-        $image = "https://i.ytimg.com/vi/$youtube_id/maxresdefault.jpg"
+        try{
+          $video_info = Get-YouTubeVideo -Id $youtube_id
+        }catch{
+          write-ezlogs "An exception occurred executing Get-YoutubeVideo" -showtime -catcherror $_
+        }
+        if($video_info.snippet.thumbnails){
+          $image = $video_info.snippet.thumbnails.medium.url
+        }else{
+          $image = "https://i.ytimg.com/vi/$youtube_id/maxresdefault.jpg"
+        }
         if($thisApp.Config.Verbose_logging){write-ezlogs "Caching thumbnail images: $($image)" -showtime}       
         if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
           if($thisApp.Config.Verbose_logging){write-ezlogs " Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime}
@@ -274,10 +304,14 @@ function Invoke-DownloadMedia{
               if([System.IO.File]::Exists($image)){
                 if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not found, copying image $image to cache path $image_Cache_path" -enablelogs -showtime}
                 $null = Copy-item -LiteralPath $image -Destination $image_Cache_path -Force
-              }else{
-                $uri = new-object system.uri($image)
-                if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -enablelogs -showtime}
-                (New-Object System.Net.WebClient).DownloadFile($uri,$image_Cache_path) 
+              }elseif((Test-URL $image)){
+                try{
+                  $uri = new-object system.uri($image)
+                  if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -enablelogs -showtime}
+                  (New-Object System.Net.WebClient).DownloadFile($uri,$image_Cache_path) 
+                }catch{
+                  write-ezlogs "An exception occurred downloading image $uri to path $image_Cache_path" -showtime -catcherror $_
+                }
               }             
               if([System.IO.File]::Exists($image_Cache_path)){
                 $stream_image = [System.IO.File]::OpenRead($image_Cache_path) 
@@ -315,12 +349,13 @@ function Invoke-DownloadMedia{
       if($cached_image -and $thisApp.Config.Verbose_logging){
         write-ezlogs "Media image: $cached_image" -showtime
       }     
-      write-ezlogs ">>>> Checking if file was downloaded to existing local media directory" -showtime -color cyan
+      write-ezlogs ">>>> Checking if file $downloaded_File was downloaded to existing local media directory" -showtime -color cyan
       foreach($directory in $thisApp.config.Media_Directories){
-        $confirm_downloaded_file = (robocopy $directory 'Doesntexist' $($downloaded_File | split-path -leaf) /L /E /FP /NS /NC /NjH /NJS /NDL /NP /MT:20).trim()
+        #$confirm_downloaded_file = (robocopy $directory 'Doesntexist' $($downloaded_File | split-path -leaf) /L /E /FP /NS /NC /NjH /NJS /NDL /NP /MT:20).trim()
+        $confirm_downloaded_file = Find-FilesFast -Path $directory | where {$_ -match $([regex]::Escape($downloaded_File))}
         if($confirm_downloaded_file){   
           write-ezlogs " | File exists in existing local directory $($confirm_downloaded_file), adding to local media tables" -showtime     
-          Import-Media -Media_Path $confirm_downloaded_file -verboselog -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -PlayMedia_Command $PlayMedia_Command -thisApp $thisApp -use_runspace
+          Import-Media -Media_Path $confirm_downloaded_file -verboselog -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace
         }
       }
     }           
@@ -341,7 +376,7 @@ function Invoke-DownloadMedia{
         }else{
           $applogo = "$($thisApp.Config.Current_folder)\\Resources\\MusicPlayerFill.png"
         }
-        if($media.type -eq 'YoutubePlaylist_item'){
+        if($media_link -match 'Youtube'){
           $source = 'Youtube Media'
           if(!$cached_image){
             $applogo = "$($thisApp.Config.Current_folder)\\Resources\\Material-Youtube.png"

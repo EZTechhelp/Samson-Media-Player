@@ -36,8 +36,8 @@ function Get-Youtube
     [switch]$Import_Profile,
     $thisApp,
     $log,
+    [switch]$refresh,
     $all_installed_apps,
-    [switch]$Refresh_Global_Profile,
     [switch]$Startup,
     [switch]$update_global,
     [switch]$Export_Profile,
@@ -48,7 +48,8 @@ function Get-Youtube
     $Youtube_playlists,
     [string]$youtube_playlist_Url,
     [string]$PlayerData_Profile_Directory,
-    [switch]$Verboselog
+    [switch]$Verboselog,
+    $PlaylistInfo
   )
   
   $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidPathChars())
@@ -66,19 +67,24 @@ function Get-Youtube
     $Null = New-Item -Path $AllTwitch_Media_Profile_Directory_Path -ItemType directory -Force
   }
   $AllTwitch_Media_Profile_File_Path = [System.IO.Path]::Combine($AllTwitch_Media_Profile_Directory_Path,"All-Twitch_Media-Profile.xml")  
-  if($startup -and $Import_Profile -and ([System.IO.File]::Exists($AllYoutube_Media_Profile_File_Path))){ 
-    if($Verboselog){write-ezlogs " | Importing Youtube Media Profile: $AllYoutube_Media_Profile_File_Path" -showtime -enablelogs -logfile:$log}
+  if($Import_Profile -and ([System.IO.File]::Exists($AllYoutube_Media_Profile_File_Path))){ 
+    if($Verboselog){write-ezlogs "[Get-Youtube] | Importing Youtube Media Profile: $AllYoutube_Media_Profile_File_Path" -showtime -enablelogs -logfile:$log}
     [System.Collections.ArrayList]$Available_Youtube_Media = Import-CliXml -Path $AllYoutube_Media_Profile_File_Path
     $Available_Twitch_Media = $Available_Youtube_Media | where {$_.Source -eq 'TwitchChannel'}
     if(@($Available_Twitch_Media).count -gt 1 -and !([System.IO.File]::Exists($AllTwitch_Media_Profile_File_Path))){
-      write-ezlogs ">>>> Saving Available Twitch Media profile to $AllTwitch_Media_Profile_File_Path" -showtime -logfile:$log
+      write-ezlogs "[Get-Youtube] >>>> Saving Available Twitch Media profile to $AllTwitch_Media_Profile_File_Path" -showtime -logfile:$log
       [System.Collections.ArrayList]$Available_Twitch_Media | Export-Clixml $AllTwitch_Media_Profile_File_Path -Force     
+    }
+    if($Startup -and !$refresh){
+      return $Available_Youtube_Media     
     }    
-    return $Available_Youtube_Media    
   }else{
-    if($Verboselog){write-ezlogs " | Youtube Media Profile to import not found at $AllYoutube_Media_Profile_File_Path....Attempting to build new profile" -showtime -enablelogs -logfile:$log} 
+    if($Verboselog){write-ezlogs "[Get-Youtube] | Youtube Media Profile to import not found at $AllYoutube_Media_Profile_File_Path....Attempting to build new profile" -showtime -enablelogs -logfile:$log} 
   }   
   $youtubedl_path = "$($thisApp.config.Current_folder)\\Resources\\Youtube-dl" 
+  if(!(Get-command Get-AccessToken -ErrorAction SilentlyContinue)){
+    Import-Module "$($thisApp.Config.Current_folder)\Modules\Youtube\Youtube.psm1" -Force
+  }
   $env:Path += ";$youtubedl_path" 
   $yt_dl_urls = $Null
   if($Youtube_URL){
@@ -89,7 +95,14 @@ function Get-Youtube
     }
   }else{
     $yt_dl_urls = $Youtube_playlists
-    $Available_Youtube_Media = New-Object -TypeName 'System.Collections.ArrayList'
+    if(!$Available_Youtube_Media){
+      write-ezlogs "| Creating new youtube media collection array" -showtime
+      $Available_Youtube_Media = New-Object -TypeName 'System.Collections.ArrayList'
+    }
+  } 
+  if($Available_Youtube_Media){
+    $yt_dl_urls = $yt_dl_urls | where {$Available_Youtube_Media.url -notcontains $_}
+    write-ezlogs "| Number of Youtube urls to process $($yt_dl_urls.count)" -showtime
   }  
   foreach($playlist in $yt_dl_urls){
     try{
@@ -99,7 +112,6 @@ function Get-Youtube
       }
       #$youtubedl_path = "C:\Users\DopaDodge\OneDrive - EZTechhelp Company\Development\Repositories\EZT-MediaPlayer\Resources\Youtube-dl"
       if($playlist -match 'twitch.tv'){
-        #$streamlink_fetchjson = streamlink $playlist --json\
         $twitch_channel = $((Get-Culture).textinfo.totitlecase(($playlist | split-path -leaf).tolower()))        
         $TwitchAPI = Get-TwitchAPI -StreamName $twitch_channel -thisApp $thisApp -startup -verboselog:$thisApp.Config.Verbose_logging
         $id = $Null  
@@ -169,12 +181,19 @@ function Get-Youtube
         }elseif($playlist -match 'list='){
           $youtube_id = ($($playlist) -split('list='))[1].trim()    
           $youtube_type = 'Playlist'                      
+        }elseif($playlist -match '\/channel\/'){
+          if($playlist -match '\/videos'){
+            $playlist = $playlist -replace '\/videos'
+          }
+          $youtube_id = ($($playlist) -split('\/channel\/'))[1].trim() 
+          $youtube_type = 'Channel'   
         }
         if($youtube_id){
           try{
+            write-ezlogs "Getting info for playlist $playlist - $youtube_id" -showtime -logfile:$log
             if($youtube_type -eq 'Playlist'){
               $video_info = Get-YouTubePlaylistItems -ID $youtube_id
-            }else{
+            }elseif($youtube_type -eq 'Channel'){
               $video_info = Get-YouTubeVideo -Id $youtube_id
             }         
             if($video_info){
@@ -431,9 +450,11 @@ function Get-Youtube
                 $Stream_title = $Null               
                 $Group = 'Youtube'
                 if($track.playlist_id){
-                  write-ezlogs ">>> Found Youtube Playlist item $($track.title)" -showtime -logfile:$log
-                  write-ezlogs " | Playlist ID $($playlist_id)" -showtime -logfile:$log
-                  write-ezlogs " | Track Total $($Tracks_Total)" -showtime -logfile:$log
+                  if($thisApp.Config.Verbose_logging){
+                    write-ezlogs ">>> Found Youtube Playlist item $($track.title)" -showtime -logfile:$log
+                    write-ezlogs " | Playlist ID $($playlist_id)" -showtime -logfile:$log
+                    write-ezlogs " | Track Total $($Tracks_Total)" -showtime -logfile:$log
+                  }
                   $href = "https://www.youtube.com/playlist?list=$($track.playlist_id)"
                 }else{
                   write-ezlogs ">>> Found Youtube Video $($track.title)" -showtime -logfile:$log
@@ -506,7 +527,7 @@ function Get-Youtube
             } 
             if($track.playlist_id){ 
               if($Available_Youtube_Media.id -notcontains $track.playlist_id){
-                write-ezlogs " | Youtube Playlist $($track.playlist)" -showtime -logfile:$log
+                if($thisApp.Config.Verbose_logging){write-ezlogs " | Youtube Playlist $($track.playlist)" -showtime -logfile:$log}
                 $encodedTitle = $Null  
                 $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($track.playlist)-YoutubePlaylist")
                 $encodedTitle = [System.Convert]::ToBase64String($encodedBytes)       

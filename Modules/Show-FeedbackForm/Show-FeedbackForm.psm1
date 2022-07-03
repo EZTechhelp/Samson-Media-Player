@@ -131,8 +131,9 @@ function Show-FeedbackForm{
       $hashfeedback.Window.IgnoreTaskbarOnMaximize = $true  
       $hashfeedback.Title_menu_Image.width = "18"  
       $hashfeedback.Title_menu_Image.Height = "18"  
+      $hashfeedback.Feedback_Details.document.blocks.clear()
       $hashfeedback.EditorHelpFlyout.Document.Blocks.Clear()      
-      $hashfeedback.PageNotes.text = "NOTE: A copy of the log file ($($thisApp.Config.Log_file)) will automatically be included with your submission"
+      $hashfeedback.PageNotes.text = "NOTE: If submitting a bug/issue, please enable 'Include Logs with Submission'"
       $hashfeedback.PageNotes.FontStyle="Italic"      
       if($newtheme){
         write-ezlogs "Current Theme: $($detectTheme | out-string)"
@@ -178,7 +179,7 @@ function Show-FeedbackForm{
           }
       })  
       $hashfeedback.Feedback_Details.Add_TextChanged({
-          if($hashfeedback.Feedback_Details.document.blocks.inlines.text -eq "")
+          if(!$hashfeedback.Feedback_Details.document.blocks.inlines.text)
           {
             $hashfeedback.Feedback_Details_Label.BorderBrush = "Red"
           }       
@@ -200,8 +201,8 @@ function Show-FeedbackForm{
       $hashfeedback.File_Path_Browse.add_click({
           $File_Path_Browse = Open-FileDialog -Title "Select a file to include with your submission (Ex: Screenshot..etc)" -Multiselect
           write-ezlogs "Selected Path: $($File_Path_Browse)" -showtime -color cyan
-          #$File_Path_Browse = $File_Path_Browse -join ","
           if(-not [string]::IsNullOrEmpty($File_Path_Browse)){
+            [array]$File_Path_Browse = $File_Path_Browse -join ","
             $hashfeedback.File_Path_textbox.text = $File_Path_Browse
           }
       }) 
@@ -259,6 +260,9 @@ function Show-FeedbackForm{
         $null = $RichTextBoxControl.Document.Blocks.Add($Paragraph)
       }      
     }          
+      
+    $hashfeedback.ReviewLog_Path_Hyperlink.NavigateUri = $thisApp.Config.Log_file
+    $Null = $hashfeedback.ReviewLog_Path_Hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$synchash.Hyperlink_RequestNavigate)  
              
     #---------------------------------------------- 
     #region Apply Settings Button
@@ -289,17 +293,70 @@ function Show-FeedbackForm{
                 if($($hashfeedback.Feedback_ComboBox.selecteditem.content) -match 'Bug/Issue'){
                   $listname = '❗ Issues'
                 }else{
-                  $listname = '💭 Feedback/General'
+                  $listname = '💭 Discussions'
                 } 
                 try
                 {
-                  $CreateCard = Create-trellocard -BoardName $($thisApp.Config.App_name) -ListName $listname -CardName $($hashfeedback.Feedback_Subject_textbox.text) -CardDesc $($RichTextRange2.text) -auth $auth
+                  $CreateCard = Create-trellocard -BoardName 'EZT-MediaPlayer QA-Testing-5' -ListName $listname -CardName $($hashfeedback.Feedback_Subject_textbox.text) -CardDesc $($RichTextRange2.text) -auth $auth
                   if($CreateCard.id){
                     write-ezlogs "[SUCCESS] Feedback successfuly sent!" -showtime
                     write-ezlogs "New Card Created: $($CreateCard | out-string)" -showtime
-                    $emailstatus = "[SUCCESS] Feedback successfuly sent!" 
+                    $emailstatus = "[SUCCESS] Feedback successfuly sent!"
                     $notificationstatus = "[SUCCESS] Your feedback/issue was successsfully submitted!"
-                    $emailcolor = "green"
+                    $emailcolor = "Lightgreen" 
+                    if(-not [string]::IsNullOrEmpty($hashfeedback.File_Path_textbox.text)){
+                      $zipfiles = [System.IO.Path]::Combine($env:temp, "$($thisScript.Name)-Attachments-Logs.zip")
+                      foreach($file in $hashfeedback.File_Path_textbox.text -split ','){
+                        if([System.IO.File]::Exists($file)){
+                          try{
+                            if($file -match '.jpg' -or $file -match '.jpeg' -or $file -match '.png'){
+                              write-ezlogs -text " | Attaching image File $($file) to card" -ShowTime
+                              $attach = Add-TrelloAttachment -CardID $($CreateCard.id) -FileAttachment $file -auth $auth
+                            }else{
+                              write-ezlogs -text " | Adding File $($file) to archive" -ShowTime
+                              Compress-Archive -LiteralPath $file -DestinationPath $zipfiles -update                              
+                            }
+                          }catch{
+                            write-ezlogs "An exception occurred adding file $file to zip archive $zipfiles" -showtime -catcherror $_
+                          }                          
+                        }else{
+                          write-ezlogs "Cannot add invalid file '$file' to archive" -showtime -warning
+                        }
+                      }
+                      if([System.IO.File]::Exists($zipfiles)){
+                        try{
+                          write-ezlogs -text "Attaching File $($zipfiles) to card $($CreateCard.id)" -ShowTime
+                          $attach = Add-TrelloAttachment -CardID $($CreateCard.id) -FileAttachment $zipfiles -auth $auth
+                        }catch{
+                          write-ezlogs "An exception occurred executing Add-TrelloAttachment for file $zipfiles" -showtime -catcherror $_
+                        }                       
+                      }                       
+                      if($attach){
+                        write-ezlogs "[SUCCESS] Successfully added attachment $($attach.name) to Card $($CreateCard.name)" -showtime
+                      }else{
+                        write-ezlogs "Unable to verify successful attachment of file $($hashfeedback.File_Path_textbox.text) to card $($CreateCard.name)" -showtime -warning
+                        $emailstatus += "`m[WARNING] Feedback successfuly sent, however unable to verify attachment of file $($hashfeedback.File_Path_textbox.text)"
+                        $notificationstatus += "`n[WARNING] Your feedback/issue was successsfully submitted, however unable to verify attachment of file $($hashfeedback.File_Path_textbox.text)"
+                        $emailcolor = "Orange" 
+                      }
+                    }
+                    if($thisApp.Config.Log_file -and $hashfeedback.Include_logs_Toggle.isOn)
+                    {
+                      
+                      $emaillogs = [System.IO.Path]::Combine($env:temp, "$($thisScript.Name)-$($thisScript.Version)-Logs.zip")
+                      write-ezlogs -text "Creating Zip Log archive: ($emaillogs)" -ShowTime
+                      $null = Copy-item ([System.IO.Directory]::GetParent($thisApp.Config.Log_file)) -Destination "$env:temp\$($thisScript.Name)\TempLogs" -Recurse -Force
+                      Compress-Archive -LiteralPath "$env:temp\$($thisScript.Name)\TempLogs" -DestinationPath $emaillogs -Force 
+                      $attachlog = Add-TrelloAttachment -CardID $($CreateCard.id) -FileAttachment $emaillogs -auth $auth  
+                      if($attachlog){
+                        write-ezlogs "[SUCCESS] Successfully added attachment $($attachlog.name) to Card $($CreateCard.name)" -showtime
+                      }else{
+                        write-ezlogs "Unable to verify successful attachment of file $emaillogs to card $($CreateCard.name)" -showtime -warning
+                        $emailstatus += "`n[WARNING] Feedback successfuly sent, however unable to verify attachment of file $emaillogs"
+                        $notificationstatus += "`n[WARNING] Your feedback/issue was successsfully submitted, however unable to verify attachment of file $emaillogs"
+                        $emailcolor = "Orange" 
+                      } 
+                    }                    
                     Show-NotifyBalloon -Message $notificationstatus -Title 'FeedBack/Issue Submission' -TipIcon Info -Icon_path "$($current_folder)\\Resources\\MusicPlayerFill.ico"
                   }else{
                     write-ezlogs "Sending Feedback failed!" -showtime -warning

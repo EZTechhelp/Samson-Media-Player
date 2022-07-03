@@ -10,15 +10,14 @@
 function Get-AvailableDevices {
   param(
     [string]
-    $ApplicationName,
-    $thisApp,
+    $ApplicationName = $thisApp.Config.App_Name,
     $thisScript         
   )
 
   $Method = 'Get'
   $Uri = 'https://api.spotify.com/v1/me/player/devices'
   if($thisApp){
-    $Response = Send-SpotifyCall -Method $Method -Uri $Uri -ApplicationName $ApplicationName -thisApp $thisApp -thisScript $thisScript
+    $Response = Send-SpotifyCall -Method $Method -Uri $Uri -ApplicationName $ApplicationName -thisScript $thisScript
   }else{
     $Response = Send-SpotifyCall -Method $Method -Uri $Uri -ApplicationName $ApplicationName
   }

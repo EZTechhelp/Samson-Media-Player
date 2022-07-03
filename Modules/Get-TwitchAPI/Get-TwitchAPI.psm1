@@ -192,11 +192,12 @@ function Get-TwitchStatus
             foreach($media in ($Available_Youtube_Media | where {$_.Source -eq 'TwitchChannel'}).playlist_tracks){
               try{
                 $twitch_channel = $((Get-Culture).textinfo.totitlecase(([System.IO.Path]::GetFileNameWithoutExtension($media.webpage_url)).tolower()))
-                if($thisApp.Config.Verbose_logging){write-ezlogs ">>>> Checking status of Twitch stream $twitch_channel -- $($Media.webpage_url) - Currently playing $($thisApp.Config.streamlink.User_Name)" -showtime -color cyan -logfile:$log}
+                if($thisApp.Config.Verbose_logging){write-ezlogs ">>>> Checking status of Twitch stream $twitch_channel -- $($Media.webpage_url) - Currently playing $($synchash.streamlink.User_Name)" -showtime -color cyan -logfile:$log}
                 $TwitchAPI = Get-TwitchAPI -StreamName $twitch_channel -thisApp $thisApp
-                if($TwitchAPI.user_name -eq $thisApp.Config.streamlink.User_Name){
+                $Current_playing = $synchash.PlayQueue_TreeView.Items | where {$_.header.id -eq $synchash.Current_playing_media.id} | select -Unique
+                if($Current_playing -and $Current_playing.header.title -match $twitchApi.User_name){
                   if($thisApp.Config.Verbose_logging){write-ezlogs "#### | Updating currently playing Twitch stream $twitch_channel -- View Count: $($TwitchAPI.viewer_count)" -showtime -color cyan -logfile:$log}
-                   $thisApp.Config.streamlink = $TwitchAPI
+                  $synchash.streamlink = $TwitchAPI
                 }
                 if(!$TwitchAPI.type){
                   if($thisApp.Config.Verbose_Logging){write-ezlogs "| Twitch Channel $twitch_channel`: OFFLINE" -showtime -logfile:$log}
@@ -210,9 +211,9 @@ function Get-TwitchStatus
                     $changes++
                   }  
                 }elseif($TwitchAPI.type){
-                  if($thisapp.Config.streamlink.type){
-                    $thisapp.Config.streamlink = $TwitchAPI
-                  }               
+                  #if($synchash.streamlink.type){
+                  #$synchash.streamlink = $TwitchAPI
+                  #}               
                   #$twitch_status = $streamlink_fetchjson | convertfrom-json
                   $twitch_status = $TwitchAPI.type
                   $twitch_channel = $TwitchAPI.User_Name           
@@ -290,7 +291,6 @@ function Get-TwitchStatus
       }else{
         write-ezlogs "Unable to find any valid twitch media!" -showtime -warning -logfile:$log
       }
-      #Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -startup -thisApp $thisApp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command -all_playlists $all_playlists
     }catch{
       write-ezlogs "An exception occurred getting status of Twitch streams!" -showtime -catcherror $_ -logfile:$log
       Update-Notifications -Level 'ERROR' -Message "An exception occurred getting status of Twitch streams!" -VerboseLog -Message_color "Red" -thisApp $thisApp -synchash $synchash -Open_Flyout
@@ -331,7 +331,7 @@ function Get-TwitchStatus
               Add-Member -InputObject $media -Name 'Stream_title' -Value "" -MemberType NoteProperty -Force 
               Add-Member -InputObject $media -Name 'thumbnail' -Value "" -MemberType NoteProperty -Force                
             }  
-            $Playlist_profile = $all_playlists.playlists | where {$_.Playlist_tracks.id -eq $media.id}         
+            $Playlist_profile = $synchash.all_playlists | where {$_.Playlist_tracks.id -eq $media.id}         
             foreach($track in $Playlist_profile.Playlist_tracks){
               if($track.id -eq $media.id){
                 $track.title = $Media.Title
@@ -349,7 +349,7 @@ function Get-TwitchStatus
                 }         
               }
             } 
-            Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -PlayMedia_Command $synchash.PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $synchash.PlaySpotify_Media_Command -all_playlists $all_playlists      
+            Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -thisApp $thisApp   
             #$synchash.Refresh_Playlist_Hidden_Checkbox.IsChecked = $true                   
           }catch{
             write-ezlogs "An exception occurred executing update_status_timer" -showtime -catcherror $_ -logfile:$log
@@ -358,7 +358,6 @@ function Get-TwitchStatus
           $this.Stop()     
       }.GetNewClosure()) 
       $synchash.update_twitchstatus_timer.start()  
-      #Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -startup -thisApp $thisApp -media_contextMenu $Media_ContextMenu -PlayMedia_Command $PlayMedia_Command -Refresh_Spotify_Playlists -PlaySpotify_Media_Command $PlaySpotify_Media_Command -all_playlists $all_playlists
     }catch{
       write-ezlogs "An exception occurred getting status of Twitch stream $($_.OriginalSource.datacontext)" -showtime -catcherror $_ -logfile:$log
       Update-Notifications -Level 'ERROR' -Message "An exception occurred getting status of Twitch stream $($Media.webpage_url)" -VerboseLog -Message_color "Red" -thisApp $thisApp -synchash $synchash -Open_Flyout
@@ -397,7 +396,7 @@ function Start-TwitchMonitor
       while($thisApp.config.Twitch_Update -and $thisApp.config.Twitch_Update_Interval -ne $null){      
         $Sleep_Value = [TimeSpan]::Parse($thisApp.config.Twitch_Update_Interval).TotalSeconds
         $checkupdate_timer = [system.diagnostics.stopwatch]::StartNew()
-        Get-TwitchStatus -thisApp $thisApp -synchash $Synchash -all_playlists $all_playlists -verboselog:$thisApp.Config.Verbose_logging -checkall -Use_runspace:$false
+        Get-TwitchStatus -thisApp $thisApp -synchash $Synchash -verboselog:$thisApp.Config.Verbose_logging -checkall -Use_runspace:$false
         Write-ezlogs "[Get-TwitchStatus] Ran for: $($checkupdate_timer.Elapsed.TotalSeconds) seconds" -showtime -logfile:$log
         $checkupdate_timer.Restart()
         start-sleep -Seconds $Sleep_Value

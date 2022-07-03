@@ -49,13 +49,16 @@ function Skip-Media
     $synchash.Youtube_WebPlayer_title = $null
     $synchash.Spotify_WebPlayer_title = $null
     $synchash.Spotify_WebPlayer_URL = $null
-    $synchash.Start_media = $null                
+    $synchash.Start_media = $null 
+    $synchash.Current_playing_media = $null           
     write-ezlogs ">>>> Skip-Media received" -showtime -color cyan
     write-ezlogs ">>>> Stopping play timers" -showtime
-    #$synchash.Window.Dispatcher.invoke([action]{                
+    #$synchash.Window.Dispatcher.invoke([action]{     
+    #$synchash.Youtube_WebPlayer_timer.start()           
     $Synchash.Timer.stop()
     $synchash.Start_media_timer.stop()  
     $synchash.WebPlayer_Playing_timer.stop()  
+    $synchash.update_status_timer.start() 
     #})            
     if($synchash.vlc.IsPlaying){
       $synchash.VLC.stop()
@@ -132,7 +135,7 @@ function Skip-Media
         #Look for local media 
         $All_Playlists_Cache_File_Path = [System.IO.Path]::Combine($thisApp.config.Playlist_Profile_Directory,"All-Playlists-Cache.xml")
         if($synchash.All_local_Media){
-          $next_selected.media = $synchash.All_local_Media | where {$_.id -eq $next_item}
+          $next_selected.media = $synchash.All_local_Media | where {$_.id -eq $next_item} | select -Unique
           <#                  foreach($item in $synchash.All_local_Media){
               if($item.id -eq $next_item){
               $next_selected.media = $item
@@ -148,9 +151,9 @@ function Skip-Media
         #look for youtube media                              
         if(!$next_selected.media){
           if($synchash.All_Youtube_Media.Playlist_tracks){
-            $next_selected.media = $synchash.All_Youtube_Media.playlist_tracks | where {$_.id -eq $next_item} 
+            $next_selected.media = $synchash.All_Youtube_Media.playlist_tracks | where {$_.id -eq $next_item} | select -Unique
             if(!$next_selected.media){
-              $next_selected.media = $synchash.All_Youtube_Media.playlist_tracks | where {$_.encodedtitle -eq $next_item} 
+              $next_selected.media = $synchash.All_Youtube_Media.playlist_tracks | where {$_.encodedtitle -eq $next_item} | select -Unique
             }                    
           }else{
             foreach($item in $Youtube_Datatable.datatable){
@@ -162,9 +165,9 @@ function Skip-Media
         }                
         #look for spotify media
         if(!$next_selected.media){
-          $next_selected.media = $Spotify_Datatable.datatable | where {$_.id -eq $next_item} 
+          $next_selected.media = $Spotify_Datatable.datatable | where {$_.id -eq $next_item} | select -Unique
           if(!$next_selected.media -and $synchash.All_Spotify_Media.playlist_tracks){
-            $next_selected.media = $synchash.All_Spotify_Media.playlist_tracks | where {$_.id -eq $next_item} 
+            $next_selected.media = $synchash.All_Spotify_Media.playlist_tracks | where {$_.id -eq $next_item} | select -Unique
           }              
         } 
         #Look for in playlist cache

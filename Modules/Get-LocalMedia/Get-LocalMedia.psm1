@@ -27,6 +27,128 @@
 #>
 
 #---------------------------------------------- 
+#region Get-SongInfo Function
+#----------------------------------------------
+function Get-SongInfo($Path)
+{
+  if($Path){
+    try{
+      <#      $Shell = New-Object -COMObject Shell.Application
+          $DirName = $([System.IO.Path]::GetDirectoryName($Path))
+          if($DirName){
+          $Folder = $shell.Namespace($($DirName))
+          $Filename = [System.IO.Path]::GetFileName($Path)
+          }
+          if($Folder -and $Filename){
+          $File = $Folder.ParseName($($Filename))
+          if(!$file -and $filename -match '\?'){
+          $Filename = ($Folder.Items() | where {$_.name -match $(($Filename -split '\?')[0]) -or $_.name -match $(($Filename -split '\?')[0])}).Name
+          }
+          if($Filename){
+          $File = $Folder.ParseName($($Filename))
+          }
+          $title = ($Folder.GetDetailsOf($File, 21))
+          $artistpattern = "(?<value>.*) by (?<value>.*)"
+          #[int]$h, [int]$m, [int]$s = ($Folder.GetDetailsOf($File, 27)).split(":")
+          $Artist = ($Folder.GetDetailsOf($File, 13))
+          if([string]::IsNullOrEmpty($artist) -and $title -match $artistpattern){   
+          $artist = ([regex]::matches($title,  $artistpattern)| %{$_.groups[1].value} )
+          }
+          if($Artist -match ';'){
+          $artist = ($artist -split ';')[0]
+          }
+          $filesize = ($Folder.GetDetailsOf($File, 1))
+          $comments =  ($Folder.GetDetailsOf($File,24))
+          $album = ($Folder.GetDetailsOf($File, 14))
+          #$year = ($Folder.GetDetailsOf($File, 15))
+          #$Genre = ($Folder.GetDetailsOf($File, 16))
+          #  if($Genre -match ';'){
+          #    $Genre = ($Genre -split ';')[0]
+          #}  
+          #$copyright = ($Folder.GetDetailsOf($File, 25))
+          #$length = $h*60*60 + $m*60 +$s
+          $tracknumber = ($Folder.GetDetailsOf($File, 26))
+          $duration = ($Folder.GetDetailsOf($File, 27))
+          $bitrate = ($Folder.GetDetailsOf($File, 28))
+          }
+          $meta_properties_output = New-Object -TypeName 'System.Collections.ArrayList'     
+          $newRow = New-Object PsObject -Property @{
+          'Artist' = $Artist
+          'Title' = $title
+          'Album' = $album 
+          'Year' = $year
+          'Comments' = $comments
+          'Genre' = $Genre
+          'Length' = $length
+          'Duration' = $duration
+          'FileSize' = $filesize
+          'Copyright' = $copyright
+          'TrackNumber' = $tracknumber
+          'Bitrate' = $bitrate
+          }
+          $null = $meta_properties_output.Add($newRow)
+      Write-Output $meta_properties_output #>  
+      try{
+        $taginfo = [taglib.file]::create($Path) 
+      }catch{
+        write-ezlogs "An exception occurred getting taginfo for $Path" -showtime -catcherror $_
+      }              
+      if($taginfo.tag.IsEmpty -or !$taginfo){
+        $rootdir = [System.IO.directory]::GetParent($Path)
+        $artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($rootdir))).trim() 
+        $title = ([System.IO.Path]::GetFileNameWithoutExtension($Path))
+      }else{
+        if($taginfo.tag.Albumartists){
+          $artist = $taginfo.tag.Albumartists
+        }elseif($taginfo.tag.FirstArtist){
+          $artist = $taginfo.tag.FirstArtist
+        }elseif($taginfo.tag.FirstPerformer){
+          $artist = $taginfo.tag.FirstPerformer
+        }elseif($taginfo.tag.Artists){
+          $artist = $taginfo.tag.Artists | select -first 1
+        }        
+        $title = $taginfo.tag.title
+        if($taginfo.properties.duration){
+          $duration = [timespan]::Parse($taginfo.properties.duration)
+          $duration_ms = [timespan]::Parse($taginfo.properties.duration).TotalMilliseconds
+        }
+      }
+      if($taginfo.tag.pictures.IsLoaded){
+        $PictureData = $true
+      }else{
+        $PictureData = $false
+      }
+      $meta_properties_output = New-Object -TypeName 'System.Collections.ArrayList'       
+      $newRow = New-Object PsObject -Property @{
+        'Artist' = $Artist
+        'Title' = $title
+        'Album' = $taginfo.tag.Album 
+        'Year' = $taginfo.tag.Year
+        'Comments' = $taginfo.tag.comment
+        'Genre' = $taginfo.tag.Genres
+        'Length' = ''
+        'Duration' = $duration
+        'Duration_ms' = $duration_ms
+        'FileSize' = ''
+        'MediaTypes' = $taginfo.properties.MediaTypes
+        'PictureData' = $PictureData
+        'Copyright' = $taginfo.tag.copyright
+        'TrackNumber' = $taginfo.tag.track
+        'Bitrate' = $taginfo.properties.audiobitrate
+      }
+      $null = $meta_properties_output.Add($newRow)
+      Write-Output $meta_properties_output
+
+    }catch{
+      write-ezlogs "An exception occurred parsing info about file $Path" -showtime -catcherror $_
+    }
+  }
+}
+#---------------------------------------------- 
+#endregion Get-SongInfo Function
+#----------------------------------------------
+
+#---------------------------------------------- 
 #region Get-LocalMedia Function
 #----------------------------------------------
 function Get-LocalMedia
@@ -61,15 +183,15 @@ function Get-LocalMedia
     $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator') 
     #Enable linked connections in order to access mapped drives when running under admin context
     if(!$IsAdmin){
-<#      try{ 
-        if(!$(Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name EnableLinkedConnections -ErrorAction SilentlyContinue)){
+      <#      try{ 
+          if(!$(Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name EnableLinkedConnections -ErrorAction SilentlyContinue)){
           write-ezlogs " | Adding EnableLinkedConnections to registry" -showtime
           New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name EnableLinkedConnections -Value 1 -PropertyType 'DWord'
           write-ezlogs " | Restarting LanmanWorkstation service" -showtime
           get-service LanmanWorkstation* | Restart-Service -Force
-        }
-      }catch{
-        write-ezlogs "An exception occurred setting EnableLinkedConnections registry" -showtime -catcherror $_
+          }
+          }catch{
+          write-ezlogs "An exception occurred setting EnableLinkedConnections registry" -showtime -catcherror $_
       }#>
     }  
     if($Verboselog){write-ezlogs "[STARTUP] | Importing Local Media Profile: $AllMedia_Profile_File_Path" -showtime -enablelogs}
@@ -81,13 +203,13 @@ function Get-LocalMedia
   if($Media_Path){
     $directories = $Media_Path
     if($Import_Profile -and ([System.IO.File]::Exists($AllMedia_Profile_File_Path))){ 
-      if($Verboselog){write-ezlogs " | Importing Local Media Profile: $AllMedia_Profile_File_Path" -showtime -enablelogs}
+      if($Verboselog){write-ezlogs "[Media_Path] | Importing Local Media Profile: $AllMedia_Profile_File_Path" -showtime -enablelogs}
       [System.Collections.ArrayList]$Local_Available_Media = Import-CliXml -Path $AllMedia_Profile_File_Path 
     }
   }else{
     $directories = $Media_directories
     if(!$Refresh_All_Media){
-      if($Verboselog){write-ezlogs " | Importing Local Media Profile to process differences: $AllMedia_Profile_File_Path" -showtime -enablelogs}
+      if($Verboselog){write-ezlogs "[Media_directories] | Importing Local Media Profile to process differences: $AllMedia_Profile_File_Path" -showtime -enablelogs}
       [System.Collections.ArrayList]$Local_Available_Media = Import-CliXml -Path $AllMedia_Profile_File_Path
     }
   } 
@@ -98,7 +220,8 @@ function Get-LocalMedia
   if($directories){
     if(!$Refresh_All_Media){
       $directories = $directories | where {$Local_Available_Media.directory.fullname -notcontains $_}
-    }      
+    } 
+
     foreach($directory in $directories){
       if($hash.Window.isVisible){
         $hash.Window.Dispatcher.invoke([action]{
@@ -121,7 +244,11 @@ function Get-LocalMedia
         }else{
           try{
             #$media_files = [System.IO.Directory]::EnumerateFiles($directory,'*','AllDirectories') | where {$_ -match $media_pattern}  
-            $media_files = cmd /c dir $directory /s /b /a-d | Where{$_ -match $media_pattern}  
+            $find_Files_Measure = Measure-Command {
+              $media_files = Find-FilesFast -Path $directory | where {$_ -match $media_pattern}
+            }
+            write-ezlogs "Find-FilesFast Meaasure: $($find_Files_Measure | out-string)" -showtime
+            #$media_files = cmd /c dir $directory /s /b /a-d | Where{$_ -match $media_pattern}  
           }catch{
             write-ezlogs "An exception occurred attempting to enumerate files for directory $($directory)" -showtime -catcherror $_
           } 
@@ -136,7 +263,6 @@ function Get-LocalMedia
         foreach ($m in $media_files | where {$_}) {  
           try{
             $media = $Null
-            #if([System.IO.File]::Exists($m)){
             try{
               $Media = [System.IO.FileInfo]::new($m) #| Where{$_.Extension -match $media_pattern}  
             }catch{
@@ -199,12 +325,29 @@ function Get-LocalMedia
                 $directory = $($media.Directory)
                 $directory_filecount = $null
                 $covert_art = $Null
-                $images = $null                
+                $images = $null 
+                $songinfo = $Null
+                $songinfo = Get-SongInfo -path $url                               
                 if([System.IO.Directory]::Exists($media.Directory)){
-                  $directory_filecount = @([System.IO.Directory]::GetFiles("$($media.Directory)",'*','AllDirectories') | Where{$_ -match $media_pattern}).count
-                  $images = [System.IO.Directory]::EnumerateFiles($media.Directory,'*','TopDirectoryOnly') | where {$_ -match $image_pattern}
+                  #$directory_filecount = @([System.IO.Directory]::GetFiles("$($media.Directory)",'*','AllDirectories') | Where{$_ -match $media_pattern}).count
+                  if(!$songinfo.PictureData){
+                    $images = [System.IO.Directory]::EnumerateFiles($media.Directory,'*','TopDirectoryOnly') | where {$_ -match $image_pattern}
+                  }
                   #$images = (robocopy $media.Directory 'Doesntexist' $image_formats /L /E /FP /NS /NC /NjH /NJS /NDL /NP /MT:20).trim() | where {$_}
                 }                
+                if($songinfo -and !$songinfo.Artist -and $directory){
+                  $songinfo.Artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($directory))).trim()  
+                }elseif($songinfo.Artist){
+                  $songinfo.Artist = $(Get-Culture).TextInfo.ToTitleCase($songinfo.Artist).trim() 
+                }
+                if($songinfo -and !$songinfo.filesize -and $media.Length){
+                  $songinfo.filesize = [math]::round($media.Length /1mb, 2)
+                }
+                if($songinfo.MediaTypes -match 'Video'){
+                  $hasVideo = $true
+                }else{
+                  $hasVideo = $false
+                }
                 if($images){
                   $covert_art = $images | where {$_ -match $name}                  
                   if(!$covert_art){
@@ -213,14 +356,7 @@ function Get-LocalMedia
                   if(!$covert_art){
                     $covert_art = $images | where {$_ -match 'album'}
                   }                  
-                }
-                $songinfo = $Null
-                $songinfo = Get-SongInfo -path $url
-                if(!$songinfo.Artist -and $directory){
-                  $songinfo.Artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($directory))).trim()  
-                }else{
-                  $songinfo.Artist = $(Get-Culture).TextInfo.ToTitleCase($songinfo.Artist).trim() 
-                }               
+                }                               
                 if($Verboselog){write-ezlogs ">>>> Found local media file $name" -showtime -color Cyan}
                 if($Verboselog){write-ezlogs " | Type $($type)" -showtime}
                 if($Verboselog){write-ezlogs " | Title $($Songinfo.title)" -showtime}
@@ -239,6 +375,7 @@ function Get-LocalMedia
                   'directory_filecount' = $directory_filecount
                   'Cover_art' = $covert_art
                   'SongInfo' = $songinfo
+                  'hasVideo' = $hasVideo
                   'Profile_Path' = $AllMedia_Profile_File_Path
                   'Profile_Date_Added' = $(Get-Date -Format 'MM-dd-yyyy hh:mm:ss:tt')
                   'Source' = 'Local'
@@ -246,7 +383,7 @@ function Get-LocalMedia
                 $null = $Local_Media_output.Add($newRow) 
                 $null = $Local_Available_Media.add($Local_Media_output)                                         
               }else{
-                write-ezlogs "Media ($name) already exists -- skipping duplicate" -showtime -enablelogs -warning
+                if($thisApp.Config.Verbose_logging){write-ezlogs "Media ($name) already exists -- skipping duplicate" -showtime -enablelogs -warning}
               }     
             }else{
               write-ezlogs "Provided File $_ is not a valid media type" -showtime -warning
@@ -261,6 +398,7 @@ function Get-LocalMedia
         write-ezlogs "Provided Media Directory $Directory is not valid!" -showtime -warning
       }
     }
+
   }else{
     write-ezlogs "No valid directory/path was provided to scan for media files!" -showtime -warning
   }
@@ -270,7 +408,7 @@ function Get-LocalMedia
   }#>
   if($export_profile -and $AllMedia_Profile_File_Path){
     if($Verboselog){write-ezlogs ">>>> Exporting All Media Profile cache to file $($AllMedia_Profile_File_Path)" -showtime -color cyan -enablelogs}
-    $Local_Available_Media | Export-Clixml $AllMedia_Profile_File_Path -Force
+    [System.Collections.ArrayList]$Local_Available_Media | Export-Clixml $AllMedia_Profile_File_Path -Force
   }
   if($Verboselog){write-ezlogs " | Number of Local Media files found: $(@($Local_Available_Media).Count)" -showtime -enablelogs}
   if($hash.Window.isVisible){
@@ -279,10 +417,10 @@ function Get-LocalMedia
         $hash.More_info_Msg.text=""
     },"Normal")
   }  
-  return $Local_Available_Media
+  return [System.Collections.ArrayList]$Local_Available_Media
 
 }
 #---------------------------------------------- 
 #endregion Get-LocalMedia Function
 #----------------------------------------------
-Export-ModuleMember -Function @('Get-LocalMedia')
+Export-ModuleMember -Function @('Get-LocalMedia','Get-SongInfo')

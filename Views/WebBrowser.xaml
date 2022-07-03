@@ -1,10 +1,22 @@
 <TabItem 
-Header="Web Browser" 
-Name="Web_Tab" 
-BorderBrush="gray"
+Header="Browser" 
+Name="Web_BrowserTab" 
 HorizontalAlignment="stretch"
 VerticalAlignment="stretch"
 >	
+	<TabItem.HeaderTemplate>
+		<DataTemplate>
+			<StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Black">
+				<iconPacks:PackIconMaterial Kind="Web"
+											Margin="2 5 2 0"
+											Width="24"
+											Height="24"
+											Foreground="{DynamicResource MahApps.Brushes.Accent}"
+											VerticalAlignment="Top"/>
+				<Label Name="Webbrowser_Tab_Label" Content="Browser" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="18"/>
+			</StackPanel>
+		</DataTemplate>
+	</TabItem.HeaderTemplate>
 	<Grid Background="black" VerticalAlignment="stretch" HorizontalAlignment="stretch" Opacity="1">
 	<DockPanel Name="WebBrowser_DockPanel" >
 		<ToolBar DockPanel.Dock="Top">
@@ -23,13 +35,11 @@ VerticalAlignment="stretch"
 				<iconPacks:PackIconMaterial Kind="Play" Width="16" Height="16"/>
 			</Button>
 		</ToolBar>
-	<wv2:WebView2 x:Name="WebView2"/>
+		<wv2:WebView2 x:Name="WebBrowser"/>
 <!-- 		<WindowsFormsHost>
 			<wf:WebView2 x:Name="WebView2"/>
 		</WindowsFormsHost> -->
 	</DockPanel>		
-			<WindowsFormsHost >	  
-			
-           </WindowsFormsHost>
+
 	</Grid>
 </TabItem>

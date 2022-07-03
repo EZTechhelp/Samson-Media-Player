@@ -6,7 +6,19 @@ IsEnabled = "True"
 HorizontalAlignment="stretch"
 VerticalAlignment="stretch"
 >
-	
+	<TabItem.HeaderTemplate>
+		<DataTemplate>
+			<StackPanel Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Black">
+				<iconPacks:PackIconMaterial Kind="Cog"
+											Margin="2 5 2 0"
+											Width="24"
+											Height="24"
+											Foreground="{DynamicResource MahApps.Brushes.Accent}"
+											VerticalAlignment="Top"/>
+				<Label Name="Settings_Tab_Label" Content="Settings" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="18"/>
+			</StackPanel>
+		</DataTemplate>
+	</TabItem.HeaderTemplate>	
                 <Grid VerticalAlignment="stretch" Grid.Row="0" MinHeight="100" Background="Transparent"  >
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="200*"/>
@@ -161,7 +173,34 @@ VerticalAlignment="stretch"
                                         <Button Name="Splash_Screen_Audio_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{DynamicResource MahApps.Styles.Button.Circle}" Background="Green">
                                             <iconPacks:PackIconCoolicons Kind="HelpCircleOutline" />
                                         </Button>
-                                    </Grid>											
+                                    </Grid>		
+                                    <Grid Margin="0,0,0,0">
+                                        <mah:ToggleSwitch  Content="Enable Video Snapshots" Name ="SnapShots_Toggle"  Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"  Foreground="#ffffff" IsEnabled="True"/>
+                                        <Button Name="SnapShots_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{DynamicResource MahApps.Styles.Button.Circle}" Background="Green">
+                                            <iconPacks:PackIconCoolicons Kind="HelpCircleOutline" />
+                                        </Button>
+                                    </Grid>	
+										<StackPanel Name="SnapShots_StackPanel" Orientation="Horizontal" Margin="30,5,0,0">
+										 <Label Name='SnapShots_Label' Margin="0,5,0,0" Content="Saved Snapshots Path:" Visibility="Visible"  VerticalAlignment="Top" Foreground="#ffffff"  BorderBrush="Red"  BorderThickness="2,0,0,0"  HorizontalAlignment="Left"/>
+                                          <TextBox Name='SnapShots_textbox'  Margin="0,5,0,0" Height="23" Text=""  TextWrapping="Wrap"  VerticalAlignment="Top" IsEnabled="true" Visibility="Visible" Background="Transparent" BorderThickness="1,1,1,1" RenderTransformOrigin="0.502,0.52" MinWidth="150"  HorizontalAlignment="Left"/>	
+                                         <Button Name='SnapShots_Browse' Margin="5,0,0,2" Style="{StaticResource ToolsButtonStyle}" VerticalAlignment="Top" Width="80" HorizontalAlignment="Left" IsEnabled="true">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <iconPacks:PackIconMaterial Kind="FolderOpen"
+													Margin="4 4 2 4"
+													Width="16"
+													Height="16"
+													VerticalAlignment="Center" />
+                                                    <TextBlock Text="Browse" Margin="2 4 4 4" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>											
+										</StackPanel>
+                                          <StackPanel Orientation="Horizontal" Margin="30,5,0,0">	
+										 <iconPacks:PackIconMaterial Kind="FolderOpen" Margin="0 2 5 0"/>
+										  	<TextBlock >  
+											<Hyperlink Name='SnapShots_Hyperlink' FontSize="14" NavigateUri="" FontWeight="Bold">
+											</Hyperlink>
+										</TextBlock>
+										</StackPanel>		
                                 </StackPanel>
                             </Expander>
                             <Expander 

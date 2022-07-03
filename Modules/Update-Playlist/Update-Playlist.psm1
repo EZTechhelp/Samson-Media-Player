@@ -43,6 +43,7 @@ function Update-Playlist
     $thisApp,
     $media_contextMenu,
     [switch]$Update_Current_Playlist,
+    [switch]$clear_lastplayed,
     $all_available_Media,
     [string]$mediadirectory,
     [string]$Media_Profile_Directory,
@@ -56,7 +57,7 @@ function Update-Playlist
     [switch]$Import_Playlists_Cache
   )
 
-  $playlist_to_modify = $all_playlists.playlists | where {$_.name -eq $Playlist}
+  $playlist_to_modify = $synchash.all_playlists | where {$_.name -eq $Playlist}
   if($Remove){
     try{   
       if($Playlist -eq 'Play Queue'){ 
@@ -67,11 +68,11 @@ function Update-Playlist
             foreach($index in $index_toremove){$null = $thisapp.config.Current_Playlist.Remove($index)}            
           }      
         }elseif($thisapp.config.Current_Playlist.values -contains $Media.id){
-          $Spotify = $false
           write-ezlogs " | Removing $($Media.id) from Play Queue" -showtime
           $index_toremove = $thisapp.config.Current_Playlist.GetEnumerator() | where {$_.value -eq $Media.id} | select * -ExpandProperty key
           foreach($index in $index_toremove){$null = $thisapp.config.Current_Playlist.Remove($index)}                         
         }
+        #Get-PlayQueue -verboselog:$false -synchash $synchash -thisApp $thisapp
       }elseif($playlist_to_modify){
         try{
           $Track_To_Remove = $playlist_to_modify.Playlist_tracks | where {$_.id -eq $Media.id}
@@ -81,9 +82,14 @@ function Update-Playlist
             $playlist_to_modify | Export-Clixml $playlist_to_modify.Playlist_Path -Force
           }
         }catch{write-ezlogs "An exception occurred removing $($Media.id) from Playlist $($Playlist)" -showtime -catcherror $_}    
+      }
+      if($clear_lastplayed){
+        write-ezlogs " | Clearing last played media" -showtime
+        $synchash.Current_playing_media = $Null
       } 
       $thisapp.config | Export-Clixml -Path $thisapp.Config.Config_Path -Force -Encoding UTF8  
-      Get-Playlists -verboselog:$thisapp.Config.Verbose_logging -synchash $synchash -Media_Profile_Directory $thisapp.Config.Media_Profile_Directory -thisApp $thisapp -media_contextMenu $synchash.Media_ContextMenu -PlayMedia_Command $synchash.PlayMedia_Command -Refresh_Spotify_Playlists -all_playlists $all_playlists
+      Get-Playlists -verboselog:$thisapp.Config.Verbose_logging -synchash $synchash -thisApp $thisapp
+      Get-PlayQueue -verboselog:$false -synchash $synchash -thisApp $thisapp
     }catch{
       write-ezlogs "An exception occurred removing $($Media.id) from Playlist $($Playlist)" -showtime -catcherror $_
     }    
@@ -116,10 +122,10 @@ function Update-Playlist
     }
   }elseif($updateall){
     try{
-      $all_playlists = [hashtable]::Synchronized(@{})
-      $all_playlists.playlists = Import-Clixml "$($thisApp.config.Playlist_Profile_Directory)\\All-Playlists-Cache.xml"
+      #$all_playlists = [hashtable]::Synchronized(@{})
+      $synchash.all_playlists = Import-Clixml "$($thisApp.config.Playlist_Profile_Directory)\\All-Playlists-Cache.xml"
       write-ezlogs ">>>> Updating all playlists containing media id $($Media.id)" -showtime
-      $Playlist_to_update = $all_playlists.playlists | where {$_.Playlist_tracks.id -eq $media.id}       
+      $Playlist_to_update = $synchash.all_playlists | where {$_.Playlist_tracks.id -eq $media.id}       
       if($Playlist_to_update.Playlist_Path){      
         $Playlist_profile = Import-Clixml $Playlist_to_update.Playlist_Path
         $Playlist_track = $Playlist_profile.PlayList_tracks | where {$_.id -eq $media.id}
@@ -160,7 +166,7 @@ function Update-Playlist
           }
       }#>
       write-ezlogs ">>>> Saving updated all playlists cache: $($thisApp.config.Playlist_Profile_Directory)\\All-Playlists-Cache.xml" -showtime -color cyan
-      $all_playlists.playlists | Export-Clixml "$($thisApp.config.Playlist_Profile_Directory)\\All-Playlists-Cache.xml" -Force 
+      $synchash.all_playlists | Export-Clixml "$($thisApp.config.Playlist_Profile_Directory)\\All-Playlists-Cache.xml" -Force 
     }catch{
       write-ezlogs "An exception occurred updating all playlists" -showtime -catcherror $_
     }

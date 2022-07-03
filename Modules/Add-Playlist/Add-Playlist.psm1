@@ -74,7 +74,7 @@ function Add-Playlist
         #Add-Member -InputObject $item -Name 'Playlist_File_Path' -Value $Playlist_File_Path -MemberType NoteProperty -Force
         $null = $Playlist_to_Update.PlayList_tracks.add($item)
       }else{
-        write-ezlogs " | $($item.title) has already been added to profile $($Playlist)" -showtime
+        write-ezlogs " | $($item.title) has already been added to playlist $($Playlist)" -showtime
       }
     }
     write-ezlogs ">>>> Exporting updated playlist profile to $Playlist_File_Path" -showtime -color cyan

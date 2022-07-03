@@ -11,7 +11,7 @@
 	ShowInTaskbar ="true" 
 	Topmost = "true" 
 	Width="600" 
-	AllowsTransparency="True"
+	AllowsTransparency="False"
 	Height="350" 
 	ResizeMode = "NoResize" 
 	IsWindowDraggable="True" 
@@ -52,14 +52,26 @@
         </Image>		
 		<Grid Grid.Row="0" Name="Header" >	
 			<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="20,10,0,0">       
-				<Image Name="Logo" RenderOptions.BitmapScalingMode="Fant" HorizontalAlignment="Left" Margin="0,0,0,0" Width="60" Height="60" VerticalAlignment="Top" /> 
-			    <Label Name="SplashTitle" Content="EZT-GameManager" Margin="5,0,0,0" VerticalAlignment="Top" Foreground="White" Height="50"  FontSize="30"/>
+				<Image Name="Logo" RenderOptions.BitmapScalingMode="Fant" HorizontalAlignment="Left" Margin="0,0,0,0" Width="60" Height="60" VerticalAlignment="Top" > 
+				    <Image.Effect>
+						<DropShadowEffect/>
+					</Image.Effect>		
+				</Image>					
+			    <Label Name="SplashTitle" Content="EZT-GameManager" Margin="5,0,0,0" VerticalAlignment="Top" Foreground="White" Height="50"  FontSize="30">
+				    <Label.Effect>
+						<DropShadowEffect/>
+					</Label.Effect>		
+				</Label>					
 			</StackPanel> 
 		</Grid>
         <Grid Grid.Row="1" Name="Splash_Grid">
 		 	<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,5,5,5">
-				<Label Name = "LoadingLabel"  Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" Margin = "0,0,0,0"/>
-				<mah:MetroProgressBar IsIndeterminate="True" Foreground="White" HorizontalAlignment="Center" Width="350" Height="20"/>
+				<Label Name = "LoadingLabel"  Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" Margin = "0,0,0,0">
+				    <Label.Effect>
+						<DropShadowEffect/>
+					</Label.Effect>
+				</Label>
+				<mah:MetroProgressBar Name="SplashProgress" IsIndeterminate="True" Foreground="White" HorizontalAlignment="Center" Width="350" Height="20"/>
 		<TextBlock Name="More_info_Msg" TextWrapping="Wrap" Margin="5,40,0,0" HorizontalAlignment="Center" Foreground="White" Height="50"  FontSize="20"></TextBlock>			
          <!--  <Label Name="More_info_Msg"  Margin="5,40,0,0" HorizontalAlignment="Center" Foreground="White" Height="50"  FontSize="20"/> -->
 		 <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,5,5,5">		 

@@ -174,9 +174,6 @@
 							<Label Name='Feedback_Details_Label' Grid.Column="0" Content="Details" VerticalAlignment="Top" Margin="25,35,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
 							<RichTextBox Name='Feedback_Details' VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Grid.Column="0" Background="Transparent" Margin="80,35,0,0" MinHeight="50" Padding="0,0,0,0" IsReadOnly="false" VerticalAlignment="Top" HorizontalAlignment="Left">
 								<RichTextBox.Resources>
-									<Style TargetType="{x:Type Paragraph}">
-										<Setter Property="Margin" Value="10"/>
-									</Style>
 								</RichTextBox.Resources>
 								<FlowDocument>
 								</FlowDocument>
@@ -215,6 +212,10 @@
 					<StackPanel>							
 					</StackPanel>
 				</Expander> -->
+				<mah:ToggleSwitch Content="Include Logs with Submission" Name="Include_logs_Toggle" Margin="10,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="#ffffff"/>
+				<TextBlock Margin="30,0,0,0">           
+					<Hyperlink Name='ReviewLog_Path_Hyperlink' NavigateUri="" >Review Logs</Hyperlink>
+				</TextBlock>				
 			</StackPanel>
 		</ScrollViewer>
 		<Button Name='Submit_Button' FontSize="14" FontWeight="Bold" Margin="0,10,140,0" Grid.Row="2" Style="{StaticResource DetailButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Center" IsEnabled="true">

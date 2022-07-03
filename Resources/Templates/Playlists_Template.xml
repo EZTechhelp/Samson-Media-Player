@@ -7,8 +7,18 @@
     <MS>
       <S N="Playlist_Path"></S>
       <S N="Playlist_ID"></S>
+	  <S N="Playlist_URL"></S>
       <S N="Playlist_Track_Total"></S>
       <S N="web_url"></S>
+      <Obj N="PlayList_Info" RefId="1">
+        <TN RefId="1">
+          <T>System.Object[]</T>
+          <T>System.Array</T>
+          <T>System.Object</T>
+        </TN>
+        <LST>
+        </LST>
+      </Obj>	  
       <Obj N="PlayList_tracks" RefId="1">
         <TN RefId="1">
           <T>System.Object[]</T>
@@ -20,6 +30,7 @@
       </Obj>
       <S N="Playlist_Date_Added"></S>
       <S N="name"></S>
+	  <S N="NameCleaned"></S>
       <S N="type">playlist</S>
       <S N="Source"></S>
       <S N="description"></S>

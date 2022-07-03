@@ -16,7 +16,6 @@ function Get-SpotifyAccessToken {
   param (
     [String]
     $ApplicationName,
-    $thisApp,
     $thisScript,
     [switch]$First_Run
   )
@@ -25,13 +24,21 @@ function Get-SpotifyAccessToken {
   if(!$ApplicationName -and $thisApp.Config.App_Name){
     $ApplicationName = $thisApp.Config.App_Name
   }
-  try{
-    $Application = Get-SpotifyApplication -Name $ApplicationName
-  }catch{
-    write-ezlogs "An exception occurred getting Spotify Application $Application" -showtime -catcherror $_
+  if($synchash.Spotify_Current_Auth.Token.access_token){
+    try{
+      $Application = $synchash.Spotify_Current_Auth
+    }catch{
+      write-ezlogs "An exception occurred getting Spotify Application $Application" -showtime -catcherror $_
+    }
   }
-  
-
+  if(!$Application.Token.access_token) {
+    try{
+      #write-ezlogs "No Access token was returned from synchash.Spotify_Current_Auth. Executing Get-SpotifyApplication for $($thisApp.Config.App_Name)..." -showtime -warning
+      $Application = Get-SpotifyApplication -Name $ApplicationName
+    }catch{
+      write-ezlogs "An exception occurred getting Spotify Application $Application" -showtime -catcherror $_
+    }
+  }
   # If Token is available
   if ($Application.Token.access_token) {
 
@@ -46,11 +53,12 @@ function Get-SpotifyAccessToken {
     
     if ($Expire_status) {
       # Access Token is still valid, then use it
+      if($thisApp.Config.Verbose_logging){write-ezlogs "Spotify Access Token is still valid" -showtime}
       return $Application.Token.access_token
     }
     else {
       # Access Token is expired, need to be refreshed
-            
+      write-ezlogs "Spotify Access Token is expired, needs to be refreshed" -showtime  -warning    
       # ------------------------------ Token Refreshed retrieval ------------------------------
       # STEP 1 : Prepare
       $Uri = 'https://accounts.spotify.com/api/token'
@@ -64,14 +72,14 @@ function Get-SpotifyAccessToken {
 
       # STEP 2 : Make request to the Spotify Accounts service
       try {
-        Write-Verbose 'Send request to refresh access token.'
+        Write-ezlogs 'Send request to refresh access token.' -showtime
         $CurrentTime = Get-Date
         $Response = Invoke-WebRequest -Uri $Uri -Method $Method -Body $Body -UseBasicParsing
       }
       catch {
         # Don't throw error if Refresh token is revoked or authentication failed
         if ($_.Exception.Response.StatusCode -ne 400 -and $_.Exception.Response.StatusCode -ne 401) {
-          Throw "Error occured during request of refreshed access token : $([int]$_.Exception.Response.StatusCode) - $($PSItem[0].ToString())"
+          write-ezlogs "Error occured during request of refreshed access token : $([int]$_.Exception.Response.StatusCode) - $($PSItem[0].ToString())" -showtime -catcherror $_
         }
       }
 
@@ -88,7 +96,7 @@ function Get-SpotifyAccessToken {
         }
 
         Set-SpotifyApplication -Name $ApplicationName -Token $Token
-        Write-Verbose 'Successfully saved Refreshed Token'
+        Write-ezlogs 'Successfully saved Refreshed Token' -showtime
 
         return $Token.access_token
       }
@@ -103,6 +111,7 @@ function Get-SpotifyAccessToken {
 
   # ------------------------------ Authorization Code retrieval ------------------------------
   # STEP 1 : Prepare
+  
   $EncodedRedirectUri = [System.Web.HTTPUtility]::UrlEncode($Application.RedirectUri)
   $EncodedScopes = @( # requesting all existing scopes
     'ugc-image-upload',
@@ -167,12 +176,15 @@ function Get-SpotifyAccessToken {
       try{
         if($hashsetup.Window.isVisible){
           $hashsetup.Window.hide()
-        }      
-        Show-WebLogin -SplashTitle "Spotify Account Login" -Message "Please login with your Spotify account. When finished click Close to continue"  -Message_2 "NOTE: You must also login to the Windows Spotify App at least one time before being able to manage music. If spotify is not currently installed, this app will install the latest version" -SplashLogo "$($thisApp.Config.Current_Folder)\\Resources\\Material-Spotify.png" -WebView2_URL $URI -thisScript $thisScript -thisApp $thisApp -verboselog -Listener $Listener -First_Run $First_Run       
+        }     
+        Show-WebLogin -SplashTitle "Spotify Account Login" -Message "Please login with your Spotify account. When finished click Close to continue"  -Message_2 "NOTE: You must also login to the Windows Spotify App at least one time before being able to manage music. If spotify is not currently installed, this app will install the latest version" -SplashLogo "$($thisApp.Config.Current_Folder)\\Resources\\Material-Spotify.png" -WebView2_URL $URI -thisScript $thisScript -thisApp $thisApp -verboselog -Listener $Listener -First_Run $First_Run  -MahDialog_hash $MahDialog_hash     
       }catch{
         write-ezlogs "[Get-SpotifyAccessToken] An exception occurred in Show-Weblogin" -showtime -catcherror $_
       }     
     }else{
+      write-ezlogs "thisApp settings synchashtable not available!! Cant start Show-WebLogin" -showtime -warning
+      $Listener.Stop()
+      return       
       #rundll32 url.dll, FileProtocolHandler $URI
     }        
   }

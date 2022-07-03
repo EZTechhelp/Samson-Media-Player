@@ -38,7 +38,7 @@ function Start-KeyWatcher{
     $PlayMedia_Command,
     $thisApp
   )
-  
+   #$volumeup = [bool]([PsOneApi.Keyboard]::GetKeyState($volumeup_key) -eq -32767)
   $keyboard_Watcher_ScriptBlock = {  
     try{
       if(!(Get-command -Module Spotishell)){
@@ -53,31 +53,31 @@ function Start-KeyWatcher{
       $mediaplaypause = [Byte]179
       $Signature = @'
     [DllImport("user32.dll", CharSet=CharSet.Auto, ExactSpelling=true)] 
-    public static extern short GetAsyncKeyState(int virtualKeyCode);
+    public static extern short GetKeyState(int virtualKeyCode);
      
 '@
       Add-Type -MemberDefinition $Signature -Name Keyboard -Namespace PsOneApi
       do
       {
         try{
-          $volumeup = [bool]([PsOneApi.Keyboard]::GetAsyncKeyState($volumeup_key) -eq -32767)
+          $volumeup = [bool]([PsOneApi.Keyboard]::GetKeyState($volumeup_key) -lt 0)
           if($volumeup){
             write-ezlogs "Volume Up received" -showtime
             write-ezlogs " | Volume: $($synchash.vlc.volume)" -showtime     
           }
-          $volumedown =[bool]([PsOneApi.Keyboard]::GetAsyncKeyState($volumedown_key) -eq -32767)
+          $volumedown =[bool]([PsOneApi.Keyboard]::GetKeyState($volumedown_key) -lt 0)
           if($volumedown){
             write-ezlogs "Volume Down received" -showtime
             write-ezlogs " | Volume: $($synchash.vlc.volume)" -showtime       
           }  
-          $mute = [bool]([PsOneApi.Keyboard]::GetAsyncKeyState($volumeMute) -eq -32767)
+          $mute = [bool]([PsOneApi.Keyboard]::GetKeyState($volumeMute) -lt 0)
           if($mute){
             write-ezlogs "Mute received" -showtime
             $synchash.Window.Dispatcher.invoke([action]{  
                 $synchash.vlc.ToggleMute()
             })         
           }      
-          $next = [bool]([PsOneApi.Keyboard]::GetAsyncKeyState($nexttrack) -eq -32767)
+          $next = [bool]([PsOneApi.Keyboard]::GetKeyState($nexttrack) -lt 0)
           if($next){
             $next_selected = $Null
             $next_selected = [hashtable]::Synchronized(@{}) 
@@ -265,87 +265,97 @@ function Start-KeyWatcher{
                 if(Get-Process -Name 'Spotify' -ErrorAction SilentlyContinue){
                   Get-Process -Name 'Spotify' | Stop-Process -Force -ErrorAction SilentlyContinue
                 }                   
-                Start-Media -media $next_selected.media -thisApp $thisApp -synchash $synchash -PlayMedia_Command $PlayMedia_Command -Show_notification -all_playlists $all_playlists
+                Start-Media -media $next_selected.media -thisApp $thisApp -synchash $synchash -Show_notification
               }
             }  
             $next_selected = $null                   
           }         
-          $previous = [bool]([PsOneApi.Keyboard]::GetAsyncKeyState($previoustrack) -eq -32767)
-          $stop =  [bool]([PsOneApi.Keyboard]::GetAsyncKeyState($mediastop) -eq -32767)
+          $previous = [bool]([PsOneApi.Keyboard]::GetKeyState($previoustrack) -lt 0)
+          $stop =  [bool]([PsOneApi.Keyboard]::GetKeyState($mediastop) -lt 0)
           if($stop){
             write-ezlogs "Stop received" -showtime
             $synchash.Window.Dispatcher.invoke([action]{     
                 try{
-                  if($synchash.vlc.IsPlaying){
-                    $synchash.VLC.stop()
-                  }elseif($synchash.Youtube_WebPlayer_title -and $synchash.Youtube_WebPlayer_URL){
-                    $synchash.Youtube_WebPlayer_URL = $null
-                    $synchash.Youtube_WebPlayer_title = $null  
-                    $synchash.Youtube_WebPlayer_timer.start()
-                  }else{
-                    $current_track = (Get-CurrentTrack -ApplicationName $thisApp.config.App_Name) 
-                  }
-                  if($current_track.is_playing){
-                    $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
-                    if($devices){
+                  $Synchash.Timer.stop()
+                  $peer = [System.Windows.Automation.Peers.ButtonAutomationPeer]($syncHash.Stop_media)
+                  $invokeProv = $peer.GetPattern([System.Windows.Automation.Peers.PatternInterface]::Invoke)
+                  $invokeProv.Invoke()               
+                  <#                  if($synchash.vlc.IsPlaying){
+                      $synchash.VLC.stop()
+                      }elseif($synchash.Youtube_WebPlayer_title -and $synchash.Youtube_WebPlayer_URL){
+                      $synchash.Youtube_WebPlayer_URL = $null
+                      $synchash.Youtube_WebPlayer_title = $null  
+                      $synchash.Youtube_WebPlayer_timer.start()
+                      }else{
+                      $current_track = (Get-CurrentTrack -ApplicationName $thisApp.config.App_Name) 
+                      }
+                      if($current_track.is_playing){
+                      $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
+                      if($devices){
                       write-ezlogs "[STOP_KEYPRESS] Stoping Spotify playback" -showtime -color cyan
                       Suspend-Playback -ApplicationName $thisApp.config.App_Name -DeviceId $devices.id   
-                    }  
-                  }  
-                  if($synchash.timer.Enabled){
-                    $Synchash.Timer.stop()
-                  }
+                      }  
+                      }  
+                      if($synchash.timer.Enabled){
+                      $Synchash.Timer.stop()
+                  }#>
                 }catch{
                   write-ezlogs "[STOP_KEYPRESS] An exception occurred executing Stop events" -showtime -catcherror $_
                 }             
             })        
           }   
-          $playpause = [bool]([PsOneApi.Keyboard]::GetAsyncKeyState($mediaplaypause) -eq -32767)
+          $playpause = [bool]([PsOneApi.Keyboard]::GetKeyState($mediaplaypause) -lt 0)
           if($playpause){
             write-ezlogs "[PLAYPAUSE_KEYPRESS] Play Pause received" -showtime
-            $synchash.Window.Dispatcher.invoke([action]{ 
-                $Synchash.Timer.stop()
-            })         
-            $current_track = (Get-CurrentTrack -ApplicationName $thisApp.config.App_Name) 
-            try{     
-              if($current_track.is_playing){
-                $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
-                if($devices){
+        
+            #$current_track = (Get-CurrentTrack -ApplicationName $thisApp.config.App_Name) 
+            try{ 
+              if($synchash.WebPlayer_State -eq 0 -and !$thisApp.Config.Use_invidious){
+                $synchash.Window.Dispatcher.invoke([action]{ 
+                    $Synchash.Timer.stop()
+                    $peer = [System.Windows.Automation.Peers.ButtonAutomationPeer]($syncHash.Pause_media)
+                    $invokeProv = $peer.GetPattern([System.Windows.Automation.Peers.PatternInterface]::Invoke)
+                    $invokeProv.Invoke()
+                })  
+              } 
+              <#              if($current_track.is_playing){
+                  $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
+                  if($devices){
                   write-ezlogs "[PLAYPAUSE_KEYPRESS] >>>> Stoping Spotify playback" -showtime -color cyan 
                   $synchash.Window.Dispatcher.invoke([action]{ 
-                      if($synchash.timer.Enabled){
-                        $Synchash.Timer.stop()
-                      }
+                  if($synchash.timer.Enabled){
+                  $Synchash.Timer.stop()
+                  }
                   }) 
                   Suspend-Playback -ApplicationName $thisApp.config.App_Name -DeviceId $devices.id                              
-                }  
-              }elseif($null -ne $current_track.currently_playing_type){
-                $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
-                if($devices){
+                  }  
+                  }elseif($null -ne $current_track.currently_playing_type){
+                  $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
+                  if($devices){
                   write-ezlogs "[PLAYPAUSE_KEYPRESS] >>>> Resuming Spotify playback" -showtime -color cyan
                   Resume-Playback -ApplicationName $thisApp.config.App_Name -DeviceId $devices.id 
                   $synchash.Window.Dispatcher.invoke([action]{ 
-                      $Synchash.Timer.Start()
+                  $Synchash.Timer.Start()
                   })  
-                }
-              }
-              $synchash.Window.Dispatcher.invoke([action]{ 
+                  }
+                  }
+                  $synchash.Window.Dispatcher.invoke([action]{ 
                   try{
-                    if($synchash.VLC.state -match 'Playing' -and !$current_track.is_playing -and !$current_track.currently_playing_type){
-                      $Synchash.Timer.stop()
-                      write-ezlogs "[PLAYPAUSE_KEYPRESS] >>>> Pausing Vlc playback" -showtime -color cyan
-                      $synchash.Now_Playing_Label.content = ($synchash.Now_Playing_Label.content) -replace 'Now Playing', 'Paused'                    
-                      $synchash.VLC.pause()
-                    }elseif(!$current_track.is_playing -and !$current_track.currently_playing_type){      
-                      write-ezlogs "[PLAYPAUSE_KEYPRESS] >>>> Resuming Vlc playback" -showtime -color cyan        
-                      $synchash.Now_Playing_Label.content = ($synchash.Now_Playing_Label.content) -replace 'Paused', 'Now Playing'
-                      $Synchash.Timer.Start()
-                      $synchash.VLC.pause()
-                    }     
+                  if($synchash.VLC.state -match 'Playing' -and !$current_track.is_playing -and !$current_track.currently_playing_type){
+                  $Synchash.Timer.stop()
+                  write-ezlogs "[PLAYPAUSE_KEYPRESS] >>>> Pausing Vlc playback" -showtime -color cyan
+                  $synchash.Now_Playing_Label.content = ($synchash.Now_Playing_Label.content) -replace 'Now Playing', 'Paused'                    
+                  $synchash.VLC.pause()
+                  }elseif(!$current_track.is_playing -and !$current_track.currently_playing_type -and !$synchash.Webview2.CoreWebView2.IsDocumentPlayingAudio -and ($synchash.WebPlayer_State -eq 0)){      
+                  write-ezlogs "[PLAYPAUSE_KEYPRESS] >>>> Resuming Vlc playback" -showtime -color cyan        
+                  $synchash.Now_Playing_Label.content = ($synchash.Now_Playing_Label.content) -replace 'Paused', 'Now Playing'
+                  $Synchash.Timer.Start()
+                  $synchash.VLC.pause()
+                  }     
                   }catch{
-                    write-ezlogs "[PLAYPAUSE_KEYPRESS] An exception occurred executing Play/Pause events" -showtime -catcherror $_
+                  write-ezlogs "[PLAYPAUSE_KEYPRESS] An exception occurred executing Play/Pause events" -showtime -catcherror $_
                   } 
-              })                   
+              }) #>                  
             }catch{
               write-ezlogs "[PLAYPAUSE_KEYPRESS] An exception occurred in play/pause" -showtime -catcherror $_
             }       

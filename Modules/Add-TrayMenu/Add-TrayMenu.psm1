@@ -34,6 +34,8 @@ function Add-TrayMenu
   Param (
     $thisApp,
     $synchash,
+    $all_playlists,
+    [switch]$Update_Playlists,
     [switch]$Startup,
     [string]$Playlist_Profile_Directory = $thisApp.config.Playlist_Profile_Directory,
     [switch]$Verboselog
@@ -42,10 +44,73 @@ function Add-TrayMenu
   #Tray Icon
   #$image =  [System.Drawing.Image]::FromStream($stream_image)
   #$icon = [System.Drawing.Icon]::FromHandle(([System.Drawing.Bitmap][System.Drawing.Image]::FromStream([System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\\Resources\\MainIcon.ico"))).GetHicon())
+  if($Synchash.Main_Tool_Icon){
+    $Synchash.Main_Tool_Icon.dispose()
+  }
   $Synchash.Main_Tool_Icon = New-Object System.Windows.Forms.NotifyIcon
+  #$Binding = New-Object System.Windows.Data.Binding
+  #$Binding.Source = $synchash.Now_Playing_Label
+  #$Binding.Path = [System.Windows.Controls.Label]::ContentProperty
+  #$Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
+  #[void][System.Windows.Data.BindingOperations]::SetBinding($Synchash.Main_Tool_Icon,'Text', $Binding)  
+
+ 
   $Synchash.Main_Tool_Icon.Text = "$($thisApp.Config.App_Name) - Version $($thisApp.Config.App_Version)"
+  #$Synchash.Main_Tool_Icon.Text = $Binding
+  [uri]$icon = "$($thisApp.Config.current_folder)\\Resources\\MainIcon.ico"
   $Synchash.Main_Tool_Icon.Icon =  "$($thisApp.Config.current_folder)\\Resources\\MainIcon.ico"
+  #$synchash.myNotifyIcon.IconSource = $Synchash.Title_menu_title.Source
   $Synchash.Main_Tool_Icon.Visible = $true
+
+
+<#  [System.Windows.RoutedEventHandler]$OpenApp_Command  = {
+    param($sender)
+    try{    
+      $synchash.Window.Show()
+      if($SyncHash.Window.WindowState -eq 'Minimized'){
+        $SyncHash.Window.WindowState = 'Normal'
+      }
+      write-ezlogs "Main window size is currently $($synchash.window.height) x $($synchash.window.width)" -showtime     
+      $window_active = $synchash.Window.Activate()    
+      $null = [System.GC]::GetTotalMemory($true) 
+    }catch{
+      write-ezlogs "An exception occurred in EditProfile_Command routed event" -showtime -catcherror $_
+    }
+  }
+  $items = New-Object System.Collections.ArrayList
+  $Open_App = @{
+    'Header' = "Open App"
+    'Color' = 'White'
+    'Icon_Color' = 'Blue'
+    'IconPack' = 'PackIconBootstrapIcons'
+    'Command' = $OpenApp_Command
+    'Icon_kind' = 'MusicPlayerFill'
+    'Enabled' = $true
+    'IsCheckable' = $false
+  }
+  $null = $items.Add($Open_App)
+  $separator = @{
+    'Separator' = $true
+    'Style' = 'SeparatorGradient'
+  }            
+  $null = $items.Add($separator) 
+
+
+  $Synchash.Main_Tool_Icon = [Hardcodet.Wpf.TaskbarNotification.TaskbarIcon]::new()
+  $Synchash.Main_Tool_Icon.Name = "Main_Tool_Icon"
+  $Synchash.Main_Tool_Icon.Visibility="Visible"#>
+  #$Synchash.Main_Tool_Icon.Icon =  "$($thisApp.Config.current_folder)\\Resources\\MainIcon.ico"
+
+
+  #Add-WPFMenu -control $synchash.myNotifyIcon -items $items -AddContextMenu -synchash $synchash
+  #$newcontextMenu = New-Object System.Windows.Controls.ContextMenu
+  #$menuItem = new-object System.Windows.Controls.MenuItem -property @{Header = 'Test'}
+  #$null = $newcontextMenu.items.add($menuItem)
+  #$menuItem2 = new-object System.Windows.Controls.MenuItem -property @{Header = 'Test2'}
+  #$null = $newcontextMenu.items.add($menuItem2)
+  #$synchash.myNotifyIcon.Contextmenu = $newcontextMenu
+  #$newcontextMenu.Style = $synchash.Window.TryFindResource("DropDownMenuStyle")
+
 
   #ContextMenu
   $contextmenu = New-Object System.Windows.Forms.ContextMenuStrip
@@ -107,11 +172,11 @@ function Add-TrayMenu
 
   $ContainerColor = [System.Drawing.Color]'45, 45, 45'
   $BackColor = [System.Drawing.Color]'32, 32, 32'
-  $ForeColor = [System.Drawing.Color]::White
+  #$ForeColor = [System.Drawing.Color]::White
   $BorderColor = '#CC0078D7' #[System.Drawing.Color]::DimGray'
-  $SelectionBackColor = [System.Drawing.SystemColors]::Highlight
+  #$SelectionBackColor = [System.Drawing.SystemColors]::Highlight
   $MenuSelectionColor = '#FF0067B9' # '#CC0078D7'#[System.Drawing.Color]::AliceBlue'
-  $SelectionForeColor = [System.Drawing.Color]::White
+  #$SelectionForeColor = [System.Drawing.Color]::White
   $colorTable = New-Object SAPIENTypes.SAPIENColorTable -ArgumentList $ContainerColor, $BackColor, $BorderColor, $MenuSelectionColor
   $render = New-Object System.Windows.Forms.ToolStripProfessionalRenderer -ArgumentList $colorTable
   $contextmenu.Renderer = $render
@@ -138,6 +203,130 @@ function Add-TrayMenu
         write-ezlogs "An exception occurred in Open_App click event" -showtime -catcherror $_
       }
   }.GetNewClosure())
+
+  #Add menu Playlists
+  $Synchash.Tray_Playlists = $contextmenu.Items.Add("Playlists");
+  #$Launchers_imagecontrol.Kind = 'Launch'
+  $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\\Resources\\PlaylistMusic.png")
+  $image =  [System.Drawing.Image]::FromStream($stream_image)
+  $Synchash.Tray_Playlists.image = $image 
+  foreach ($playlist in $synchash.all_playlists | where {$_.playlist_tracks.id} | select -first 25){
+    $playlist_item = New-Object System.Windows.Forms.ToolStripMenuItem
+    $playlist_item.dropdown.Renderer = $render
+    $playlist_item.DropDown.ForeColor = 'WhiteSmoke'
+    $playlist_item.ForeColor = 'WhiteSmoke'
+    $playlist_item.text = "$($playlist.name)"    
+    $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\\Resources\\Fontisto-PlayList.png")
+    $image =  [System.Drawing.Image]::FromStream($stream_image)
+    $playlist_item_Picture = $image #[System.Drawing.Image]::FromStream([System.IO.MemoryStream]::new([System.IO.File]::ReadAllBytes("$image_resources_dir\Platforms\$($Platform.name)_16.ico")))
+    $playlist_item.Image = $playlist_item_Picture 
+    $playlist_item.add_Click({
+        param($Sender)
+        if($($sender.text) -match 'Play:'){
+          $playlistName = $($sender.text) -replace 'Play: '
+        }else{
+          $playlistName = $($sender.text)
+        }       
+        $playlist_items = ($synchash.all_playlists | where {$_.name -eq $playlistName}).playlist_tracks
+        write-ezlogs "Adding all items in Playlist $($playlistName) to Play Queue" -showtime
+        #write-ezlogs "Playlist tracks $(($synchash.all_playlists | where {$_.name -eq $playlistName}) | out-string)" -showtime
+        foreach($Media in $playlist_items){
+          if($Media.Spotify_Path){
+            if($thisapp.config.Current_Playlist.values -notcontains $Media.encodedtitle){
+              write-ezlogs " | Adding $($Media.encodedtitle) to Play Queue" -showtime
+              $index = ($thisapp.config.Current_Playlist.keys | measure -Maximum).Maximum
+              $index++
+              $null = $thisapp.config.Current_Playlist.add($index,$Media.encodedtitle)
+            }   
+          }elseif($thisapp.config.Current_Playlist -notcontains $Media.id){
+            write-ezlogs " | Adding $($Media.id) to Play Queue" -showtime
+            $index = ($thisapp.config.Current_Playlist.keys | measure -Maximum).Maximum
+            $index++
+            $null = $thisapp.config.Current_Playlist.add($index,$Media.id)            
+          }  
+        }
+        $thisapp.config | Export-Clixml -Path $thisapp.Config.Config_Path -Force -Encoding UTF8   
+        $start_media = $playlist_items | select -first 1
+        write-ezlogs "[Tray-Menu] >>>> Starting playback of $($start_media | Out-String)" -showtime -color cyan
+        if($start_media.Spotify_path){
+          Start-SpotifyMedia -Media $start_media -thisApp $thisapp -synchash $synchash
+        }else{
+          Start-Media -media $start_media -thisApp $thisapp -synchash $synchash
+        }
+        return 
+    })
+    foreach ($track in $playlist.playlist_tracks | where {$_.id} | select -first 25){
+      $track_item = New-Object System.Windows.Forms.ToolStripMenuItem
+      $track_item.dropdown.Renderer = $render
+      $track_item.DropDown.ForeColor = 'WhiteSmoke'
+      $track_item.ForeColor = 'WhiteSmoke'
+      $track_item.text = "$($track.title)"
+      $track_item.tag = $track.id
+      $playlist_item_Icon = (($syncHash.Playlists_TreeView.Items | where {$_.Header.Title -eq $($playlist.name)}).items | where {$_.header.id -eq $track.id}).uid
+      #write-ezlogs "Icon: $($playlist_item_Icon)" -showtime
+      #write-ezlogs "items: $(($syncHash.Playlists_TreeView.Items | where {$_.Header.Title -eq $($playlist.name)}).items)" -showtime
+      if($playlist_item_Icon){
+        $stream_image = [System.IO.File]::OpenRead($playlist_item_Icon)
+        $image =  [System.Drawing.Image]::FromStream($stream_image)
+        $track_item.Image = $image
+      }
+      $track_item.add_MouseDown({
+          param($Sender)
+          if($args.Button -eq 'Left'){
+            if($($sender.OwnerItem.text) -match 'Play:'){
+              $playlistName = $($sender.OwnerItem.text) -replace 'Play: '
+            }else{
+              $playlistName = $($sender.OwnerItem.text)
+            }  
+            $mediaid = $sender.tag               
+            $Media = ($synchash.all_playlists | where {$_.name -eq $playlistName}).playlist_tracks | where {$_.id -eq $mediaid}
+            #write-ezlogs "Adding track $($media.title) from Playlist $($playlistName) to Play Queue" -showtime
+            #write-ezlogs "Playlist tracks $(($synchash.all_playlists | where {$_.name -eq $playlistName}) | out-string)" -showtime
+            if($Media.Spotify_Path){
+              if($thisapp.config.Current_Playlist.values -notcontains $Media.encodedtitle){
+                write-ezlogs " | Adding track $($media.title) from Playlist $($playlistName) to Play Queue" -showtime
+                $index = ($thisapp.config.Current_Playlist.keys | measure -Maximum).Maximum
+                $index++
+                $null = $thisapp.config.Current_Playlist.add($index,$Media.encodedtitle)
+              }   
+            }elseif($thisapp.config.Current_Playlist -notcontains $Media.id){
+              write-ezlogs " | Adding track $($media.title) from Playlist $($playlistName) to Play Queue" -showtime
+              $index = ($thisapp.config.Current_Playlist.keys | measure -Maximum).Maximum
+              $index++
+              $null = $thisapp.config.Current_Playlist.add($index,$Media.id)            
+            }  
+            $thisapp.config | Export-Clixml -Path $thisapp.Config.Config_Path -Force -Encoding UTF8   
+            write-ezlogs "[Tray-Menu] >>>> Starting playback of $($Media | Out-String)" -showtime -color cyan
+            if($Media.Spotify_path){
+              Start-SpotifyMedia -Media $Media -thisApp $thisapp -synchash $synchash
+            }else{
+              Start-Media -media $Media -thisApp $thisapp -synchash $synchash
+            }
+            return              
+          }
+      })
+      $null = $playlist_item.DropDownItems.add($track_item)
+    }
+    $null = $Synchash.Tray_Playlists.DropDownItems.add($playlist_item)
+  }
+
+  #Add menu Playback Options
+  $PlaybackOptions = $contextmenu.Items.Add("Playback Options");
+  $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\\Resources\\Audio-Options.png")
+  $image =  [System.Drawing.Image]::FromStream($stream_image)
+  $PlaybackOptions.image = $image 
+  $synchash.Shuffle_trayOption = New-Object System.Windows.Forms.ToolStripMenuItem
+  $synchash.Shuffle_trayOption.dropdown.Renderer = $render
+  $synchash.Shuffle_trayOption.DropDown.ForeColor = 'WhiteSmoke'
+  $synchash.Shuffle_trayOption.ForeColor = 'WhiteSmoke'
+  $synchash.Shuffle_trayOption.text = 'Shuffle'
+  $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\\Resources\\$($synchash.Shuffle_Icon.Kind).png")
+  $image =  [System.Drawing.Image]::FromStream($stream_image)
+  $synchash.Shuffle_trayOption.Image = $image
+  $synchash.Shuffle_trayOption.Checked = $thisapp.config.Shuffle_Playback
+  $Null = $synchash.Shuffle_trayOption.add_Click($synchash.Shuffle_Playback_tray_command)
+  $null = $PlaybackOptions.DropDownItems.add($synchash.Shuffle_trayOption)
+
   
   # Add menu Stop
   $Synchash.Menu_Stop = $contextmenu.Items.Add("Stop Media");
@@ -182,6 +371,8 @@ function Add-TrayMenu
       }
   }.GetNewClosure())  
   $Synchash.Main_Tool_Icon.ContextMenuStrip = $contextmenu
+  #$synchash.myNotifyIcon.ContextMenu = $Synchash.Media_ContextMenu
+
   return $Synchash.Main_Tool_Icon
 }
 #---------------------------------------------- 
