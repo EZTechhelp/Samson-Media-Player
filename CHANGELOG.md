@@ -2,8 +2,1494 @@
 
 ## Unreleased
 
-## Version: 0.4.7.1
-- Branch: Pre-Alpha
+## 0.7.6 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ New separate log files for Performance, Webview2 and Setup
++ New WPF helper function Update-MainWindow
+  + Allows updating Main UI controls from other threads with better performance
++ New Option: Notification Audio - plays audio on new notification
+  + Test Notification button added to title bar for Dev testing only
+  + For easy testing of notification refactor and new notification audio
+  + Also plays when doing something else ;)
++ Lock-Object function - prevents simultaneous obj access from another thread
++ Stop-Runspace for 'Safely' stopping background runspaces before they complete
++ Ability to automatically skip or block ads that may appear for Youtube vidoes
+  + Applies when using webplayer only, cant guaranteee to skip/block them all
+
+### Changed
++ Spotify and Webview2 are now installed async during Inno Setup
+  + If webview2 is still installing on launch, splash message will indicate
++ SecretStore modules are now included as local modules vs remote
+  + Greatly improves first run setup time 
+  + May also help solve some of the reliability issues when retrieving secrets
++ Restyled Splash Screen images and status text
+  + Decreased the size of the splash images based on images used for speakers
+  + Simplified splash message text to prevent need to wrap text
+  + Updated size, animation and color of progress paws
++ Tray contextmenu now available when right clicking on miniplayer itself
++ Reduced various stutter during some intensive background operations
++ Another refactor pass to update log processing and targeting
++ Multiple improvements to dealing with/preventing runspace race conditions
++ Improved disposal and cleanup of vlc instances or extra external processes
++ Modified Merge-Image so "Stamped" icons more visible over media artwork
+  + Image is really only for System Transport Media overlay
++ Spotify Authentication status in Settings updated to match YT/Twitch updates
+  + Also changed INVALID status text to NONE when none are provided/available
++ Improved sizing of columns for various grids under settings 
++ Moved text of EQ Preset labels above their button controls 
+- Removed (disabled) Get My Subscriptions checkbox under Youtube importing
+  + To be re-added later when feature is complete
+
+### Fixed
++ Fixed #89 - Get-LogWriter gets caught in a loop causing crash
++ Libraries dont update/appear if disabling and re-enabling media importing
++ Currently applied filter is lost when sorting columns in Media Libraries
+  + Note: Fixed for filter dropdown, to be fixed shortly for filter textbox
++ Fixed #78 - Pre-Amp Value Not Following Presets
++ Fixed #88 - First Run Setup closes after providing Youtube Authentication
++ Fixed #90 - Local Media import stays disabled when canceling browse
+  + Also fixes disable issue when trying to add folder that already exists
++ Fixed #84 - Splash Screen text cut off during first run
++ Floating Video View window title doesnt update with main player title labels
++ Dropdown/combobox's keep adjusting width based on content while scrolling
+  + Contextmenu is now fixed width based its largest containing item
++ Multiple fixes related to SecretStore and SecretManagement
+  + Should improve reliability of Twitch/Youtube/Spotify authentication
+  + Should reduce or remove multiple authentication popup windows (needs test)
++ System Media Transport Controls dont update when pausing/playing
++ Mute button toggle status sometimes becomes out of sync with audio state
++ Setup window can freeze when adding multiple local folders at a time
++ Multiple fixes/improvements to prevent streamlink failures due to ADs
++ Audio is never unmuted after muting when skipping Twitch Ads
++ No image/artwork displays/processes when playing Spotify Media
++ App can freeze/crash when executing Stop media in some cases
++ Current progress not remembered for media auto loaded on next app start
++ Fixed #86 - First Run setup not detecting Spotify installation
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.7.5 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Ability to toggle image grid or table view for Spotify and Youtube media
+  + Images are cached on first run to be used in image grid
+  + Not fully finished, need to add to Local and Twitch libraries
+  + More adjustments to design needed plus need default/placeholder images
++ Ability to 'Refresh' all media in Spotify or Youtube Library
+  + New button on each library tab called Refresh
+  + Triggers a full reimport from respective API's/rebuilds profiles
+  + Not finished, To be added to Local and Twitch libraries
++ Ability to Add/Remove track from Spotify playlists (via API)
+  + For playlists on Spotify's end, not local app playlists. 
++ First iteration of ability to manage native Youtube playlists
+  + 'Youtube Actions' added to contextmenu with Add/Remove playlist menus
+  + Playlists are populated from API, but selecting does nothing yet
++ (WIP) First iteration of self-update management system
+  + No usable yet, currently only checks for new builds and displays changelog
+  + Option added to main window contextmenu: Check for Updates
+  + Child window appears and displays latest version with changelog
+  + Currently builds/changelog hosted on Trello, likely change in future
+  + Added ability to download Trello Attachments via API
++ New Helper function Test-ValidPath for quick check of file/directory or URL
++ Very early first iteration of new Help Topic system
+  + Added new helper assembly MdXaml to display native Markdown in Xaml
+  + Updates Child Window uses MdXaml to display changelog
+  + Markdown is planned format to try and standardize with
+  + Xmls will hold topics and subtopics, button commands will read from these
+  + Text to be removed from code and put into files that can be updated easier
++ First iteration of ability to select/change media images in Profile editor
+  + Currently can browse for image or paste web image url
+  + Image displayed on images tab will update, but currently is not saved yet
++ Ability to merge 'Stamp' an image onto another with new module merge-Images
+  + Used only for thumbnails to stamp media type icon over the image
+  + Ex: Allows quickly seeing that playing media is Spotify by icon
+  + Only applies to images such as in the System Media Transport overlay
+  + Still requires final adjustments, doesnt display for all media yet
+
+
+### Changed
++ Image caching (mostly for Image Grid views) is now decoded in memory
+  + This prevents app from locking access to image files in temp folder
+  + CacheOption set to Onload to help reduce memory overhead
++ Improved logic to detect and install Spotify client in Get-Spotify
++ Adjusted retry delay when getting secrets for Twitch authentication
++ Youtube webplayer now honors 'Preferred Quality' Setting
+  + Youtube stopped native support so this could stop working
+  + Best is highest available, medium is usually 420p and low is < 320p
++ Discord presence now shows new icons/text when playing YT TV (vs just YT)
++ Now easier to get returned data from Runspaces with output object
++ Various reliability improvements for playback of non-webplayer Spotify media
++ More Improvements to write-ezlogs formatting and ease of use
++ Various minor optimizations/cleanup and other changes to WPF xaml and styles
+
+### Fixed
++ Matching against Youtube URls sometimes fail due to unescaped chars
++ Refreshing playlists sometimes overwrites recently committed changes
++ Spotify playback sometimes fails when API returns multiple devices
+  + Now only the active device or last (if no active) is selected
+  + Affected non-webplayer usage mostly
++ Fixed #77 - Spotity Non-Webplayer - Volume/Mute not working
+  + To avoid extreme stutter due to API calls, volume only changed on mouse up 
+  + Technically no mute with Spotify API, so just setting volume to 0
+  + Another reason why using Webplayer is default and best option
++ Profile editor fails when trying to load some properties as hyperlinks 
+  + Caused if value passes 'EXISTS' check if they match special folder name!
++ Contextmenu fails to load if adding separator style to sub-level2 menu
++ LordofTerror Easter Egg sometimes fails to load
++ Some Spotify media fail to import if exists in multiple Spotify playlists
++ Album/Images missing for Spotify Media and Profiles
++ Many properties missing in profile editor for Spotify/Youtube/Twitch media
++ Fixed #82 - App Freeze on Media Change when using streamlink
+  + Ended up being log output accessing streams property from runspace object
++ Streamlink log monitor sometimes fails to end or hangs
++ Various issues and occasional app freezes when executing Stop Media
++ Playlists not updated when updating media properties with Profile editor
++ Fixed #65 - Local Media Table errors when No Media exists
++ Fixed #57 - Add support for processing youtu.be urls
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.7.4 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ New Option: Remember Playback Progress for Local Media
+  + Saves current playing (or paused) media progress on app close 
+  + On next startup, media is loaded automatically (but paused)
+  + When resuming, playback continues from last saved progress
+  + Only applies to Local media for now, to be added to other media types
++ New Option: Skip Twitch Ads
+  + Attempts to skip Pre-Roll, Mid-Roll and other Ads when using streamlink
+  + Also passes auth to Twitch streams on playback to skip ads for sub channels
+  + Auth pass to streams via streamlink requires logging into Chat view once
+  + Chat view login required due to stupid requirement on Twitch's end
++ New Spectrum Analyzer Beats Animation for the Samson Left Speaker ;)
+
+### Changed
++ Refactored Easter Egg: Get-OpenBreweryDB (Now Show-OpenBreweryDB)
+  + Added tab 'Beers' which pulls Beer Recipes from BrewDog's Punk API
+  + OpenBreweryDB list moved to 'Breweries' tab
+  + Not finished, need to design new Xaml skin or make heavy changes
++ Refactored Mute Command, moved into new function Set-Mute
++ Removed various unused/old Routed events, timers and other code
++ Bitrate now only displays in the Display Panel if it is not null or 0
++ Metadata from Taglib is now refreshed from media file on playback
++ Moved various commands into function Update-MainPlayer
+  + Uses dispatcher timer to improve performance/reduce stutter of UI updates
++ Updated included build of Streamlink to version 5.1.0-1
++ Various performance improvements for Start-Media (less UI stutter)
+
+### Fixed
++ Volume sometimes does not restore properly to previous values on reload
++ Unnecessary Spotify API lookups attempted when executing Skip-Media
++ Custom Hotkey for muting not working (this feature not fully integrated yet)
++ Write-ezlogs not working or erroring out within Start-Runspace
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.7.3 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Display of bitrate to the main display panel after artist
+  + Only displays for local media that include bitrate in current profile
+  + Eventually will be calculated on playback vs whats stored in the profile
+  + Eventually will display video bitrate or quality for video or web streams
+  + Displays within MiniPlayer Display Panel as well
++ New Beats animation of woofer for the Right speaker window (when opened)
+  + Requires enabling Spectrum Analzyer (Monitor),
+  + Triggers for low-to-mid range frequencies (kick)
+  + Makes it look like speaker is playing audio
+
+### Changed
++ Minor log level and other changes for some log messages
+
+### Fixed
++ Critical error that would crash the log watcher runspace
++ Catcherror param in Write-ezlogs not outputting the errors to log
++ Enumeration errors when refreshing Twitch streams in Get-TwitchStatus
++ Cassette wheel animation doesnt pause when pausing playback of Spotify media
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
++ No version bump, more of a hotfix
+
+## 0.7.3 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ New Speaker L and Speaker R buttons and graphics for main UI Skin
+  + If monitor is 1440p, speakers display on left and right side when opened
+  + If monitor is 1080p, speakers display on top of the main UI when opened
+  + Easter eggs not added yet, will likely be added close to release
+  + Other than slight tweaks, the Main UI skin is now complete! WOOHOO!
++ Ability to edit primary URL of Media in the profile editor
+  + Not finalized but allows changing for Spotify, Youtube or Twitch
+  + Various checks in place to ensure supported URLS are added only
+  + May add "advanced" label as can break things if u dont know what ur doing
++ Streamlink installer included and no longer downloaded via chocolatey
+
+### Changed
++ Refactor pass for Chat View
+  + New Module Update-ChatView to consolidate chat related functions
++ Large refactor pass for logging system via write-ezlogs
+  + Added new separate log file for Discord logging
+  + Added new separate log file for Local Media logging
+  + Added new separate log file for Libvlc logging
+  + Added new separate log file where all Errors are logged
+  + Implemented logtypes to write-ezlogs to redirect to appropriate log files
+  + Implemented 4 loglevels for individual log messages in Write-EZLogs
+  + Only loglevels equal or less than global config log level are processed
+  + Errors are always processed and output to the error log
+  + Default loglevel is 2 - write to log only (no console/host output)
+  + Replaced write-output with [File]::AppendAllText for logging
+  + Write-ezlogs now submits all messages to a synchronized concurrent queue
+  + New Get-LogWriter writes to log files messages enqueued from write-ezlogs
+  + Get-LogWriter runs in a separate runspace
+  + Large performance increases since no waiting for file writes or host output
++ Refactor for Open Media button and commands
+  + Now displays custom metro dialog with choice to open URL or local file
+  + Only one (URL or file field) can be submitted at a time
+  + Its purpose is for opening a single media item (like File - open menus)
++ When notification flyout opens, any controls with airspace issues are hidden
+  + Previously notifications appear behind if video is playing for ex
+  + Only hidden while notification is open, unhidden when it closes
+  + Ability to disable auto notification flyout is planned
+  + More changes needed, but this helps with the biggest issue
++ Video quality now auto set to best when playing media via Invidious webplayer
+  + Eventually will be tied to the preferred quality setting under Youtube
++ Reduced overall size of some of the Splash Screen startup images
++ Changed icon for local media in Discord presence to harddisk
+
+### Fixed
++ App icon missing from undocked/floating Windows
++ Keyboard input not working for textboxs in the main UI and dialogs
++ Race conditions caused by multi-thread log writing (see above)
+  + Full testing needed to be sure, but should solve alot of issues this caused
++ Pressing play button would not do anything in some cases
++ Volume gets reset or doesnt save properly when manually changing media
++ Volume is not set to current app value for Spotify media using the webplayer
++ Volume gets stuck to 0 when playing media via Invidious webplayer
++ VideoView tab sometimes not selected on open if auto open is enabled
++ Loading text animation sometimes start flashing to fast to see
++ Miniplayer progress slider not in sync with playing media or main UI slider
++ App could freeze after media ends when using Invidious and auto play enabled
++ Media is sometimes not removed from Queue after playback ends
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.7.2 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Global and individual message log levels to replace verbose_logging
+  + Not fully implemented yet, will be when doing logging refactor
++ First iteration of LibVLCSharp v4 support (not in full/stable release yet)
+  + Allows testing pre-release builds of v4, less headaches if upgraded later
++ Initial framework to support choosing/changing video/audio tracks
+  + Not implemented yet, currently can cause issues in libvlc 3 in some cases
++ Convertto-ArrayList function for convering objects to arraylists
++ Set-TaskBarVisiblity to allow hiding/showing windows taskbar
+  + Not used for anything yet, maybe never
++ Set-Databinding function for easier/cleaner databinding of UI properties
+  + Also added ability to pass binding params/values for Add-WPFMenu
++ Contextmenu for Settings Window with close/TopMost/ShowinTaskbar options
++ New Toggle Option: 'Use YTDLP for Twitch Streams' (default disabled)
+  + Streamlink usually best, and is always used by default
+  + In some (rare) cases YTDLP may work better or if streamlink not installed
++ Ability to pass Oauth token to Streamlink/YTDLP for Twitch Authentication
+  + No UI options yet. Requires logging into Twitch chat at least once
+  + Allows authenticating stream to your account, to bypass ads..etc
+  + Somewhat in response to Twitch ads problem (see Issues)
++ Ability to detect when streamlink is blocking Twitch adds (see Issues)
+
+### Changed
++ Import-Spotify no longer uses Datatable, uses hash arraylist
+  + All profile properties are processed within Get-Spotify
++ MessageBox now used for confirmation messages if Library is undocked
+  + Metro ModalMessage still used if docked
++ First iteration of Remove-Media for refactor of media removal commands
+  + Contextmenu option renamed to 'Remove from Library'
++ (TEMP) TinyDesk and Beer icons launch Show-Speakers, left/right accordingly
+  + Using these buttons just for testing until new ones made
+  + Part of easter egg. Speaker images for left/right open in separate windows
+  + These speaker windows do nothing right now. Will hold easter egg triggers
+  + Removed balance knob from skin. To add controls for left/right speakers
++ Minor adjustments/changes to Splash Screen images and UI
++ Second iteration of Youtube Library view change to use wrappanel
+  + Images are now always cached and saved to Profile
+  + Decreased image size and more closely matched youtube.com layout
+  + Still not finalized and may not even use, will require feedback/testing
+  + Maxres images now picked first, then smaller if not available
+
+### Fixed
++ New profile images retrieved for twitch media are not saved in Get-Playlists
++ More issues with retrieving secret vault auth/token keys
++ Invalid images or paths saved to profiles for some Youtube media
++ Various instances of 'Collection of a Fixed size' errors
++ Profile, Audio and settings windows not included in app snapshots if open
++ Video Viewer window/controls flicker when undocking/expanding to fullscreen
++ Youtube TV urls incorrectly processed as Youtube Channels when added
++ Majority of Spotify/Youtube properties not showing in details tab of editor
++ Some property and value types incorrectly detected in Profile editor
+
+### Issues
++ Twitch playback will sometimes not start right away or pause due to ads
+  + Since adding the ability to play Twitch streams via streamlink, it was always able to block ads. Twitch finally plugged most of the loopholes used to bypass ads. If a twitch stream stops because of a mid-roll ad, its possible it may not start again and the stream needs to be restarted. At best, there will now be 'Commercial Break' Purple Screen of Death that displays when ads are playing. Hopefully a workaround can be found again
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+
+## 0.7.1 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Ability to provided a default path for Youtube videos downloads
+  + Settings - Youtube - Youtube Options: Default Download Path
+  + If none is provided, app will always prompt for location when downloading
++ Ability to export custom Playlists via contextmenu option 'Export Playlist' 
+  + Prompts for file and save path. Exports as XML 
++ Ability to import custom Playlists via 'Import' button under playlists
+  + Supports profiles that were exported from app or native profiles
+  + Prompts warn of conflicts and ask before overwriting
++ Ability to rename custom Playlists via contextmenu option 'Rename Playlist'
+  + Renames both Playlist name and profile file name
+  + Name restrictions same as when creating new profiles
++ Ability to refresh/read IDTags for local media file within profile editor
+  + Reading will refresh all fields in the editor and on details tab
+
+### Changed
++ [EXPERIMENT] Changed Youtube media browser to virtualized wrap panel
+  + Just testing with a possible image grid/panel view
+  + Consider it non-working for this build, will be changed
++ Tracks in playlist profiles are now ordered dictionaries like the play queue
+  + Allows better management and ordering of tracks and playlists
+  + Playlists tracks now show their number based on order in playlist viewer
++ Now possible to play and advance tracks from playlists directly
+  + Queue still has priority, if nothing in queue, next track in playlist plays
+  + Works with Autoplay enabled, skip/next media commands and shuffle
+  + If a track is in multiple playlists, picks the one where playback started
++ Various minor UI adjustments and changes to alignment, text and spacing
++ Refactored Open-FileDialog to support SaveDialogs
++ Next iteration of UI redesign for Sub-Windows (Settings/editor)
+  + Not final but now more matches overall theme. More to be tweaked
+  + Improved spacing and reduced needed scrollbars for settings/first run
++ Total play duration is now displayed next media in playlists (sans Twitch)
++ Improved error handling and logging in Get-TwitchApplication
++ Enabling/Disabling EQ 2Pass now takes effect immediately
+  + Playback will 'pause' or stutter briefly, but will continue
++ Profile editor now displays more properties under details tab
+  + Additionally, valid path/urls are now clickable links
++ Renaming of local media files via editor now working
++ Writing metadata properties to IDTags of local media now working
++ Changed libvlc hardware decoding to dxva2 for better performance
+
+### Fixed
++ Unable to reorder playlist items via drag-n-drop
++ When updating media profiles, it is moved to the end of the playlist its in
++ Playlists created via 'Save as new playlist' are blank/dont copy tracks
++ Multiple tracks are sometimes skipped when libvlc playback ends
++ Saving profiles in media editor sometimes doesnt apply or saves wrong values
++ App can hang when closing settings window via the settings toggle button
+
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.7.0 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Changed
++ Greatly improved performance when opening Settings Window (after first run)
+  + Show-FirstRun is now preloaded on startup but hidden, displayed when needed
+  + Intercepted Window close command (Cancel = true) to hide vs close
+  + Refactored Audio Device enumeration which caused significant slowdown
+  + CSCore DeviceEnumerator faster than libvlc, for first run anyway
++ Slight log performance improvement, changed Get-Date to [datetime]::Now
+  + Very small improvement but every little bit can help collectively
+  + Reduced Get-PSCallStack calls for logging (has minor impact on first run)
++ Potentially Improved reliability/error handling for Get-secret calls
+  + More to do here but this may be reason for recurring YT/Twitch auth windows
++ Various updates and cleanup to logging, added additional perf logging
+- Removed Startup Audio (Setting still there, to be removed or changed)
++ Improved performance for Start-SplashScreen to reduce time to display
+  + About avg 1s improvement for first run (will vary)
+  + Only minimum required dlls are now loaded for splash vs all of them
+  + Reduced as much xaml as possible for splash screen
++ Adjusted SpectrumAnalyzer bass freq observer from 20-200hz to 20-60hz
++ Restyled Main Progress slider to match improved style of Spectrum lines
+
+### Fixed
++ EnableCollectionSynchronization error when MediaTable itemssource is empty
++ Shuffle and Autoplay Display icons do not follow/update with color theme
++ (Maybe?): Pause/Play/Next events do not register all the time
+  + So confusing and frustrating. Seems better now but far from consistent
+  + Events seem to buffer? One executes then others dont until UI interaction
+  + If playing media with video content, seems to work fine? (not sure of this)
++ SpectrumAnalyzer gets "Suck/frozen" if enabled when stopping media
++ YT Auth PODE doesn't close properly or errors after starting first run setup
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
++ No version bump, incremental commit, no adds
+
+## 0.7.0 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Startup Setting 'Start As Miniplayer'
+  + Allows the app to load using the Mini-Player skin on startup
++ Media Player setting 'Auto Open/Close Video Player'
+  + Video player will automatically open/close when playing media with video
+  + If disabled, Media may not start until video is opened if using Webplayers
++ Dev option 'Verbose_perf_measure', not exposed to UI
+  + To be used as part of upcoming performance optimization testing
++ Registered events for libvlc: Muted/UnMuted, Paused, Forward, Backward
++ Description property from taglib for local media
++ (WIP) Ability to rename local media filenames via Profile Editor
+  + It 'works' currently but not fully finished, use with caution
+  + Logic detects for name conflicts, bad characters, and supported extensions
+  + Max file name is 150 characters
++ (WIP) Images tab for Profile editor displays media art/images
+  + Only displays, no editing yet
++ Ability to change and save Description field via Profile Editor
++ (WIP) Write-IDTags, ability to write basic metadata to IDTags of local media
+  + Not finished, use with caution 
+  + Works with basics like Title, Artist, Album, Description, Track, Disc
++ (Dev Testing) Ability to control volume via Numpad +/- keys
+  + Only for my internal testing, likely doesnt work if app not in focus
+  + May turn into ability to allow mapping custom keys to control media player
+
+### Changed
++ Verbose Logging is now disabled by default
++ Main Display panel text/font now follows the current theme color
++ Splash image now randomly selected from Resources\Images\SplashScreen
+  + Testing with new splash images (Credit: Woody) 
+  + The last used image is saved so that next one is always different
++ Current playing media is now restarted if pressing 'Play' during playback
++ Mute status is now synced when muting from the Youtube webplayer interface
+  + Volume level is also synced
++ Mute status for all media now saved to config as Media_Muted
++ Restyled and updated SpectrumAnalyzer
+  + Spectrum Lines now emulate digital display lines better
+  + Now follows currently applied UI theme color
+  + Reduced bins from 40 to 30
+  + New property 'ForegroundImage' to allow providing imagebrush for lines
++ Various improvements to Javascript injection of Youtube webplayer
++ Youtube webplayer is forced to use if media is detected as Youtube TV
++ Adjusted storyboard fade timeout for Video Controls Overlay
+
+### Fixed
++ App volume doesnt save/persist between app restarts or change of media
++ Mute status and related icons sometimes get out of sync
++ Video Overlay controls still slightly visible when playing via webplayers 
++ Pause button checked state sometimes get out of sync with playing state
++ Media not removed from queue after ending if auto play is disabled
++ Duration_ms value not saved for some local media
++ Twitch secret scope sometimes fails to save in Set-TwitchApplication
++ Discord presence sometimes fails to update from youtube webplayer media
++ Profile editor may fail to load if not UI theme is currently selected
++ UI and other elements not reset after timeout if media failed to play
++ VLC_Play_Media runspace can fail due to running under MTA ApartmentState
++ Youtube auth secrets can fail to save to vault if API response had error
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.6.9 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ First iteration of Profile Editor and property viewer
+  + Metadata tab contains fields that can be edited/changed
+  + Details tab for displaying readonly fields
+  + Very WIP, more fields to be added/changed plus style/UI not finished
+  + Right now only basic fields can be changed/saved (Title/Artist/Album)
+  + Saving updates media in all lists (media library/playlists..etc)
+  + Option to allow writing data to IDtags for local media (Not working yet)
+  + (Planned) Ability to attempt auto-lookup via API calls
+  + (Planned) Covert Art/Image management
++ Additional properties to local media profiles
+  + Samplerate, BitsPerSample,AudioChannels,VideoWidth,VideoHeight
++ Stereo Graphic Equalizer text label to EQ Skinu
+
+### Changed
++ Moved 'Edit Media Properties' menu option to bottom of contextmenu
++ Improved error handling for Spotify webview2 initialization
++ Improved error handling for Set-DiscordPresense and DiscordRPC module
+  + If a property has an issue, it is now skipped vs crashing entire presence
++ Spotify process is now only closed (if running) during first time setup
++ Improved CassetteWheel image and animation quality
++ Libvlc instances are now always disposed on Stop-Media
++ Limited potential race conditions in Update-MediaTimer
+
+### Fixed
++ Libvlc video sometimes spawns in a separate window that cant be closed
++ URL property missing from some Spotify media profiles
++ Incomplete/Invalid profile_path value saved to Twitch Media profiles
++ Some Youtube media fails to work with Discord integration presence
++ Update-Playlist fails if media exists in more than 1 playlist
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.6.8 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Config setting Open_VideoPlayer to control if video player auto opens
+  + No UI implementation yet, defaults to true. 
+  + Video Player auto opens only if playing media has video content
++ Ability to capture Youtube webplayer fullscreen button click events
+  + When clicking fullscreen button in YT player, maximizes and undocks player
+  + Works for both regular Youtube videos and Youtube TV content
+
+### Changed
++ Youtube adblocking script now applied to Youtube webplayer webview2 instance
+  + Potentially blocks Youtube static and video ads
+  + Mostly applies if not using inline mode, so not likely common
++ Improved error handling and user feedback for Youtube web playback errors
++ First iteration (Testing) of skin change to first run/setup UI
+  + Just a very basic image/texture to somewhat match main theme
+
+### Fixed
++ Video content not using entire screen when in floating window
++ YoutubeTV content in webplayer randomly invokes playback end event
++ #76 Spotify Loading label display does not change once media starts playing
++ Pausing Spotify media does not update status icons and animations
++ Spotify API calls occur in pause/stop events even if no spotify media playing
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
++ No version bump
+
+
+## 0.6.8 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ First iteration of designed and refactored EQ/Audio Options UI
+  + Added ability to Remove custom EQ Presets via Delete button
+  + Added 2 'Memory' buttons that custom presets can be saved to, aka favorites
+  + Save menu to save to current loaded preset, memory 1/2 or as new name
+  + Load menu displays all custom presets that can be loaded
+  + 12 Fixed Preset buttons, cant be overwritten by or use same name as custom
+  + Custom names are checked for invalid characters and max 75 char length
+  + Reset button to flatten and reset EQ values
++ Custom FormattedSlider control to allow customizing Autotooltip string format
++ Ability to filter Twitch media library by Live Status or game playing
++ Chat View toggle option in Video View window contextmenu when floating
++ EQ Enable Status indicator for Main Display Panel Screen
++ First iteration of Invoke-MediaFilters module
+  + To be used for refactor of all media library filtering controls/events
+
+### Changed
++ Improved memory and disk footprint of Webview2 instances
+  + Webview2 instances now share user data folder without conflicts
+  + Exception for Show-Weblogin, uses Setup_Webview2 user data folder
++ Various minor code/comment cleanup and optimizations
++ Improved memory overhead and rendering quality of icons for PlayQueue
++ Changed icon for Local Media items to be harddisk vs VLC
++ Implemented EnableCollectionSynchronization for observable collections
+  + Allows accessing collections from Non-UI threads
+  + Further refactoring needed to take advantage for collection updating
++ Implemented SortDescriptions for ListView/GridView table sorting
++ Various minor styling, font rendering improvements and other UI changes
+
+### Fixed
++ App freezes or doesn't skip/stop media in libvlc EndReached event
++ Rare 'ItemsControl is inconsistent with its items source' fatal error occurs
+  + Resolved with EnableCollectionSynchronization implementation
++ Get-TwitchStatus updates do not update media in the Twitch Media Library
++ Followed date field in Twitch Media Library does not sort correctly
++ Some Youtube TV urls fail to import or play correctly
+  + Issue: Youtube TV playback randomly invoke playback ended event  
++ Webview2 initialization can cause app fatal error in some cases
++ Caching media images fails on PS7 with set-content -encoding byte
++ Playing media fails to highlight if it exists in multiple playlists
++ Uncaught exception can occur when attempting to close YT auth PODESERVER
++ Various binding failures and other errors caught during VS debugging
++ Unable to scroll in nested scrollviewers that use ScrollAnimationBehavior
++ Media Table performance tanks after opening any contextmenu in the app
+  + FINALLY ITS FIXED!!
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.6.7 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Additional verbose and performance measure logging in various areas
+
+### Changed
++ Refactored Media library replacing Datagrids with ListViews with GridView
+  + Mostly for testing vs using Datagrids
+  + Currently sorting does not work, but filtering and everything else should
+  + Individual filters per column removed (not supported with listviews)
+  + Overall performance seems slightly improved, but not much
++ Disabled Optimize-Assemblies for now, unsure if worth keeping
++ Improved performance/responsiveness of filtering media libraries with search box
+  + Switched to using DeferRefresh() as well as some other cleanup
++ Greatly improved CPU/GPU performance overhead when playing media
+  + Reduced by 50% framerate of cassette, displaypanel/other storyboard animations
++ Open media dialog now only allows selecting one media file/vs multiple
+  + A window is also now displayed to user if selected media file is invalid
+- Removed Fullscreen/pop-out button - docking manager controls replace this
++ Auto Play when enabled, now executes next media via endreached event for vlc 
++ Refactored Open-FolderDialog moving c# code to dll assembly as a helper class
++ Preliminary changes to Splash Screen playback of startup audio
+  + Prepping to allow choosing media file that plays on startup
++ Various code and comment cleanup
++ Maximize/Expand video button now undocks and automatically maximizes video window
++ Setup window now uses scrollbars if content is larger than windows max height
++ Improved error handling in various areas
+
+### Fixed
++ Streamlink and other required apps may incorrectly show as installed when not
++ Twitch playback fails when streamlink is not found to be installed
+  + App will now fallback to using yt-dlp for when streamlink not found or has error
++ Large freeze/stutter when loading main UI after first run setup
+  + Caused by first initialization of libvlc, now runs in a separate runspace
++ Playback may fail for some youtube media if played from Media Library
++ Contextmenu not opening or has incorrect menu options for some media
++ Extra text shows within Display panel when not using text slide animations
++ Discord presense doesnt update or updates incorrectly when using webplayers
++ Unable to use keyboard input in windows undocked from docking manager
++ Set-DiscordPresense may sometimes fail or throw an error under various conditions
++ Number count incorrect for various datatables in Setup window
++ Various sizing issues for UI, text and controls in Setup Window
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.6.6 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Spotify Client and Webview2 Runtime installer bundled in Inno Setup
+  + Spotify : optional component, if selected silent installs after Inno Setup
+  + Webview2: required component, installs during Inno setup if not already
+  + Webview2 is still verified and installed if needed by app as its crucial
++ 'FreshStart' parameter to allow forcing first time setup on startup
++ Ability to Import followed Twitch Channels into media library
+  + Entries added/imported under Twitch tab in setup now work
+  + Table sorting still not working correctly, possibly other things
+  + Using remove media options still need refactor as well 
+  + Using datatable like the others for now, but want to change to new control
++ Text Slide animations to MiniPlayer display panel when text/title is long
++ Ability to 'Close' undocked windows, which will automatically redock them
+
+### Changed
++ Changed installer compiler compression to lzma2/max for better compression
++ Startup log name now follows includes current app version like the other logs
++ PowershellGet no longer auto upgraded during setup
+  + No longer needed as the only module to install doesnt require updating
++ Improved error handling and messaging to user if critical error on startup
++ Greatly improved performance of getting Twitch data by batching API lookups
+  + Can group up to 100 lookups into one API call
++ Improved first run startup and setup time
++ Updated Drag/Drop to support twitch media urls and importing
+  + Play on drop does work but settings need to be decoupled from Youtube still
++ Improved text and font rendering quality in main Display panel
++ Game name for Twitch streams now display within Discord presence
++ Multiple improvements to Docked/Undocked windows behavior and styling
++ Multiple improvements and changes to logging and feedback/messaging to users
++ Various updates/cleanups to xaml styling and skins
+
+### Fixed
++ FINALLY/MAYBE a decent fix for video controls overlay issues
+  + Not perfect but MUCH better, as it it works now when video is undocked
+  + Still instances where you might have to click in/out of window a few times
++ Optimize-assemblies may fail with ngen not found error
++ Spotify webplayer may fail due to webview2 initialization error/conflict
++ Artist/Channel name not displaying for Youtube media when using webplayer
++ Installing Spotify using setup button fails and causes setup to close
+  + This also caused some settings to be lost
++ Spotify auth status not displaying if previously entered during setup
++ Spotishell tries to make api calls when not yet having valid token
++ Play/Pause icons/status not updating/resetting in some cases
++ Audio/EQ window controls change size/move when changing EQ presets
+
+### Issues
++ Fullscreen button still has issues, as do most buttons in the title bar
++ Cassette tape animation may not stop/pause in some cases (maybe others too) 
++ Performance optimization ongoing, should not currently be benchmarked 
++ May consume alot of ram especially when watching high quality streams or when viewing large libraries.
++ Spicetify option is disabled until refactor or possible removal, not sure
++ Other options like Spotify play on drop or Youtube download on play still disabled, maybe be removed soon
++ Help text still only placeholder/inaccurate/unfinished
++ Media library tables have issues especially with sorting/filtering
+ + Looking into overhaul, possible change from using datatables
+ + Filtering not currently work for any tab yet, due to move to dockable window
++ Volume level does not save/persist between app restarts
++ Back button doesnt do anything yet
++ Drag/Drop likely has issues, especially moving items between playlists
++ Notification flyout sometimes is stuck behind video view or docked windows
++ Docking Pane/Video view may open sometimes when you dont want it too. This is mostly on purpose for now, will be adjusted
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+
+## 0.6.5 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Ability to detect failed Youtube playback and auto-restart with Invidious
+  + Applies when using native Youtube webplayer, switches to invidious on retry
+  + Invidious bypasses most Youtube native player restrictions
++ Dock/UnDock window button for Video View Flyout overlay
++ Ability to choose whether to keep or remove user data during app uninstall
++ New tray menu options to open Media Library, App and Audio Settings
++ Ability to detect program name/title when watching Youtube TV channels
+
+### Changed
++ Updated Splash Screen progress animations and now displays status messages
++ Increased verbose logging output when installing new modules during first run
++ Improved error handling/feedback to user during Load-Modules
++ New version installs now remove all existing folders/files vs just overwrite
++ Restyles and changes to Avalondock manager and float windows
+  + Removed Webbrowser from Metro tab control, added as tabbed dockable window
+  + Context menu options for float windows: Dock,Stay On Top,Close,Minimize
+  + Video Player and Web browser can be tabbed together/split/docked..etc
++ App no longer auto restarts after installing webview2 runtime in first run
++ First refactor pass for Import-Youtube, eliminating use of DataTable
+  + Slightly improves performance, but still more cleanup/refactors needed
++ Improved error handling and retries for downloading/processing playlist icons
++ Improved error handling for chat_Webview2 initialization
++ Webplayer for Youtube playback is now enabled by default
++ Improved error and event handling for Spotishell and Youtube modules
++ Improved error handling for Start-Media and streamlink playback
++ Stop-Media now checks for and cancels any media playback runspaces
+
+### Fixed
++ Startup log in missing/wrong folder if app not installed in default location
++ Start-Media could end up in endless loop when auto restarting
++ Null method errors when attempting to refresh itemssources that are not set
++ Rare race condition could occur on startup causing Import-Youtube to fail
++ EQ settings fail to open if no valid AudioSpectrum audio device detected 
++ Optimize-Assemblies gets canceled by Webview2 runtime install
++ Multiple issues with Get-Twitch during first run or for auth capture
++ AudioSpectrum can get 'stuck' on display screen even when disabling
++ Webview2 initialization may fail for Youtube Webplayer or Webbrowser
+  + Data folders now separated between webbrowser and youtube instances
++ Pause, mute and other commands not working when playing invidious content
++ Multiple crashes/errors and other issues during First Run Setup
++ Youtube Auth can require recapture even if stored creds are still valid
++ Import Twitch Followed channels fails even with successful auth capture 
++ Some Spotify API calls attempted even if Import_Spotify_Media not enabled
++ Show notifications fail when enabled and playing content with yt_dlp
++ Update-Mediatimer fails when attempting to execute stop on media end 
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.6.4 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Some kind of Hellish Easter Egg ;)
++ Custom namespace KeyStates.MyHelper to WPFExtensions dll for key capture
+  + Allows more performant way to capture key presses with GetAsyncKeyState()
+  + Used in some Slider value changed events
++ Custom indeterminate progress indicator animation for Splash screen (meow)
++ Ability to import all followed twitch channels (WIP NOT COMPLETE)
+
+### Changed
++ A dialog now appears if there is a critical error on first setup/startup
++ Open Media buttons now display a file/folder explorer browse dialog
+  + Accepts multiple media file selections
+  + If single supported media file selected, playback begins immediately
++ First refactor and redesign pass for MiniPlayer (formally TrayPlayer)
+  + Redesigned/customized with Denon miniplayer skin as template
+  + Most button controls working except for back button.
+  + Implemented improved sliders bound to main UI slider and timers
+  + Media title/Artist display is working but no scroll animation yet
+  + 'Mini' and Detach buttons allow switching from Main to Mini skin
+  + (WIP/NOT FINAL) Ability to resize miniplayer width with skin stretch/tiling
++ Further refactors for Get-Twitch/API and Twitch related functions
+  + Twitch auth now uses oauth authentication flow to get user tokens
+  + Implemented web authentication capture similar to Spotify/Youtube
+  + Twitch tab in Setup enabled and can populate with custom/import channels
+  + Still WIP, imported channels do not yet add to library
++ Improved Main progress slider design and functionality
+  + When hovering over a small thumb icon displays for easier value change
+  + Still not final until can find better repeating texture/design
++ Various improvements to error handling for Spotishell and other areas
++ Improved scrolling for media tables in Setup so that headers stay at top
++ Improved WPF rendering quality for various images/skin elements
+
+### Fixed
++ Progress slider not updating after long drag and release
++ Updating theme color causes semi-transparent background under legs of skin
++ Media file count inaccurate for directories under Local Media Setup
++ Unable to remove individual items from Youtube and other tables within Setup
++ Skip to next media fails when using Next button
++ Record button not checked/lit up when audio recording starts
++ Unwanted/extra characters display in media title when Marquee is enabled
++ Write-ezlogs can (rarely) fail when unable to find proper log directory/path
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.6.3 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ 'Loading' status message displays upon start of any media
+  + A loading message replaces the title until media actually starts playing
+  + To indicate something is happening especially for long loads or if issues
+  + Loading message gradually pulses/flashes while active
+  + WIP: May not show (or only briefly) for some media (webplayers)
+  + WIP: May be a delay before message updates/disappears for local media  
++ First iteration of Spectrum Analyzer for Digital Display
+ + VERY WIP. This pass just gets it working at all in the display
+ + Exposed new fields/properties in SpectrumAnalyzer.dll
+ + Most styling done was to fix issues, spacing..etc. Not yet styled for skin
+ + Ability to toggle/enable/disable Analyzer using the 'Monitor' button
+ + Button name is not finalized, nor its function or usage
+ + Added beat detection (testing). Shows as 4 boxes that flash per freq update
+ + Long way to go, but at least its working in some form now, so there's that
+
+### Changed
++ Multiple improvements to Youtube webplayer when using Invidious
+  + Invidious Play state (paused,playing,ended) is now properly tracked
+  + Pausing using app controls now works for Invidious web player
+  + Auto play now works when using Invidious web player
+  + Changing app volume now changes the Invidious player volume
+  + Still need to finish and bringing up to native Youtube webplayer parity
+  + May become default as native player has issues with licensed content/ads
+
+### Fixed
++ Display Title constantly updated on timer pass when playing Spotify Media
+ + Affected Spotify Web player only
++ Multiple fixes applied to SpectrumAnalyzer.dll, mostly for AudioLine
+
+### Builds
++ No version bump, doesn't require re-import/scan or re-setup
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.6.3 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ New helper function Optimize-Assemblies for improving powershell performance
+ + Only runs on first setup or if upgrading to a new version of the app
+ + Mostly improves PS startup performance by caching assemblies
++ First iteration of new "Spotify Actions" sub-contextmenu for media 
++ Ability to Add spotify tracks to other Spotify Playlists
+  + Accessed from new "Spotify Actions" right click contextmenu on media
+  + Does not yet update/reflect within library without full reimport
+  + Currently duplicate tracks dont show even if in different playlists (TBC)
++ Ability to Open Spotify tracks within Spotify if installed 
++ Ability to import Subscribed Youtube channels when importing YT media
+  + New checkbox option "Get My Subscriptions"
+  + Doesnt do much yet other than add to list, will be expanded later
+  + Goal is to allow new videos from subscriptions to import
+  + Refresh,update/notification for subscriptions planned
+
+### Changed
++ Screenshot button will now include Splash screen in app snapshot if viewable
++ Improved rendering quality and performance for playlist treeview icons
+  + Metro IconPack icons are converted to geometry > image source for binding
+  + Uses less memory and improves quality when sizing vs static image files
++ Improved performance of updating Youtube lists within First Run/Settings
+  + Window no longer locks up when pressing import
+  + Button greys out and progress indicator animation shows while working
++ Slight font size and styling changes to digital display to make smaller
+
+### Fixed
++ Youtube API token retrieval sometimes fails when opening first/run settings
++ Get-AccessToken function of Youtube module missing when executed in runspace
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.6.2 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ First Iteration of Twitch Browser Library (not yet enabled or visible)
+  + Added datagrid XAML and initial Import-Twitch code-behind
++ Display Panel Status Indicators for "Shuffle" and "Auto Play"
+  + Bound to toggled status of equivalent toggle buttons
+
+### Changed
++ Refactored WebPlayer_Playing_timer code into new module Set-WebPlayerTimers
+  + Spotify and Youtube webplayer timers to be merged as well
+  + Webplayers now controlled via Set-WebPlayerTimer with action parameters
++ Various legacy and/or commented code cleanup
++ Cached XML for playlists now auto rebuilds if it becomes corrupted 
++ Second iteration of Display Panel Progress slider styling and redesign
+  + Now more closely matches "Digital" style of Denon skin
+  + NOT FINISHED. Still requires more tweaks especially for "slider thumb"
+  + c# code added to allow custom formatting of slider autotooltip 
++ Improved javascript injected code for Youtube Webview2 player
+  + Player quality should now always choose highest quality by default
+  + Initial testing code for handling fullscreen events (not yet working)
++ Improved error handling for CoreWebView2InitializationCompleted events
+  + Event 'IsSuccess' property now properly checked before continuing 
+- Removed outdated/unused Media_URL textblock from xaml and code behind
+
+### Fixed
++ Some code formatting and region navigation issues
++ Twitch token gets refreshed every call due to invalid expiration processing
++ Status for some Twitch playlist records not updating on Twitch refresh
++ Progress timer in Digital Display gets cut off when value is large/long
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.6.1 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Initial support for processing and playing Youtube TV URLS
+  + Very WIP, only processes manually provided YTV URLs
+  + No YTV API available to public, gets basic info from standard API
+  + (Issue) Playback ends after current 'program' ends on channel
++ Volume control slider in Video View Overlay Controls
++ Registered event 'EndReached' for libvlc playback (testing)
+
+### Changed
+- Removed old play controls/buttons, now uses only new skinned controls 
++ Minor design changes to video view overlay controls (made icons smaller)
++ (Testing) Enabled AllowTransparency on main UI window
++ Moved progress slider to digital display, started redesign of styling
+  + Current style is heavy WIP, goal is to match Denon skin progress bar
++ Removed duplicate assembly's from module Burnttoast
++ Testing new FindFilesFast.dll compiled from C# rewrite of VS code
+  + WIP: Find-FilesFast now uses this and works for both PS 5 and PS7
+  + Credit: NaivE
++ Other minor styling and format changes to main UI XAML
+
+### Fixed
++ Playback sometimes fails due to incorrect value set on VideoView.Height
++ Get-TwitchAPI can fail when saving Twitchexpires_in value to secret vault
++ Some properties returned for Get-TwitchAPI are blank or incorrect
++ Twitch playlists/profiles may not update when Twitch Auto-Update is enabled
++ Saving settings can sometimes fail when Start on Windows Logon is enabled
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+
+## 0.6.0 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Easter Egg: NPR Tiny Desk Concert browser (WIP)
+  + "Desk" button opens a window with wrappanel of concerts from NPR RSS Feed
+  + Clicking on image buttons start playback from NPR stream URL
+  + This is mostly for R&D and testing using wrappanels/itemcontrols
+  + Not meant to be final, final form likely to be much different
++ Clear Queue button on the Queue tab
+
+### Changed
++ Module Burnttoast is now included instead of installed from the internet
++ Refactored MediaTransportControls into module Start-MediaTransportControls
++ Refactored datagrid paging controls which now use Kino Datapager controls
+  + Good performance improvement to datagrid paging, reduces code complexity
++ Multiple style and layout changes to the Display Panel (WIP)
+  + Media title now only animates if the text is larger than the screen
+  + Various changes to font options and styles to make text clearer
+  + Status text now closer emulates "status icons" on a real stereo display
+  + Heavily WIP and not complete
++ Refactored Find-FilesFast to remove unused parts of VB code
+  + Still needs another pass but this cleans it up a bit
++ Improved performance for Twitch API lookups in Get-Twitch
++ Local Media datatable grouping expanders are now expanded by default
++ Cleaned up Start-Keywatcher, not currently used, may remove in the future
+  + MediaTransportControls pretty much replaced this, but may have other uses
++ Replaced cassette door background image with bordered one provided by Woody
+
+### Fixed
++ Saving from setup fails with Set-DiscordPresense error even when not enabled
++ First run setup errors related to main UI controls not yet rendered
++ Spotishell module not importing properly using PSModuleAutoLoadingPreference
+  + Improves performance where it previously was manually imported
++ UI and title text "flicker" when playing Spotify media with Web Player
++ Pause command makes an a Spotify API call even when nothing is playing
++ Playback fails for temporary media (not in a profile/playlist)
+  + Refers to "one-off" playback such as via cli commands, tinydesk..etc
++ Thumbnail/Covert images not displaying in toast notifications and mini-player
++ Spotify media playback sometimes fails when using webplayer
+  + Due to incorrect Spotify_WebPlayer_State.playbackstate value
++ Primary background Samon skin sometimes disappears on end of playback
++ Title bar text for floating Anchorables now bound to main Window title
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.5.9 - Samson-Alpha
+- Branch: Samson-Alpha
+
+### Added
++ Mute icon on video view overlay. Full volume slider will be added later 
+
+### Changed
++ Refactored Playlists and Queue view over cassette player in skin
+  + Playlists and Queue list now live together within tab control
+  + Playlists now default list when opening, and button renamed to 'Playlists'
+  + Using blank skin as background for now until further design changes
++ Current playing item is now highlighted if it exists in a playlist
+  + First step towards queue refactor. Goal to allow advancing from playlists
+  + Added code behind and xml datatemplate for preparation and testing
++ Redesigned volume knob , vertical slider now overlayed on top on mouse over
+  + Testing this design. Slider only shows on mouse over, easier to use
++ Slightly decreased animation speed for now playing icon
++ Improved Digital text slide animation and dynamic sizing of content
+  + Not perfect yet, but should now be able to handle long text better
++ First refactor and redesign pass for splash screen
+  + Testing with mockup splash screen image of Samson made by Woody
+  + Replaced cancel button with standard window close button in top right
++ First pass to lay groundwork for Youtube/Twitch refactor
+  + Added module and function Get-Twitch with template for profile processing
+  + First pass for cleaning up and separating metadata from youtube
++ Consolidated WPF code behind for events/controls to module Set-WPFControls
+
+### Fixed
++ Now playing icon sometimes doesnt appear in queue for playing item
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.5.8 - Samson-Alpha
+
+### Added
++ Ability to enable Discord Presence integration to display playing media 
+  + Toggle option added to settings, off by default
+  + Shows title, artist, duration and type (youtube, spotify..etc)
+  + Youtube,Spotify label buttons (Watch on Youtube..etc) do not work yet
+  + Powered by Powershell Module DiscordRPC with customizations
++ First iteration of new Digital Display controls with animations
+  + Implemented scrolling text to display current playing media title/artist
+  + Text bindings set to title bar label content (for now)
+  + Adjusted fontoptions, fontrendermode and added slight blur radious to text
+  + Will add toggle for enabling display animations, perhaps types
+
+### Changed
++ Refactored various WPF event handlers into new module Set-WPFControls
++ Further refactors for new skin/replacement button controls
+  + Video View toggle button replaced, events moved to new Video button
+  + Autoplay button replaced, events moved to new Auto Play button
+  + Shuffle button replaced, events moved to new Shuffle button
+  + Play Queue button replaced, events moved to new Queue button
+  + Audio Options button replaced, events moved to new Audio button
++ Using webplayers no longer show duplicate controls in windows media overlay
+  + The native SystemMediaTransportControls replace these from webview2
+
+### Fixed
++ First run window sometimes not opening/crashing when attempting to load XAML
++ (Requires verification) Autoplay not working when using webplayers
++ Video Marquee not displaying for non-twitch media when enabled
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.5.7 - Samson-Alpha
+
+### Added
++ New Buttons for Samson skin completed
+  + Back,Next,Monitor,Mute,Main Menu,Settings,Playlists,Library,Video,Shuffle
+  + Some may be changed/removed/added, these get base design/template in place
++ Logic and code behind for new Mute button. Old still in place temporarily
++ Logic and code behind for Power button. Always "active", closes app on click
++ Logic and code behind for Play, Pause and Stop buttons.
+  + Play button still needs refactor and some fixes
+
+### Changed
++ Refactored Get-LoadScreen to improve performance and reduce UI stutter
+  + New function Update-SplashScreen used to manage updating splash screen UI
+  + Uses dispatcher timer vs dispatcher invoke for greatly improved performance
++ Removed Media Library toggle button, logic now attached to new Library button
++ Removed old Settings toggle button, logic now attached to new Settings button
++ Slight improvements to volume knob control
+  + Still needs alot of work, likely need to refactor whole thing
++ Set additional various log output to be under verbose logging only
++ Splash screen window startup location now set to CenterOwner
++ Media Library viewer window startup location is now top left of screen
++ Mouse over highlight for new buttons now white, with active being theme color
+- Removed Entypo Iconpack assembly, not currently used
+- Removed other various assemblies that aren't currently used (hopefully)
+
+### Fixed
++ Partial: Video View overlay controls don't show when undocking window
+  + It still doesnt always open but its alot better. More improvements needed
++ Progress bar sometimes doesnt appear or causes extra space below video view
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.5.6 - Samson-Alpha
+
+### Added
++ First iteration of Volume knob animation and control
+  + Currently tied to existing volume slider, still need to add direct control
++ First test iteration of new WPF button animations
+  + Controls not bound to any logic yet, purely for testing skin animations
+
+### Changed
++ Video Viewer/total app height can now extend to use full height of screen
++ Various renaming of controls and resources to better match new skin
++ Refactored avalondock code into new module Set-AvalonDock
++ Main window startup location is now CenterOwner vs CenterScreen
++ Play Queue flyout is now closed by default on startup
+
+### Fixed
++ Video control overlay sometimes stays opens or opens and closes too quickly
+
+### Issues
++ Video control overlay doesnt appear when video viewer is undocked
+  + This is due to WPF airspace issue which is really starting to annoy..
+
+### Builds
++ Updated /EZT-MediaPlayer-Setup.exe
+
+## 0.5.5 - Pre-Alpha
+
+### Added
++ Native custom WPF Spectrum Analyzer for all primary audio output
+  + Uses CSCore to capture loopback audio for any media playback
+  + For now only added to Audio options window, only active when open
+  + Dynamically updates with theme, optimized for low CPU overhead
++ Integration with SystemMediaTransportControls (Windows Volume/media Overlay)
+  + Updates Media title, artist and thumbnail (if available) on media playback
+  + Button events captured for play/pause/next/stop using Register-WinRTEvent
+  + Replaces need for KeyWatcher runspace monitor for captured buttons
++ ReturnYoutubeDislike script for Webview2 to show dislikes on YT videos
++ Help Button and messages for Audio Output Device option
+
+### Changed
++ Testing Skin changes for slider thumbs using custom images (credit Woody)
++ Double-clicking Tray icon now opens/activates main app window
++ Testing Windows Chrome style changes to main window using rounded corners
++ MediaTable items are now collapsed by default
+  + Testing for performance reasons related to contextmenus and datagrids
++ Renamed default prefix for Twitch Media from 'Twitch Streams' to 'Twitch'
++ Reduced libvlc file-caching to 1000
++ Small optimizations and performance improvements for Start-Media
+
+### Fixed
++ Some colors in TrayPlayer style not updating with theme change
++ Improvements to UI performance when resizing main Window
+
+## 0.5.4 - Pre-Alpha
+
+### Added
++ Ability to manually select Audio Output device for libvlc playback
+  + Dropdown added to Settings - General page that lists all available output devices
+  + Changing device updates output immediately (with slight pause to playback)
+  + If using non-default output, Windows volume controls will not work, but players will
++ Ability to view Play Queue within Tray Player via mini flyout
+  + Tray Datagrid uses databinding to main Queue datagrid itemssource
+  + Ability to use contextmenu to manage items, or drag/drop to reorder
+  + Contextmenu looks different due to issue with Tray not inheriting default styles 
++ Ability to enable 2Pass sub-option for EQ under Audio Options
+  + Basically increases effect/strength of EQ freq band changes
+  + Only takes effect on start of playback, cannot change while playing
+
+### Changed
++ First refactor pass for Audio options overhaul/re-design
+  + Audio Options/EQ settings now open in separate window
+  + Tray Audio options button now bound to main Audio options button
++ Removed PlaySpotify_Media_Command routed event handler, no longer used
++ New playlist dialog now displays within Media library window if open
++ Expand/Shrink Player button now sets window state to Normal when 'Shrinking'
++ Shuffle icon/button in Tray player now works, databinding to main Shuffle button
++ Adjusted main Window MinHeight and MinWidth depending on if MediaLibrary is open
++ Moved Playlists flyout button to follow Media Library 
++ Improved refresh performance of queue items when changing play state 
++ App now restarts (with dialog prompt) if more than 1 uncaught exception occurs
++ Minor cleanup and optimizations to Update-MediaTimer
+
+### Fixed
++ EQ values reset and dont honor new changed values after closing audio options
++ Main background image not updating on playback
++ Current playing queue item doesnt update properly when using Youtube Webplayer
++ Artist and Title labels in main Window title bar not resetting on playback stop
+
+### Build Updates
++ EZT-MediaPlayer-Setup.zip
+
+## 0.5.3 - Pre-Alpha
+
+### Added
++ First prototype for 'TrayPlayer' interface using Hardcodet.NotifyIcon.Wpf
+  + Left click brings up mini-ui with basic media controls, artwork..etc
+  + Right-click menu to be rebuilt, only Open and Close options currently
+  + Controls use databinding bound to primary app controls
+  + Still needs alot of refinement and work, add progress bar...etc
+  + TaskbarIcon children dont inherit styling in xaml but codebehind works
+  + This means styling is a PITA, but still work it IMO
++ AudioDevice VLC registered event for output device eventargs capture
+  + To be used for (future) audio device output selection features
+
+### Changed
++ Default image of Media type now displayed when no artwork/images available
+  + This is temp solution. Only applied for background and Trayplayer.
+  + Local media is VLC logo, Spotify is Spotify..etc until better default found
++ Now Playing label now separated into Playing State, Title and album labels
+
+### Fixed
++ Playback fails due to queue improperly detecting next media type
++ REGRESSION: Chat webview2 doesnt dispose/hide properly on media change
+
+### Build Updates
++ No version bump, repackaging setup file as ZIP
++ EZT-MediaPlayer-Setup.zip
+
+## 0.5.2 - Pre-Alpha
+
+### Added
++ Ability to save/remember the expanded state of Custom playlist views
+
+### Changed
++ Finished first phase of refactor/overhaul for app settings
+  + All options from Settings tab moved to appropriate section in setup window
+  + Setup window renamed to just Settings, with updated icon 
+  + Updated some help messages, but full documentation system will replace
++ Refactored Spotify setup and profile generation process to match Youtube
+  + Import from Spotify button retrieves playlists (with valid auth account)
+  + Can now manually add/remove Spotify playlist and track URLs in Setup
+  + Profiles now generated for each Spotify playlist added
++ Small updates to profile editor, local media album field now works
+  + Not finished. Waiting to finalize metadata and profile structure
++ Minor performance improvements and optimizations for Start-media
+- Removed Settings.xaml and a few other non-used/out-of-date files
+- Removed and excluded history/versioning zip archives from install package
+
+### Fixed
++ Autoplay setting not applying when using Web players
++ Play Queue entries seem to dissappear for a few secs when queue is updated
++ Use-Runas -Forcereboot fails to detect current script path for restart
++ Multiple fixes when controlling Spotify with Spicetify
+  + Debating whether put much more time into this as its prone to error
+  + May keep as an "advanced" option as when working well, it is best option
++ Videoview sometimes still visible when playing non-video media content
++ Icons missing for media items in Tray Menus
++ Importing local media fails when adding a single file or directory to library
++ Long media title/names in play queue UI get cut off/can't read
+
+### Build Updates
++ EZT-MediaPlayer-Setup.exe
+
+## 0.5.1 - Pre-Alpha
+
+### Added
++ Ability to toggle Auto Playback of media in the queue
+  + New buttons added to play command bar and playback options in tray menu
+
+### Changed
++ Moved Set-Shuffle and Set-AutoPlay into new module Set-PlaybackOptions
++ Updated Youtube and Spotify datatables to use new paging system
++ Removed use of System.Data.DataTable for MediaTable itemssource binding
++ Reduced amount of logging with Verbose Logging disabled
+
+### Fixed
++ Scrolling in datatables become very stuttery after any contextmenu is open
+  + Unsure of exact cause, but only happens when CanContentScroll set to true
++ Duration values missing for some media imported from youtube playlists
++ TEMP FIX: Unable to sort datatables using column headers
+  + Paging system broke sorting, so this is a temp fix as its pretty hacky
+  + Uses Sorting event handler to capture sort events then manually sorts data
++ When filtering with new page system, paging labels and dropdown doesnt update
++ Chat webview2 instance sometimes does not dispose on media change
++ Update_background_timer does not properly detect if current media has video
++ Downloaded youtube media fails to add to existing local media library
++ Media progress slider is still visible after stopping media
++ After playback of last media in queue, the UI doesn't properly reset/update
++ Playlist treeview height stretches beyond viewable area when fully expanded
+
+### Build Updates
++ EZT-MediaPlayer-Setup.exe
+
+## 0.5.0 - Pre-Alpha
+
+### Added
++ Ability to download all Videos in Youtube Playlists when using download media
+  + Currently only works when using download command via web browser menu
+  + All videos download to chosen folder then tagged with metadata via taglib
+  + If download folder is also in a local media library, they are imported
+
+### Changed
++ Greatly improved performance of paging and filter system
+  + First iteration of complete refactor and overhaul of paging and filtering
+  + Added new assembly Kino.Toolkit.Wpf which provides PagedCollectionView
+  + Huge improvements for filter speed, data binding, and page selection
++ Improved performance when removing media from local media library
+  + Removal is now executed in a runspace to prevent UI from freezing up
+  + More improvements needed, but much better combined with new paging system
++ Improved accuracy of query searches when using 'Find on Youtube'
++ Duration field for local media library now displays in human readable string
++ Improved accuracy of metadata tagged to downloaded youtube videos
+  + Links for spotify/bandcamp parsed from video descriptions/comments
+  + Found links used to get accurate artist/album and other info
++ Improved memory overhead and performance of Media Library datatables
+  + Implemented VirtualizingPanel, mode recycling, for better item draw perf
+  + Items may slowly fade in when scrolling, especially if scrolling fast
+  + Spotify\Youtube datatables now use DataGridTemplate vs autocolumngeneration
+
+### Fixed
++ Chat webview2 not always disposed after changing media with not chat support
++ Downloaded videos not importing despite being in valid media directory
++ Extra/temp files from yt-dlp downloads not removed after download finishes
++ Local media fields in first run remain disabled if canceling file browse
++ Get-AccessToken for Youtube API fails to properly refresh access tokens
+
+### Added
++ First iteration of quality options and controls for Youtube playback
+  + New option 'Preferred Quality'. Applies when NOT using Youtube Web Player
+  + Only basic options for now: Low, Medium, Best (best has large overhead)
++ Ability to pause current playing media by clicking on item in queue
+  + Uses new module New-Relaycommand for WPF button command bindings
++ Registered event 'EncounteredError' for improved libvlc error handling
++ Support for BetterTTV via custom JS injection for Twitch Chat viewer
++ Ability to cancel audio recorder when invoking Stop Media
+  + If recording in progress, prompt displays with choice to cancel or continue
+
+### Changed
++ Refactored vlc and EQ initialization into new module Initialize-VLC
+  + Is now also executed from within a dispatcher timer on startup
++ Improved notifications and logging when downloading Youtube media
++ Get-PlayQueue now can now be executed separately from various update timers
++ Chat Webview2 is now only created when used, then disposed after
++ Snapshot button now only enabled if 'Enable Snapshots' is enabled in settings
+  + Added extra sub-option to toggle including app screenshots
++ Various small optimizations for memory overhead and startup performance
+  + Improved avg startup time by about 1s
+  + Improved memory usage for WPF image sources
++ Notification flyout now auto-closes after 10s for new notifications
++ Dismiss All button for Notification flyout now also closes the flyout
++ Refactored Twitch API to use MS SecretStore Vault for auth tokens
++ Improved performance for Twitch API lookups and updates
++ Metadata for downloaded Youtube media is now added via taglib 
++ Increased network-caching for libvlc for web streamed content
+
+### Fixed
++ Unable to add individual Youtube videos via dragdrop and other methods 
++ Twitch Auto-Updates failing or not updating Twitch media items
++ Incorrect binding path set for some datagrid togglebuttons
++ Playlist items now updating/refreshing in some situations
++ Download option missing for Youtube media when in the Queue
++ Play Queue will not advance when playing media with Youtube web player
++ Various wpf binding errors found during VS debugging
++ App freezes or crashes when interacting with the chat webview2 control
++ Downloaded Youtube media does not import into library after finishing
++ Next Media keypress events do not advance the play queue
++ Update-Mediatimer sometimes causes app to stutter or make hard to move UI
++ Play Queue fails to advance if hash dictionary contains a null value
+
+
+## 0.4.9 - Pre-Alpha
+
+### New Core Feature: Ability to record and save Spotify media to local disk
++ First iteration of Windows loopback audio recording via PSCore assembly
++ App volume effects recorded volume, but windows main volume does not
++ New contextmenu option 'Record Media' available on Spotify media items
++ Currently can select save path, with flac output, full UI options planned
++ Very early implementation, pause/stopping of media wont stop recorder
++ Current supported audio encodings: wav,aac,mp3,wma,flac (Possibly more added)
++ Selecting record starts playback then recorder. Notifications display status
++ Slow flashing recording icon appears in the queue for media being recorded
++ Only available for Spotify Media. Much more to come soon...
+
+### Added
++ Added custom Youtube adblock java script injection for Web Browser
+  + Its no Ublock Origin, but greatly improves experience of using YT
++ DEV MODE: Task category for Show-FeedbackForm for dev use
+
+### Changed
++ Updated included TaglibSharp assembly to latest 2.3
+  + Fixes bug where ID Tags unable to be written to wav files
++ Load-Modules can now use runspaces to install modules (not yet used)
++ Removed escaped characters from some hardcoded path strings
++ Webview2 Runtime installer now included with package vs downloaded
++ Further adjustments to Window dynamic sizing, minheight, width..etc
++ Streamlink install during first setup now executes in a separate runspace
++ Merged Youtube_datatable into synchash.youtubedatatable for better scoping
++ Further improvements to Spotify Web-player consistency and error handling
+  + Added additional retries for 404 errors. Spotify API is dogshit...
++ First iteration of First Run redesign and merge of app setting controls
+  + All current options in settings tab eventually will merge with First Run
+  + Will be renamed to just 'Settings'
++ Improved wording and clarity of msg when enabling imports that require auth
++ Disabled ability to use autofill for any fields in Web Login captures windows
++ Runspaces now use ImportPSModulesFromPath for passing required modules
++ Progress slider now hidden for media with no total duration (streams..etc)
++ Improved error handling in Write-ezlogs when there are path errors
+
+### Fixed
++ Queue not updating or clearing when using clear queue command
++ Local Media Datatable remains disabled after removing media from app
++ Clearing the queue when using webplayers removes current playing item
++ Removing media from app does not remove it from play queue
++ Now Playing label fails to update in some situations
++ Web Player timer stops due to failing to detect media playing status
++ App freezes when auto advancing queue after end of Spotify web playback
++ Duration metadata missing from local media despite being available from taglib
++ Get-localmedia sometimes fails when no media profile cache file exists
++ Add-TrayMenu continuously updates/refreshes with timer while playing media
++ Adding new YT sources fail to add to Youtube_Playlists sources in app config
++ If providing YT auth after starting setup, finishing returns to setup window
++ Updating media sources crashes app when local media import is not enabled
++ Local Media images sometimes dont display despite being available with taglib 
++ Youtube auth UI reappears after setup completes despite successful capture
++ Pode server for Youtube auth capture doesnt properly close when finished
+
+### Build Updates
++ EZT-MediaPlayer-Setup.exe
+
+## 0.4.8 - Pre-Alpha
+
+### Added
++ Ability to use 'Minimize to Tray' option in settings
++ Ability to use 'Start Minimized' option in settings
++ Reset Media Player dispatcher timer for thread agnostic UI reset
++ New config values for vlc/streamlink log level and log path
+  + Will expose via UI/Settings later on
+
+### Changed
++ More improvements to Spotify/Youtube Webplayer reliability and performance
+  + Spotify and Youtube now use separate webview2 instances
+  + These instances are always disposed when not in use then recreated
+  + Added retry for Spotify if API returns 502, so far good results
+  + Still small delay on Spotify first start, but quicker when switching after
+  + Improved autoplay consistency for Youtube webplayer
+  + Improved volume/mute synchronization with slider/icon
++ Spotify Webplayer is now enabled by default and preferred option
+  + Plan to add webplayer options to first run setup page
++ Reduced VLC and Streamlink log levels from Debug to Info
++ Renamed 'Get My Videos' button to 'Get My Uploads' on Youtube first run page
++ Various minor tweaks and changes to UI styles, mostly for text readability
+
+### Fixed
++ Spotify webplayer sometimes doesnt detect end of track and advance queue
++ High CPU/GPU usage while playing media with icon animations
++ Media library items become blank or missing when using filter/search
++ Media library always blank when there is only 1 item in datasource
++ Video fails to appear when playing media with very long title names
++ Now playing icon not updating when using webplayers
++ Now playing title bar label not updating for vlc playback
++ Volume value and mute status not always accurate or updated on change
++ Keys with null values sometimes get added to queue hashtable
++ Various issues with UI controls not resetting or updating on media change
++ Errors thrown when parsing some media duration values that are 0
++ Skip media not always advancing the queue properly
+
+### Build Updates
++ EZT-MediaPlayer-Setup.exe
+
+## 0.4.7.1 - Pre-Alpha
 
 ### Added
 + 'Find on Youtube' contextmenu option to search Youtube for selected media
