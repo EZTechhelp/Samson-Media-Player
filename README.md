@@ -1,127 +1,109 @@
 # EZT-MediaPlayer
 
-#### IMPORTANT ####
-- This app is currently in Pre-Alpha with many features incomplete or broken. Expect many bugs, poor performance and everything associated with a Pre-Alpha. It is not intended for production/public use
+### IMPORTANT
 
+The full latest repository and source code is currently private as it is not yet ready for public consumption. This repository is currently VERY old and out of date. I am looking for any and all willing testers. Please contact me here (github) or via email: mdodge@eztechhelp.com if you are interested in being an early tester. Testers will of course have full access to the source code
 
 ### Synopsis ###
 
-Simple media player built in PowerShell and WPF that allows playback and playlist management of media from multiple media sources such as local disk, Spotify, YouTube, Twitch and others. Powered by LibVLCSharp
+Universal media player built in PowerShell and WPF that allows playback and management of media from sources such as local disk, Spotify, YouTube, Twitch and more. Main audio engine powered by LibVLCSharp
 
-![Example IMAGE](/Images/Example_Image.png)
 
-**Current Features**
+<p align="center">
+  <img Height="200" src="/Images/Samson_Logo_Splash.png" />
+  <img src="/Images/Example_Image.png" Alt="Example, subject to change"/>
+</p>
+
+**DISCLAIMER**
+
+This app is still heavily WIP in relation to any kind of public build. The current build (and example screenshot) is a very personalized and custom version made in dedication for a very dear friend and his cat Samson
+
+**Why Powershell?**
+
+Because why not! Ok maybe there are alot of good reasons. This has been a very educational project and also has personal meaning. While yes using a 'proper' programming language would be much better and easier, its fun and interesting to see just how much you really can do with Powershell. Granted technically there are alot of helpers and other components that arent Powershell, but the primary core and majority of the app is Powershell
+
+### Current Features
 
 - Ability to import and play Spotify playlists and tracks from valid Spotify Account
+  - Premium and free accounts supported, though playback with free accounts is a bit 'messy' and unreliable at the moment
+- Ability to record Spotify media to local disk. Currently saves as flac, futher customization options planned
 - Ability to import and play YouTube playlists
-  - Playlists currently must be added manually (Youtube API integration planned)
-  - Private playlists can still be added if you are logged in with a valid YouTube account with a supported browser (cookies extracted)
+  - Playlists from Youtube account can be imported automatically when providing credentials
+- Ability to download Youtube videos to local disk (via yt-dlp)
 - Create custom playlists, combining media from any supported platform
-- Playback Queue management, with shuffle playback option
-  - When next item is played, the appropriate method is determined to play the media (such as Spotify..etc)
+- Playback Queue and history, with shuffle, next, prev playback options
+- Discord Rich Presense integration to display media playback info in your Discord status/profile
+  - Supports clickable label links for Spotify, Youtube and Twitch media
+- Limited (very basic/WIP) support for adding and playing of SoundCloud media
+- Includes a 'Mini-Player' opened from tray icon/menu. Small skinned UI with only basic playback controls
+- Tray icon and menu with playback and shortcuts to various settings/features
+- Real-time graphical spectrum analyzer powered by cscore
+- Basic audio visualizations support. Includes vlc plugins for Goom and Spectrum
 - Add media using Drag-n-Drop of media files or URL links directly into app
   - Drag-n-drop also supported when moving items between lists and re-ordering
 - In-app or full-screen pop-out video player, with option to enable/disable Hardware Acceleration
-- Supports Twitch live streams and chat display, with ability to track 'Live/Offline' status
-- Ability to play or download YouTube videos to local disk using best available quality (via yt-dlp)
-- In-App basic WebBrowser (using Webview2) for some reason, seemed like a good idea at the time
-  - Youtube URLS are redirected to use Invidious (yewtu.be) because Google ya know what I mean?
-- DataGrids use pagination to handle lists with hundreds/thousands of items (WIP)
+- Supports Twitch live streams with chat integration
+  - Ability to auto-update/refresh stream status
+  - Ability to import all followed/subscribed channels when providing Twitch account
+  - Multiple Twitch AD blocking solutions supported, including [TTVLOL](https://github.com/TTV-LOL/extensions) and [luminous](https://github.com/AlyoshaVasilieva/luminous-ttv)
+  - [BetterTTV](https://github.com/night/betterttv) supported for enhancing in-app chat viewer
+- Utilizes Webview2 for various features such as Web Players for Spotify and Youtube playback
+  - Also includes a basic in-app web browser wth built-in ad blocker for browsing Youtube.com
+  - Can browse youtube and add videos directly into the apps library or download to local file via right-click on youtube vidoes
+- Alternate Youtube option to use Invidious for the Web Player vs the native Youtube embedded player
+- Media Library grids use pagination and UI virtualization to handle lists with hundreds/thousands of items
   - For now defaults to max 50 items displayed per page. Will be adjustable later
 - Uses PowerShell RunSpaces (multi-threading and job handling) for improved performance and responsive WPF UI
-- Supports limited keyboard capture events for Play, Pause, Stop and Next (volume and others planned probably)
+- Supports SystemMediaTransportControl integration for Play, Pause, Stop, Next, Volume..etc
 - 10-Band EQ control with ability to save custom presets or use existing defaults
-  - Additional audio filters (and video filters) planned down the road  
-- Independent volume and mute control
-  - Currently only applies to all NON-Spotify Media. Direct control of Spotify volume/audio is planned
-- Supports displaying Toast notifications on media playback (can be enabled/disabled in settings)  
-- Supports starting app automatically on Windows startup/login (WIP)
+  - Additional audio filters (and video filters) planned 
+- Supports displaying Toast notifications on media playback
+- Supports starting app automatically on Windows startup/login, minmize to tray, start minimized and other UI options
 - Extensive verbose logging support, for troubleshooting and development.
-- Limited support for Audio Visualizations
-- Packaged as an install using Inno Setup 
+- Built-in snapshot feature to take screenshots of videos and of the app itself (if so inclined)
+- Advanced media player options including Audio Output Device selection, Audio Output module selection (mmdevice/directsound..etc) and more (WIP)
 - Other things TBD
-
-
-## Testing
-
-For those who are part of or wish to be part of internal QA testing, the following lists the current areas of focus.
-
-For this first round of testing, only the most basic functionality is to be tested (such as does it even load at all). You are welcome to test any available feature, but primarily I'm looking for feedback on the following:
-
-- Install the app, launch it and get to the First Run Setup window
-- Enable Import Local Media, provide at least 1 directory with media, Enabling Import Youtube, provide at least 1 video or playlist
-- Enable Import Spotify, be presented a Window to login with Spotify Account, and successfully authenticate
-  - **IMPORTANT** In order to use Spotify features, your spotify account must be added to an approved list for the API. This is only during the development and testing process 
-- Start setup and verify that app setup finishes and the main UI opens
-- Verify it detects media from directories you provide when importing Local Media
-- Verify it detects media when choosing to importing Spotify playlists
-- Verify it detects media from playlists/urls you provide when importing Youtube playlists
-- Verify playback of audio/video works when playing Local, or Youtube media
-- (Optional) Verify playback of Spotify media works. Spotify playback should work but is still heavily WIP
-- (Optional) Create at least 1 custom playlist containing at least 1 item from each media source (Local,Youtube,Spotify)
 
 **Important Notes/Requirements**
 
 - The app by **default runs under user context**, but could potentially require running as admin in some cases (such as first time setup)
-- **Spotify** app is required for Spotify features. Spotify is automatically installed via **chocolatey** if its not already. A Spotify account also required, but free should work (needs testing as I've only tried with Premium). Spotify app must be launched at least once and logged in with your account
-	- Spotify playback powered by customized version of **SpotiShell** module and optionally **Spicetify/PODE Server** (Very WIP)
-- **Testers:** I must **manually add your Spotify account**  to the API approved list. 
+- **Spotify** windows client is required to be installed for free Spotify accounts. 
+  - Spotify can be automatically installed if not already. 
+  - Spotify playback for free accounts uses a customized version of **Spicetify/PODE Server** (WIP)
+  - Premium accounts can use the built-in Spotify Web Player without needing the client app installed	
+-  **Spotify accounts must be manually added** to the API approved list for now in order to use Spotify features. 
   - Spotify has a 25 account limit for in-development API usage. Will need your email address for Spotify. Once added you can enable Spotify features	
-- **Yt-dlp** used for **Youtube** playback/download features (included)
+- **Yt-dlp** used for **Youtube** download features (included)
 - **Streamlink** used for (generally) Ad-free Twitch Streaming/Playback (installed automatically)
-- Most **Powershell Modules** needed are included, with a few others installed/imported automatically 
+- **Powershell Modules** needed are included vs installed from the gallery. Some have been slighted modified 
 - If running under Administrator context, and local media is located on a mapped drive (network/nas..etc) **EnableLinkedConnections** registry setting can be set to allow accessing mapped drives in Windows 
-  - This is not applied by default but the code is there (commented out) to check and apply the setting on startup, but recommend doing manually if you need it 
-- **Verbose logging** is **enabled by default** for development reasons, which will effect performance and cause log file to grow in size quickly, so heads up. You can disable verbose logging in settings, which doesn't disable logging entirely, just greatly minimizes it, but thats not helpful to me when testing :)
-	- The log file is located at **%appdata%\EZT-MediaPlayer\EZT-MediaPlayer-(version).log**. This will be needed when providing feedback 
-	- Basic computer info such as name, make, model, cpu, ram, Windows version..etc is included in the log file
-	- Log file may also contain details of media you provide, names of playlists, songs..etc. 
-	- If you are concerned about what info you share, recommend reviewing the log file and scrubbing anything. 
-	- The app has a Feedback/Issue submission form (from title bar dropdown menu). However due to security reasons, I'm not including the creds for test builds in order for it to work, so nothing is sent to me even if you try to use it (will probably just fail)	
-- All web API calls are sent encrypted (https) and subject to privacy terms of the services (in this case Spotify and Twitch). 
-	- The only data I can see is the public IP address where API calls where made from, when and how many requests made. Not content
-	- Spotify creds are captured using Spotify's web auth page (displayed via webview2). An auth token is then stored in $appdata%\SpotiShell 
-	- Youtube creds are not stored. Yt-dlp has a feature to authenticate by importing existing cookies from a supported browser if available
-	- If logging in to websites using web features, such as Twitch chat, this is all handled by Webview2. See below for storage detail	
-- By default, Playlist and Media profiles are stored in **%temp%\EZT-MediaPlayer**. So fair warning if you clear your temp folder. This is temporary...and ability to move/choose location is planned. Just be aware if you delete this folder, the app will automatically run First Time Setup again. Custom playlists will be lost
-	- **Temp files for Webview2 controls** (cookies..etc) and any processed/downloaded images are saved into the temp folder as well. These can be deleted anytime (though may increase startup time a little when first processing again)
-- Core app settings however are stored in **%appdata%\EZT-MediaPlayer**. There is an **XML config file** that holds the primary settings for the app and EQ settings. Also, **custom EQ presets** created/saved are stored in the **EQPresets** folder in the same directory as the config
+  - This is not applied by default but the code is there for checking and applying the setting, just disabled. Recommend doing manually if you need it. An option to enable it for you is planned
+- The default **logging verbosity** is high for development reasons, which will cause the log files to grow in size quickly, so heads up.
+  - The log files are located at **%appdata%\roaming\EZT-MediaPlayer\Logs**
+  - Basic computer info such as name, make, model, cpu, ram, Windows version..etc is included in the log file
+  - Log file may also contain details of media you provide, names of playlists, songs..etc. 
+  - If you are concerned about what info you share, recommend reviewing the log files and scrubbing anything before sharing for support/testing. 
+  - The app has a Feedback/Issue submission form (from title bar dropdown menu) where feedback and issues can be submitted with option to include latest logs	
+- All web API calls are sent encrypted (https) and subject to privacy terms of the services (in this case Spotify, Youtube and Twitch). 
+  - The only data I can see is the public IP address where API calls where made from, when and how many requests made. Not content
+  - Spotify, Twitch and Youtube creds are captured using their respective Oauth web auth pages (displayed via webview2).  
+    - All credentials and sensitive data are encrypted using .NET crypto APIs and stored via the Microsoft SecretStore Vault
+- By default, Playlist and Media profiles are stored in **%appdata%\roaming\EZT-MediaPlayer**
+  - **Temp files for Webview2 controls** (cookies..etc) and any processed/downloaded images are saved into the **%temp%\EZT-MediaPlayer** folder. These can be deleted anytime
+- Core app settings are stored in **%appdata%\Roaming\EZT-MediaPlayer**. There is an **XML config file** that holds the primary settings for the app and EQ settings. Also, **custom EQ presets** created are stored in the **EQPresets** folder in the same directory as the config
 - This is at its core a **PowerShell script**. As such this will likely only work on **Windows** endpoints and is untested on other platforms, though it is compatible with PowerShell 7+
 - Requires **Powershell v5.1** and .NET 4.5 or higher. Tested on **Windows 10** and **Windows 11**. It may work on Windows 7 but I don't care if it does and you shouldn't either.
-- Uses PowerShell RunSpaces for multi-threading, though we still have to deal with 1 UI thread, so UI stutters and momentary freezes can still happen but hopefully limited. Working to improve
-  - A Job/cleanup RunSpace is used to manage RunSpace and dispose/close of ones that finish
-  - Duplicate RunSpaces are terminated if detected. Ex: if a new playback RunSpace starts but the previous is still running, it will be terminated before starting the new one to keep things tidy
-  - Terminating a RunSpace that contains a UI or appcontext thread will freeze the entire app, so those are not ever forced closed (hopefully) 
-- When enabling Start on Windows, app creates (or removes if disabling) a Windows scheduled task. Must provide path to main exe when enabling
-- A lot of optimization is needed, but early testing shows, on average the app uses about ~600 - 700mb of RAM. CPU should be ~10% depending on what your playing and if you enable Hardware Acceleration under Settings (only applies to video rendering). With HA enabled, GPU usage can be 15 - 20% for high-quality (1080p) video streams.
+- Uses PowerShell RunSpaces for multi-threading, though expect UI stutters and momentary freezes can still happen but hopefully limited. Working to improve
+- A lot of optimization is still needed, but on average the app uses about ~600 - 700mb of RAM with avg media library containing about 10,000 media items. 
+  - CPU usage should be avg ~10% depending on your CPU, what your playing and if you enable Hardware Acceleration under Settings (only applies to video rendering).
+  - With HA enabled, GPU usage can be 15 - 20% for high-quality (1080p) video streams. It should be close to the same level of performance of vlc since it uses libvlc
 - While improvements have been made to error handling and UI threading, there can still be some uncaught exceptions or other issues that can cause the app to freeze. If it happens, I need to know what specifically you were doing/clicking/viewing when it happened (and log file of course)
-* * * 
-
-**Known Issues**
-
-- So many to list, but will try to highlight the main ones (have I mentioned this is pre-alpha and WIP?)
-- Keywatcher/keyboard events can be hit or miss. So for ex: hitting Pause/Play may sometimes not work first try
-	- 'Keywatcher' runs under its own runspace, watching for keyboard press events. Its a little buggy and needs improvement, but generally works. 
-	- Need to figure out how to deal with conflicts, like block Spotify/web browsers and even windows from capturing them while app is running
-- Spotify playback is a PITA. 
-	- Generally if your Spotify account and API creds are good, things should work. But a single missed API call/web timeout can cause issues which is why Spicetify is being added as an option. 
-	- The biggest issue seen so far is Spotify either just doesn't play, or when playback finishes, Spotify plays whatever the F it wants next and doesn't honor the apps queue list or response to commands. 
-	- Admittedly, I'm using some rather nuclear methods to shut Spotify up when it doesn't respond, meaning I force close the process, that'll teach ya!
-	- Using the progress slider bar can be laggy, but should work. Works better for local media
-- YouTube playback can have a good sized delay before video begins. This is due to yt-dlp, which extracts the best audio/video stream for the video each time. These stream URLs can't be saved to speed things up later since they expire. Its not terrible IMO but perhaps there is some way I don't know yet to improve this. 
-- By default I have yt-dlp always extract the best quality video and audio streams and mux them together (cause i'm a snob like that) but using best available single stream or lower quality does greatly improve speed/start time of playback. The ability to choose quality (when playing and downloading) is planned
-- Downloading YouTube videos can be hit/miss. By default like playback, the best quality for audio and video is downloaded and combined into an MKV, with a thumbnail. Again additional options are planned. The app uses jobs to monitor a verbose/std output of yt-dlp to a log file, together with the get-content -wait in order to read and log status of downloads (and other things) in near real-time, otherwise you have to wait until its all finished and have no way of knowing if its doing anything. This is all done in a separate runspace tho so you can still use the app while its downloading. A notification displays when its finished
-- There is a notification system (separate from toast notifications) and a basic in-app help documentation. These appear at the top as a flyout (or from the side for help). Notifications have a dismiss button. This is in known issues because the notifications can sometimes not be accurate (like showing failed when something is success). This wont be hard to fix I just haven't gotten to that part yet, which also applies to the in-app help documentation system. Some options have a help icon/button which displays a flyout with instructions/info. Its not done and probably doesn't always make sense (since things have changed).
-- Various options/controls in the Settings tab don't do anything yet, specifically 'App always on Top', Minimize to tray, start minimized, Download Youtube media on playback, and maybe more.
-- When enabling/disabling EQ from the Audio settings flyout, it causes audio to skip/pause for a second or 2. I don't think this is actually an issue (at least with this app) as that is just how it works, considering its changing out audio filters/channels on the fly. This happens with VLC media player in my experience too. 
-- The play queue can behave oddly. By that I mean when playback of one item ends, the next item may not play or the app will just skip through the rest of the items without playing. This usually has happened when there are Spotify items in the list (go figure). I have managed to improve this behavior greatly (such as moving to a ordered dictionary list which I should have used from the start) at least in my own testing 
-- Performance takes a good sized hit when Verbose Logging is enabled (which it is by default). I need this enabled to get the info I need, but you can try disabling it (from Settings tab) to test without it, then re-enable it again
-- The first time importing youtube playlists/videos can take a while, depending on how many videos. I recommend only adding a small amount of videos or playlists with no more than 10 - 20 videos, just for testing. The Youtube processing is done in a runspace so it shouldn't tie up the app. If you go to the Youtube browser tab and see a spinning circle, that means its still working (or potentially failed which the logs should show)
+- Alot more but this list is long enough for now
 * * * 
 
 ## Primary Modules/Components
 
-A quick list of the various pieces I've cobbled together that arent native (ie coded from scratch)
+A quick list of the various apps, components or libraries used in this project (as well as endoresment for each)
 
 **[MahApps.Metro](https://github.com/MahApps/MahApps.Metro)**
 - A framework that allows developers to cobble together a better UI for their own WPF applications with minimal effort.
@@ -156,15 +138,15 @@ A quick list of the various pieces I've cobbled together that arent native (ie c
 - Basically, webnowplaying extension allows sending/receiving websocket commands to/from Spotify. For this app, this is used in combination with the PODE module, which creates a websocket server and routing points for receiving and sending commands
 - This also will allow getting data back from Spotify about currently playing items, especially current progress/duration which right now requires a Spotify web API call every second or so. This part is not yet implemented in this app but its planned. 
 - This is VERY WIP and needs perfecting. Updates to Spotify break these changes, though can be quickly re-applied/fixed. The goal is to get rid of the requirement of sending web API calls to control a player that is installed locally right in front of your face. Lunacy Spotify, lunacy (but yes I get why this is)
-- NOTE: By default, Spotify playback is handled entirely by SpotiShell/API calls. Using Spicetify/PODE solution can be enabled under the Settings tab. Enabling adds customization's, disabling removes them/sets Spotify back to default
+- NOTE: By default, Spotify playback is handled using the web player (via webview2) and the Spotify Web Playback SDK. A Spotify Premium account is required to use these features. For free Spotify accounts, the Spicetify/PODE solution can be enabled under the Settings tab. Enabling injects the customizations, disabling removes them/sets Spotify back to default
 
 **[PODE](https://github.com/Badgerati/Pode)**
 - Pode is a Cross-Platform PowerShell web framework for creating REST APIs, Web Sites, and TCP/SMTP servers
 - This is used in combination with Spicetify customization's to allow direct control of the Spotify app using web-socket commands vs web API calls (PODE call are all localhost)
+- Also used for the Oauth capture process for Youtube authentication
 - The 'servers' and routing commands run under their own runspaces, so as not to tie up the app
-- While I'm not aware of any security issues with this, since nothing sensitive (such as account data) is sent, and its confined locally, a full security review/audit of this process isn't complete, nor is the implementation finished. Just need to preface with that
-- For example, starting playback of specific Spotify track URL is done by sending 'Invoke-RestMethod -Uri "http://127.0.0.1:8974/PLAYURI?$($playback_url)" -UseBasicParsing'. 
-- NOTE: By default, Spotify playback is handled entirely by SpotiShell/API calls. Using Spicetify/PODE solution can be enabled under the Settings tab
+- While I'm not aware of any security issues with this, a full security review/audit of this process isn't complete, nor is the implementation finished. Just need to preface with that
+- For example, starting playback of specific Spotify track URL (with Spicetify enabled) is done by sending 'Invoke-RestMethod -Uri "http://127.0.0.1:8974/PLAYURI?$($playback_url)" -UseBasicParsing'. 
 
 **[BurntToast](https://github.com/Windos/BurntToast)**
 - Module for creating and displaying Toast Notifications on Microsoft Windows 10.
@@ -185,47 +167,56 @@ A quick list of the various pieces I've cobbled together that arent native (ie c
 
 **[VirtualizingWrapPanel](https://github.com/sbaeumlisberger/VirtualizingWrapPanel)**
 - Implementation of a VirtualizingWrapPanel for WPF running .NET Framework 4.5.2+, .NET Core 3.1+ or .NET 5.0+
-- Not currently used in this project but likely will be to provide better performance and UI virtualization of various WPF controls
+- Used in very limited/specific cases, but provides better performance and UI virtualization of various WPF controls
 
 **[Chocolatey](https://github.com/chocolatey/choco)**
 - Chocolatey is a CLI-based package manager for Windows that is sort of like apt-get.
-- Used for silently installing/updating any required external applications/components, such as Spotify
+- Used for silently installing/updating any required external applications/components
 
 **[Microsoft.PowerShell.SecretManagement](https://www.powershellgallery.com/packages/Microsoft.PowerShell.SecretManagement/1.1.1)**
 - Used to securely store and retrieve various credentials/secrets
-- Not currently used (yet) in this project. Likely to be used to Store Spotify authentication when moving to published Spotify API and perhaps others
+- Used for storing access token data for Spotify, Youtube and Twitch accounts
+
+**[AvalonDock](https://github.com/Dirkster99/AvalonDock)**
+- AvalonDock is a WPF Document and Tool Window layout container that is used to arrange documents and tool windows in similar ways than many well known IDEs, such as, Eclipse, Visual Studio, PhotoShop and so forth.
+- Used to host the video player, media libary and other windows to allow undocking, docking and floating
+
+**[YouTube](https://github.com/pcgeek86/youtube/)**
+- A PowerShell module to manage YouTube content via the official REST API.
+- This module is heavily modified and added to for use with this project. But was used as the main template and want to include the credit
+
+**[DiscordRPC](https://github.com/potatoqualitee/discordrpc)**
+- Discord Rich Presence Client written in PowerShell.
+- Used for Discord Rich Presense integration to display current media playback info. Very slightly modified
+
 * * * 
 
 ## Available Versions
 
-**[Self Executable - Pre-Alpha]()**  
+**[Inno Setup Installer - BETA - TESTERS/COURAGEOUS ONLY]()**  
 
-- Its packaged as a self-executable for quick and easy usage, mobility and setup/update management. Will be the primary version for regular usage
+- Prepackaged installer using Inno setup. Will be the primary version for regular usage
 - A link will be provided to approved Testers
 
-**[Powershell Source Code - Pre-Alpha]()** 
+**[Powershell Source Code - BETA - TESTERS/COURAGEOUS ONLY]()** 
 
 - Powershell only version, main dev script
-- Source code is naturally available once you run the app and choose an install folder
+- Source code is naturally available via the repository or once you run the app and choose an install folder
 
-**[Python Source Code - NOT YET AVAILABLE]()**
+**[C# Source Code - NOT YET AVAILABLE]()**
 
-- TBD
+- TBD/Mabye. Currently training/learning C# and may port this project over. Might not
 
 ## Installation and Configuration
 
 #### Powershell Configuration
 
-- If you wish to use the pure Powershell shell script version, some configuration variables are located in the region **Configurable Script Parameters** located near the top of the script. Most settings stored in %appdata%/EZT-MediaPlayer/EZT-MediaPlayer-Config.xml
+- There are some configuration variables located in the region **Configurable Script Parameters** located near the top of the script. These are designed for advanced users or developement. Most settings stored in %appdata%/EZT-MediaPlayer/EZT-MediaPlayer-Config.xml and can be configured via the in app Settings UI page
 
-#### Self Executable Configuration
+### Building Installer/Launcher
 
-- All configurable options will be set from within the GUI of the app under the Settings tab. (WIP)
+The installer is packaged via Inno Setup. Once installed there is a main .EXE that launches the app. This launcher is just another powershell script packaged as a self-executable using "Turn Code into Exe" option available with ISESteroids
 
-### Building Executable
+_**Note: The app detects and defaults to run with Powershell 7/core if installed (by checking for pwsh.exe), otherwise defaults to Powershell.exe. PS7 is recommended for better performance**_
 
-The self-executable is packaged using the classic IEXPRESS self-extracting package manager included in pretty much all Windows versions. IEXPRESS contains the main app files in a ZIP file. Those contents are NOT decompressed every-time the app runs, but only upon first setup and if a new version is to be installed. IEXPRESS extracts basic setup files such as Setup.ps1, which is basically the 'launcher' for the app. It checks/verifies paths, updates..etc, then launches the main app.
-
-_**Note: The app detects and defaults to run with Powershell 7/core if installed (by checking for pwsh.exe), otherwise defaults to Powershell.exe**_
-
-_**Note: Full instructions and SED (Self Extraction Directive File) will eventually be shared and included here**_
+_**Note: Full detailed instructions and the Inno Setup .iss file will eventually be shared and included here**_
