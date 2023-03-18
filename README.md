@@ -106,7 +106,7 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
   - This is not applied by default but the code is there for checking and applying the setting, just disabled. Recommend doing manually if you need it. An option to enable it for you is planned
   - If app is running as admin and an added network path is unavailable, a warning will be displayed with an option to restart under user context
 - The default **logging verbosity** is high for development reasons, which will cause the log files to grow in size quickly, so heads up.
-  - The log files are located at **%appdata%\roaming\EZT-MediaPlayer\Logs**
+  - The log files are located at `%appdata%\roaming\EZT-MediaPlayer\Logs`
   - Basic computer info such as name, make, model, cpu, ram, Windows version..etc is included in the log file
   - Log file may also contain details of media you provide, names of playlists, songs..etc. 
   - If you are concerned about what info you share, recommend reviewing the log files and scrubbing anything before sharing for support/testing. 
@@ -114,10 +114,10 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
 - All web API calls are sent encrypted (https) and subject to privacy terms of the services (in this case Spotify, Youtube and Twitch). 
   - The only data I can see is the public IP address where API calls where made from, when and how many requests made. Not content
   - Spotify, Twitch and Youtube creds are captured using their respective Oauth web auth pages (displayed in-app via webview2).  
-    - All credentials and sensitive data (Oauth tokens..etc) are encrypted using .NET crypto APIs and stored via the **Microsoft SecretStore Vault**
-- By default, Playlist and Media profiles are stored in **%appdata%\roaming\EZT-MediaPlayer**
+    - All credentials and sensitive data (Oauth tokens..etc) are encrypted using .NET crypto APIs and stored locally only via the **Microsoft SecretStore Vault**
+- By default, Playlist and Media profiles are stored in `%appdata%\roaming\EZT-MediaPlayer`
   - **Temp files for Webview2 controls** (cookies..etc) and any processed/downloaded images are saved into the **%temp%\EZT-MediaPlayer** folder. These can be deleted anytime
-- Core app settings are stored in **%appdata%\Roaming\EZT-MediaPlayer**. There is an **XML config file** that holds the primary settings for the app and EQ settings. Also, **custom EQ presets** created are stored in the **EQPresets** folder in the same directory as the config
+- Core app settings are stored in `%appdata%\Roaming\EZT-MediaPlayer`. There is an **XML config file** that holds the primary settings for the app and EQ settings. Also, **custom EQ presets** created are stored in the **EQPresets** folder in the same directory as the config
 - This is at its core a **PowerShell script**. As such this will likely only work on **Windows** endpoints and is untested on other platforms, though it is compatible with PowerShell 7+
 - Requires at least **Powershell v5.1** and .NET 4.5 or higher. Tested on **Windows 10** and **Windows 11**. It may work on Windows 7 but I don't care if it does and you shouldn't either.
 - Uses PowerShell RunSpaces for multi-threading, though expect UI stutters and momentary freezes can still happen but hopefully limited. Working to improve
@@ -238,7 +238,7 @@ A quick list of the various apps, components or libraries used in this project (
 
 #### Powershell Configuration
 
-- There are some configuration variables located in the region **Configurable Script Parameters** located near the top of the script. These are designed for advanced users or developement. Most settings stored in %appdata%/EZT-MediaPlayer/EZT-MediaPlayer-Config.xml and can be configured via the in app Settings UI page
+- There are some configuration variables located in the region **Configurable Script Parameters** located near the top of the script. These are designed for advanced users or developement. Most settings stored in `%appdata%/EZT-MediaPlayer/EZT-MediaPlayer-Config.xml` and can be configured via the in app Settings UI page
 
 ### Building Installer/Launcher
 
