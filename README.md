@@ -2,7 +2,7 @@
 
 ### IMPORTANT
 
-The full latest repository and source code is currently private as it is not yet ready for public consumption. This repository is currently VERY old and out of date. I am looking for any and all willing testers. Please contact me here (github) or via email: mdodge@eztechhelp.com if you are interested in being an early tester. Testers will of course have full access to the source code
+The full repository and source code is currently private as it is not yet ready for public consumption. I am looking for any and all willing testers. Please contact me here (github) or via email: mdodge@eztechhelp.com if you are interested in being an early tester. Testers will of course have full access to the source code
 
 ### Synopsis ###
 
@@ -22,37 +22,63 @@ This app is still heavily WIP in relation to any kind of public build. The curre
 
 Because why not! Ok maybe there are alot of good reasons. This has been a very educational project and also has personal meaning. While yes using a 'proper' programming language would be much better and easier, its fun and interesting to see just how much you really can do with Powershell. Granted technically there are alot of helpers and other components that arent Powershell, but the primary core and majority of the app is Powershell
 
-### Current Features
+## Current Features
+
+### Discord
+
+<img src="/Images/Discord_Integration.png" Alt="Discord Rich Presense integration to display media playback info in your Discord status/profile"/>
+
+- Discord Rich Presense integration to display media playback info in your Discord status/profile
+- Supports clickable label links for Spotify, Youtube and Twitch media 
+
+### Mini-Player
+<img src="/Images/MiniPlayer.png" Alt="Includes a 'Mini-Player' opened from tray icon/menu. Small skinned UI with only basic playback controls"/>
+
+- Includes a 'Mini-Player' opened from tray icon/menu. Small skinned UI with basic playback controls
+- Tray icon and menu with playback and shortcuts to various settings/features
+
+### Spotify
 
 - Ability to import and play Spotify playlists and tracks from valid Spotify Account
   - Premium and free accounts supported, though playback with free accounts is a bit 'messy' and unreliable at the moment
 - Ability to record Spotify media to local disk. Currently saves as flac, futher customization options planned
+
+### Youtube
 - Ability to import and play YouTube playlists
   - Playlists from Youtube account can be imported automatically when providing credentials
 - Ability to download Youtube videos to local disk (via yt-dlp)
-- Create custom playlists, combining media from any supported platform
-- Playback Queue and history, with shuffle, next, prev playback options
-- Discord Rich Presense integration to display media playback info in your Discord status/profile
-  - Supports clickable label links for Spotify, Youtube and Twitch media
-- Limited (very basic/WIP) support for adding and playing of SoundCloud media
-- Includes a 'Mini-Player' opened from tray icon/menu. Small skinned UI with only basic playback controls
-- Tray icon and menu with playback and shortcuts to various settings/features
-- Real-time graphical spectrum analyzer powered by cscore
-- Basic audio visualizations support. Includes vlc plugins for Goom and Spectrum
-- Add media using Drag-n-Drop of media files or URL links directly into app
-  - Drag-n-drop also supported when moving items between lists and re-ordering
-- In-app or full-screen pop-out video player, with option to enable/disable Hardware Acceleration
-- Supports Twitch live streams with chat integration
-  - Ability to auto-update/refresh stream status
+- Alternate Youtube option to use Invidious for the Web Player vs the native Youtube embedded player
+- Supports playing YoutubeTV channels (currently channels must be added manually)
+
+### Twitch
+<img src="/Images/Twitch.png" Alt="Supports Twitch live streams with chat integration"/>
+
+- Ability to import and play Twitch live streams with chat integration
+  - Includes option to enable auto-update/refresh stream status
+  - (SOON) Ability to display notifications for configured channels when they go live
   - Ability to import all followed/subscribed channels when providing Twitch account
   - Multiple Twitch AD blocking solutions supported, including [TTVLOL](https://github.com/TTV-LOL/extensions) and [luminous](https://github.com/AlyoshaVasilieva/luminous-ttv)
   - [BetterTTV](https://github.com/night/betterttv) supported for enhancing in-app chat viewer
+  
+### Media Library/Playlists/Queue
+<img src="/Images/Media_Library.png" Alt="Media library with dockable/tabbed UI supporting advanced filtering and multi-level grouping"/>
+
+- Media library with dockable/tabbed UI supporting advanced filtering and multi-level grouping
+- Add media using Drag-n-Drop of media files or URL links directly into app or from library to playlists
+  - Drag-n-drop also supported when moving items between lists and re-ordering
+- Create custom playlists, combining media from any supported platform
+- Playback Queue and history, with shuffle, next, prev playback options  
+  
+### Core/Other
+
+- Limited (very basic/WIP) support for adding and playing of SoundCloud media
+- Real-time graphical spectrum analyzer powered by cscore
+- Basic audio visualizations support. Includes vlc plugins for Goom and Spectrum
+- In-app or full-screen pop-out video player, with option to enable/disable Hardware Acceleration
 - Utilizes Webview2 for various features such as Web Players for Spotify and Youtube playback
   - Also includes a basic in-app web browser wth built-in ad blocker for browsing Youtube.com
-  - Can browse youtube and add videos directly into the apps library or download to local file via right-click on youtube vidoes
-- Alternate Youtube option to use Invidious for the Web Player vs the native Youtube embedded player
-- Media Library grids use pagination and UI virtualization to handle lists with hundreds/thousands of items
-  - For now defaults to max 50 items displayed per page. Will be adjustable later
+  - Can browse youtube and add videos directly into the apps library or download to local file via right-click on youtube videos
+- Media Library grids use data and UI virtualization to handle lists with hundreds of thousands of items
 - Uses PowerShell RunSpaces (multi-threading and job handling) for improved performance and responsive WPF UI
 - Supports SystemMediaTransportControl integration for Play, Pause, Stop, Next, Volume..etc
 - 10-Band EQ control with ability to save custom presets or use existing defaults
@@ -64,20 +90,21 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
 - Advanced media player options including Audio Output Device selection, Audio Output module selection (mmdevice/directsound..etc) and more (WIP)
 - Other things TBD
 
-**Important Notes/Requirements**
+## Important Notes/Requirements
 
-- The app by **default runs under user context**, but could potentially require running as admin in some cases (such as first time setup)
+- The app by **default runs under user context**, but requires running as admin in some cases (such as first time setup)
 - **Spotify** windows client is required to be installed for free Spotify accounts. 
   - Spotify can be automatically installed if not already. 
   - Spotify playback for free accounts uses a customized version of **Spicetify/PODE Server** (WIP)
-  - Premium accounts can use the built-in Spotify Web Player without needing the client app installed	
+  - Premium accounts can use the built-in Spotify Web Player without needing the client app installed (Recommended/Default)	
 -  **Spotify accounts must be manually added** to the API approved list for now in order to use Spotify features. 
   - Spotify has a 25 account limit for in-development API usage. Will need your email address for Spotify. Once added you can enable Spotify features	
 - **Yt-dlp** used for **Youtube** download features (included)
-- **Streamlink** used for (generally) Ad-free Twitch Streaming/Playback (installed automatically)
-- **Powershell Modules** needed are included vs installed from the gallery. Some have been slighted modified 
+- **Streamlink** used for (potentially) Ad-free Twitch Streaming/Playback (installed automatically)
+- **Powershell Modules** needed are included vs installed from the PS gallery. Some have been slighted modified 
 - If running under Administrator context, and local media is located on a mapped drive (network/nas..etc) **EnableLinkedConnections** registry setting can be set to allow accessing mapped drives in Windows 
   - This is not applied by default but the code is there for checking and applying the setting, just disabled. Recommend doing manually if you need it. An option to enable it for you is planned
+  - If app is running as admin and an added network path is unavailable, a warning will be displayed with an option to restart under user context
 - The default **logging verbosity** is high for development reasons, which will cause the log files to grow in size quickly, so heads up.
   - The log files are located at **%appdata%\roaming\EZT-MediaPlayer\Logs**
   - Basic computer info such as name, make, model, cpu, ram, Windows version..etc is included in the log file
@@ -86,16 +113,16 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
   - The app has a Feedback/Issue submission form (from title bar dropdown menu) where feedback and issues can be submitted with option to include latest logs	
 - All web API calls are sent encrypted (https) and subject to privacy terms of the services (in this case Spotify, Youtube and Twitch). 
   - The only data I can see is the public IP address where API calls where made from, when and how many requests made. Not content
-  - Spotify, Twitch and Youtube creds are captured using their respective Oauth web auth pages (displayed via webview2).  
-    - All credentials and sensitive data are encrypted using .NET crypto APIs and stored via the Microsoft SecretStore Vault
+  - Spotify, Twitch and Youtube creds are captured using their respective Oauth web auth pages (displayed in-app via webview2).  
+    - All credentials and sensitive data (Oauth tokens..etc) are encrypted using .NET crypto APIs and stored via the **Microsoft SecretStore Vault**
 - By default, Playlist and Media profiles are stored in **%appdata%\roaming\EZT-MediaPlayer**
   - **Temp files for Webview2 controls** (cookies..etc) and any processed/downloaded images are saved into the **%temp%\EZT-MediaPlayer** folder. These can be deleted anytime
 - Core app settings are stored in **%appdata%\Roaming\EZT-MediaPlayer**. There is an **XML config file** that holds the primary settings for the app and EQ settings. Also, **custom EQ presets** created are stored in the **EQPresets** folder in the same directory as the config
 - This is at its core a **PowerShell script**. As such this will likely only work on **Windows** endpoints and is untested on other platforms, though it is compatible with PowerShell 7+
-- Requires **Powershell v5.1** and .NET 4.5 or higher. Tested on **Windows 10** and **Windows 11**. It may work on Windows 7 but I don't care if it does and you shouldn't either.
+- Requires at least **Powershell v5.1** and .NET 4.5 or higher. Tested on **Windows 10** and **Windows 11**. It may work on Windows 7 but I don't care if it does and you shouldn't either.
 - Uses PowerShell RunSpaces for multi-threading, though expect UI stutters and momentary freezes can still happen but hopefully limited. Working to improve
 - A lot of optimization is still needed, but on average the app uses about ~600 - 700mb of RAM with avg media library containing about 10,000 media items. 
-  - CPU usage should be avg ~10% depending on your CPU, what your playing and if you enable Hardware Acceleration under Settings (only applies to video rendering).
+  - CPU usage while playing should be avg ~10% depending on your CPU, what your playing and if you enable Hardware Acceleration under Settings (only applies to video rendering).
   - With HA enabled, GPU usage can be 15 - 20% for high-quality (1080p) video streams. It should be close to the same level of performance of vlc since it uses libvlc
 - While improvements have been made to error handling and UI threading, there can still be some uncaught exceptions or other issues that can cause the app to freeze. If it happens, I need to know what specifically you were doing/clicking/viewing when it happened (and log file of course)
 - Alot more but this list is long enough for now
@@ -183,7 +210,7 @@ A quick list of the various apps, components or libraries used in this project (
 
 **[YouTube](https://github.com/pcgeek86/youtube/)**
 - A PowerShell module to manage YouTube content via the official REST API.
-- This module is heavily modified and added to for use with this project. But was used as the main template and want to include the credit
+- This module has been heavily modified and added to for use with this project. But was used as the main template and want to include the credit
 
 **[DiscordRPC](https://github.com/potatoqualitee/discordrpc)**
 - Discord Rich Presence Client written in PowerShell.
@@ -205,7 +232,7 @@ A quick list of the various apps, components or libraries used in this project (
 
 **[C# Source Code - NOT YET AVAILABLE]()**
 
-- TBD/Mabye. Currently training/learning C# and may port this project over. Might not
+- TBD/Maybe. May port this project over. Might not
 
 ## Installation and Configuration
 
@@ -217,6 +244,6 @@ A quick list of the various apps, components or libraries used in this project (
 
 The installer is packaged via Inno Setup. Once installed there is a main .EXE that launches the app. This launcher is just another powershell script packaged as a self-executable using "Turn Code into Exe" option available with ISESteroids
 
-_**Note: The app detects and defaults to run with Powershell 7/core if installed (by checking for pwsh.exe), otherwise defaults to Powershell.exe. PS7 is recommended for better performance**_
+_**Note: The app detects and defaults to run with Powershell 7/core if installed (by checking for existance of pwsh.exe), otherwise defaults to Powershell.exe. PS7 is recommended for better performance**_
 
-_**Note: Full detailed instructions and the Inno Setup .iss file will eventually be shared and included here**_
+_**Note: Full detailed instructions and the Inno Setup .iss file will eventually be shared and included here for building**_
