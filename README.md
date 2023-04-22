@@ -6,8 +6,7 @@ The full repository and source code is currently private as it is not yet ready 
 
 ### Synopsis ###
 
-Universal media player built in PowerShell and WPF that allows playback and management of media from sources such as local disk, Spotify, YouTube, Twitch and more. Main audio engine powered by LibVLCSharp
-
+EZT-MediaPlayer is a universal media player built in PowerShell that allows playback and management of media from sources such as local disk, Spotify, YouTube, Twitch and more. Main audio engine powered by LibVLCSharp
 
 <p align="center">
   <img Height="200" src="/Images/Samson_Logo_Splash.png" />
