@@ -1,76 +1,115 @@
 # EZT-MediaPlayer
 
-### IMPORTANT
+## IMPORTANT
 
-The full repository and source code is currently private as it is not yet ready for public consumption. I am looking for any and all willing testers. Please contact me here (github) or via email: mdodge@eztechhelp.com if you are interested in being an early tester. Testers will of course have full access to the source code
+The full repository and most current source code is currently private as it is not yet ready for public consumption. I am looking for any and all willing testers or those who are interested in contributing to the project. Please contact me here (github) or via email: mdodge@eztechhelp.com if you are interested. Testers and contributors will of course have full access to the latest source code
 
-### Synopsis ###
+**DISCLAIMER**
 
-EZT-MediaPlayer is a universal media player built in PowerShell that allows playback and management of media from sources such as local disk, Spotify, YouTube, Twitch and more. Main audio engine powered by LibVLCSharp
+This app is still heavily WIP in relation to any kind of public build. The current build (and example screenshot) is from a very personalized and custom version made in dedication for a very dear friend and his cat Samson
+
+## Synopsis <a name="Synopsis"></a>
+
+EZT-MediaPlayer is a universal media player built in PowerShell that consolidates playback and management of media from multiple sources such as local disk, Spotify, YouTube, Twitch and more. Powered by LibVLCSharp
 
 <p align="center">
   <img Height="200" src="/Images/Samson_Logo_Splash.png" />
   <img src="/Images/Example_Image.png" Alt="Example, subject to change"/>
 </p>
 
-**DISCLAIMER**
+# Table of Contents
+1. [Synopsis](#Synopsis)
+2. [Why Powershell?](#Why_Powershell)
+3. [Current Features](#Current_Features)
+    - [Discord](#Discord)
+    - [Mini-Player](#Mini-Player)
+    - [Spotify](#Spotify)
+    - [Youtube](#Youtube)
+    - [Twitch](#Twitch)
+    - [Local Media](#Local_Media)
+    - [Media Library/Playlists/Queue](#Media_Library_Playlists_Queue)
+    - [Core/Other](#Core/Other)
+4. [Important Notes/Requirements](#Important_Notes_Requirements)
+5. [Primary Modules/Components](#Primary_Modules_Components)
+6. [Available Versions](#Available_Versions)
+    - [Installer/EXE](#Inno_Setup_Installer)
+    - [Powershell Script](#Powershell_Script)
+8. [Installation and Configuration](#Installation_and_Configuration)
+    - [Powershell Configuration](#Powershell_Configuration)
+    - [Building Installer/Launcher](#Building_Installer_Launcher)
 
-This app is still heavily WIP in relation to any kind of public build. The current build (and example screenshot) is a very personalized and custom version made in dedication for a very dear friend and his cat Samson
+**Why Powershell?** <a name="Why_Powershell"></a>
 
-**Why Powershell?**
+Because why not! Ok maybe there are alot of good reasons. This has been a very educational project and also has personal meaning. While yes using a 'proper' programming language would be much better and easier, its fun and interesting to see just how much you really can do with Powershell. Technically there are alot of helpers and other components built in other languages, but the primary core and majority of the app is Powershell
 
-Because why not! Ok maybe there are alot of good reasons. This has been a very educational project and also has personal meaning. While yes using a 'proper' programming language would be much better and easier, its fun and interesting to see just how much you really can do with Powershell. Granted technically there are alot of helpers and other components that arent Powershell, but the primary core and majority of the app is Powershell
+## Current Features <a name="Current_Features"></a>
 
-## Current Features
-
-### Discord
+### Discord <a name="Discord"></a>
 
 <img src="/Images/Discord_Integration.png" Alt="Discord Rich Presense integration to display media playback info in your Discord status/profile"/>
 
 - Discord Rich Presense integration to display media playback info in your Discord status/profile
 - Supports clickable label links for Spotify, Youtube and Twitch media 
 
-### Mini-Player
+### Mini-Player <a name="Mini-Player"></a>
 <img src="/Images/MiniPlayer.png" Alt="Includes a 'Mini-Player' opened from tray icon/menu. Small skinned UI with only basic playback controls"/>
 
 - Includes a 'Mini-Player' opened from tray icon/menu. Small skinned UI with basic playback controls
 - Tray icon and menu with playback and shortcuts to various settings/features
 
-### Spotify
+### Spotify <a name="Spotify"></a> <img src="/Resources/Material-Spotify.png" Alt="Ability to import and play Spotify playlists and tracks from valid Spotify Account"/>
 
 - Ability to import and play Spotify playlists and tracks from valid Spotify Account
-  - Premium and free accounts supported, though playback with free accounts is a bit 'messy' and unreliable at the moment
+  - Premium and free accounts(WIP) supported, though playback with free accounts requires having the local Spotify client installed
 - Ability to record Spotify media to local disk. Currently saves as flac, futher customization options planned
+- (WIP) Ability to use apps native EQ and audio filters for Spotify playback
 
-### Youtube
-- Ability to import and play YouTube playlists
+### Youtube <a name="Youtube"></a> <img src="/Resources/Material-Youtube.png" Alt="Ability to import and play YouTube playlists and videos"/>
+
+- Ability to import and play YouTube playlists and videos
   - Playlists from Youtube account can be imported automatically when providing credentials
+- Ability to auto-sync Youtube playlists and playlist videos with the apps media library
+- Preferred Quality option so videos always play or download at the specified quality
 - Ability to download Youtube videos to local disk (via yt-dlp)
-- Alternate Youtube option to use Invidious for the Web Player vs the native Youtube embedded player
+- Alternate Youtube player options such as using Invidious for the Web Player vs the native Youtube embedded player
 - Supports playing YoutubeTV channels (currently channels must be added manually)
+- (WIP) Ability to use apps native EQ and audio filters for Youtube playback
 
-### Twitch
+### Twitch <a name="Twitch"></a> <img src="/Resources/Material-Twitch.png" Alt="Ability to import and play Twitch live streams with chat integration"/>
 <img src="/Images/Twitch.png" Alt="Supports Twitch live streams with chat integration"/>
 
 - Ability to import and play Twitch live streams with chat integration
-  - Includes option to enable auto-update/refresh stream status
+  - Ability to import all followed/subscribed channels when providing Twitch account 
+  - Includes option to enable auto-update/refresh followed streams and their status
   - (SOON) Ability to display notifications for configured channels when they go live
-  - Ability to import all followed/subscribed channels when providing Twitch account
   - Multiple Twitch AD blocking solutions supported, including [TTVLOL](https://github.com/TTV-LOL/extensions) and [luminous](https://github.com/AlyoshaVasilieva/luminous-ttv)
   - [BetterTTV](https://github.com/night/betterttv) supported for enhancing in-app chat viewer
   
-### Media Library/Playlists/Queue
+### Local Media <a name="Local_Media"></a> <img src="/Resources/Material-Vlc.png" Alt="Supports Twitch live streams with chat integration"/>
+
+- Add directory paths to scan and import supported media into apps media library
+  - Most all common (and some uncommon) audio and video formats supported. (WIP, more likely to be added)
+  - Supports UNC/Network Mapped drives, external storage..etc  
+- Scans media file IDTags (via Taglib) to populate library with metatdata
+  - Customizable scanning modes such as 'Fast' to import as fast as possible or 'Slow' to assist scanning drives with poor IO performance (old external USB drives..etc)
+  - Option to skip import/scan of duplicates
+- (WIP/Untested) Supports any media file/type or URL that VLC player supports
+
+### Media Library/Playlists/Queue <a name="Media_Library_Playlists_Queue"></a>
 <img src="/Images/Media_Library.png" Alt="Media library with dockable/tabbed UI supporting advanced filtering and multi-level grouping"/>
 
-- Media library with dockable/tabbed UI supporting advanced filtering and multi-level grouping
+- Media library with dockable/tabbed UI (powered by AvalonDock) supporting advanced filtering and multi-level grouping
 - Add media using Drag-n-Drop of media files or URL links directly into app or from library to playlists
   - Drag-n-drop also supported when moving items between lists and re-ordering
 - Create custom playlists, combining media from any supported platform
+- Playlists can be exported/imported for sharing or backup
 - Playback Queue and history, with shuffle, next, prev playback options  
   
-### Core/Other
+### Core/Other <a name="Core/Other"></a>
 
 - Limited (very basic/WIP) support for adding and playing of SoundCloud media
+- (WIP) Media Casting Support - casting media during playback to other UPnP/DLNA supported devices
+- (WIP) In-app and configurable auto-update system with check only or auto install options
 - Real-time graphical spectrum analyzer powered by cscore
 - Basic audio visualizations support. Includes vlc plugins for Goom and Spectrum
 - In-app or full-screen pop-out video player, with option to enable/disable Hardware Acceleration
@@ -87,9 +126,11 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
 - Extensive verbose logging support, for troubleshooting and development.
 - Built-in snapshot feature to take screenshots of videos and of the app itself (if so inclined)
 - Advanced media player options including Audio Output Device selection, Audio Output module selection (mmdevice/directsound..etc) and more (WIP)
+- Remember Playback Progress option - Saves progress of the current playing media when the app is closed. On next start, it will begin playback at the saved progress time
+- (WIP) Ability to pass custom VLC command-line options to the libvlc instances (some limits apply)
 - Other things TBD
 
-## Important Notes/Requirements
+## Important Notes/Requirements <a name="Important_Notes_Requirements"></a>
 
 - The app by **default runs under user context**, but requires running as admin in some cases (such as first time setup)
 - **Spotify** windows client is required to be installed for free Spotify accounts. 
@@ -98,7 +139,6 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
   - Premium accounts can use the built-in Spotify Web Player without needing the client app installed (Recommended/Default)	
 -  **Spotify accounts must be manually added** to the API approved list for now in order to use Spotify features. 
   - Spotify has a 25 account limit for in-development API usage. Will need your email address for Spotify. Once added you can enable Spotify features	
-- **Yt-dlp** used for **Youtube** download features (included)
 - **Streamlink** used for (potentially) Ad-free Twitch Streaming/Playback (installed automatically)
 - **Powershell Modules** needed are included vs installed from the PS gallery. Some have been slighted modified 
 - If running under Administrator context, and local media is located on a mapped drive (network/nas..etc) **EnableLinkedConnections** registry setting can be set to allow accessing mapped drives in Windows 
@@ -123,11 +163,11 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
 - A lot of optimization is still needed, but on average the app uses about ~600 - 700mb of RAM with avg media library containing about 10,000 media items. 
   - CPU usage while playing should be avg ~10% depending on your CPU, what your playing and if you enable Hardware Acceleration under Settings (only applies to video rendering).
   - With HA enabled, GPU usage can be 15 - 20% for high-quality (1080p) video streams. It should be close to the same level of performance of vlc since it uses libvlc
-- While improvements have been made to error handling and UI threading, there can still be some uncaught exceptions or other issues that can cause the app to freeze. If it happens, I need to know what specifically you were doing/clicking/viewing when it happened (and log file of course)
+- While improvements have been made to error handling and UI threading, there can still be some uncaught exceptions or other issues that can cause the app to freeze. If it happens, please submit a bug report with logs and detailed description
 - Alot more but this list is long enough for now
 * * * 
 
-## Primary Modules/Components
+## Primary Modules/Components <a name="Primary_Modules_Components"></a>
 
 A quick list of the various apps, components or libraries used in this project (as well as endoresment for each)
 
@@ -215,16 +255,24 @@ A quick list of the various apps, components or libraries used in this project (
 - Discord Rich Presence Client written in PowerShell.
 - Used for Discord Rich Presense integration to display current media playback info. Very slightly modified
 
+**[SoundVolumeCommandLine](https://www.nirsoft.net/utils/sound_volume_command_line.html)**
+- SoundVolumeCommandLine (svcl.exe) is a console application that allows you to do many actions related to sound volume from command-line
+- Used to route per app audio sessions for capture and output which enables features such as EQ support for webplayers
+
+**[CSCORE](https://github.com/filoe/cscore)**
+- An advanced audio library, written in C#
+- Used for managing, enumerating and controlling Windows Audio Sessions
 * * * 
 
-## Available Versions
+## Available Versions <a name="Available_Versions"></a>
 
-**[Inno Setup Installer - BETA - TESTERS/COURAGEOUS ONLY]()**  
+**[Installer/EXE - BETA - TESTERS/COURAGEOUS ONLY]()** <a name="Inno_Setup_Installer"></a> 
 
 - Prepackaged installer using Inno setup. Will be the primary version for regular usage
+- **NOTE**: Prepackaged installer is not required, it is only used to provide a convienient way to package and deliver. As its Powershell, you can just manually copy the files and execute the main script `EZT-MediaPlayer.ps1`
 - A link will be provided to approved Testers
 
-**[Powershell Source Code - BETA - TESTERS/COURAGEOUS ONLY]()** 
+**[Powershell Script - BETA - TESTERS/COURAGEOUS ONLY]()** <a name="Powershell_Script"></a>
 
 - Powershell only version, main dev script
 - Source code is naturally available via the repository or once you run the app and choose an install folder
@@ -233,16 +281,28 @@ A quick list of the various apps, components or libraries used in this project (
 
 - TBD/Maybe. May port this project over. Might not
 
-## Installation and Configuration
+## Installation and Configuration <a name="Installation_and_Configuration"></a>
 
-#### Powershell Configuration
+#### Powershell Configuration <a name="Powershell_Configuration"></a>
 
-- There are some configuration variables located in the region **Configurable Script Parameters** located near the top of the script. These are designed for advanced users or developement. Most settings stored in `%appdata%/EZT-MediaPlayer/EZT-MediaPlayer-Config.xml` and can be configured via the in app Settings UI page
+- Parameters can be passed to `EZT-MediaPlayer.ps1` to override/force some configurations. 
+  - **MediaFile** - Allows passing a media file that will begin playing when the app is launched
+     - Example: `EZT-MediaPlayer.ps1 -MediaFile 'c:\music\song.mp3'`
+  - **NoSplashUI** - Disables the Splash Screen from displaying on startup
+     - Example: `EZT-MediaPlayer.ps1 -NoSplashUI`
+  - **FreshStart** - Forces app to run first time setup on launch (DESTRUCTIVE: Removes profiles/settings)
+     - Example: `EZT-MediaPlayer.ps1 -FreshStart`
+  - **StartMini** - Forces app to launch using the Mini-Player skin
+     - Example: `EZT-MediaPlayer.ps1 -StartMini`
+  - (WIP) Others yet to be documented/implemented
+- There are some configuration variables located in the region **Configurable Script Parameters** located near the top of the main script `EZT-MediaPlayer.ps1`. These are designed for advanced users or developement. Most settings are stored in `%appdata%/EZT-MediaPlayer/EZT-MediaPlayer-Config.xml` and can be configured via the in app Settings UI page or by manually editing the XML file (not recommended)
 
-### Building Installer/Launcher
+### Building Installer/Launcher <a name="Building_Installer_Launcher"></a>
 
-The installer is packaged via Inno Setup. Once installed there is a main .EXE that launches the app. This launcher is just another powershell script packaged as a self-executable using "Turn Code into Exe" option available with ISESteroids
+ - The installer `EZT-MediaPlayer-Setup.exe` is packaged via `Inno Setup`. Once installed there is a main EXE `EZT-MediaPlayer.exe` that launches the app. This launcher is just another powershell script `EZT-MediaPlayer-Setup.ps1` packaged as a self-executable using "Turn Code into Exe" option available with ISESteroids. 
+    - The installer provides the ability to pass arguments from the EXE to the main PS script (see **Parameters** under [Powershell Configuration](#Powershell_Configuration))
+    - _**Note: The launcher (`EZT-MediaPlayer.exe`) detects and defaults to run with Powershell 7/core if installed (by checking for existance of `pwsh.exe`), otherwise defaults to `Powershell.exe`. PS7 is recommended for better performance**_
+ - An uninstaller script `EZT-MediaPlayer-Uninstall.ps1` is also packaged into a self-executable `EZT-MediaPlayer-Uninstall.exe` which is triggered when uninstalling the package from windows or via the Inno Setup `unins000.exe`
+    - The uninstaller performs the removal of any installed components (Streamlink, chocolatey..etc), removes related files (including temp) and removes any stored secrets from secure vault
 
-_**Note: The app detects and defaults to run with Powershell 7/core if installed (by checking for existance of pwsh.exe), otherwise defaults to Powershell.exe. PS7 is recommended for better performance**_
-
-_**Note: Full detailed instructions and the Inno Setup .iss file will eventually be shared and included here for building**_
+_**Note: Full detailed instructions and the Inno Setup .iss file will eventually be shared and included here for "building"**_
