@@ -12,35 +12,34 @@ This app is still heavily WIP in relation to any kind of public build. The curre
 
 EZT-MediaPlayer is a universal media player built in PowerShell that consolidates playback and management of media from multiple sources such as local disk, Spotify, YouTube, Twitch and more. Powered by LibVLCSharp
 
+**Why Powershell?** <a name="Why_Powershell"></a>
+
+Because why not! Ok maybe there are alot of good reasons. This has been a very educational project and also has personal meaning. While yes using a 'proper' programming language would be much better and easier, its fun and interesting to see just how much you really can do with Powershell. Technically there are alot of helpers and other components built in other languages, but the primary core and majority of the app is Powershell
+
 <p align="center">
   <img Height="200" src="/Images/Samson_Logo_Splash.png" />
   <img src="/Images/Example_Image.png" Alt="Example, subject to change"/>
 </p>
 
 # Table of Contents
-1. [Synopsis](#Synopsis)
-2. [Why Powershell?](#Why_Powershell)
-3. [Current Features](#Current_Features)
-    - [Discord](#Discord)
-    - [Mini-Player](#Mini-Player)
-    - [Spotify](#Spotify)
-    - [Youtube](#Youtube)
-    - [Twitch](#Twitch)
-    - [Local Media](#Local_Media)
-    - [Media Library/Playlists/Queue](#Media_Library_Playlists_Queue)
-    - [Core/Other](#Core/Other)
-4. [Important Notes/Requirements](#Important_Notes_Requirements)
-5. [Primary Modules/Components](#Primary_Modules_Components)
-6. [Available Versions](#Available_Versions)
-    - [Installer/EXE](#Inno_Setup_Installer)
-    - [Powershell Script](#Powershell_Script)
-8. [Installation and Configuration](#Installation_and_Configuration)
-    - [Powershell Configuration](#Powershell_Configuration)
-    - [Building Installer/Launcher](#Building_Installer_Launcher)
-
-**Why Powershell?** <a name="Why_Powershell"></a>
-
-Because why not! Ok maybe there are alot of good reasons. This has been a very educational project and also has personal meaning. While yes using a 'proper' programming language would be much better and easier, its fun and interesting to see just how much you really can do with Powershell. Technically there are alot of helpers and other components built in other languages, but the primary core and majority of the app is Powershell
+1. [Synopsis](#synopsis-)
+2. [Current Features](#current-features-)
+    - [Discord](#discord-)
+    - [Mini-Player](#mini-player-)
+    - [Spotify](#spotify--)
+    - [Youtube](#youtube--)
+    - [Twitch](#twitch--)
+    - [Local Media](#local-media--)
+    - [Media Library/Playlists/Queue](#media-libraryplaylistsqueue-)
+    - [Core/Other](#coreother-)
+3. [Important Notes/Requirements](#important-notesrequirements-)
+4. [Primary Modules/Components](#primary-modulescomponents-)
+5. [Available Versions](#available-versions-)
+    - [Installer/EXE](#available-versions-)
+    - [Powershell Script](#available-versions-)
+6. [Installation and Configuration](#installation-and-configuration-)
+    - [Powershell Configuration](#powershell-configuration-)
+    - [Building Installer/Launcher](#building-installerlauncher-)
 
 ## Current Features <a name="Current_Features"></a>
 
@@ -105,7 +104,7 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
 - Playlists can be exported/imported for sharing or backup
 - Playback Queue and history, with shuffle, next, prev playback options  
   
-### Core/Other <a name="Core/Other"></a>
+### Core/Other <a name="CoreOther"></a>
 
 - Limited (very basic/WIP) support for adding and playing of SoundCloud media
 - (WIP) Media Casting Support - casting media during playback to other UPnP/DLNA supported devices
@@ -266,18 +265,18 @@ A quick list of the various apps, components or libraries used in this project (
 
 ## Available Versions <a name="Available_Versions"></a>
 
-**[Installer/EXE - BETA - TESTERS/COURAGEOUS ONLY]()** <a name="Inno_Setup_Installer"></a> 
+**Installer/EXE - BETA - TESTERS/COURAGEOUS ONLY<a name="Inno_Setup_Installer"></a>**  
 
 - Prepackaged installer using Inno setup. Will be the primary version for regular usage
 - **NOTE**: Prepackaged installer is not required, it is only used to provide a convienient way to package and deliver. As its Powershell, you can just manually copy the files and execute the main script `EZT-MediaPlayer.ps1`
 - A link will be provided to approved Testers
 
-**[Powershell Script - BETA - TESTERS/COURAGEOUS ONLY]()** <a name="Powershell_Script"></a>
+**Powershell Script - BETA - TESTERS/COURAGEOUS ONLY** <a name="Powershell_Script"></a>
 
 - Powershell only version, main dev script
 - Source code is naturally available via the repository or once you run the app and choose an install folder
 
-**[C# Source Code - NOT YET AVAILABLE]()**
+**C# Source Code - NOT YET AVAILABLE**
 
 - TBD/Maybe. May port this project over. Might not
 
