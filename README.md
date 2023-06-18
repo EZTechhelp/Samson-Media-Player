@@ -1,4 +1,12 @@
-# EZT-MediaPlayer
+<h1 align="center">Samson Media Player</h1>
+<p align="center">
+  <img Height="200" src="/Images/Samson_Logo_Splash.png" />
+  <img src="/Images/Example_Image.png" Alt="Example, subject to change"/>
+</p>
+
+## Synopsis <a name="Synopsis"></a>
+
+Samon Media Player is a universal media player built in PowerShell that allows playback and management of media from multiple sources such as local, Spotify, YouTube, Twitch and more. Powered by LibVLCSharp
 
 ## IMPORTANT
 
@@ -8,18 +16,9 @@ The full repository and most current source code is currently private as it is n
 
 This app is still heavily WIP in relation to any kind of public build. The current build (and example screenshot) is from a very personalized and custom version made in dedication for a very dear friend and his cat Samson
 
-## Synopsis <a name="Synopsis"></a>
-
-EZT-MediaPlayer is a universal media player built in PowerShell that consolidates playback and management of media from multiple sources such as local disk, Spotify, YouTube, Twitch and more. Powered by LibVLCSharp
-
 **Why Powershell?** <a name="Why_Powershell"></a>
 
 Because why not! Ok maybe there are alot of good reasons. This has been a very educational project and also has personal meaning. While yes using a 'proper' programming language would be much better and easier, its fun and interesting to see just how much you really can do with Powershell. Technically there are alot of helpers and other components built in other languages, but the primary core and majority of the app is Powershell
-
-<p align="center">
-  <img Height="200" src="/Images/Samson_Logo_Splash.png" />
-  <img src="/Images/Example_Image.png" Alt="Example, subject to change"/>
-</p>
 
 # Table of Contents
 1. [Synopsis](#synopsis-)
@@ -144,7 +143,7 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
   - This is not applied by default but the code is there for checking and applying the setting, just disabled. Recommend doing manually if you need it. An option to enable it for you is planned
   - If app is running as admin and an added network path is unavailable, a warning will be displayed with an option to restart under user context
 - The default **logging verbosity** is high for development reasons, which will cause the log files to grow in size quickly, so heads up.
-  - The log files are located at `%appdata%\roaming\EZT-MediaPlayer\Logs`
+  - The log files are located at `%appdata%\roaming\Samon\Logs`
   - Basic computer info such as name, make, model, cpu, ram, Windows version..etc is included in the log file
   - Log file may also contain details of media you provide, names of playlists, songs..etc. 
   - If you are concerned about what info you share, recommend reviewing the log files and scrubbing anything before sharing for support/testing. 
@@ -153,9 +152,9 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
   - The only data I can see is the public IP address where API calls where made from, when and how many requests made. Not content
   - Spotify, Twitch and Youtube creds are captured using their respective Oauth web auth pages (displayed in-app via webview2).  
     - All credentials and sensitive data (Oauth tokens..etc) are encrypted using .NET crypto APIs and stored locally only via the **Microsoft SecretStore Vault**
-- By default, Playlist and Media profiles are stored in `%appdata%\roaming\EZT-MediaPlayer`
-  - **Temp files for Webview2 controls** (cookies..etc) and any processed/downloaded images are saved into the **%temp%\EZT-MediaPlayer** folder. These can be deleted anytime
-- Core app settings are stored in `%appdata%\Roaming\EZT-MediaPlayer`. There is an **XML config file** that holds the primary settings for the app and EQ settings. Also, **custom EQ presets** created are stored in the **EQPresets** folder in the same directory as the config
+- By default, Playlist and Media profiles are stored in `%appdata%\roaming\Samon`
+  - **Temp files for Webview2 controls** (cookies..etc) and any processed/downloaded images are saved into the **%temp%\Samon** folder. These can be deleted anytime
+- Core app settings are stored in `%appdata%\Roaming\Samon`. There is an **XML config file** that holds the primary settings for the app and EQ settings. Also, **custom EQ presets** created are stored in the **EQPresets** folder in the same directory as the config
 - This is at its core a **PowerShell script**. As such this will likely only work on **Windows** endpoints and is untested on other platforms, though it is compatible with PowerShell 7+
 - Requires at least **Powershell v5.1** and .NET 4.5 or higher. Tested on **Windows 10** and **Windows 11**. It may work on Windows 7 but I don't care if it does and you shouldn't either.
 - Uses PowerShell RunSpaces for multi-threading, though expect UI stutters and momentary freezes can still happen but hopefully limited. Working to improve
@@ -268,7 +267,7 @@ A quick list of the various apps, components or libraries used in this project (
 **Installer/EXE - BETA - TESTERS/COURAGEOUS ONLY<a name="Inno_Setup_Installer"></a>**  
 
 - Prepackaged installer using Inno setup. Will be the primary version for regular usage
-- **NOTE**: Prepackaged installer is not required, it is only used to provide a convienient way to package and deliver. As its Powershell, you can just manually copy the files and execute the main script `EZT-MediaPlayer.ps1`
+- **NOTE**: Prepackaged installer is not required, it is only used to provide a convienient way to package and deliver. As its Powershell, you can just manually copy the files and execute the main script `Samon.ps1`
 - A link will be provided to approved Testers
 
 **Powershell Script - BETA - TESTERS/COURAGEOUS ONLY** <a name="Powershell_Script"></a>
@@ -284,24 +283,24 @@ A quick list of the various apps, components or libraries used in this project (
 
 #### Powershell Configuration <a name="Powershell_Configuration"></a>
 
-- Parameters can be passed to `EZT-MediaPlayer.ps1` to override/force some configurations. 
+- Parameters can be passed to `Samon.ps1` to override/force some configurations. 
   - **MediaFile** - Allows passing a media file that will begin playing when the app is launched
-     - Example: `EZT-MediaPlayer.ps1 -MediaFile 'c:\music\song.mp3'`
+     - Example: `Samon.ps1 -MediaFile 'c:\music\song.mp3'`
   - **NoSplashUI** - Disables the Splash Screen from displaying on startup
-     - Example: `EZT-MediaPlayer.ps1 -NoSplashUI`
+     - Example: `Samon.ps1 -NoSplashUI`
   - **FreshStart** - Forces app to run first time setup on launch (DESTRUCTIVE: Removes profiles/settings)
-     - Example: `EZT-MediaPlayer.ps1 -FreshStart`
+     - Example: `Samon.ps1 -FreshStart`
   - **StartMini** - Forces app to launch using the Mini-Player skin
-     - Example: `EZT-MediaPlayer.ps1 -StartMini`
+     - Example: `Samon.ps1 -StartMini`
   - (WIP) Others yet to be documented/implemented
-- There are some configuration variables located in the region **Configurable Script Parameters** located near the top of the main script `EZT-MediaPlayer.ps1`. These are designed for advanced users or developement. Most settings are stored in `%appdata%/EZT-MediaPlayer/EZT-MediaPlayer-Config.xml` and can be configured via the in app Settings UI page or by manually editing the XML file (not recommended)
+- There are some configuration variables located in the region **Configurable Script Parameters** located near the top of the main script `Samon.ps1`. These are designed for advanced users or developement. Most settings are stored in `%appdata%/Samon/Samon-Config.xml` and can be configured via the in app Settings UI page or by manually editing the XML file (not recommended)
 
 ### Building Installer/Launcher <a name="Building_Installer_Launcher"></a>
 
- - The installer `EZT-MediaPlayer-Setup.exe` is packaged via `Inno Setup`. Once installed there is a main EXE `EZT-MediaPlayer.exe` that launches the app. This launcher is just another powershell script `EZT-MediaPlayer-Setup.ps1` packaged as a self-executable using "Turn Code into Exe" option available with ISESteroids. 
+ - The installer `Samon-Setup.exe` is packaged via `Inno Setup`. Once installed there is a main EXE `Samon.exe` that launches the app. This launcher is just another powershell script `Samon-Setup.ps1` packaged as a self-executable using "Turn Code into Exe" option available with ISESteroids. 
     - The installer provides the ability to pass arguments from the EXE to the main PS script (see **Parameters** under [Powershell Configuration](#Powershell_Configuration))
-    - _**Note: The launcher (`EZT-MediaPlayer.exe`) detects and defaults to run with Powershell 7/core if installed (by checking for existance of `pwsh.exe`), otherwise defaults to `Powershell.exe`. PS7 is recommended for better performance**_
- - An uninstaller script `EZT-MediaPlayer-Uninstall.ps1` is also packaged into a self-executable `EZT-MediaPlayer-Uninstall.exe` which is triggered when uninstalling the package from windows or via the Inno Setup `unins000.exe`
+    - _**Note: The launcher (`Samon.exe`) detects and defaults to run with Powershell 7/core if installed (by checking for existance of `pwsh.exe`), otherwise defaults to `Powershell.exe`. PS7 is recommended for better performance**_
+ - An uninstaller script `Samon-Uninstall.ps1` is also packaged into a self-executable `Samon-Uninstall.exe` which is triggered when uninstalling the package from windows or via the Inno Setup `unins000.exe`
     - The uninstaller performs the removal of any installed components (Streamlink, chocolatey..etc), removes related files (including temp) and removes any stored secrets from secure vault
 
 _**Note: Full detailed instructions and the Inno Setup .iss file will eventually be shared and included here for "building"**_
