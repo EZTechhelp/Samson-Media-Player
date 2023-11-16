@@ -56,14 +56,14 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
 - Includes a 'Mini-Player' opened from tray icon/menu. Small skinned UI with basic playback controls
 - Tray icon and menu with playback and shortcuts to various settings/features
 
-### Spotify <a name="Spotify"></a> <img src="/Resources/Material-Spotify.png" Alt="Ability to import and play Spotify playlists and tracks from valid Spotify Account"/>
+### Spotify <a name="Spotify"></a>
 
 - Ability to import and play Spotify playlists and tracks from valid Spotify Account
   - Premium and free accounts(WIP) supported, though playback with free accounts requires having the local Spotify client installed
 - Ability to record Spotify media to local disk. Currently saves as flac, futher customization options planned
 - (WIP) Ability to use apps native EQ and audio filters for Spotify playback
 
-### Youtube <a name="Youtube"></a> <img src="/Resources/Material-Youtube.png" Alt="Ability to import and play YouTube playlists and videos"/>
+### Youtube <a name="Youtube"></a>
 
 - Ability to import and play YouTube playlists and videos
   - Playlists from Youtube account can be imported automatically when providing credentials
@@ -74,7 +74,7 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
 - Supports playing YoutubeTV channels (currently channels must be added manually)
 - (WIP) Ability to use apps native EQ and audio filters for Youtube playback
 
-### Twitch <a name="Twitch"></a> <img src="/Resources/Material-Twitch.png" Alt="Ability to import and play Twitch live streams with chat integration"/>
+### Twitch <a name="Twitch"></a>
 <img src="/Images/Twitch.png" Alt="Supports Twitch live streams with chat integration"/>
 
 - Ability to import and play Twitch live streams with chat integration
@@ -84,7 +84,7 @@ Because why not! Ok maybe there are alot of good reasons. This has been a very e
   - Multiple Twitch AD blocking solutions supported, including [TTVLOL](https://github.com/TTV-LOL/extensions) and [luminous](https://github.com/AlyoshaVasilieva/luminous-ttv)
   - [BetterTTV](https://github.com/night/betterttv) supported for enhancing in-app chat viewer
   
-### Local Media <a name="Local_Media"></a> <img src="/Resources/Material-Vlc.png" Alt="Supports Twitch live streams with chat integration"/>
+### Local Media <a name="Local_Media"></a>
 
 - Add directory paths to scan and import supported media into apps media library
   - Most all common (and some uncommon) audio and video formats supported. (WIP, more likely to be added)
