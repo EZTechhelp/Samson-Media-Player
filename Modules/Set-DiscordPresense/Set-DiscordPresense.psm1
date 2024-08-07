@@ -25,7 +25,6 @@
     .NOTES
     Appid: 1012233037855080448
     Public Key: 309ae4705a8f119a3c4192f51c24b3ae9452a23dd95c47a6f7df8ecea39e690a
-    MTAxMjIzMzAzNzg1NTA4MDQ0OA.GGfdd7.ywXa0xJvKOxDovNWATrySUWJWF4f8uoj8UiXzk
 
 #>
 
