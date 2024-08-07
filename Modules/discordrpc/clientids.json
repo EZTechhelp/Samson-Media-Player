@@ -1,0 +1,432 @@
+[
+    {
+        "Product": "discordrpc",
+        "ClientID": "824593663883214948",
+        "LargeImage": "avatar",
+        "LargeText": null,
+        "SmallImage": "icon",
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Amazon Music",
+        "ClientID": "808756700022702120",
+        "LargeImage": "logo",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": null,
+        "Details": "Listening to Amazon Music",
+        "Start":  "now"
+    },
+    {
+        "Product": "Apple",
+        "ClientID": "706517097219620874",
+        "LargeImage": "logo",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Apple Music",
+        "ClientID": "621819308481445934",
+        "LargeImage": "applemusic-logo",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": null,
+        "Details": "Listening to Apple Music",
+        "Start":  "now"
+    },
+    {
+        "Product": "Discord",
+        "ClientID": "616940877042155531",
+        "LargeImage": "discordwhite",
+        "LargeText": null,
+        "SmallImage": "writing",
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Disney+",
+        "ClientID": "630236276829716483",
+        "LargeImage": "disneyplus-logo",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "DockerHub",
+        "ClientID": "685611188306051093",
+        "LargeImage": "logo",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Duolingo",
+        "ClientID": "612071822321647648",
+        "LargeImage": "logo",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "GitHub",
+        "ClientID": "607587875122446359",
+        "LargeImage": "lg",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "GitHub Codespaces",
+        "ClientID": "778572824708775946",
+        "LargeImage": "gh-lg",
+        "LargeText": null,
+        "SmallImage": "gh",
+        "SmallText": "GitHub",
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "GitLab",
+        "ClientID": "709526684428271687",
+        "LargeImage": "logo",
+        "LargeText": null,
+        "SmallImage": "",
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Google",
+        "ClientID": "612704158826496028",
+        "LargeImage": "lg",
+        "LargeText": null,
+        "SmallImage": "search",
+        "SmallText": null,
+        "Details": "Doing Google things",
+        "Start":  "now"
+    },
+    {
+        "Product": "Google Play Music",
+        "ClientID": "610850440266907648",
+        "LargeImage": "gpm",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": null,
+        "Details": "Listening to Google Play Music",
+        "Start":  "now"
+    },
+    {
+        "Product": "Hacktoberfest",
+        "ClientID": "768437292486361129",
+        "LargeImage": "hf",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "HBO Max",
+        "ClientID": "720731927216259083",
+        "LargeImage": "lg",
+        "LargeText": null,
+        "SmallImage": "search",
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Hulu",
+        "ClientID": "607719679011848220",
+        "LargeImage": "hulu",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Imgur",
+        "ClientID": "623657389706444820",
+        "LargeImage": "imgur",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Jira Software",
+        "ClientID": "782358522628145153",
+        "LargeImage": "jira_logo",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Kodi",
+        "ClientID": "706585201479909476",
+        "LargeImage": "logo",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Microsoft Teams",
+        "ClientID": "781455654560595998",
+        "LargeImage": "icon",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Netflix",
+        "ClientID": "499981204045430784",
+        "LargeImage": "nflix_lg",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": "Watching",
+        "Details": "Watching Netflix",
+        "Start":  "now"
+    },
+    {
+        "Product": "Pandora",
+        "ClientID": "608109837657702566",
+        "LargeImage": "pandora",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Paramount+",
+        "ClientID": "821433038335377418",
+        "LargeImage": "logo",
+        "LargeText": null,
+        "SmallImage": "search",
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Peacock",
+        "ClientID": "767402228825980929",
+        "LargeImage": "peacock",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Peloton",
+        "ClientID": "712294190339588209",
+        "LargeImage": "peloton",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Plex",
+        "ClientID": "645028677033132033",
+        "LargeImage": "plex",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Pocket Casts",
+        "ClientID": "661889916635971616",
+        "LargeImage": "icon",
+        "LargeText": null,
+        "SmallImage": "more",
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Prime Video",
+        "ClientID": "705139844883677224",
+        "LargeImage": "pvid",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": null,
+        "Details": "Watching Prime Video",
+        "Start":  "now"
+    },
+    {
+        "Product": "Reddit",
+        "ClientID": "609183409440555018",
+        "LargeImage": "reddit_lg",
+        "LargeText": null,
+        "SmallImage": "search",
+        "SmallText": "Searching",
+        "Details": "Browsing through Reddit",
+        "Start":  "now"
+    },
+    {
+        "Product": "Shazam",
+        "ClientID": "735588731637203080",
+        "LargeImage": "shazam",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Showtime",
+        "ClientID": "617741834701242406",
+        "LargeImage": "showtime-logo",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "SoundCloud",
+        "ClientID": "802958833214423081",
+        "LargeImage": "soundcloud",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": null,
+        "Details": "Listening to SoundCloud",
+        "Start":  "now"
+    },
+    {
+        "Product": "Speedtest",
+        "ClientID": "817385570912174121",
+        "LargeImage": "image",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Stack Overflow",
+        "ClientID": "610123745033584651",
+        "LargeImage": "lg",
+        "LargeText": null,
+        "SmallImage": "reading",
+        "SmallText": null,
+        "Details": "Watching Stack Overflow",
+        "Start":  "now"
+    },
+    {
+        "Product": "TikTok",
+        "ClientID": "809093093600133165",
+        "LargeImage": "tiktok",
+        "LargeText": null,
+        "SmallImage": "reading",
+        "SmallText": null,
+        "Details": "Watching TikTok",
+        "Start":  "now"
+    },
+    {
+        "Product": "Tumblr",
+        "ClientID": "640963335826833418",
+        "LargeImage": "tumblr",
+        "LargeText": null,
+        "SmallImage": "writing",
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Twitch",
+        "ClientID": "802958789555781663",
+        "LargeImage": "twitch",
+        "LargeText": null,
+        "SmallImage": "live",
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    },
+    {
+        "Product": "Vimeo",
+        "ClientID": "808762696023146578",
+        "LargeImage": "logo",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": null,
+        "Details": "Watching Vimeo",
+        "Start":  "now"
+    },
+    {
+        "Product": "VLC",
+        "ClientID": "760591393281277983",
+        "LargeImage": "vlc",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": null,
+        "Details": "Watching VLC",
+        "Start":  "now"
+    },
+    {
+        "Product": "Wikipedia",
+        "ClientID": "609364070684033044",
+        "LargeImage": "lg",
+        "LargeText": null,
+        "SmallImage": null,
+        "SmallText": null,
+        "Details": "Checking out Wikipedia",
+        "Start":  "now"
+    },
+    {
+        "Product": "YouTube",
+        "ClientID": "463097721130188830",
+        "LargeImage": "yt_lg",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": null,
+        "Details": "Watching YouTube",
+        "Start":  "now"
+    },
+    {
+        "Product": "YouTube Music",
+        "ClientID": "463151177836658699",
+        "LargeImage": "ytm_lg",
+        "LargeText": null,
+        "SmallImage": "play",
+        "SmallText": null,
+        "Details": "Listening to YouTube Music",
+        "Start":  "now"
+    },
+    {
+        "Product": "Zoom",
+        "ClientID": "765876503161733140",
+        "LargeImage": "zoom_logo",
+        "LargeText": null,
+        "SmallImage": "vcall",
+        "SmallText": null,
+        "Details": null,
+        "Start":  "now"
+    }
+]

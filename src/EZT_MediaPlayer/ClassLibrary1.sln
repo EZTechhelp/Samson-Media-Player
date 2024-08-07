@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33801.468
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EZT_MediaPlayer", "EZT_MediaPlayer.csproj", "{B8BB73B8-1807-40D4-AEB6-764AA5387F6F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B8BB73B8-1807-40D4-AEB6-764AA5387F6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8BB73B8-1807-40D4-AEB6-764AA5387F6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8BB73B8-1807-40D4-AEB6-764AA5387F6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8BB73B8-1807-40D4-AEB6-764AA5387F6F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6A9D9DEA-4BBB-4F15-9D1E-1D53F0F0B451}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,89 @@
+#Get public function definition files.
+foreach($p in  "$PSScriptRoot\Public\Get-SpotifyAccessToken.ps1",
+  "$PSScriptRoot\Public\Get-SpotifyApplication.ps1",
+  "$PSScriptRoot\Public\New-SpotifyApplication.ps1",
+  "$PSScriptRoot\Public\Set-SpotifyApplication.ps1",
+  "$PSScriptRoot\Public\Remove-SpotifyApplication.ps1",
+  "$PSScriptRoot\Public\Send-SpotifyCall.ps1",
+  "$PSScriptRoot\Public\Albums\Get-Album.ps1",
+  "$PSScriptRoot\Public\Albums\Get-AlbumTracks.ps1",
+  "$PSScriptRoot\Public\Artists\Get-Artist.ps1",
+  "$PSScriptRoot\Public\Artists\Get-ArtistAlbums.ps1",
+  "$PSScriptRoot\Public\Artists\Get-ArtistRelatedArtists.ps1",
+  "$PSScriptRoot\Public\Player\Get-AvailableDevices.ps1",
+  "$PSScriptRoot\Public\Player\Get-CurrentPlaybackInfo.ps1",
+  "$PSScriptRoot\Public\Player\Get-CurrentTrack.ps1",
+  "$PSScriptRoot\Public\Player\Resume-Playback.ps1",
+  "$PSScriptRoot\Public\Player\Set-PlaybackVolume.ps1",
+  "$PSScriptRoot\Public\Player\Start-Playback.ps1",
+  "$PSScriptRoot\Public\Player\Suspend-Playback.ps1",
+  "$PSScriptRoot\Public\Playlists\Add-PlaylistItem.ps1",
+  "$PSScriptRoot\Public\Playlists\Get-CurrentUserPlaylists.ps1",
+  "$PSScriptRoot\Public\Playlists\Get-Playlist.ps1",
+  "$PSScriptRoot\Public\Playlists\Get-PlaylistItems.ps1",
+  "$PSScriptRoot\Public\Playlists\Get-UserPlaylists.ps1",
+  "$PSScriptRoot\Public\Playlists\New-Playlist.ps1",
+  "$PSScriptRoot\Public\Playlists\Remove-PlaylistItems.ps1",
+  "$PSScriptRoot\Public\Shows\Get-Show.ps1",
+  "$PSScriptRoot\Public\Shows\Get-ShowEpisodes.ps1",
+  "$PSScriptRoot\Public\Tracks\Get-Track.ps1",
+  "$PSScriptRoot\Public\Users Profile\Get-CurrentUserProfile.ps1",
+  "$PSScriptRoot\Public\Users Profile\Get-SpotifyUserProfile.ps1",
+  "$PSScriptRoot\Public\Episodes\Get-Episode.ps1"
+  ){
+ . $P
+}
+
+#Backup-Library.ps1
+#ConvertTo-Hashtable.ps1
+#Get-StorePath.ps1
+#Invoke-SpotishellLogo.ps1
+#Remove-SpotifyApplication.ps1
+#Restore-Library.ps1
+#Artists\Get-ArtistTopTracks.ps1
+#Browse\Get-Category.ps1
+#Browse\Get-CategoryPlaylists.ps1
+#Browse\Get-FeaturedPlaylists.ps1
+#Browse\Get-NewReleases.ps1
+#Browse\Get-RecommendationGenres.ps1
+#Browse\Get-Recommendations.ps1
+#Follow\Add-FollowedArtist.ps1
+#Follow\Add-FollowedPlaylist.ps1
+#Follow\Add-FollowedUser.ps1
+#Follow\Get-FollowedArtists.ps1
+#Follow\Remove-FollowedArtist.ps1
+#Follow\Remove-FollowedPlaylist.ps1
+#Follow\Remove-FollowedUser.ps1
+#Follow\Test-FollowedArtist.ps1
+#Follow\Test-FollowedPlaylist.ps1
+#Follow\Test-FollowedUser.ps1
+#Library\Add-CurrentUserSavedAlbum.ps1
+#Library\Add-CurrentUserSavedShow.ps1
+#Library\Add-CurrentUserSavedTrack.ps1
+#Library\Get-CurrentUserSavedAlbums.ps1
+#Library\Get-CurrentUserSavedShows.ps1
+#Library\Get-CurrentUserSavedTracks.ps1
+#Library\Remove-CurrentUserSavedAlbum.ps1
+#Library\Remove-CurrentUserSavedShow.ps1
+#Library\Remove-CurrentUserSavedTrack.ps1
+#Library\Test-CurrentUserSavedAlbum.ps1
+#Library\Test-CurrentUserSavedShow.ps1
+#Library\Test-CurrentUserSavedTracks.ps1
+#Personalization\Get-CurrentUserTopArtists.ps1
+#Personalization\Get-CurrentUserTopTracks.ps1
+#Player\Add-ItemInPlaybackQueue.ps1
+#Player\Get-RecentlyPlayedTracks.ps1
+#Player\Invoke-NextTrack.ps1
+#Player\Invoke-PreviousTrack.ps1
+#Player\Invoke-SeekPositionCurrentTrack.ps1
+#Player\Move-Playback.ps1
+#Player\Set-RepeatMode.ps1
+#Player\Set-ShufflePlayback.ps1
+#Playlists\Edit-PlaylistOrder.ps1
+#Playlists\Get-PlaylistCoverImage.ps1
+#Playlists\Send-PlaylistCoverImage.ps1
+#Playlists\Set-Playlist.ps1
+#Playlists\Set-PlaylistItems.ps1
+#Search\Search-Item.ps1
+#Tracks\Get-TrackAudioAnalysis.ps1
+#Tracks\Get-TrackAudioFeature.ps1

@@ -1,0 +1,101 @@
+<mah:MetroWindow
+                 xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+                 xmlns:module="clr-namespace:SpectrumAnalyzer.Singleton;assembly=SpectrumAnalyzer"
+                 xmlns:models="clr-namespace:SpectrumAnalyzer.Models;assembly=SpectrumAnalyzer"
+				 xmlns:controls="clr-namespace:SpectrumAnalyzer.Controls;assembly=SpectrumAnalyzer"				 
+                 Title="SplashScreen"
+                 WindowStyle="none"
+                 xmlns:PresentationOptions="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+                 WindowStartupLocation="Manual"
+                 UseNoneWindowStyle="false"
+                 ShowInTaskbar="true"
+                 Topmost="false"
+				 BorderThickness="0"
+                 Width="313"
+                 AllowsTransparency="true"
+                 Height="500"
+                 ShowTitleBar="false"
+                 ResizeMode="NoResize"
+                 IsWindowDraggable="True"
+                 WindowTitleBrush="White">
+	<Window.Effect>
+		<DropShadowEffect ShadowDepth="4" Opacity="1" PresentationOptions:Freeze="True"/>
+	</Window.Effect>				 
+	<Window.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml"/>
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml"/>
+			
+			</ResourceDictionary.MergedDictionaries>
+			<DropShadowEffect x:Key="TextDropShadow" ShadowDepth="2" PresentationOptions:Freeze="True"/>
+			<DropShadowEffect x:Key="SplashProgressDropShadow" PresentationOptions:Freeze="True" BlurRadius="4" ShadowDepth="4" Opacity="0.5" Direction="260"/>	
+		</ResourceDictionary>
+	</Window.Resources>
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="70"/>
+			<RowDefinition/>
+		</Grid.RowDefinitions>
+		<Image Name="Background_Image"
+		       Grid.ColumnSpan="2"
+		       Grid.RowSpan="3"
+		       Width="500"
+		       Height="500"
+		       RenderOptions.BitmapScalingMode="NearestNeighbor"
+		       VerticalAlignment="Stretch"
+		       HorizontalAlignment="Stretch">
+		</Image>
+						<RichTextBox Name='Notification_Media' Width="0" Height="0" Visibility = "Hidden" HorizontalScrollBarVisibility="Disabled" Background="transparent" Margin="0,0,0,0" Padding="0,0,0,0" IsReadOnly="True" BorderThickness="0,0,0,0" IsDocumentEnabled="True" >
+									<RichTextBox.Resources>
+										<Style TargetType="{x:Type Paragraph}">
+											<Setter Property="Margin" Value="10" />
+										</Style>
+										<Style TargetType="Hyperlink">
+											<Setter Property="Cursor" Value="Hand" />
+										</Style>	
+									</RichTextBox.Resources>
+									<FlowDocument>
+									</FlowDocument>
+								</RichTextBox>			
+                    <ItemsControl ItemsSource="{Binding FrequencyObservers}"
+                                   Name="Beats" Grid.ColumnSpan="2" Grid.RowSpan="3" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,35">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:FrequencyObserver}">
+                                <DockPanel>
+								<Image Name="Woofer_Image"
+                                       Source="{Binding ElementName=Beats,Path=Tag.Source}"
+									   Width="{Binding ElementName=Beats,Path=Tag.Width}"
+									   Height="{Binding ElementName=Beats,Path=Tag.Height}"
+									   RenderOptions.BitmapScalingMode="LowQuality"
+									   VerticalAlignment="Stretch"
+									   RenderTransformOrigin="0.5,0.5"
+									   HorizontalAlignment="Stretch">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding BeatDetected}" Value="True">
+															<Setter Property="RenderTransform" >
+																<Setter.Value>
+																	<ScaleTransform ScaleX="1.03" ScaleY="1.03"/>
+																</Setter.Value>
+															</Setter>														
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>									   
+								</Image>								
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>			
+		<Grid Grid.Row="0" Name="Header">
+			<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="20,10,0,0">
+				<Label Name="SplashTitle" Content="" Margin="5,0,0,0" VerticalAlignment="Top" Foreground="White" Height="50" FontSize="30"/>
+			</VirtualizingStackPanel>
+		</Grid>
+	</Grid>
+</mah:MetroWindow>

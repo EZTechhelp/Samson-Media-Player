@@ -1,0 +1,56 @@
+﻿<html><head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>  
+    <!-- Include the Web Playback SDK -->
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    <!-- Include our Javascript -->
+    <script type="text/javascript">
+const hash = window.location.hash
+.substring(1)
+.split('&')
+.reduce(function (initial, item) {
+  if (item) {
+    var parts = item.split('=');
+    initial[parts[0]] = decodeURIComponent(parts[1]);
+  }
+  return initial;
+}, {});
+window.location.hash = '';
+// Set up the Web Playback SDK
+  var currState = {}
+  var SpotifyWeb = {}
+
+window.onSpotifyWebPlaybackSDKReady = () => {
+	console.log('Spotify SDK is Ready');
+}
+function getStatePosition() {
+  if (SpotifyWeb.currState.paused) {
+     //SpotifyWeb.currState.newposition = SpotifyWeb.currState.position / 1000;
+     return SpotifyWeb.currState;
+  }
+
+  const position = SpotifyWeb.currState.position + (performance.now() - SpotifyWeb.currState.updateTime);
+  SpotifyWeb.currState.newposition = position > SpotifyWeb.currState.duration ? SpotifyWeb.currState.duration : position;
+  return SpotifyWeb.currState
+}	
+    </script>
+   <style>
+   html {
+    width:100% 
+	background-color:rgb(0, 0, 0, 0.1);
+}
+
+  body {
+      background-color: transparent;
+}
+
+      </style>	
+  <title id="current-track-name">Samson Media Player</title>	  
+  <link id="title-icon" rel="shortcut icon" type="image/x-icon">
+  </head>
+  
+  <body class="container" >
+  </body>
+</html>

@@ -1,0 +1,2134 @@
+<mah:MetroWindow
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                 xmlns:i="http://schemas.microsoft.com/expression/2010/interactivity"
+                 xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+                 xmlns:wf="clr-namespace:Microsoft.Web.WebView2.WinForms;assembly=Microsoft.Web.WebView2.WinForms"
+                 xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+                 xmlns:Dialogs="clr-namespace:MahApps.Metro.Controls.Dialogs;assembly=MahApps.Metro"
+                 xmlns:PresentationOptions="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+                 xmlns:AttachedBehavior="clr-namespace:ScrollAnimateBehavior.AttachedBehaviors;assembly=EZT_MediaPlayer"
+                 xmlns:mdxam="clr-namespace:MdXaml;assembly=MdXaml"
+                 xmlns:mdhtml="clr-namespace:MdXaml.Html;assembly=MdXaml.Html"
+                 xmlns:mdplug="clr-namespace:MdXaml.Plugins;assembly=MdXaml.Plugins"
+                 xmlns:mdsvg="clr-namespace:MdXaml.Svg;assembly=MdXaml.Svg"
+                 xmlns:emoji="clr-namespace:Emoji.Wpf;assembly=Emoji.Wpf"
+                 WindowStartupLocation="CenterOwner"
+                 WindowTransitionsEnabled="False"
+                 ShowTitleBar="True"
+                 ShowSystemMenu="True"
+                 ShowSystemMenuOnRightClick="True"
+                 IsWindowDraggable="True"
+                 UseNoneWindowStyle="true"
+                 LeftWindowCommandsOverlayBehavior="HiddenTitleBar"
+                 RightWindowCommandsOverlayBehavior="HiddenTitleBar"
+                 ShowInTaskbar="true"
+                 MinWidth="500"
+                 MaxWidth="600"
+				 Opacity="0"
+                 SizeToContent="WidthAndHeight"
+                 MaxHeight="1000"
+                 ResizeMode="NoResize"
+                 VerticalAlignment="Stretch"
+                 BorderThickness="0"
+                 ShowIconOnTitleBar="true"
+				 Dialogs:DialogParticipation.Register="{Binding}"
+                 AllowsTransparency="true">
+	<Window.TaskbarItemInfo>
+		<TaskbarItemInfo/>
+	</Window.TaskbarItemInfo>
+	<Window.Effect>
+		<DropShadowEffect/>
+	</Window.Effect>
+	<Window.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.GridSplitter.xaml"/>
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml"/>
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml"/>
+				<ResourceDictionary Source="Views/Styles.xaml"/>
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</Window.Resources>
+	<mah:MetroWindow.LeftWindowCommands>
+		<mah:WindowCommands Margin="0,0,0,5" Background="Transparent">
+			<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Name="Title_LeftWindowCommands_Stackpanel" Orientation="Horizontal" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="10,0,0,0">
+				<Image Name="Logo" RenderOptions.BitmapScalingMode="Fant" HorizontalAlignment="Stretch" Margin="0,0,0,7" Width="89" Height="15" VerticalAlignment="Center" PresentationOptions:Freeze="True">
+ 					<Image.Effect>
+						<DropShadowEffect Color="Black" Direction="320" ShadowDepth="3" Opacity="1"/>
+					</Image.Effect>
+				</Image>
+				<Label Name="PageHeader" Content="" Margin="10,0,0,0" Padding="0,3,0,0" Foreground="#FF7A7A7A" FontSize="14" HorizontalAlignment="Stretch" FontWeight="Bold" VerticalAlignment="Stretch"/>
+			</VirtualizingStackPanel>
+		</mah:WindowCommands>
+	</mah:MetroWindow.LeftWindowCommands>
+	<Grid VerticalAlignment="Stretch" Name="Background_Grid" >
+		<Grid.RowDefinitions>
+			<RowDefinition/>
+			<RowDefinition Height="220*"/>
+			<RowDefinition Height="40*"/>
+		</Grid.RowDefinitions>
+		<Grid Name="Background_TileGrid" Grid.ColumnSpan="2" Margin="0,30,0,0" Grid.Row="0" Grid.RowSpan="3" MaxWidth="600" MinHeight="40" HorizontalAlignment="Stretch"/>
+		<Image Name="Background_Image_Bottom"
+		       Grid.ColumnSpan="2"
+		       Grid.Row="2"
+		       Grid.RowSpan="2"
+		       Height="52"
+		       MaxWidth="600"
+		       VerticalAlignment="Bottom"/>
+		<Grid Grid.Row="0" Name="Header"/>
+		<mah:MetroTabControl Style="{StaticResource MahApps.Styles.TabControl.Animated}"
+		                     Name="Setup_TabControl"
+		                     Margin="10,0,10,0"
+		                     Background="Transparent"
+		                     VerticalAlignment="Top"
+		                     BorderThickness="0,1,0,0"
+		                     BorderBrush="#050607"
+		                     HorizontalAlignment="stretch"
+		                     Grid.Row="1"
+		                     Grid.ColumnSpan="3"
+		                     mah:TabControlHelper.Underlined="SelectedTabitem"
+		                     TabStripPlacement="Top">
+			<TabControl.Resources>
+				<Style TargetType="{x:Type TabItem}"
+				       BasedOn="{StaticResource {x:Type TabItem}}">
+					<Setter Property="mah:TabControlHelper.Underlined"
+					        Value="TabPanel"/>
+					<Setter Property="mah:TabControlHelper.UnderlinePlacement"
+					        Value="Right"/>
+					<Setter Property="mah:TabControlHelper.UnderlineBrush"
+					        Value="White"/>
+				</Style>
+			</TabControl.Resources>
+			<TabItem Header="General"
+			         BorderThickness="0,0,0,1"
+			         BorderBrush="Gray">
+				<TabItem.HeaderTemplate>
+					<DataTemplate>
+						<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Width="95" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Transparent">
+							<iconPacks:PackIconMaterial Kind="Cogs"
+							                            Margin="2 5 2 0"
+							                            Width="20"
+							                            Height="20"
+							                            VerticalAlignment="Top" PresentationOptions:Freeze="True"/>
+							<Label Name="General_Label" Content="General" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="16"/>
+						</VirtualizingStackPanel>
+					</DataTemplate>
+				</TabItem.HeaderTemplate>
+				<ScrollViewer Name="General_ScrollViewer" Margin="0,0,0,10" Grid.Row="1" VerticalScrollBarVisibility="Auto" VerticalAlignment="Top" AttachedBehavior:ScrollAnimationBehavior.IsEnabled="True" AttachedBehavior:ScrollAnimationBehavior.TimeDuration="00:00:00.30" AttachedBehavior:ScrollAnimationBehavior.PointsToScroll="30">
+					<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">
+						<Expander
+                                  Grid.Column="0"
+						          Grid.Row="0"
+						          Margin="0,0,0,10"
+						          Grid.RowSpan="1"
+						          BorderThickness="0,0,0,1"
+						          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+						          mah:HeaderedControlHelper.HeaderForeground="White"
+						          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+						          mah:HeaderedControlHelper.HeaderFontSize="14"
+						          ExpandDirection="Down"
+						          Name="App_UI_Settings_Expander"
+						          Header="Startup/UI Settings"
+						          IsExpanded="True">
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">
+								<Grid Margin="0,-2,0,0">
+									<mah:ToggleSwitch Content="Start on Windows Login" Name="Start_On_Windows_Login_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Start_On_Windows_Login_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,-2,0,0">
+									<mah:ToggleSwitch Content="Disable Tray Menu" Name="Disable_Tray_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="True"/>
+									<Button Name="Disable_Tray_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>								
+								<Grid Margin="0,-2,0,0">
+									<mah:ToggleSwitch Content="Minimize to Tray" Name="Minimize_To_Tray_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="True" />
+									<Button Name="Minimize_To_Tray_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,-2,0,0">
+									<mah:ToggleSwitch Content="Start Minimized" Name="Start_Tray_only_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="True"/>
+									<Button Name="Start_Tray_only_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,-2,0,0">
+									<mah:ToggleSwitch Content="Start As MiniPlayer" Name="Start_Mini_only_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="True"/>
+									<Button Name="Start_Mini_only_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,-2,0,0">
+									<mah:ToggleSwitch Content="Notification Audio" Name="Notification_Audio_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Notification_Audio_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,-2,0,0">
+									<mah:ToggleSwitch Content="Enable Snapshots" Name="SnapShots_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="True"/>
+									<Button Name="SnapShots_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Name="App_SnapShots_StackPanel" Orientation="Horizontal" Margin="30,-2,0,0" Visibility='Visible' IsEnabled="{Binding ElementName=SnapShots_Toggle, Path=IsOn}">
+									<Grid Margin="0,0,0,0">
+										<mah:ToggleSwitch Content="Include App Screenshots" Name="App_SnapShots_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+										<Button Name="App_SnapShots_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+											<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+										</Button>
+									</Grid>
+								</VirtualizingStackPanel>
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Name="SnapShots_StackPanel" Orientation="Horizontal" Margin="30,-2,0,0" IsEnabled="{Binding ElementName=SnapShots_Toggle, Path=IsOn}">
+									<Label Name='SnapShots_Label' Margin="0,5,0,0" Content="Save Path:" Visibility="Visible" VerticalAlignment="Top" Foreground="#ffffff" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+									<TextBox Name='SnapShots_textbox' Margin="0,5,0,0" Height="23" Text="" UndoLimit="0" TextWrapping="Wrap" MaxWidth="250" VerticalAlignment="Top" IsEnabled="true" Visibility="Visible" Background="Transparent" BorderThickness="1,1,1,1" RenderTransformOrigin="0.502,0.52" MinWidth="150" HorizontalAlignment="Left"/>
+									<Button Name='SnapShots_Browse' Margin="5,2,0,0" Style="{StaticResource ToolsButtonStyle}" VerticalAlignment="Top" Width="80" HorizontalAlignment="Left" IsEnabled="true">
+										<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+											<iconPacks:PackIconMaterial Kind="FolderOpen"
+											                            Margin="4 4 2 4"
+											                            Width="16"
+											                            Height="16"
+											                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+											<TextBlock Text="Browse" Margin="2 4 4 4" VerticalAlignment="Center"/>
+										</VirtualizingStackPanel>
+									</Button>
+								</VirtualizingStackPanel>
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0">
+									<iconPacks:PackIconMaterial Kind="FolderOpen" Margin="0 2 5 0"/>
+									<TextBlock>
+										<Hyperlink Name='SnapShots_Hyperlink' FontSize="14" NavigateUri="" FontWeight="Bold"/>
+									</TextBlock>
+								</VirtualizingStackPanel>
+								<Grid Margin="0,-2,0,0">
+									<mah:ToggleSwitch Content="Performance Mode" Name="Performance_Mode_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Performance_Mode_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,-2,0,0">
+									<mah:ToggleSwitch Content="Enable High DPI Support" Name="High_DPI_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="High_DPI_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>									
+							</VirtualizingStackPanel>
+						</Expander>
+						<Expander
+                                  Grid.Column="0"
+						          Grid.Row="0"
+						          Margin="0,0,0,10"
+						          Grid.RowSpan="1"
+						          ExpandDirection="Down"
+						          BorderThickness="0,0,0,1"
+						          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+						          mah:HeaderedControlHelper.HeaderForeground="White"
+						          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+						          mah:HeaderedControlHelper.HeaderFontSize="14"
+						          Name="MediaPlayer_Settings_Expander"
+						          Header="Media Player Options"
+						          IsExpanded="True">
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Use Hardware Acceleration" Name="Use_HardwareAcceleration_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Use_HardwareAcceleration_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Enable EQ Support for WebPlayers" Name="Enable_WebEQSupport_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Enable_WebEQSupport_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>								
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Show Notifications on Playback" Name="Show_Notifications_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Show_Notifications_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Enable Marquee Text Overlay" Name="Enable_Marquee_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Enable_Marquee_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Auto Open/Close Video Player" Name="Open_VideoPlayer_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Open_VideoPlayer_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Remember Playback Progress" Name="Remember_Playback_Progress_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Remember_Playback_Progress_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="30,0,0,0">
+									<mah:ToggleSwitch Content="Start Paused" Name="Start_Paused_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="{Binding ElementName=Remember_Playback_Progress_Toggle, Path=IsOn}"/>
+									<Button Name="Start_Paused_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>								
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Enable Audio Visualizations" Name="Use_Visualizations_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Use_Visualizations_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0">
+									<Label Name='Current_Visualization_Label' Grid.Column="0" Content="Select Visualization Plugin:" VerticalAlignment="Top" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+									<ComboBox
+                                              Margin="5,0,0,0"
+									          Name='Current_Visualization_ComboBox'
+									          mah:TextBoxHelper.ClearTextButton="True"
+									          VerticalAlignment="Top"
+									          Grid.Column="0"
+									          Background="Transparent"
+									          mah:TextBoxHelper.UseFloatingWatermark="True"
+									          HorizontalAlignment="Left"
+									          IsEditable="False"
+									          IsEnabled="false"
+									          SelectedIndex="-1">
+										<ComboBox.ContextMenu>
+											<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+										</ComboBox.ContextMenu>
+									</ComboBox>
+								</VirtualizingStackPanel>
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,5,0,0">
+									<Button Name="Audio_Output_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+									<Label Name='Audio_Output_Label' Grid.Column="0" Content="Audio Output Device:" VerticalAlignment="Top" Margin="5,2,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="0,0,0,0" HorizontalAlignment="Left"/>
+									<ComboBox
+                                              Margin="0,0,0,0"
+									          Name='Audio_Output_ComboBox'
+									          mah:TextBoxHelper.ClearTextButton="True"
+									          VerticalAlignment="Top"
+									          Grid.Column="0"
+									          Background="Transparent"
+									          mah:TextBoxHelper.UseFloatingWatermark="True"
+									          HorizontalAlignment="Left"
+									          IsEditable="False"
+									          IsEnabled="True"
+									          SelectedIndex="-1">
+										<ComboBox.ContextMenu>
+											<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+										</ComboBox.ContextMenu>
+									</ComboBox>
+								</VirtualizingStackPanel>
+								<mah:TransitioningContentControl Name="Audio_Output_transitioningControl"
+								                                 VerticalAlignment="Top"
+								                                 Grid.Row="2"
+								                                 Height="0"
+								                                 HorizontalAlignment="Left"
+								                                 Background="Transparent"
+								                                 Margin="0,0,0,0"
+								                                 Transition="Down">
+									<TextBlock Name='Audio_Output_textblock' TextWrapping="Wrap" Grid.Row="2" FontWeight="Bold" VerticalAlignment="Top" Foreground="#ffffff" Visibility="Visible" HorizontalAlignment="Stretch"/>
+								</mah:TransitioningContentControl>
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Discord Integration" Name="Discord_Integration_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Discord_Integration_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Enable Subtitle Controls" Name="Enable_Subtitles_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Enable_Subtitles_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,0,0,0">
+									<Button Name="Hotkeys_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>	
+									<Label Name='Hotkeys_Label' Content="Media Control Hotkeys (WIP)" VerticalAlignment="Top" Margin="5,2,0,0" Foreground="#ffffff" FontWeight="Bold" Visibility="Visible" BorderBrush="Red" BorderThickness="0,0,0,0" HorizontalAlignment="Left"/>												   
+								</VirtualizingStackPanel>								
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,0,0,0">							
+									    <VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="30,0,0,0">
+											<TextBlock Text="Volume Up" Margin="0,0,0,0" />
+											<mah:HotKeyBox mah:TextBoxHelper.ClearTextButton="false"
+														   Margin="0,0,0,0"
+														   Name="VolUpHotkey"
+														   HorizontalAlignment="Left"
+														   mah:TextBoxHelper.Watermark="Enter hot key"
+														   AreModifierKeysRequired="False" />
+										 </VirtualizingStackPanel>	
+										 <VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="20,0,0,0">
+											<TextBlock Text="Volume Down" Margin="0,0,0,0"/>
+											<mah:HotKeyBox mah:TextBoxHelper.ClearTextButton="false"
+														   Margin="0,0,0,0"
+														   Name="VolDownhotkey"
+														   HorizontalAlignment="Left"
+														   mah:TextBoxHelper.Watermark="Enter hot key"
+														   AreModifierKeysRequired="False" />		
+										</VirtualizingStackPanel>			
+										<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="20,0,0,0">										
+											<TextBlock Text="Mute" Margin="0,0,0,0"/>
+											<mah:HotKeyBox mah:TextBoxHelper.ClearTextButton="false"
+														   Margin="0,0,0,0"
+														   Name="VolMutehotkey"
+														   HorizontalAlignment="Left"
+														   mah:TextBoxHelper.Watermark="Enter hot key"
+														   AreModifierKeysRequired="False" />			
+										</VirtualizingStackPanel>														   														   
+								</VirtualizingStackPanel>									
+							</VirtualizingStackPanel>
+						</Expander>
+						<Expander
+                                  Grid.Column="0"
+						          Grid.Row="0"
+						          Margin="0,0,0,10"
+						          Grid.RowSpan="1"
+						          ExpandDirection="Down"
+						          BorderThickness="0,0,0,1"
+						          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+						          mah:HeaderedControlHelper.HeaderForeground="White"
+						          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+						          mah:HeaderedControlHelper.HeaderFontSize="14"
+						          Name="Updates_Settings_Expander"
+						          Header="Updates"
+						          IsExpanded="false">
+							<VirtualizingStackPanel>
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Automatically Check for Updates" Name="Auto_UpdateCheck_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Auto_UpdateCheck_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Automatically Install Updates" Name="Auto_UpdateInstall_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Auto_UpdateInstall_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+							</VirtualizingStackPanel>
+						</Expander>
+						<Expander
+                                  Grid.Column="0"
+						          Grid.Row="0"
+						          Margin="0,0,0,10"
+						          Grid.RowSpan="1"
+						          ExpandDirection="Down"
+						          BorderThickness="0,0,0,1"
+						          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+						          mah:HeaderedControlHelper.HeaderForeground="White"
+						          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+						          mah:HeaderedControlHelper.HeaderFontSize="14"
+						          Name="Casting_Settings_Expander"
+						          Header="Media Casting (WIP)"
+						          IsExpanded="false">
+							<VirtualizingStackPanel>
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Enable Media Casting Support" Name="Enable_MediaCasting_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Enable_MediaCasting_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,0,0,0" Visibility="Collapsed">
+									<Button Name="Default_CastDevice_Button" Width="20" Height="20" Margin="0,3,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+									<TextBox Name='Default_CastDevice_Textbox' Grid.Column="0" Text="Default Cast Device" IsReadOnly="True" IsUndoEnabled="False" UndoLimit="0" VerticalAlignment="Top" Margin="30,0,0,0" Background="Transparent" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+									<ComboBox
+                                              Margin="185,0,0,0"
+									          Name='Default_CastDevice_ComboBox'
+									          mah:TextBoxHelper.ClearTextButton="False"
+									          VerticalAlignment="Top"
+									          Grid.Column="0"
+									          Background="Transparent"
+									          mah:TextBoxHelper.UseFloatingWatermark="True"
+									          HorizontalAlignment="Left"
+									          IsEditable="False"
+									          IsEnabled="true"
+									          SelectedIndex="0">
+										<ComboBox.ContextMenu>
+											<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+										</ComboBox.ContextMenu>
+									</ComboBox>
+								</Grid>
+								<Grid Margin="0,5,0,0">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0">
+										<TextBox Name='Cast_HTTPPort_Label' Text="Media Casting HTTP Port" Visibility="Visible" IsReadOnly="True" IsUndoEnabled="False" UndoLimit="0" Background="Transparent" VerticalAlignment="Top" Foreground="#ffffff" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+										<TextBox Name='Cast_HTTPPort_textbox' Height="23" Text="" Margin="22,0,0,0" VerticalAlignment="Top" UndoLimit="0" Background="Transparent" TextWrapping="NoWrap" IsEnabled="True" Visibility="Visible" RenderTransformOrigin="0.502,0.52" MinWidth="150" MaxWidth="250" HorizontalAlignment="Left"/>
+									</VirtualizingStackPanel>
+									<Button Name="Cast_HTTPPort_HelpButton" Width="20" Height="20" Margin="0,3,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+							</VirtualizingStackPanel>
+						</Expander>
+						<Expander
+                                  Grid.Column="0"
+						          Grid.Row="0"
+						          Margin="0,0,0,10"
+						          Grid.RowSpan="1"
+						          ExpandDirection="Down"
+						          BorderThickness="0,0,0,1"
+						          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+						          mah:HeaderedControlHelper.HeaderForeground="White"
+						          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+						          mah:HeaderedControlHelper.HeaderFontSize="14"
+						          Name="MediaPlayer_AdvancedSettings_Expander"
+						          Header="Advanced Media Player Options (WIP)"
+						          IsExpanded="false">
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">
+								<Grid Margin="0,0,0,0">
+									<Button Name="Audio_OutputModule_Button" Width="20" Height="20" Margin="0,3,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+									<TextBox Name='Audio_OutputModule_Textbox' Grid.Column="0" Text="Audio Output Module" IsReadOnly="True" IsUndoEnabled="False" UndoLimit="0" VerticalAlignment="Top" Margin="30,0,0,0" Background="Transparent" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+									<ComboBox
+											  Margin="185,0,0,0"
+									          Name='Audio_OutputModule_ComboBox'
+									          mah:TextBoxHelper.ClearTextButton="False"
+									          VerticalAlignment="Top"
+									          Grid.Column="0"
+									          Background="Transparent"
+									          mah:TextBoxHelper.UseFloatingWatermark="True"
+									          HorizontalAlignment="Left"
+									          IsEditable="False"
+									          IsEnabled="true"
+									          SelectedIndex="0">
+										<ComboBox.ContextMenu>
+											<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+										</ComboBox.ContextMenu>
+									</ComboBox>
+								</Grid>
+								<Grid Margin="0,5,0,0">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0">
+										<TextBox Name='vlc_GlobalGain_Label' Text="VLC Global Gain" Visibility="Visible" IsReadOnly="True" IsUndoEnabled="False" UndoLimit="0" Background="Transparent" VerticalAlignment="Top" Foreground="#ffffff" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+										<TextBox Name='vlc_GlobalGain_textbox' Height="23" Text="" Margin="22,0,0,0" VerticalAlignment="Top" UndoLimit="0" Background="Transparent" TextWrapping="NoWrap" IsEnabled="True" Visibility="Visible" RenderTransformOrigin="0.502,0.52" MinWidth="50" MaxWidth="50" HorizontalAlignment="Left"/>
+									</VirtualizingStackPanel>
+									<Button Name="vlc_GlobalGain_HelpButton" Width="20" Height="20" Margin="0,3,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>								
+								<Grid Margin="0,5,0,0">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0">
+										<TextBox Name='vlc_Arguments_Label' Text="VLC Command-Line" Visibility="Visible" IsReadOnly="True" IsUndoEnabled="False" UndoLimit="0" Background="Transparent" VerticalAlignment="Top" Foreground="#ffffff" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+										<TextBox Name='vlc_Arguments_textbox' Height="23" Text="" Margin="22,0,0,0" VerticalAlignment="Top" UndoLimit="0" Background="Transparent" TextWrapping="NoWrap" IsEnabled="True" Visibility="Visible" RenderTransformOrigin="0.502,0.52" MinWidth="150" MaxWidth="250" HorizontalAlignment="Left"/>
+									</VirtualizingStackPanel>
+									<Button Name="vlc_Arguments_HelpButton" Width="20" Height="20" Margin="0,3,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="0,-2,0,0">
+									<Grid Margin="0,0,0,0">
+										<mah:ToggleSwitch Content="Enable Dev Mode" Name="Verbose_logging_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+										<Button Name="Verbose_logging_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+											<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+										</Button>
+									</Grid>
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0" Name="Log_StackPanel">
+										<mah:TransitioningContentControl Name="Log_label_transitioningControl"
+										                                 VerticalAlignment="Top"
+										                                 HorizontalAlignment="Left"
+										                                 Background="Transparent"
+										                                 Margin="0,0,0,0"
+										                                 Transition="RightReplace">
+											<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+												<Label Name='Log_Path_Label' Content="Log Save Path:" Visibility="Visible" VerticalAlignment="Top" Foreground="#ffffff" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+												<TextBox Name='Log_Path_textbox' Height="23" Text="" UndoLimit="0" VerticalAlignment="Top" Background="Transparent" TextWrapping="Wrap" IsEnabled="True" Visibility="Visible" RenderTransformOrigin="0.502,0.52" MinWidth="150" MaxWidth="250" HorizontalAlignment="Left"/>
+												<Button Name='Log_Path_Browse' Style="{StaticResource ToolsButtonStyle}" VerticalAlignment="Top" Width="80" HorizontalAlignment="Left" IsEnabled="True" Margin="5,0,0,5">
+													<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+														<iconPacks:PackIconMaterial Kind="FolderOpen"
+														                            Margin="4 4 2 4"
+														                            Width="16"
+														                            Height="16"
+														                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+														<TextBlock Text="Browse" Margin="2 4 4 4" VerticalAlignment="Center"/>
+													</VirtualizingStackPanel>
+												</Button>
+											</VirtualizingStackPanel>
+										</mah:TransitioningContentControl>
+									</VirtualizingStackPanel>
+								</VirtualizingStackPanel>
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,-2,0,0">
+									<Label Name='Log_Link_Label' Content="Current Log:" Visibility="Visible" VerticalAlignment="Top" Foreground="#ffffff" BorderBrush="LightGreen" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+									<iconPacks:PackIconMaterial Kind="File" Margin="0 5 5 0" PresentationOptions:Freeze="True"/>
+									<TextBlock Margin="0 5 0 0">
+										<Hyperlink Name='Log_Path_Hyperlink' FontSize="12" NavigateUri="" FontWeight="Bold"/>
+									</TextBlock>
+								</VirtualizingStackPanel>
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Optimization Tools" Name="Optimization_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Optimization_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+									<Button Name='Optimize_Assembly_Button' Style="{StaticResource ToolsButtonStyle}" IsEnabled="{Binding ElementName=Optimization_Toggle, Path=IsOn}" HorizontalAlignment="Left">
+										<Grid>
+											<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+												<iconPacks:PackIconMaterial Kind="FileCogOutline"
+												                            Margin="4 4 2 4"
+												                            Width="16"
+												                            Height="16"
+												                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+												<TextBlock Name="Optimize_Assembly_Text" Text="Optimize Assemblies" Margin="2 4 4 4" VerticalAlignment="Center"/>
+											</VirtualizingStackPanel>
+											<mah:ProgressRing Foreground="White" Name='Optimize_Assembly_Progress_Ring' IsActive="false" VerticalAlignment="Center" Height="15" Width="15"/>
+										</Grid>
+									</Button>
+									<Button Name='Optimize_Services_Button' Style="{StaticResource ToolsButtonStyle}" IsEnabled="{Binding ElementName=Optimization_Toggle, Path=IsOn}" HorizontalAlignment="Left">
+										<Grid>
+											<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+												<iconPacks:PackIconMaterial Kind="Cogs"
+												                            Margin="4 4 2 4"
+												                            Width="16"
+												                            Height="16"
+												                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+												<TextBlock Name="Optimize_Services_Text" Text="Optimize Services" Margin="2 4 4 4" VerticalAlignment="Center"/>
+											</VirtualizingStackPanel>
+											<mah:ProgressRing Foreground="White" Name='Optimize_Services_Progress_Ring' IsActive="false" VerticalAlignment="Center" Height="15" Width="15"/>
+										</Grid>
+									</Button>
+								</VirtualizingStackPanel>
+								<Grid Margin="0,0,0,0" Name="VPN_Grid" Visibility="Collapsed">
+									<mah:ToggleSwitch Content="VPN Tools" Name="VPN_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="VPN_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<VirtualizingStackPanel Name="VPN_StackPanel" Visibility="Collapsed" IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+									<Button Name='Install_VPN_Button' Style="{StaticResource ToolsButtonStyle}" IsEnabled="{Binding ElementName=VPN_Toggle, Path=IsOn}" HorizontalAlignment="Left">
+										<Grid>
+											<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+												<iconPacks:PackIconMaterial Kind="Vpn"
+												                            Margin="4 4 2 4"
+												                            Width="16"
+												                            Height="16"
+												                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+												<TextBlock Name="Install_VPN__Text" Text="Install ProtonVPN" Margin="2 4 4 4" VerticalAlignment="Center"/>
+											</VirtualizingStackPanel>
+											<mah:ProgressRing Foreground="White" Name='Install_VPN_Progress_Ring' IsActive="false" VerticalAlignment="Center" Height="15" Width="15"/>
+										</Grid>
+									</Button>
+								</VirtualizingStackPanel>
+							</VirtualizingStackPanel>
+						</Expander>
+					</VirtualizingStackPanel>
+				</ScrollViewer>
+			</TabItem>
+			<TabItem Header="Local"
+			         BorderThickness="0,0,0,1"
+			         BorderBrush="Gray">
+				<TabItem.HeaderTemplate>
+					<DataTemplate>
+						<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Transparent">
+							<iconPacks:PackIconMaterial Kind="Harddisk"
+							                            Margin="2 5 2 0"
+							                            Width="20"
+							                            Height="20"
+							                            VerticalAlignment="Top" PresentationOptions:Freeze="True"/>
+							<Label Name="MediaPlayer_Links_Label" Content="Local Media" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="16"/>
+						</VirtualizingStackPanel>
+					</DataTemplate>
+				</TabItem.HeaderTemplate>
+				<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">
+					<Expander
+                              Grid.Column="0"
+					          Grid.Row="0"
+					          Margin="0,0,0,10"
+					          Grid.RowSpan="1"
+					          ExpandDirection="Down"
+					          BorderThickness="0,0,0,1"
+					          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+					          mah:HeaderedControlHelper.HeaderForeground="White"
+					          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+					          mah:HeaderedControlHelper.HeaderFontSize="14"
+					          Name="Media_Importing_Settings_Expander"
+					          Header="Local Media Importing"
+					          IsExpanded="True">
+						<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" VerticalAlignment="Stretch">
+							<Grid Margin="0,0,0,0">
+								<mah:ToggleSwitch Content="Enable Local Media Support" Name="Import_Local_Media_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+								<Button Name="Import_Local_Media_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+								</Button>
+							</Grid>
+							<Grid Margin="0,0,0,0">
+								<mah:ToggleSwitch Content="Skip Duplicates" Name="LocalMedia_SkipDuplicates_Toggle" Margin="30,0,0,0" IsEnabled="{Binding ElementName=Import_Local_Media_Toggle, Path=IsOn}" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+								<Button Name="LocalMedia_SkipDuplicates_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+								</Button>
+							</Grid>
+							<Grid Margin="0,0,0,0">
+								<Button Name="LocalMedia_ImportMode_Button" Width="20" Height="20" Margin="0,3,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+								</Button>
+								<TextBox Name='LocalMedia_ImportMode_Textbox' Grid.Column="0" Text="Import/Scanning Mode" IsReadOnly="True" IsUndoEnabled="False" UndoLimit="0" VerticalAlignment="Top" Margin="30,0,0,0" Background="Transparent" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+								<ComboBox
+										  Margin="185,0,0,0"
+										  Name='LocalMedia_ImportMode_ComboBox'
+										  mah:TextBoxHelper.ClearTextButton="False"
+										  VerticalAlignment="Top"
+										  Grid.Column="0"
+										  Background="Transparent"
+										  mah:TextBoxHelper.UseFloatingWatermark="True"
+										  HorizontalAlignment="Left"
+										  IsEditable="False"
+										  IsEnabled="true"
+										  SelectedIndex="0">
+									<ComboBox.ContextMenu>
+										<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+									</ComboBox.ContextMenu>
+								</ComboBox>
+							</Grid>	
+							<Grid Margin="0,0,0,0">
+								<mah:ToggleSwitch Content="Monitor Local Paths" Name="Enable_LocalMedia_Monitor_Toggle" Margin="30,0,0,0" IsEnabled="{Binding ElementName=Import_Local_Media_Toggle, Path=IsOn}" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+								<Button Name="Enable_LocalMedia_Monitor_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+								</Button>							
+							</Grid>	
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0">
+								<TextBox Name='LocalMedia_MonitorMode_Textbox' Grid.Column="0" Text="Monitor Mode" IsReadOnly="True" IsUndoEnabled="False" UndoLimit="0" VerticalAlignment="Top" Margin="0,0,0,0" Background="Transparent" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+								<ComboBox
+										  Margin="5,0,0,0"
+										  Name='LocalMedia_MonitorMode_ComboBox'
+										  mah:TextBoxHelper.ClearTextButton="False"
+										  VerticalAlignment="Top"
+										  Grid.Column="0"
+										  Background="Transparent"
+										  mah:TextBoxHelper.UseFloatingWatermark="True"
+										  HorizontalAlignment="Left"
+										  IsEditable="False"
+										  IsEnabled="true"
+										  SelectedIndex="0">
+									<ComboBox.ContextMenu>
+										<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+									</ComboBox.ContextMenu>
+								</ComboBox>	
+							</VirtualizingStackPanel>	
+								<Grid Margin="0,5,0,0">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0">
+										<TextBox Name='LocalMedia_Display_Syntax_Label' Text="Default Display Name Syntax" Visibility="Visible" IsReadOnly="True" IsUndoEnabled="False" UndoLimit="0" Background="Transparent" VerticalAlignment="Top" Foreground="#ffffff" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+										<TextBox Name='LocalMedia_Display_Syntax_textbox' Height="23" Text="" Margin="22,0,0,0" VerticalAlignment="Top" UndoLimit="0" Background="Transparent" TextWrapping="NoWrap" IsEnabled="True" Visibility="Visible" RenderTransformOrigin="0.502,0.52" MinWidth="150" MaxWidth="250" HorizontalAlignment="Left"/>
+									</VirtualizingStackPanel>
+									<Button Name="LocalMedia_Display_Syntax_HelpButton" Width="20" Height="20" Margin="0,3,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>							
+							<Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Effect="{StaticResource DropShadow}" OpacityMask="{StaticResource SeparatorGradient}" Height="1" VerticalAlignment="Bottom" Margin="0,10,0,0"/>							
+							<Grid Name="Local_Media_Path_Grid" Margin="0,3,0,0">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="120"/>
+									<ColumnDefinition/>
+								</Grid.ColumnDefinitions>
+								<Button Name='Media_Path_Browse' Grid.Column="0" Style="{StaticResource DetailButtonStyle}" Margin="10,5,0,0" VerticalAlignment="Top" Width="95" Height="30" IsEnabled="false" HorizontalAlignment="Left">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+										<iconPacks:PackIconMaterial Kind="FolderOpen"
+										                            Margin="4 4 2 4"
+										                            Width="16"
+										                            Height="16"
+										                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+										<TextBlock Text="Add Folder" Name="Media_Path_Browse_textblock" Margin="2 4 4 4" VerticalAlignment="Center"/>
+									</VirtualizingStackPanel>
+								</Button>
+								<TextBox Name="Local_Media_Total_Textbox" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="" IsReadOnly="true" IsUndoEnabled="False" UndoLimit="0" FontWeight="Bold" Margin="0,5,0,0" HorizontalAlignment="Right" BorderThickness="0" Grid.Column="1" Background="Transparent"/>
+							</Grid>
+							<Grid Name='LocalMedia_Import_Grid' HorizontalAlignment="stretch">
+								<mah:ProgressRing Foreground="White" Name='Media_Progress_Ring' IsActive="false" VerticalAlignment="Center" Panel.ZIndex="4"/>
+								<DataGrid Name="MediaLocations_Grid" ScrollViewer.CanContentScroll="True" Margin="0,5,0,0" Background="Transparent" MaxHeight="250" MaxWidth="{Binding ElementName=Setup_TabControl, Path=ActualWidth}" VerticalAlignment="Top" HorizontalAlignment="stretch" VerticalScrollBarVisibility="Visible" 
+								HorizontalScrollBarVisibility="Disabled" SelectionUnit="FullRow" SelectionMode="Single" IsEnabled="{Binding ElementName=Import_Local_Media_Toggle, Path=IsOn}" AlternatingRowBackground="Transparent" CanUserReorderColumns="false" CanUserDeleteRows="true" Foreground="White" CanUserAddRows="False" 
+								IsReadOnly="True" GridLinesVisibility="Horizontal" RowBackground="Transparent" VirtualizingStackPanel.ScrollUnit="Pixel" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling" AutoGenerateColumns="false">
+									<DataGrid.Resources>
+										<Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}" TargetType="{x:Type DataGridColumnHeader}">
+											<Setter Property="Background" Value="Transparent"/>
+											<Setter Property="BorderThickness" Value="3"/>
+										</Style>
+										<Style TargetType="{x:Type TextBlock}" x:Key="WrapText">
+											<Setter Property="TextWrapping" Value="Wrap"/>
+										</Style>
+										<Style TargetType="ScrollViewer">
+											<Setter Property="AttachedBehavior:ScrollAnimationBehavior.IsEnabled" Value="True"/>
+											<Setter Property="AttachedBehavior:ScrollAnimationBehavior.TimeDuration" Value="00:00:00.30"/>
+											<Setter Property="AttachedBehavior:ScrollAnimationBehavior.PointsToScroll" Value="35"/>
+										</Style>
+										<Style TargetType="DataGridCell">
+											<Setter Property="BorderThickness" Value="2"/>
+											<Setter Property="TextBlock.TextAlignment" Value="Left"/>
+											<Style.Triggers>
+												<Trigger Property="DataGridCell.IsSelected" Value="True">
+													<Setter Property="Background" Value="Transparent"/>
+													<Setter Property="BorderBrush" Value="Transparent"/>
+												</Trigger>
+											</Style.Triggers>
+										</Style>
+										<Style TargetType="{x:Type DataGridRow}">
+											<Style.Resources>
+												<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+												<SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent"/>
+												<SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="Black"/>
+												<SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="Black"/>
+											</Style.Resources>
+										</Style>
+										<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+									</DataGrid.Resources>
+									<DataGrid.Columns>
+										<DataGridTemplateColumn>
+											<DataGridTemplateColumn.Header>
+												<TextBlock FontWeight="Bold" Text="#"/>
+											</DataGridTemplateColumn.Header>
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Number}" Background="Transparent"/>
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+										</DataGridTemplateColumn>
+										<DataGridTemplateColumn Width="SizeToCells" MinWidth="40" MaxWidth="300">
+											<DataGridTemplateColumn.Header>
+												<TextBlock FontWeight="Bold" Text="Path"/>
+											</DataGridTemplateColumn.Header>
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Path}" TextWrapping="Wrap" Background="Transparent"/>
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+										</DataGridTemplateColumn>
+									</DataGrid.Columns>
+								</DataGrid>
+							</Grid>
+						</VirtualizingStackPanel>
+					</Expander>
+				</VirtualizingStackPanel>
+			</TabItem>
+			<TabItem Header="Spotify"
+			         BorderThickness="0,0,0,1"
+			         Name="Spotify_Setup_Tab"
+			         BorderBrush="Gray">
+				<TabItem.HeaderTemplate>
+					<DataTemplate>
+						<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Transparent">
+							<iconPacks:PackIconMaterial Kind="Spotify"
+							                            Margin="2 5 2 0"
+							                            Width="20"
+							                            Height="20"
+							                            Foreground="#FF1ED760"
+							                            VerticalAlignment="Top" PresentationOptions:Freeze="True"/>
+							<Label Name="MediaPlayer_Links_Label" Content="Spotify" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="16"/>
+						</VirtualizingStackPanel>
+					</DataTemplate>
+				</TabItem.HeaderTemplate>
+				<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">
+					<Expander
+							  Grid.Column="0"
+					          Grid.Row="0"
+					          Margin="0,0,0,10"
+					          Grid.RowSpan="1"
+					          ExpandDirection="Down"
+					          BorderThickness="0,0,0,1"
+					          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+					          mah:HeaderedControlHelper.HeaderForeground="White"
+					          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+					          mah:HeaderedControlHelper.HeaderFontSize="14"
+					          Name="SpotifyMedia_Importing_Settings_Expander"
+					          Header="Spotify Importing"
+					          IsExpanded="True">
+						<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" VerticalAlignment="Stretch">
+							<Grid Margin="0,0,0,0">
+								<mah:ToggleSwitch Content="Enable Spotify Integration" Name="Import_Spotify_Playlists_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+								<Button Name="Import_Spotify_Playlists_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+								</Button>
+							</Grid>
+							<Grid>
+								<Grid.RowDefinitions>
+									<RowDefinition Height="*"/>
+								</Grid.RowDefinitions>
+								<mah:TransitioningContentControl Name="Import_Spotify_transitioningControl"
+								                                 VerticalAlignment="Top"
+								                                 HorizontalAlignment="Left"
+								                                 Margin="0,0,0,2"
+								                                 Height="0"
+								                                 Transition="Down">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="30,5,0,5">
+										<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+											<Button Name="Import_Spotify_Status_Button" Width="20" Height="20" Margin="0,2,5,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+												<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+											</Button>										
+											<Label Name="Import_Spotify_Status_Label" Content="Spotify Credentials:" Visibility="Visible" VerticalAlignment="Top" Foreground="#ffffff" BorderBrush="#ffffff" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+											<TextBlock Name='Import_Spotify_Status_textbox' Margin="0,2,0,0" FontSize='14' Text="" TextWrapping="Wrap" VerticalAlignment="Top" IsEnabled="false" Visibility="Visible" HorizontalAlignment="Left"/>
+										</VirtualizingStackPanel>
+										<TextBlock Name='Import_Spotify_textbox' Text="" TextWrapping="Wrap" VerticalAlignment="Top" IsEnabled="false" Visibility="Visible" HorizontalAlignment="Left"/>											
+									</VirtualizingStackPanel>
+								</mah:TransitioningContentControl>
+							</Grid>							
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Install Spotify" Name="Install_Spotify_Toggle" Margin="60,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="false"/>
+									<Button Name="Install_Spotify_Button" Width="20" Height="20" Margin="30,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Button Name='Install_Spotify_Now_Button' Grid.Column="0" Style="{StaticResource DetailButtonStyle}" Margin="0,5,0,0" VerticalAlignment="Top" Height="30" IsEnabled="{Binding ElementName=Install_Spotify_Toggle, Path=IsOn}" HorizontalAlignment="Left">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" HorizontalAlignment="Stretch">
+										<iconPacks:PackIconMaterial Kind="Spotify"
+										                            Margin="4 4 2 4"
+										                            Width="16"
+										                            Height="16"
+										                            Foreground="#FF1ED760"
+										                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+										<TextBlock Text="Install Spotify Now" Name="Install_Spotify_Now_textblock" Margin="2 4 4 4" VerticalAlignment="Center"/>
+									</VirtualizingStackPanel>
+								</Button>
+								<TextBlock Name="Install_Spotify_Status_textblock" Margin="5,0,0,0" VerticalAlignment="Center"/>
+							</VirtualizingStackPanel>
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,5,0,5" IsEnabled="{Binding ElementName=Import_Spotify_Playlists_Toggle, Path=IsOn}">
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Auto Sync Playlists" Name="Spotify_Update_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Spotify_Update_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>	
+								<Label Name='Spotify_Update_Interval_Label' Grid.Column="0" Content="Interval:" VerticalAlignment="Top" Margin="35,2,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+								<ComboBox
+										  Margin="11,2,0,0"
+										  Name='Spotify_Update_Interval_ComboBox'
+										  mah:TextBoxHelper.ClearTextButton="True"
+										  VerticalAlignment="Top"
+										  Grid.Column="0"
+										  Background="Transparent"
+										  mah:TextBoxHelper.UseFloatingWatermark="True"
+										  HorizontalAlignment="Left"
+										  IsEditable="False"
+										  IsEnabled="false"
+										  SelectedIndex="-1">
+									<ComboBox.ContextMenu>
+										<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+									</ComboBox.ContextMenu>
+									<ComboBoxItem Content="On Startup"/>
+									<ComboBoxItem Content="15 Minutes"/>
+									<ComboBoxItem Content="30 Minutes"/>
+									<ComboBoxItem Content="1 Hour"/>
+								</ComboBox>
+							</VirtualizingStackPanel>							
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" HorizontalAlignment="Stretch">
+								<Button Name='Spotify_Playlists_Browse' Grid.Column="0" Style="{StaticResource DetailButtonStyle}" Margin="10,5,0,0" VerticalAlignment="Top" Height="30" IsEnabled="{Binding ElementName=Import_Spotify_Playlists_Toggle, Path=IsOn}" HorizontalAlignment="Left">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+										<iconPacks:PackIconMaterial Kind="Spotify"
+										                            Margin="4 4 2 4"
+										                            Width="16"
+										                            Height="16"
+										                            Foreground="#FF1ED760"
+										                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+										<TextBlock Text="Add Spotify URL" Name="Spotify_Playlists_Browse_textblock" Margin="2 4 4 4" VerticalAlignment="Center"/>
+									</VirtualizingStackPanel>
+								</Button>
+								<Button Name='Spotify_Playlists_Import' Grid.Column="0" Style="{StaticResource DetailButtonStyle}" Margin="10,5,0,0" VerticalAlignment="Top" Height="30" IsEnabled="false" HorizontalAlignment="Left">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" HorizontalAlignment="Stretch">
+										<iconPacks:PackIconMaterial Kind="Spotify"
+										                            Margin="4 4 2 4"
+										                            Width="16"
+										                            Height="16"
+										                            Foreground="#FF1ED760"
+										                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+										<TextBlock Text="Import From Spotify" Name="Spotify_Playlists_Import_textblock" Margin="2 4 4 4" VerticalAlignment="Center"/>
+									</VirtualizingStackPanel>
+								</Button>
+							</VirtualizingStackPanel>
+							<Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Effect="{StaticResource DropShadow}" OpacityMask="{StaticResource SeparatorGradient}" Height="1" VerticalAlignment="Bottom" Margin="0,10,0,0"/>
+							<Grid>
+								<mah:ProgressRing Foreground="White" Name='Spotify_Progress_Ring' IsActive="false" VerticalAlignment="Center" Panel.ZIndex="4"/>
+								<DataGrid Name="SpotifyPlaylists_Grid" ScrollViewer.CanContentScroll="True" Margin="0,5,0,0" Background="Transparent" MaxHeight="250" VerticalAlignment="Top" HorizontalAlignment="stretch" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" SelectionUnit="FullRow" 
+								SelectionMode="Single" IsEnabled="{Binding ElementName=Import_Spotify_Playlists_Toggle, Path=IsOn}" AlternatingRowBackground="Transparent" CanUserReorderColumns="false" CanUserDeleteRows="true" Foreground="White" CanUserAddRows="False" IsReadOnly="True" GridLinesVisibility="Horizontal" 
+								RowBackground="Transparent" VirtualizingStackPanel.ScrollUnit="Pixel" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling" AutoGenerateColumns="false">
+									<DataGrid.Resources>
+										<Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}" TargetType="{x:Type DataGridColumnHeader}">
+											<Setter Property="Background" Value="Transparent"/>
+											<Setter Property="BorderThickness" Value="3"/>
+										</Style>
+										<Style TargetType="{x:Type TextBlock}" x:Key="WrapText">
+											<Setter Property="TextWrapping" Value="Wrap"/>
+										</Style>
+										<Style TargetType="ScrollViewer">
+											<Setter Property="AttachedBehavior:ScrollAnimationBehavior.IsEnabled" Value="True"/>
+											<Setter Property="AttachedBehavior:ScrollAnimationBehavior.TimeDuration" Value="00:00:00.30"/>
+											<Setter Property="AttachedBehavior:ScrollAnimationBehavior.PointsToScroll" Value="35"/>
+										</Style>
+										<Style TargetType="DataGridCell">
+											<Setter Property="BorderThickness" Value="2"/>
+											<Setter Property="TextBlock.TextAlignment" Value="Left"/>
+											<Style.Triggers>
+												<Trigger Property="DataGridCell.IsSelected" Value="True">
+													<Setter Property="Background" Value="Transparent"/>
+													<Setter Property="BorderBrush" Value="Transparent"/>
+												</Trigger>
+											</Style.Triggers>
+										</Style>
+										<Style TargetType="{x:Type DataGridRow}">
+											<Style.Resources>
+												<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+												<SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent"/>
+												<SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="Black"/>
+												<SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="Black"/>
+											</Style.Resources>
+										</Style>
+										<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+									</DataGrid.Resources>
+									<DataGrid.Columns>
+										<DataGridTemplateColumn Width="SizeToCells" MinWidth="40">
+											<DataGridTemplateColumn.Header>
+												<TextBlock FontWeight="Bold" Text="Name"/>
+											</DataGridTemplateColumn.Header>
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Name}" Background="Transparent"/>
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+										</DataGridTemplateColumn>
+										<DataGridTemplateColumn Width="SizeToCells" MinWidth="40">
+											<DataGridTemplateColumn.Header>
+												<TextBlock FontWeight="Bold" Text="Type"/>
+											</DataGridTemplateColumn.Header>
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Type}" Background="Transparent"/>
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+										</DataGridTemplateColumn>
+										<DataGridTemplateColumn MinWidth="40">
+											<DataGridTemplateColumn.Header>
+												<TextBlock FontWeight="Bold" Text="Tracks"/>
+											</DataGridTemplateColumn.Header>
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Tracks}" Background="Transparent"/>
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+										</DataGridTemplateColumn>
+									</DataGrid.Columns>
+								</DataGrid>
+							</Grid>
+						</VirtualizingStackPanel>
+					</Expander>
+					<Expander
+                              Grid.Column="0"
+					          Grid.Row="0"
+					          Margin="0,0,0,10"
+					          Grid.RowSpan="1"
+					          BorderThickness="0,0,0,1"
+					          ExpandDirection="Down"
+					          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+					          mah:HeaderedControlHelper.HeaderForeground="White"
+					          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+					          mah:HeaderedControlHelper.HeaderFontSize="14"
+					          Name="Spotify_Settings_Expander"
+					          Header="Spotify Options"
+					          IsExpanded="True">
+						<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,0,0,0">
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Use Web Player (Requires Spotify Premium)" Name="Spotify_WebPlayer_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" Grid.Column="0" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="{Binding ElementName=Import_Spotify_Playlists_Toggle, Path=IsOn}"/>
+									<ToggleButton Name="Spotify_WebPlayer_Help_Button" Width="20" Height="20" Margin="0,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</ToggleButton>
+								</Grid>
+							</VirtualizingStackPanel>
+							<mah:TransitioningContentControl Name="Spotify_WebPlayer_transitioningControl"
+							                                 VerticalAlignment="Top"
+							                                 Grid.Row="2"
+							                                 HorizontalAlignment="Left"
+							                                 Background="Transparent"
+							                                 Margin="0,0,0,0"
+							                                 Transition="Down">
+								<TextBlock Name='Spotify_WebPlayer_textblock' TextWrapping="Wrap" Grid.Row="2" FontWeight="Bold" VerticalAlignment="Top" Foreground="#ffffff" Visibility="Visible" HorizontalAlignment="Stretch"/>
+							</mah:TransitioningContentControl>
+							<Grid Margin="0,0,0,0">
+								<mah:ToggleSwitch Content="Use Spicetify (Required for Free Accounts)" Name="Spicetify_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="{Binding ElementName=Import_Spotify_Playlists_Toggle, Path=IsOn}"/>
+								<Button Name="Spicetify_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+								</Button>
+							</Grid>
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+								<Button Name='Spicetify_Apply_Button' Style="{StaticResource ToolsButtonStyle}" HorizontalAlignment="Left" IsEnabled="{Binding ElementName=Spicetify_Toggle, Path=IsOn}">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+										<iconPacks:PackIconMaterial Kind="Spotify"
+										                            Margin="4 4 2 4"
+										                            Width="16"
+										                            Height="16"
+										                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+										<TextBlock Name="Spicetify_Apply_Text" Text="Install to Spotify" Margin="2 4 4 4" VerticalAlignment="Center"/>
+									</VirtualizingStackPanel>
+								</Button>
+								<Button Name='Spicetify_Remove_Button' Style="{StaticResource ToolsButtonStyle}" IsEnabled="False" HorizontalAlignment="Left">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+										<iconPacks:PackIconMaterial Kind="Spotify"
+										                            Margin="4 4 2 4"
+										                            Width="16"
+										                            Height="16"
+										                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+										<TextBlock Name="Spicetify_Remove_Text" Text="Remove from Spotify" Margin="2 4 4 4" VerticalAlignment="Center"/>
+									</VirtualizingStackPanel>
+								</Button>
+							</VirtualizingStackPanel>
+							<mah:TransitioningContentControl Name="Spicetify_transitioningControl"
+							                                 VerticalAlignment="Top"
+							                                 Grid.Row="2"
+							                                 HorizontalAlignment="Left"
+							                                 Background="Transparent"
+							                                 Margin="0,0,0,0"
+							                                 Transition="Down">
+								<TextBlock Name='Spicetify_textblock' TextWrapping="Wrap" Grid.Row="2" FontWeight="Bold" VerticalAlignment="Top" Foreground="#ffffff" Visibility="Visible" HorizontalAlignment="Stretch"/>
+							</mah:TransitioningContentControl>							
+						</VirtualizingStackPanel>
+					</Expander>
+<!-- 					<Expander
+							  Grid.Column="0"
+					          Grid.Row="0"
+					          Margin="0,0,0,10"
+					          Grid.RowSpan="1"
+					          ExpandDirection="Down"
+					          BorderThickness="0,0,0,1"
+							  Visibility="Collapsed"
+					          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+					          mah:HeaderedControlHelper.HeaderForeground="White"
+					          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+					          mah:HeaderedControlHelper.HeaderFontSize="14"
+					          Name="Spotify_AdvancedSettings_Expander"
+					          Header="Advanced Spotify Options (WIP)"
+					          IsExpanded="false">
+						<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">
+
+						</VirtualizingStackPanel>
+					</Expander> -->
+				</VirtualizingStackPanel>
+			</TabItem>
+			<TabItem Header="Youtube"
+			         BorderThickness="0,0,0,1"
+			         BorderBrush="Gray">
+				<TabItem.HeaderTemplate>
+					<DataTemplate>
+						<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Transparent">
+							<iconPacks:PackIconMaterial Kind="Youtube"
+							                            Margin="2 5 2 0"
+							                            Width="22"
+							                            Height="22"
+							                            Foreground="#FFFF3737"
+							                            VerticalAlignment="Top"/>
+							<Label Name="MediaPlayer_Links_Label" Content="Youtube" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="16"/>
+						</VirtualizingStackPanel>
+					</DataTemplate>
+				</TabItem.HeaderTemplate>
+				<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="0,0,0,10" Grid.Row="1" VerticalAlignment="Top">
+					<Expander
+							  Grid.Column="0"
+					          Grid.Row="0"
+					          Margin="0,0,0,10"
+					          Grid.RowSpan="1"
+					          ExpandDirection="Down"
+					          BorderThickness="0,0,0,1"
+					          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+					          mah:HeaderedControlHelper.HeaderForeground="White"
+					          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+					          mah:HeaderedControlHelper.HeaderFontSize="14"
+					          Name="YoutubeMedia_Importing_Settings_Expander"
+					          Header="Youtube Importing"
+					          HorizontalAlignment="Stretch"
+					          IsExpanded="True">
+						<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" VerticalAlignment="Stretch">
+							<Grid Margin="0,0,0,0">
+								<mah:ToggleSwitch Content="Enable Youtube Integration" Name="Import_Youtube_Playlists_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+								<Button Name="Import_Youtube_Playlists_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+								</Button>
+							</Grid>
+							<Grid>
+								<Grid.RowDefinitions>
+									<RowDefinition Height="*"/>
+								</Grid.RowDefinitions>
+								<mah:TransitioningContentControl Name="Import_Youtube_transitioningControl"
+								                                 VerticalAlignment="Top"
+								                                 HorizontalAlignment="Left"
+								                                 Margin="0,0,0,2"
+								                                 Height="0"
+								                                 Transition="Down">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="30,5,0,5">
+										<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+											<Button Name="Import_Youtube_Status_Button" Width="20" Height="20" Margin="0,2,5,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+												<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+											</Button>										
+											<Label Name="Import_Youtube_Status_Label" Content="Youtube Credentials:" Visibility="Visible" VerticalAlignment="Top" Foreground="#ffffff" BorderBrush="#ffffff" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+											<TextBlock Name='Import_Youtube_Status_textbox' Margin="0,2,0,0" FontSize='14' Text="" TextWrapping="Wrap" VerticalAlignment="Top" IsEnabled="false" Visibility="Visible" HorizontalAlignment="Left"/>
+										</VirtualizingStackPanel>
+										<TextBlock Name='Import_Youtube_textbox' Text="" TextWrapping="Wrap" VerticalAlignment="Top" IsEnabled="false" Visibility="Visible" HorizontalAlignment="Left"/>
+									</VirtualizingStackPanel>
+								</mah:TransitioningContentControl>
+							</Grid>
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Use Browser Cookies" Name="Import_Youtube_Auth_Toggle" Margin="60,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="false">
+									</mah:ToggleSwitch>
+									<Button Name="Import_Youtube_Auth_Button" Width="20" Height="20" Margin="30,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Label Name='Import_Youtube_Auth_Label' Grid.Column="0" Content="Browser:" VerticalAlignment="Top" Margin="20,2,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+									<ComboBox
+											  Margin="10,2,0,0"
+									          Name='Import_Youtube_Auth_ComboBox'
+									          mah:TextBoxHelper.ClearTextButton="True"
+									          VerticalAlignment="Top"
+									          Grid.Column="0"
+									          Background="Transparent"
+									          mah:TextBoxHelper.UseFloatingWatermark="True"
+									          HorizontalAlignment="Left"
+									          IsEditable="False"
+									          IsEnabled="false"
+									          SelectedIndex="-1">
+										<ComboBox.ContextMenu>
+											<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+										</ComboBox.ContextMenu>
+										<ComboBoxItem Content="Brave"/>
+										<ComboBoxItem Content="Firefox"/>
+										<ComboBoxItem Content="Edge"/>
+										<ComboBoxItem Content="Chrome"/>
+										<ComboBoxItem Content="Opera"/>
+										<ComboBoxItem Content="Safari"/>
+									</ComboBox>
+							</VirtualizingStackPanel>
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0" IsEnabled="{Binding ElementName=Import_Youtube_Playlists_Toggle, Path=IsOn}">
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Auto Sync Playlists" Name="Youtube_Update_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" />
+									<Button Name="Youtube_Update_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>	
+								<Label Name='Youtube_Update_Interval_Label' Grid.Column="0" Content="Interval:" VerticalAlignment="Top" Margin="35,2,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+								<ComboBox
+										  Margin="11,2,0,0"
+										  Name='Youtube_Update_Interval_ComboBox'
+										  mah:TextBoxHelper.ClearTextButton="True"
+										  VerticalAlignment="Top"
+										  Grid.Column="0"
+										  Background="Transparent"
+										  IsEnabled="{Binding ElementName=Youtube_Update_Toggle, Path=IsOn}"
+										  mah:TextBoxHelper.UseFloatingWatermark="True"
+										  HorizontalAlignment="Left"
+										  IsEditable="False"
+										  SelectedIndex="-1">
+									<ComboBox.ContextMenu>
+										<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+									</ComboBox.ContextMenu>
+									<ComboBoxItem Content="On Startup"/>
+									<ComboBoxItem Content="15 Minutes"/>
+									<ComboBoxItem Content="30 Minutes"/>
+									<ComboBoxItem Content="1 Hour"/>
+								</ComboBox>
+							</VirtualizingStackPanel>							
+							<Grid Name="Youtube_Playlists" HorizontalAlignment="Stretch">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition/>
+									<ColumnDefinition/>
+								</Grid.ColumnDefinitions>
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" HorizontalAlignment="Stretch" Grid.ColumnSpan="2" VerticalAlignment="Center">
+									<Button Name='Youtube_Playlists_Browse' Grid.Column="0" Style="{StaticResource DetailButtonStyle}" Margin="10,5,0,0" VerticalAlignment="Top" Height="30" IsEnabled="false" HorizontalAlignment="Left">
+										<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+											<iconPacks:PackIconMaterial Kind="Youtube"
+											                            Margin="4 4 2 4"
+											                            Width="16"
+											                            Height="16"
+											                            Foreground="#FFFF3737"
+											                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+											<TextBlock Text="Add URL" Name="Youtube_Playlists_Browse_textblock" Margin="2 4 4 4" VerticalAlignment="Center"/>
+										</VirtualizingStackPanel>
+									</Button>
+									<Button Name='Youtube_Playlists_Import' Grid.Column="0" Style="{StaticResource DetailButtonStyle}" Margin="10,5,0,0" VerticalAlignment="Top" Height="30" IsEnabled="false" HorizontalAlignment="Left">
+										<Grid>
+											<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" HorizontalAlignment="Stretch">
+												<iconPacks:PackIconMaterial Kind="YoutubeSubscription"
+												                            Margin="4 4 2 4"
+												                            Width="16"
+												                            Height="16"
+												                            Foreground="#FFFF3737"
+												                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+												<TextBlock Text="Import From Youtube" Name="Youtube_Playlists_Import_textblock" Margin="2 4 4 4" VerticalAlignment="Center"/>
+											</VirtualizingStackPanel>
+											<mah:ProgressRing Foreground="White" Name='Youtube_Playlists_Import_Progress_Ring' IsActive="false" VerticalAlignment="Center" Height="15" Width="15"/>
+										</Grid>
+									</Button>
+								</VirtualizingStackPanel>
+								<Grid Margin="10,10,0,0" HorizontalAlignment="Center" Grid.Column="1" VerticalAlignment="Center">
+									<Grid.RowDefinitions>
+										<RowDefinition/>
+										<RowDefinition/>
+									</Grid.RowDefinitions>
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Grid.Row="0">
+										<CheckBox Content="Get My Uploads" Name="Youtube_My_Playlists_Import" Background="Transparent" Foreground="#ffffff" IsEnabled="{Binding ElementName=Youtube_Playlists_Import, Path=IsEnabled}"/>
+										<Button Name="Youtube_My_Playlists_Import_Button" Width="20" Height="20" Margin="5,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green" IsEnabled="{Binding ElementName=Youtube_Playlists_Import, Path=IsEnabled}">
+											<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+										</Button>
+									</VirtualizingStackPanel>
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Grid.Row="1">
+										<CheckBox Content="Get My Subscriptions" Name="Youtube_My_Subscriptions_Import" Background="Transparent" Foreground="#ffffff" Visibility="Hidden" IsEnabled="False" Width="0"/>
+										<Button Name="Youtube_My_Subscriptions_Import_Button" Width="20" Height="20" Margin="5,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Visibility="Hidden" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green" IsEnabled="{Binding ElementName=Youtube_My_Subscriptions_Import, Path=IsEnabled}">
+											<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+										</Button>
+									</VirtualizingStackPanel>
+								</Grid>
+							</Grid>
+							<Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Effect="{StaticResource DropShadow}" OpacityMask="{StaticResource SeparatorGradient}" Height="1" VerticalAlignment="Bottom" Margin="0,10,0,0"/>
+							<Grid>
+								<mah:ProgressRing Foreground="White" Name='Youtube_Progress_Ring' IsActive="false" VerticalAlignment="Center" Panel.ZIndex="4"/>
+								<DataGrid Name="YoutubePlaylists_Grid" Margin="0,5,0,0" Background="Transparent" VerticalAlignment="Top" HorizontalAlignment="stretch" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" SelectionUnit="FullRow" SelectionMode="Single" IsEnabled="false" 
+								AlternatingRowBackground="Transparent" CanUserReorderColumns="false" CanUserDeleteRows="true" Foreground="White" CanUserAddRows="False" IsReadOnly="True" GridLinesVisibility="Horizontal" RowBackground="Transparent" HorizontalContentAlignment="left" MaxHeight="250" AutoGenerateColumns="false" 
+								ScrollViewer.CanContentScroll="true" VirtualizingStackPanel.ScrollUnit="Pixel" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling" >
+									<DataGrid.Resources>
+										<Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}" TargetType="{x:Type DataGridColumnHeader}">
+											<Setter Property="Background" Value="Transparent"/>
+											<Setter Property="BorderThickness" Value="3"/>
+										</Style>
+										<Style TargetType="{x:Type TextBlock}" x:Key="WrapText">
+											<Setter Property="TextWrapping" Value="Wrap"/>
+										</Style>
+										<Style TargetType="ScrollViewer">
+											<Setter Property="AttachedBehavior:ScrollAnimationBehavior.IsEnabled" Value="True"/>
+											<Setter Property="AttachedBehavior:ScrollAnimationBehavior.TimeDuration" Value="00:00:00.30"/>
+											<Setter Property="AttachedBehavior:ScrollAnimationBehavior.PointsToScroll" Value="35"/>
+										</Style>
+										<Style TargetType="DataGridCell">
+											<Setter Property="BorderThickness" Value="2"/>
+											<Setter Property="TextBlock.TextAlignment" Value="Left"/>
+											<Style.Triggers>
+												<Trigger Property="DataGridCell.IsSelected" Value="True">
+													<Setter Property="Background" Value="Transparent"/>
+													<Setter Property="BorderBrush" Value="Transparent"/>
+												</Trigger>
+											</Style.Triggers>
+										</Style>
+										<Style TargetType="{x:Type DataGridRow}">
+											<Style.Resources>
+												<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+												<SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent"/>
+												<SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="Black"/>
+												<SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="Black"/>
+											</Style.Resources>
+										</Style>
+										<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+									</DataGrid.Resources>
+									<DataGrid.Columns>
+										<DataGridTemplateColumn>
+											<DataGridTemplateColumn.Header>
+												<TextBlock FontWeight="Bold" Text="#"/>
+											</DataGridTemplateColumn.Header>
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Number}" Background="Transparent"/>
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+										</DataGridTemplateColumn>
+										<DataGridTemplateColumn Width="SizeToCells" MinWidth="40">
+											<DataGridTemplateColumn.Header>
+												<TextBlock FontWeight="Bold" Text="Name"/>
+											</DataGridTemplateColumn.Header>
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Name}" Background="Transparent"/>
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+										</DataGridTemplateColumn>
+										<DataGridTemplateColumn MinWidth="25">
+											<DataGridTemplateColumn.Header>
+												<TextBlock FontWeight="Bold" Text="Type"/>
+											</DataGridTemplateColumn.Header>
+											<DataGridTemplateColumn.CellTemplate>
+												<DataTemplate>
+													<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Type}" Background="Transparent"/>
+												</DataTemplate>
+											</DataGridTemplateColumn.CellTemplate>
+										</DataGridTemplateColumn>
+									</DataGrid.Columns>
+								</DataGrid>
+							</Grid>
+						</VirtualizingStackPanel>
+					</Expander>
+					<Expander
+							  Grid.Column="0"
+					          Grid.Row="0"
+					          Margin="0,0,0,10"
+					          Grid.RowSpan="1"
+					          BorderThickness="0,0,0,1"
+					          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+					          mah:HeaderedControlHelper.HeaderForeground="White"
+					          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+					          mah:HeaderedControlHelper.HeaderFontSize="14"
+					          ExpandDirection="Down"
+					          Name="Youtube_Settings_Expander"
+					          Header="Youtube Options"
+					          IsExpanded="True">
+						<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,0,0,0">
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Use Web Player" Name="Youtube_WebPlayer_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" Grid.Column="0" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="True"/>
+									<ToggleButton Name="Youtube_WebPlayer_Help_Button" Width="20" Height="20" Margin="0,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</ToggleButton>
+								</Grid>
+								<Border Name="Use_invidious_grid" BorderThickness="1,0,0,0" BorderBrush="Red" Margin="65,0,0,0">
+									<Grid>
+										<mah:ToggleSwitch Content="Use Invidious" Name="Use_invidious_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" Grid.Column="0" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="{Binding ElementName=Youtube_WebPlayer_Toggle, Path=IsOn}"/>
+										<ToggleButton Name="Use_invidious_Help_Button" Width="20" Height="20" Margin="5,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+											<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+										</ToggleButton>
+									</Grid>
+								</Border>
+							</VirtualizingStackPanel>	
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,0,0,0">
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Enable SponsorBlock" Name="Enable_Sponsorblock_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Enable_Sponsorblock_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>	
+								<Label Name='Sponsorblock_ActionType_Label' Grid.Column="0" Content="Action Type:" VerticalAlignment="Top" Margin="35,2,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Green" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+								<ComboBox
+										  Margin="11,2,0,0"
+										  Name='Sponsorblock_ActionType_ComboBox'
+										  mah:TextBoxHelper.ClearTextButton="True"
+										  VerticalAlignment="Top"
+										  Grid.Column="0"
+										  Background="Transparent"
+										  mah:TextBoxHelper.UseFloatingWatermark="True"
+										  HorizontalAlignment="Left"
+										  IsEditable="False"
+										  IsEnabled="false"
+										  SelectedIndex="-1">
+									<ComboBox.ContextMenu>
+										<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+									</ComboBox.ContextMenu>
+									<ComboBoxItem Content="skip"/>
+									<ComboBoxItem Content="mute"/>
+								</ComboBox>
+							</VirtualizingStackPanel>
+							<Grid Margin="0,0,0,0">
+								<mah:ToggleSwitch Content="Enable Youtube Comments" Name="Enable_YoutubeComments_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" Grid.Column="0" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="True"/>
+								<ToggleButton Name="YoutubeComments_Button" Width="20" Height="20" Margin="0,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+								</ToggleButton>
+							</Grid>							
+							<Grid Margin="0,0,0,0">
+								<mah:ToggleSwitch Content="Start Playback on Drop" Name="PlayLink_OnDrop_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" Grid.Column="0" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="True"/>
+								<ToggleButton Name="PlayLink_OnDrop_Button" Width="20" Height="20" Margin="0,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+								</ToggleButton>
+							</Grid>
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+								<ToggleButton Name="Youtube_Quality_Button" Width="20" Height="20" Margin="0,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+								</ToggleButton>
+								<Label Name='Youtube_Quality_Label' Grid.Column="0" Content="Preferred Quality" VerticalAlignment="Top" Margin="10,0,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Gray" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+								<ComboBox
+										  Margin="10,0,0,0"
+								          Name='Youtube_Quality_ComboBox'
+								          mah:TextBoxHelper.ClearTextButton="True"
+								          VerticalAlignment="Top"
+								          Grid.Column="0"
+								          Background="Transparent"
+								          mah:TextBoxHelper.UseFloatingWatermark="True"
+								          HorizontalAlignment="Left"
+								          IsEditable="False"
+								          IsEnabled="True"
+								          SelectedIndex="1">
+									<ComboBox.ContextMenu>
+										<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+									</ComboBox.ContextMenu>
+								</ComboBox>
+							</VirtualizingStackPanel>
+							<mah:TransitioningContentControl Name="Youtube_WebPlayer_transitioningControl"
+							                                 VerticalAlignment="Top"
+							                                 Grid.Row="2"
+							                                 HorizontalAlignment="Left"
+							                                 Background="Transparent"
+							                                 Margin="0,0,0,0"
+							                                 Transition="Down">
+								<TextBlock Name='Youtube_WebPlayer_textblock' TextWrapping="Wrap" Grid.Row="2" FontWeight="Bold" VerticalAlignment="Top" Foreground="#ffffff" Visibility="Visible" HorizontalAlignment="Stretch"/>
+							</mah:TransitioningContentControl>
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,5,0,0">
+								<ToggleButton Name="Youtube_Download_Help_Button" Width="20" Height="20" Margin="0,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline"/>
+								</ToggleButton>
+								<Label Name='Youtube_Download_Label' Content="Default Download Path:" Grid.Column="1" VerticalAlignment="Top" Margin="10,5,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+								<TextBox Name='Youtube_Download_textbox' Height="23" Margin="0,5,0,0" Text="" Grid.Column="1" UndoLimit="0" VerticalAlignment="Top" IsEnabled="true" Visibility="Visible" RenderTransformOrigin="0.502,0.52" Width="163" HorizontalAlignment="Left"/>
+								<Button Name='Youtube_Download_Browse' Style="{StaticResource ToolsButtonStyle}" Margin="5,2,0,0" Grid.Column="2" VerticalAlignment="Top" Width="80" HorizontalAlignment="Left" IsEnabled="true">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+										<iconPacks:PackIconMaterial Kind="FolderOpen"
+										                            Margin="4 4 2 4"
+										                            Width="16"
+										                            Height="16"
+										                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+										<TextBlock Text="Browse" Margin="2 4 4 4" VerticalAlignment="Center"/>
+									</VirtualizingStackPanel>
+								</Button>
+							</VirtualizingStackPanel>						
+						</VirtualizingStackPanel>
+					</Expander>
+				</VirtualizingStackPanel>
+			</TabItem>
+			<TabItem Header="Twitch"
+			         BorderThickness="0,0,0,1"
+			         BorderBrush="Gray">
+				<TabItem.HeaderTemplate>
+					<DataTemplate>
+						<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Transparent">
+							<iconPacks:PackIconMaterial Kind="Twitch"
+							                            Margin="2 5 2 0"
+							                            Width="20"
+							                            Height="20"
+							                            Foreground="#FFA970FF"
+							                            VerticalAlignment="Top" PresentationOptions:Freeze="True"/>
+							<Label Name="Twitch_Tab_Label" Content="Twitch" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="16"/>
+						</VirtualizingStackPanel>
+					</DataTemplate>
+				</TabItem.HeaderTemplate>
+				<ScrollViewer Name="Twitch_ScrollViewer" Margin="0,0,0,10" Grid.Row="1" VerticalScrollBarVisibility="Auto" VerticalAlignment="Top">
+					<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="0,0,0,10" Grid.Row="1" VerticalAlignment="Top">
+						<Expander
+							      Grid.Column="0"
+						          Grid.Row="0"
+						          Margin="0,0,0,10"
+						          Grid.RowSpan="1"
+						          ExpandDirection="Down"
+						          BorderThickness="0,0,0,1"
+						          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+						          mah:HeaderedControlHelper.HeaderForeground="White"
+						          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+						          mah:HeaderedControlHelper.HeaderFontSize="14"
+						          Name="Twitch_Importing_Settings_Expander"
+						          Header="Twitch Importing"
+						          IsExpanded="True">
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" VerticalAlignment="Stretch">
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Enable Twitch Integration" Name="Import_Twitch_Playlists_Toggle" IsEnabled="True" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Import_Twitch_Playlists_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<mah:TransitioningContentControl Name="Import_Twitch_transitioningControl"
+								                                 VerticalAlignment="Top"
+								                                 HorizontalAlignment="Left"
+								                                 Margin="0,0,0,2"
+								                                 Height="0"
+								                                 Transition="Down">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="30,5,0,5">
+										<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+											<Button Name="Import_Twitch_Status_Button" Width="20" Height="20" Margin="0,2,5,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+												<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+											</Button>										
+											<Label Name="Import_Twitch_Status_Label" Content="Twitch Credentials:" Visibility="Visible" VerticalAlignment="Top" Foreground="#ffffff" BorderBrush="#ffffff" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+											<TextBlock Name='Import_Twitch_Status_textbox' Margin="0,2,0,0" FontSize='14' Text="" TextWrapping="Wrap" VerticalAlignment="Top" IsEnabled="false" Visibility="Visible" HorizontalAlignment="Left"/>
+										</VirtualizingStackPanel>
+										<TextBlock Name='Import_Twitch_textbox' Text="" TextWrapping="Wrap" VerticalAlignment="Top" IsEnabled="false" Visibility="Visible" HorizontalAlignment="Left"/>
+									</VirtualizingStackPanel>
+								</mah:TransitioningContentControl>
+								<Grid Margin="0,0,0,0" IsEnabled="{Binding ElementName=Import_Twitch_Playlists_Toggle, Path=IsOn}">
+									<mah:ToggleSwitch Content="Auto Sync Channels" Name="Twitch_Update_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" />
+									<Button Name="Twitch_Update_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+									<Label Name='Twitch_Update_Interval_Label' Grid.Column="0" Content="Interval" VerticalAlignment="Top" Margin="250,0,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+									<ComboBox
+										      Margin="320,0,0,0"
+									          Name='Twitch_Update_Interval_ComboBox'
+									          mah:TextBoxHelper.ClearTextButton="True"
+									          VerticalAlignment="Top"
+									          Grid.Column="0"
+									          Background="Transparent"
+									          mah:TextBoxHelper.UseFloatingWatermark="True"
+									          HorizontalAlignment="Left"
+									          IsEditable="False"
+									          IsEnabled="{Binding ElementName=Twitch_Update_Toggle, Path=IsOn}"
+									          SelectedIndex="-1">
+										<ComboBox.ContextMenu>
+											<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+										</ComboBox.ContextMenu>
+										<ComboBoxItem Content="5 Minutes"/>
+										<ComboBoxItem Content="10 Minutes"/>
+										<ComboBoxItem Content="15 Minutes"/>
+										<ComboBoxItem Content="30 Minutes"/>
+										<ComboBoxItem Content="1 Hour"/>
+									</ComboBox>
+								</Grid>
+								<Grid Margin="0,0,0,0" >
+									<mah:ToggleSwitch Content="Enable Twitch Notifications" Name="Enable_Twitch_Notifications_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="{Binding ElementName=Import_Twitch_Playlists_Toggle, Path=IsOn}"/>
+									<Button Name="Enable_Twitch_Notifications_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>									
+								<Grid Name="Twitch_Playlists">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition/>
+										<ColumnDefinition/>
+									</Grid.ColumnDefinitions>
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" HorizontalAlignment="Stretch" Grid.ColumnSpan="2">
+										<Button Name='Twitch_Playlists_Browse' Grid.Column="0" Style="{StaticResource DetailButtonStyle}" Margin="10,5,0,0" VerticalAlignment="Top" Height="30" IsEnabled="false" HorizontalAlignment="Left">
+											<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+												<iconPacks:PackIconMaterial Kind="Twitch"
+												                            Margin="4 4 2 4"
+												                            Width="16"
+												                            Height="16"
+												                            Foreground="#FFB584FF"
+												                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+												<TextBlock Text="Add Twitch Channel" Name="Twitch_Playlists_Browse_textblock" Margin="2 4 4 4" VerticalAlignment="Center"/>
+											</VirtualizingStackPanel>
+										</Button>
+										<Button Name='Twitch_Playlists_Import' Grid.Column="0" Style="{StaticResource DetailButtonStyle}" Margin="10,5,0,0" VerticalAlignment="Top" Height="30" IsEnabled="false" HorizontalAlignment="Left">
+											<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" HorizontalAlignment="Stretch">
+												<iconPacks:PackIconMaterial Kind="Twitch"
+												                            Margin="4 4 2 4"
+												                            Width="16"
+												                            Height="16"
+												                            Foreground="#FFB584FF"
+												                            VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+												<TextBlock Text="Import Followed Channels" Name="Twitch_Playlists_Import_textblock" Margin="2 4 4 4" VerticalAlignment="Center"/>
+											</VirtualizingStackPanel>
+										</Button>
+									</VirtualizingStackPanel>
+								</Grid>
+								<Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Effect="{StaticResource DropShadow}" OpacityMask="{StaticResource SeparatorGradient}" Height="1" VerticalAlignment="Bottom" Margin="0,10,0,0"/>
+								<Grid>
+									<mah:ProgressRing Foreground="White" Name='Twitch_Progress_Ring' IsActive="false" VerticalAlignment="Center" Panel.ZIndex="4"/>
+									<DataGrid Name="TwitchPlaylists_Grid" Margin="0,5,0,0" Background="Transparent" VerticalAlignment="Top" HorizontalAlignment="stretch" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" SelectionUnit="FullRow" SelectionMode="Single" IsEnabled="false" 
+									AlternatingRowBackground="Transparent" CanUserReorderColumns="false" CanUserDeleteRows="true" Foreground="White" CanUserAddRows="False" IsReadOnly="True" GridLinesVisibility="Horizontal" RowBackground="Transparent" HorizontalContentAlignment="left" MaxHeight="250" AutoGenerateColumns="false" 
+									ScrollViewer.CanContentScroll="true" VirtualizingStackPanel.ScrollUnit="Pixel" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling">
+										<DataGrid.Resources>
+											<Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}" TargetType="{x:Type DataGridColumnHeader}">
+												<Setter Property="Background" Value="Transparent"/>
+												<Setter Property="BorderThickness" Value="3"/>
+											</Style>
+											<Style TargetType="{x:Type TextBlock}" x:Key="WrapText">
+												<Setter Property="TextWrapping" Value="Wrap"/>
+											</Style>
+											<Style TargetType="ScrollViewer">
+												<Setter Property="AttachedBehavior:ScrollAnimationBehavior.IsEnabled" Value="True"/>
+												<Setter Property="AttachedBehavior:ScrollAnimationBehavior.TimeDuration" Value="00:00:00.30"/>
+												<Setter Property="AttachedBehavior:ScrollAnimationBehavior.PointsToScroll" Value="35"/>
+											</Style>
+											<Style TargetType="DataGridCell">
+												<Setter Property="BorderThickness" Value="2"/>
+												<Setter Property="TextBlock.TextAlignment" Value="Left"/>
+												<Style.Triggers>
+													<Trigger Property="DataGridCell.IsSelected" Value="True">
+														<Setter Property="Background" Value="Transparent"/>
+														<Setter Property="BorderBrush" Value="Transparent"/>
+													</Trigger>
+												</Style.Triggers>
+											</Style>
+											<Style TargetType="{x:Type DataGridRow}">
+												<Style.Resources>
+													<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+													<SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent"/>
+													<SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="Black"/>
+													<SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="Black"/>
+												</Style.Resources>
+											</Style>
+											<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+										</DataGrid.Resources>
+										<DataGrid.Columns>
+											<DataGridTemplateColumn>
+												<DataGridTemplateColumn.Header>
+													<TextBlock FontWeight="Bold" Text="#"/>
+												</DataGridTemplateColumn.Header>
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Number}" Background="Transparent"/>
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn Width="SizeToCells" MinWidth="40">
+												<DataGridTemplateColumn.Header>
+													<TextBlock FontWeight="Bold" Text="Name"/>
+												</DataGridTemplateColumn.Header>
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Name}" Background="Transparent"/>
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn MinWidth="25">
+												<DataGridTemplateColumn.Header>
+													<TextBlock FontWeight="Bold" Text="Type"/>
+												</DataGridTemplateColumn.Header>
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Type}" Background="Transparent"/>
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+											</DataGridTemplateColumn>
+											<DataGridTemplateColumn MinWidth="40">
+												<DataGridTemplateColumn.Header>
+													<TextBlock FontWeight="Bold" Text="Followed"/>
+												</DataGridTemplateColumn.Header>
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Followed}" Background="Transparent"/>
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+											</DataGridTemplateColumn>
+										</DataGrid.Columns>
+									</DataGrid>
+								</Grid>
+							</VirtualizingStackPanel>
+						</Expander>
+						<Expander
+								  Grid.Column="0"
+						          Grid.Row="0"
+						          Margin="0,0,0,10"
+						          Grid.RowSpan="1"
+						          ExpandDirection="Down"
+						          BorderThickness="0,0,0,1"
+						          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+						          mah:HeaderedControlHelper.HeaderForeground="White"
+						          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+						          mah:HeaderedControlHelper.HeaderFontSize="14"
+						          Name="Twitch_Settings_Expander"
+						          Header="Twitch Options"
+						          IsExpanded="True">
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">							
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Use YTDLP for Twitch Streams" Name="ForceUse_YTDLP_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="ForceUse_YTDLP_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Skip Twitch Ads" Name="Skip_Twitch_Ads_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Skip_Twitch_Ads_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="30,0,0,0">
+									<mah:ToggleSwitch Content="Mute Twitch Ads" Name="Mute_Twitch_Ads_Toggle" IsEnabled="{Binding ElementName=Skip_Twitch_Ads_Toggle,Path=IsOn}" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Mute_Twitch_Ads_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="30,0,0,0">
+									<mah:ToggleSwitch Content="Use TTVLOL Proxy" Name="Twitch_TTVLOL_Toggle" IsEnabled="{Binding ElementName=Skip_Twitch_Ads_Toggle,Path=IsOn}" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Twitch_TTVLOL_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="30,0,0,0">
+									<mah:ToggleSwitch Content="Use Luminous Proxy" Name="Twitch_Luminous_Toggle" IsEnabled="{Binding ElementName=Skip_Twitch_Ads_Toggle,Path=IsOn}" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Twitch_Luminous_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="30,0,0,0">
+									<mah:ToggleSwitch Content="Use Custom Proxies" Name="Twitch_Custom_Proxy_Toggle" IsEnabled="{Binding ElementName=Skip_Twitch_Ads_Toggle,Path=IsOn}" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="Twitch_Custom_Proxy_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="30,0,0,0">
+									<DataGrid Name="Twitch_Custom_Proxy_Grid" Margin="0,5,0,0" Background="Transparent" VerticalAlignment="Top" HorizontalAlignment="stretch" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" SelectionUnit="FullRow" SelectionMode="Single" 
+									AlternatingRowBackground="Transparent" CanUserReorderColumns="false" CanUserDeleteRows="true" Foreground="White" CanUserAddRows="False" IsReadOnly="True" GridLinesVisibility="Horizontal" RowBackground="Transparent" HorizontalContentAlignment="left" MaxHeight="250" AutoGenerateColumns="false" 
+									ScrollViewer.CanContentScroll="true" VirtualizingStackPanel.ScrollUnit="Pixel" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling" IsEnabled="{Binding ElementName=Twitch_Custom_Proxy_Toggle,Path=IsOn}" Visibility="{Binding ElementName=Twitch_Custom_Proxy_Toggle,Path=IsOn,Converter={StaticResource boolToVisibilityConverter}}">
+										<DataGrid.Resources>
+											<Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}" TargetType="{x:Type DataGridColumnHeader}">
+												<Setter Property="Background" Value="Transparent"/>
+												<Setter Property="BorderThickness" Value="3"/>
+											</Style>
+											<Style TargetType="{x:Type TextBlock}" x:Key="WrapText">
+												<Setter Property="TextWrapping" Value="Wrap"/>
+											</Style>
+											<Style TargetType="ScrollViewer">
+												<Setter Property="AttachedBehavior:ScrollAnimationBehavior.IsEnabled" Value="True"/>
+												<Setter Property="AttachedBehavior:ScrollAnimationBehavior.TimeDuration" Value="00:00:00.30"/>
+												<Setter Property="AttachedBehavior:ScrollAnimationBehavior.PointsToScroll" Value="35"/>
+											</Style>
+											<Style TargetType="DataGridCell">
+												<Setter Property="BorderThickness" Value="2"/>
+												<Setter Property="TextBlock.TextAlignment" Value="Left"/>
+												<Style.Triggers>
+													<Trigger Property="DataGridCell.IsSelected" Value="True">
+														<Setter Property="Background" Value="Transparent"/>
+														<Setter Property="BorderBrush" Value="Transparent"/>
+													</Trigger>
+												</Style.Triggers>
+											</Style>
+											<Style TargetType="{x:Type DataGridRow}">
+												<Style.Resources>
+													<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+													<SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent"/>
+													<SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="Black"/>
+													<SolidColorBrush x:Key="{x:Static SystemColors.ControlTextBrushKey}" Color="Black"/>
+												</Style.Resources>
+											</Style>
+											<SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+										</DataGrid.Resources>
+										<DataGrid.Columns>
+											<DataGridTemplateColumn>
+												<DataGridTemplateColumn.Header>
+													<TextBlock FontWeight="Bold" Text="#"/>
+												</DataGridTemplateColumn.Header>
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding Number}" Background="Transparent"/>
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+											</DataGridTemplateColumn>										
+											<DataGridTemplateColumn Width="SizeToCells" MinWidth="40">
+												<DataGridTemplateColumn.Header>
+													<TextBlock FontWeight="Bold" Text="URL"/>
+												</DataGridTemplateColumn.Header>
+												<DataGridTemplateColumn.CellTemplate>
+													<DataTemplate>
+														<TextBlock Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Text="{Binding URL}" Background="Transparent"/>
+													</DataTemplate>
+												</DataGridTemplateColumn.CellTemplate>
+											</DataGridTemplateColumn>
+										</DataGrid.Columns>
+									</DataGrid>
+								</Grid>								
+								<mah:TransitioningContentControl Name="Twitch_Update_transitioningControl"
+								                                 VerticalAlignment="Top"
+								                                 Grid.Row="2"
+								                                 HorizontalAlignment="Left"
+								                                 Background="Transparent"
+								                                 Margin="0,0,0,0"
+								                                 Transition="Down">
+									<TextBlock Name='Twitch_Update_textblock' TextWrapping="Wrap" Grid.Row="2" FontWeight="Bold" VerticalAlignment="Top" Foreground="#ffffff" Visibility="Visible" HorizontalAlignment="Stretch"/>
+								</mah:TransitioningContentControl>
+							</VirtualizingStackPanel>
+						</Expander>
+						<Expander
+								  Grid.Column="0"
+						          Grid.Row="0"
+						          Margin="0,0,0,10"
+						          Grid.RowSpan="1"
+						          ExpandDirection="Down"
+						          BorderThickness="0,0,0,1"
+						          mah:HeaderedControlHelper.HeaderBackground="Transparent"
+						          mah:HeaderedControlHelper.HeaderForeground="White"
+						          mah:HeaderedControlHelper.HeaderFontWeight="Bold"
+						          mah:HeaderedControlHelper.HeaderFontSize="14"
+						          Name="Twitch_AdvancedSettings_Expander"
+						          Header="Advanced Twitch Options (WIP)"
+						          IsExpanded="false">
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">
+								<Grid Margin="0,0,0,0">
+									<Button Name="Twitch_Quality_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+									<Label Name='Twitch_Quality_Label' Grid.Column="0" Content="Preferred Stream Quality" VerticalAlignment="Top" Margin="30,0,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+									<ComboBox
+											  Margin="185,0,0,0"
+									          Name='Twitch_Quality_ComboBox'
+									          mah:TextBoxHelper.ClearTextButton="False"
+									          VerticalAlignment="Top"
+									          Grid.Column="0"
+									          Background="Transparent"
+									          mah:TextBoxHelper.UseFloatingWatermark="True"
+									          HorizontalAlignment="Left"
+									          IsEditable="False"
+									          IsEnabled="true"
+									          SelectedIndex="0">
+										<ComboBox.ContextMenu>
+											<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+										</ComboBox.ContextMenu>
+									</ComboBox>
+								</Grid>
+								<Grid Margin="0,5,0,0">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0">
+										<Label Name='Streamlink_Arguments_Label' Content="Streamlink Arguments:" Visibility="Visible" VerticalAlignment="Top" Foreground="#ffffff" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+										<TextBox Name='Streamlink_Arguments_textbox' Height="23" Text="" Margin="22,0,0,0" UndoLimit="0" VerticalAlignment="Top" Background="Transparent" TextWrapping="Wrap" IsEnabled="True" Visibility="Visible" RenderTransformOrigin="0.502,0.52" MinWidth="150" MaxWidth="250" HorizontalAlignment="Left"/>
+									</VirtualizingStackPanel>
+									<Button Name="Streamlink_Arguments_HelpButton" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>
+								<Grid Margin="0,0,0,0">
+									<Button Name="Streamlink_Interface_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+									<Label Name='Streamlink_Interface_Label' Grid.Column="0" Content="Streamlink Interface" VerticalAlignment="Top" Margin="30,0,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+									<ComboBox
+											  Margin="185,0,0,0"
+									          Name='Streamlink_Interface_ComboBox'
+									          mah:TextBoxHelper.ClearTextButton="False"
+									          VerticalAlignment="Top"
+									          Grid.Column="0"
+									          Background="Transparent"
+									          mah:TextBoxHelper.UseFloatingWatermark="True"
+									          HorizontalAlignment="Left"
+									          IsEditable="False"
+									          IsEnabled="true"
+									          SelectedIndex="0">
+										<ComboBox.ContextMenu>
+											<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+										</ComboBox.ContextMenu>
+									</ComboBox>
+								</Grid>							
+								<Grid Margin="0,5,0,0">
+									<Button Name="Streamlink_Logging_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+									<Label Name='Streamlink_Logging_Label' Grid.Column="0" Content="Streamlink Logging Level" VerticalAlignment="Top" Margin="30,0,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+									<ComboBox
+ Margin="185,0,0,0"
+									          Name='Streamlink_Logging_ComboBox'
+									          mah:TextBoxHelper.ClearTextButton="True"
+									          VerticalAlignment="Top"
+									          Grid.Column="0"
+									          Background="Transparent"
+									          mah:TextBoxHelper.UseFloatingWatermark="True"
+									          HorizontalAlignment="Left"
+									          IsEditable="False"
+									          IsEnabled="true"
+									          SelectedIndex="-1">
+										<ComboBox.ContextMenu>
+											<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
+										</ComboBox.ContextMenu>
+									</ComboBox>
+								</Grid>
+							</VirtualizingStackPanel>
+						</Expander>
+					</VirtualizingStackPanel>
+				</ScrollViewer>
+			</TabItem>
+		</mah:MetroTabControl>
+		<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Name="Setup_StackPanel" Orientation="Horizontal" Margin="0,0,0,40" Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Center">
+			<Grid VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,7,10,0">
+				<Border BorderBrush="Black" CornerRadius="2" Background="Black" BorderThickness="1" Width="72" Height="26" RenderTransformOrigin="0.5,0.5"/>
+				<Button Name='Prev_Button' FontSize="14" Margin="0,0,0,0" ToolTip="Previous Page" Width="64" Height="18" Style="{StaticResource SamsonButtonStyle}" IsEnabled="true" Tag="ChevronLeft" HorizontalAlignment="Stretch" Panel.ZIndex="2" RenderTransformOrigin="0.5,0.5">
+					<Grid>
+						<Image Name="Prev_Button_Image" Source="{Binding ElementName=Next_Button_Image,Path=Source}" Width="64" Height="18" RenderOptions.BitmapScalingMode="Fant" RenderTransformOrigin="0.5,0.5" HorizontalAlignment="Left" PresentationOptions:Freeze="True"/>
+						<TextBlock Name="Prev_Button_Textblock" FontSize="12" Text="Prev" Margin="0 0 10 0" Foreground="#FF888E8F" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+					</Grid>
+				</Button>
+			</Grid>
+			<Grid VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,7,50,0">
+				<Border BorderBrush="Black" CornerRadius="2" Background="Black" BorderThickness="1" Width="72" Height="26" RenderTransformOrigin="0.5,0.5"/>
+				<Button Name='Next_Button' FontSize="14" Margin="0,0,0,0" ToolTip="Next Page" Width="64" Height="18" Style="{StaticResource SamsonButtonStyle}" IsEnabled="true" Tag="ChevronRight" HorizontalAlignment="Stretch" Panel.ZIndex="2" RenderTransformOrigin="0.5,0.5">
+					<Grid>
+						<Image Name="Next_Button_Image" Width="64" Height="18" RenderOptions.BitmapScalingMode="Fant" HorizontalAlignment="Left" RenderTransformOrigin="0.5,0.5" PresentationOptions:Freeze="True"/>
+						<TextBlock Name="Next_Button_Textblock" FontSize="12" Text="Next" Margin="0 0 10 0" Foreground="#FF888E8F" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+					</Grid>
+				</Button>
+			</Grid>
+			<Grid VerticalAlignment="Top" HorizontalAlignment="Right">
+				<Border BorderBrush="Black" CornerRadius="2" Background="Black" BorderThickness="1" Width="94" Height="40" RenderTransformOrigin="0.5,0.5"/>
+				<Button Name='Save_Setup_Button' FontSize="14" ToolTip="Save Settings and Start Setup" Margin="0,0,0,0" Width="86" Height="32" Style="{StaticResource SamsonButtonStyle}" Tag="ContentSave" IsEnabled="true" HorizontalAlignment="Stretch" Panel.ZIndex="2" RenderTransformOrigin="0.5,0.5">
+					<Grid>
+						<Image Name="Save_Setup_Button_Image" Width="86" Height="32" RenderOptions.BitmapScalingMode="Fant" RenderTransformOrigin="0.5,0.5" PresentationOptions:Freeze="True"/>
+						<TextBlock Name="Setup_Button_Textblock" FontSize="12" Text="START" FontWeight="Bold" Margin="0 0 13 0" Foreground="#FF888E8F" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+					</Grid>
+				</Button>
+			</Grid>
+			<Grid Margin="10,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Right">
+				<Border BorderBrush="Black" CornerRadius="2" Background="Black" BorderThickness="1" Width="94" Height="40" RenderTransformOrigin="0.5,0.5"/>
+				<Button Name='Cancel_Setup_Button' FontSize="14" ToolTip="Cancel Setup" Margin="0,0,0,0" Width="86" Height="32" Style="{StaticResource SamsonButtonStyle}" Tag="CloseBox" IsEnabled="true" HorizontalAlignment="Stretch" Panel.ZIndex="2" RenderTransformOrigin="0.5,0.5">
+					<Grid>
+						<Image Name="Cancel_Setup_Button_Image" Source="{Binding ElementName=Save_Setup_Button_Image,Path=Source}" Width="86" Height="32" RenderOptions.BitmapScalingMode="Fant" RenderTransformOrigin="0.5,0.5" PresentationOptions:Freeze="True"/>
+						<TextBlock Name="Cancel_Button_Text" FontSize="12" Text="CANCEL" Margin="0 0 10 0" FontWeight="Bold" Foreground="#FF888E8F" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+					</Grid>
+				</Button>
+			</Grid>
+		</VirtualizingStackPanel>
+		<mah:TransitioningContentControl Name="Save_status_transitioningControl"
+		                                 VerticalAlignment="Top"
+		                                 Grid.Row="2"
+		                                 HorizontalAlignment="Center"
+		                                 Background="Transparent"
+		                                 Margin="20,42,0,0"
+		                                 Transition="Down">
+			<TextBlock Name='Save_setup_textblock' TextWrapping="Wrap" Grid.Row="2" FontWeight="Bold" VerticalAlignment="Top" Foreground="#ffffff" Visibility="Visible" HorizontalAlignment="Stretch"/>
+		</mah:TransitioningContentControl>
+		<mah:FlyoutsControl Name="Editor_Help_FlyoutControl" Grid.RowSpan="3" Grid.Column="2" MaxWidth="500" Margin='0,0,10,0' HorizontalAlignment="Right" Opacity="1" VerticalAlignment="Center" MinHeight="250" MaxHeight="500">
+			<mah:FlyoutsControl.Effect>
+				<DropShadowEffect/>
+			</mah:FlyoutsControl.Effect>
+			<mah:Flyout BorderBrush="{StaticResource MahApps.Brushes.Accent}" BorderThickness="1,1,0,1" HorizontalContentAlignment="Right" Background="#FF0A2347" Position="Right" IsOpen="false" Name="Editor_Help_Flyout" AnimateOpacity="True" CloseButtonVisibility="visible" VerticalAlignment="stretch" 
+			HorizontalAlignment="Stretch" TitleVisibility="visible" Theme="Adapt" HeaderTemplate="{StaticResource CustomHeaderTemplate}">
+				<mah:Flyout.Resources>
+					<Style x:Key="MdStyle" TargetType="FlowDocument">
+						<Style.Resources>
+							<Style TargetType="Paragraph">
+								<Setter Property="FontFamily" Value="{Binding ElementName=EditorHelpFlyout,Path=FontFamily}"/>
+								<Setter Property="Margin" Value="0,10,0,5"/>
+								<Setter Property="FontSize" Value="14"/>
+								<Style.Triggers>
+									<Trigger Property="Tag" Value="Heading1">
+										<Setter Property="FontSize" Value="42"/>
+										<Setter Property="Foreground" Value="#FFFFD265"/>
+										<Setter Property="FontWeight" Value="Light"/>
+									</Trigger>
+									<DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Mode=Self}}" Value="Heading2">
+										<Setter Property="FontSize" Value="20"/>
+										<Setter Property="Foreground" Value="#FFC09E4C"/>
+										<Setter Property="FontWeight" Value="Light"/>										
+									</DataTrigger>
+									<Trigger Property="Tag" Value="Heading3">
+										<Setter Property="FontSize" Value="20"/>
+										<Setter Property="Foreground" Value="#FF987D3C"/>
+										<Setter Property="FontWeight" Value="Bold"/>
+									</Trigger>
+
+									<Trigger Property="Tag" Value="Heading4">
+										<Setter Property="FontSize" Value="14"/>
+										<Setter Property="Foreground" Value="#FFFFFFFF"/>
+										<Setter Property="FontWeight" Value="Light"/>
+									</Trigger>
+									<DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Mode=Self}}" Value="Heading5">
+										<Setter Property="FontSize" Value="16"/>
+										<Setter Property="Foreground" Value="Orange"/>
+										<Setter Property="FontWeight" Value="Bold"/>
+									</DataTrigger>
+									<DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Mode=Self}}" Value="Heading6">
+										<Setter Property="FontSize" Value="16"/>
+										<Setter Property="Foreground" Value="Cyan"/>
+										<Setter Property="FontWeight" Value="Bold"/>
+									</DataTrigger>
+									<Trigger Property="Tag" Value="CodeBlock">
+										<Setter Property="FontFamily" Value="Courier New"/>
+										<Setter Property="Background" Value="#FF012456"/>
+										<Setter Property="BorderBrush" Value="#DEDEDE"/>
+										<Setter Property="BorderThickness" Value="0,2,0,2"/>
+										<Setter Property="Margin" Value="0,0,0,0"/>
+									</Trigger>
+									<Trigger Property="Tag" Value="CodeSpan">
+										<Setter Property="BorderThickness" Value="0,2,0,2"/>
+										<Setter Property="Margin" Value="10,0,0,0"/>
+									</Trigger>
+									<Trigger Property="Tag" Value="Note">
+										<Setter Property="Margin" Value="5,0,5,0"/>
+										<Setter Property="Padding" Value="10, 5"/>
+										<Setter Property="BorderBrush" Value="#DEDEDE"/>
+										<Setter Property="BorderThickness" Value="3,3,3,3"/>
+										<Setter Property="Background" Value="#FAFAFA"/>
+									</Trigger>
+								</Style.Triggers>
+							</Style>
+							<Style TargetType="Image">
+								<Setter Property="RenderOptions.BitmapScalingMode"
+								        Value="Fant"/>
+								<Setter Property="HorizontalAlignment" Value="Center"/>
+								<Setter Property="Margin" Value="0"/>
+								<Setter Property="VerticalAlignment" Value="Top"/>
+								<Style.Triggers>
+									<Trigger Property="Tag" Value="muscle">
+										<Setter Property="emoji:Image.Source" Value="💪"/>
+										<Setter Property="Height" Value="20"/>
+										<Setter Property="Width" Value="20"/>
+										<Setter Property="Margin" Value="0"/>
+										<Setter Property="HorizontalAlignment" Value="Left"/>
+										<Setter Property="VerticalAlignment" Value="Top"/>
+									</Trigger>
+									<Trigger Property="Tag" Value="triumph">
+										<Setter Property="emoji:Image.Source" Value="😤"/>
+										<Setter Property="Height" Value="20"/>
+										<Setter Property="Width" Value="20"/>
+										<Setter Property="Margin" Value="0"/>
+										<Setter Property="HorizontalAlignment" Value="Left"/>
+										<Setter Property="VerticalAlignment" Value="Top"/>
+									</Trigger>
+									<Trigger Property="Tag" Value="brain">
+										<Setter Property="emoji:Image.Source" Value="🧠"/>
+										<Setter Property="Height" Value="20"/>
+										<Setter Property="Width" Value="20"/>
+										<Setter Property="Margin" Value="0"/>
+										<Setter Property="HorizontalAlignment" Value="Left"/>
+										<Setter Property="VerticalAlignment" Value="Top"/>
+									</Trigger>
+									<Trigger Property="Tag" Value="Snapshot">
+										<Setter Property="Height" Value="20"/>
+										<Setter Property="Width" Value="20"/>
+										<Setter Property="Margin" Value="0"/>
+										<Setter Property="HorizontalAlignment" Value="Left"/>
+										<Setter Property="VerticalAlignment" Value="Top"/>
+									</Trigger>
+									<Trigger Property="Tag" Value="Update">
+										<Setter Property="Height" Value="16"/>
+										<Setter Property="Width" Value="16"/>
+										<Setter Property="Margin" Value="0"/>
+										<Setter Property="HorizontalAlignment" Value="Center"/>
+										<Setter Property="VerticalAlignment" Value="Top"/>
+									</Trigger>
+									<Trigger Property="Tag" Value="applogo">
+										<Setter Property="Height" Value="200"/>
+										<Setter Property="Margin" Value="0"/>
+										<Setter Property="HorizontalAlignment" Value="Center"/>
+										<Setter Property="VerticalAlignment" Value="Top"/>
+									</Trigger>
+									<Trigger Property="Tag" Value="recording">
+										<Setter Property="Height" Value="220"/>
+										<Setter Property="Margin" Value="0"/>
+										<Setter Property="HorizontalAlignment" Value="Center"/>
+										<Setter Property="VerticalAlignment" Value="Top"/>
+									</Trigger>
+								</Style.Triggers>
+							</Style>
+							<Style TargetType="Run">
+								<Style.Triggers>
+									<Trigger Property="Tag" Value="CodeSpan">
+										<Setter Property="FontFamily" Value="Courier New"/>
+										<Setter Property="FontSize" Value="12"/>
+										<Setter Property="Background" Value="#FF012456"/>
+									</Trigger>
+								</Style.Triggers>
+							</Style>
+							<Style TargetType="Span">
+								<Style.Triggers>
+									<Trigger Property="Tag" Value="CodeSpan">
+										<Setter Property="FontFamily" Value="Courier New"/>
+										<Setter Property="Foreground" Value="#FFAAB5C4"/>
+										<Setter Property="Background" Value="#FF012456"/>
+									</Trigger>
+								</Style.Triggers>
+							</Style>
+							<Style TargetType="Hyperlink">
+								<Setter Property="TextDecorations" Value="None"/>
+								<Setter Property="Foreground" Value="#FF1B84D7"/>
+								<Style.Triggers>
+									<Trigger Property="IsMouseOver" Value="True">
+										<Setter Property="Foreground" Value="Red"/>
+									</Trigger>
+								</Style.Triggers>
+							</Style>
+						</Style.Resources>
+					</Style>
+				</mah:Flyout.Resources>
+				<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">
+					<VirtualizingStackPanel.CacheMode>
+						<BitmapCache EnableClearType="False"
+									 RenderAtScale="1"
+									 SnapsToDevicePixels="False"/>
+					</VirtualizingStackPanel.CacheMode>		
+					<mdxam:MarkdownScrollViewer Name="MarkdownScrollViewer" Effect="{StaticResource DropShadow}" HorizontalAlignment="Stretch" ClickAction="OpenBrowser" Foreground="#FFF0F0F0" MaxHeight="0" MarkdownStyle="{StaticResource ResourceKey=MdStyle}" Margin="0,0,0,0">
+						<mdxam:MarkdownScrollViewer.Plugins>
+							<mdplug:MdXamlPlugins>
+								<mdhtml:HtmlPluginSetup/>
+								<mdsvg:SvgPluginSetup/>
+							</mdplug:MdXamlPlugins>
+						</mdxam:MarkdownScrollViewer.Plugins>
+					</mdxam:MarkdownScrollViewer>
+					<RichTextBox Name='EditorHelpFlyout' VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" UndoLimit="0" Background="transparent" Margin="5,0,0,5" Padding="0,0,0,0" IsReadOnly="True" VerticalAlignment="stretch" BorderThickness="0,0,0,0" HorizontalAlignment="Stretch" IsDocumentEnabled="True" MaxHeight="400">
+						<RichTextBox.Resources>
+							<Style TargetType="{x:Type Paragraph}">
+								<Setter Property="Margin" Value="10"/>
+							</Style>
+							<Style TargetType="Hyperlink">
+								<Setter Property="Cursor" Value="Hand"/>
+							</Style>
+						</RichTextBox.Resources>
+						<RichTextBox.Effect>
+							<DropShadowEffect/>
+						</RichTextBox.Effect>
+						<FlowDocument>
+						</FlowDocument>
+					</RichTextBox>
+				</VirtualizingStackPanel>
+			</mah:Flyout>
+		</mah:FlyoutsControl>
+	</Grid>
+</mah:MetroWindow>

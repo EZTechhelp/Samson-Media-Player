@@ -1,0 +1,14 @@
+<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">
+  <Obj RefId="0">
+    <TN RefId="0">
+      <T>Deserialized.System.Management.Automation.PSCustomObject</T>
+      <T>Deserialized.System.Object</T>
+    </TN>
+    <MS>
+      <S N="Provider">Youtube</S>
+      <S N="RedirectUri">http://localhost:8000/auth/complete</S>
+      <S N="Client_Secret"></S>
+      <S N="client_id"></S>
+    </MS>
+  </Obj>
+</Objs>

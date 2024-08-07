@@ -1,0 +1,59 @@
+### Core Features and other Notes
+
+- Limited (very basic/WIP) support for adding and playing of SoundCloud media
+- System tray icon menu for quick access to various controls/features. Left click on tray icon to briefly display miniplayer for quick playback control access
+- (WIP) Support for assigning global hotkeys for Mute/Vol Up/Vol Down - allows using these functions even if app is not in focus
+- (WIP) Media Casting Support - cast media during playback to other UPnP/DLNA supported devices
+- (WIP) Subtitle support - supports `SRT` files and *limited* ability to auto-fetch subtitles via Open-Subtitles API (5 lookups per day unless providing your own API key)
+- (QA/Testers Only for now) In-app and configurable auto-update system with check only or auto install options
+- Real-time audio spectrum analyzer powered by `CSCORE`
+  - Also includes audio visualization support using VLC plugins `Goom` and `Spectrum`
+- Full-screen pop-out video player, with overlay controls and quick playlist/queue access
+- Utilizes Webview2 for various features such as Web Players for Spotify and YouTube playback
+  - Also includes a basic in-app web browser with built-in ad blocker for quick browsing and search of new media
+  - Browse YouTube.com and add videos directly into the apps library or download to local file via right-click menu on valid YouTube videos or playlists
+  - Browse Twitch.com and add channels directly into the apps library via right-click menu
+  - (WIP) Basic support for browser extensions (uBlock Origin included)
+- Data-grids for Media Libraries use data and UI virtualization to handle lists with hundreds of thousands of items
+- Uses PowerShell RunSpaces (multi-threading and job handling) for improved performance and responsive WPF UI
+- Supports SystemMediaTransportControl overlay integration for Play, Pause, Stop, Next, Volume..etc
+- 10-Band EQ control with ability to create and save custom presets
+  - Additional audio filters (and video filters) planned 
+  - EQ is supported when using Web Players by enabling `EQ Support for WebPlayers` option in app settings
+  - Web Player EQ requires `VB-Cable` to be installed. App will install or uninstall automatically when enabling/disabling `EQ Support for WebPlayers`
+- Supports displaying Toast notifications (for media playback, Twitch notifications and more) via `BurntToast` module
+- Some UI options include start on Windows login, minimize to tray, start minimized, always start as mini-player and others
+- Extensive custom logging system, for troubleshooting and development
+- Built-in snapshot feature allows taking screenshots of videos or of the app itself (if so inclined)
+- Some advanced media player options include `Audio Output Device` selection, `Audio Output module` selection (mmDevice/DirectSound..etc) and more (WIP)
+- Remember Playback Progress option - Saves progress of the current playing media when the app is closed. On next start, it will begin playback at the saved progress time
+  - Also works with YouTube web-player, as it would if you used a normal web browser
+- Ability to pass custom command-line options to `LibVLC` or `StreamLink` (some limits apply)
+- Many others...(To Be Documented)
+
+## Important Notes/Requirements
+
+- The app by default **runs under user context**, but requires running as admin in some cases (such as first time setup)
+- App includes help documentation for each setting in the settings/first run window. Also pay attention to any tool-tips (over buttons..etc)
+  - (WIP) Some may be out of date, incomplete or have errors, but still highly recommended to review to get the most out of the app
+- The **Spotify** windows client is required to be installed when using free Spotify accounts
+  - Spotify can be automatically installed by the app if not already. 
+  - Spotify playback for free accounts uses a customized system consisting of **Spicetify/PODE Server** (WIP)
+  - Premium accounts can use the built-in Spotify Web Player without needing the client app installed (Recommended/Default)
+- If you share your Spotify API account for the app to be used by other people, note that Spotify has a 25 account limit for in-development API usage
+  - **Spotify accounts must be manually added** to the Spotify API developer account approved list in order to use Spotify features unless your only using for yourself.
+- **StreamLink** used for (potentially) Ad-free Twitch Streaming/Playback (installed automatically)
+- **External PowerShell Modules** used are included and integrated directly vs installing from the PS gallery. Some have been modified
+- All web API calls are sent encrypted (HTTPS) and subject to privacy terms of the services (in this case Spotify, YouTube and Twitch).
+  - Spotify, Twitch and YouTube credentials are captured using their respective OAuth web authentication pages (displayed in-app via webview2)
+  - All API credentials and sensitive data (OAuth tokens..etc) are encrypted using .NET crypto APIs and stored locally only using the **Microsoft SecretStore Vault**
+- This is at its core a **PowerShell script**. As such this will likely only work on **Windows** endpoints and is untested on other platforms, though it is compatible with PowerShell 7+
+- Requires at least **PowerShell v5.1** and .NET 4.5 or higher. Tested on **Windows 10** and **Windows 11**. It may work on Windows 7 but I don't care if it does and you shouldn't either.
+- **Highly recommend** installing at least PowerShell 7 or higher which improves performance significantly in many cases
+- Uses PowerShell run-spaces extensively for multi-threading
+- A lot more optimization can and will be done, but as a basic average the app can use about ~600 - 700mb of RAM with an average media library/playlists containing about 10,000 media items
+  - CPU usage while playing should be avg ~10% depending on your CPU, what your playing and if you enable Hardware Acceleration under Settings (applies to video rendering)
+  - With HA enabled, playing high-quality (1080p) video streams, GPU usage can be 15 - 20% but usually lower. It should be somewhat close to the level of performance of VLC proper since it uses the same engine (LIBVLC), though remember this is running in PowerShell!
+  - There is a `Performance Mode` option in settings. This applies specifically to reducing CPU/GPU usage of the UI (WPF), such as limiting animation effects, lowering frame rates..etc
+- While improvements have been made to error handling and UI threading, there can still be some uncaught exceptions or other issues that can cause the app to freeze or crash. Hopefully very rare but if it happens, please submit a bug report with your logs and detailed descriptions
+- A lot more but this list is long enough for now. Will be updated as development progresses. Feel free to ask any questions or submit issues

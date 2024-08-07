@@ -1,0 +1,1 @@
+**Please login with your Youtube/Google account. When finished the window should close automatically or you can close it manually** 

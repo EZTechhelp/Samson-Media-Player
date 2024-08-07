@@ -1,0 +1,5 @@
+Existing playlists profiles were found while running setup. Do you wish to keep them?
+
+NOTE: This version contains significant changes to custom playlists profiles. There is a chance old profiles will no longer work properly, which is why its recommended to remove them. If you choose to keep your existing playlists, the app will attempt to rebuild them, but this cannot be guaranteed. 
+
+Be sure to check the apps changelog for details about any potential changes to playlists

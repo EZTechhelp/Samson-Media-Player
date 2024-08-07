@@ -1,0 +1,38 @@
+﻿<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">
+  <Obj RefId="0">
+    <TN RefId="0">
+      <T>System.Management.Automation.PSCustomObject</T>
+      <T>System.Object</T>
+    </TN>
+    <MS>
+      <S N="Playlist_Date_Added"></S>
+      <S N="web_url"></S>
+      <Obj N="PlayList_tracks" RefId="1">
+        <TN RefId="1">
+          <T>System.Collections.ArrayList</T>
+          <T>System.Object</T>
+        </TN>
+        <LST />
+      </Obj>
+      <S N="description"></S>
+      <S N="name"></S>
+      <S N="Playlist_Path"></S>
+      <S N="Playlist_URL"></S>
+      <S N="type">playlist</S>
+      <S N="Playlist_Track_Total"></S>
+      <S N="NameCleaned"></S>
+      <Obj N="images" RefId="2">
+        <TNRef RefId="1" />
+        <LST />
+      </Obj>
+      <Obj N="PlayList_Info" RefId="3">
+        <TNRef RefId="1" />
+        <LST />
+      </Obj>
+      <B N="IsExpanded">false</B>
+      <S N="encodedTitle"></S>
+      <S N="Source"></S>
+      <S N="Playlist_ID"></S>
+    </MS>
+  </Obj>
+</Objs>

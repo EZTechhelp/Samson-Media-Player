@@ -1,0 +1,21 @@
+﻿<Objs Version="1.1.0.1" xmlns="http://schemas.microsoft.com/powershell/2004/04">
+  <Obj RefId="0">
+     <TN RefId="1">
+       <T>System.Collections.ArrayList</T>
+    </TN>  
+    <MS>
+	  <S N="Friend_Name"></S>	  
+      <S N="Friend_ID"></S>	  
+      <S N="Friend_URL"></S>
+	  <S N="Friend_Email"></S>
+      <S N="Description"></S>
+      <S N="Type">Friend</S>
+      <B N="IsExpanded">false</B>
+	  <B N="IsGrouped">false</B>
+	  <S N="Friends_File_Path"></S>
+      <S N="Group_Name"></S>
+      <S N="Source"></S>
+      <S N="Friend_Date_Added"></S>	  
+    </MS>
+  </Obj>
+</Objs>

@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<LangVersion>latest</LangVersion>
+		<TargetFramework>net7.0-windows</TargetFramework>
+		<TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+		<RootNamespace>Samson_Launcher</RootNamespace>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Title>Samson Media Player</Title>
+		<Description>Samson Media Player Launcher</Description>
+		<Copyright>EZTechhelp Company</Copyright>
+		<PackageIcon>Samson_Icon1.png</PackageIcon>
+		<ProduceReferenceAssembly>False</ProduceReferenceAssembly>
+		<Company>EZTechhelp Company</Company>
+		<Product>Samson Media Player Launcher</Product>
+		<Optimize>true</Optimize>
+		<ApplicationIcon>.\Samson_Icon_NoText1.ico</ApplicationIcon>
+		<PublishTrimmed>true</PublishTrimmed>
+		<PublishSingleFile>true</PublishSingleFile>
+		<PublishReadyToRun>true</PublishReadyToRun>
+		<SelfContained>true</SelfContained>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<DebugType>none</DebugType>
+		<Version>0.9.9</Version>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+	</PropertyGroup>
+	<ItemGroup>
+		<Content Include=".\Samson_Icon_NoText1.ico" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Win32.Registry" Version="4.3.0" />
+	</ItemGroup>
+</Project>

@@ -1,0 +1,231 @@
+﻿<mah:MetroWindow
+                 x:Class="EZT_MediaPlayer_Controls.SplashWindow"             
+                 xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+                 xmlns:PresentationOptions="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+                 Title="SplashScreen"
+                 WindowStyle="none"
+                 WindowStartupLocation="CenterOwner"
+                 UseNoneWindowStyle="false"
+                 ShowInTaskbar="true"
+                 Topmost="true"
+                 Width="500"
+                 AllowsTransparency="true"
+                 Height="500"
+                 ShowTitleBar="false"
+                 ResizeMode="NoResize"
+                 IsWindowDraggable="True"
+                 WindowTitleBrush="White" IconBitmapScalingMode="NearestNeighbor">
+    <Window.Effect>
+        <DropShadowEffect ShadowDepth="4" Opacity="1" PresentationOptions:Freeze="True"/>
+    </Window.Effect>
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <DropShadowEffect x:Key="TextDropShadow" ShadowDepth="2" PresentationOptions:Freeze="True"/>
+            <Style x:Key="SplashProgressIcons" TargetType="iconPacks:PackIconMaterial">
+                <Style.Setters>
+                    <Setter Property="Foreground" Value="{Binding ElementName=SplashPawStackPanel, Path=Tag,Mode=OneTime}"/>
+                    <Setter Property="Kind" Value="Paw"/>
+                    <Setter Property="Height" Value="18"/>
+                    <Setter Property="Width" Value="18"/>
+                </Style.Setters>
+            </Style>
+            <Style x:Key="SplashProgressIconsOutline" TargetType="iconPacks:PackIconMaterial">
+                <Style.Setters>
+                    <Setter Property="Foreground" Value="Black"/>
+                    <Setter Property="Kind" Value="PawOutline"/>
+                    <Setter Property="Height" Value="18"/>
+                    <Setter Property="Width" Value="18"/>
+                    <Setter Property="Opacity" Value="0.0"/>
+                </Style.Setters>
+            </Style>
+            <LinearGradientBrush x:Key="FlipViewGradient" PresentationOptions:Freeze="True" StartPoint="1,0" EndPoint="0,0">
+                <GradientStop Offset="0" Color="Transparent"/>
+                <GradientStop Offset="0.12" Color="{x:Static SystemColors.HighlightColor}"/>
+                <GradientStop Offset="0.90" Color="{x:Static SystemColors.HighlightColor}"/>
+                <GradientStop Offset="1" Color="Transparent"/>
+            </LinearGradientBrush>
+            <Storyboard Duration="0:00:7.2" x:Key="SlashProgressStoryboard" RepeatBehavior="Forever">
+                <DoubleAnimation BeginTime="0:0:0" Duration="0:00:0.8" Storyboard.TargetName="Paw1" AutoReverse="True" Storyboard.TargetProperty="Opacity" From="0" To="1.0"/>
+                <DoubleAnimation BeginTime="0:0:0.8" Duration="0:00:0.8" Storyboard.TargetName="Paw12" AutoReverse="false" Storyboard.TargetProperty="Opacity" From="0" To="0.5"/>
+                <DoubleAnimation BeginTime="0:0:0.8" Duration="0:00:0.8" Storyboard.TargetName="Paw2" AutoReverse="True" Storyboard.TargetProperty="Opacity" From="0" To="1.0"/>
+                <DoubleAnimation BeginTime="0:0:1.6" Duration="0:00:0.8" Storyboard.TargetName="Paw22" AutoReverse="false" Storyboard.TargetProperty="Opacity" From="0" To="0.5"/>
+                <DoubleAnimation BeginTime="0:0:1.6" Duration="0:00:0.8" Storyboard.TargetName="Paw3" AutoReverse="True" Storyboard.TargetProperty="Opacity" From="0" To="1.0"/>
+                <DoubleAnimation BeginTime="0:0:2.4" Duration="0:00:0.8" Storyboard.TargetName="Paw32" AutoReverse="false" Storyboard.TargetProperty="Opacity" From="0" To="0.5"/>
+                <DoubleAnimation BeginTime="0:0:2.4" Duration="0:00:0.8" Storyboard.TargetName="Paw4" AutoReverse="True" Storyboard.TargetProperty="Opacity" From="0" To="1.0"/>
+                <DoubleAnimation BeginTime="0:0:3.2" Duration="0:00:0.8" Storyboard.TargetName="Paw42" AutoReverse="false" Storyboard.TargetProperty="Opacity" From="0" To="0.5"/>
+                <DoubleAnimation BeginTime="0:0:3.2" Duration="0:00:0.8" Storyboard.TargetName="Paw5" AutoReverse="True" Storyboard.TargetProperty="Opacity" From="0" To="1.0"/>
+                <DoubleAnimation BeginTime="0:0:4" Duration="0:00:0.8" Storyboard.TargetName="Paw52" AutoReverse="false" Storyboard.TargetProperty="Opacity" From="0" To="0.5"/>
+                <DoubleAnimation BeginTime="0:0:4" Duration="0:00:0.8" Storyboard.TargetName="Paw6" AutoReverse="True" Storyboard.TargetProperty="Opacity" From="0" To="1.0"/>
+                <DoubleAnimation BeginTime="0:0:4.8" Duration="0:00:0.8" Storyboard.TargetName="Paw62" AutoReverse="false" Storyboard.TargetProperty="Opacity" From="0" To="0.5"/>
+                <DoubleAnimation BeginTime="0:0:4.8" Duration="0:00:0.8" Storyboard.TargetName="Paw7" AutoReverse="True" Storyboard.TargetProperty="Opacity" From="0" To="1.0"/>
+                <DoubleAnimation BeginTime="0:0:5.6" Duration="0:00:0.8" Storyboard.TargetName="Paw72" AutoReverse="false" Storyboard.TargetProperty="Opacity" From="0" To="0.5"/>
+                <DoubleAnimation BeginTime="0:0:5.6" Duration="0:00:0.8" Storyboard.TargetName="Paw8" AutoReverse="True" Storyboard.TargetProperty="Opacity" From="0" To="1.0"/>
+                <DoubleAnimation BeginTime="0:0:6.4" Duration="0:00:0.8" Storyboard.TargetName="Paw82" AutoReverse="false" Storyboard.TargetProperty="Opacity" From="0" To="0.5"/>
+                <DoubleAnimation BeginTime="0:0:6.4" Duration="0:00:0.8" Storyboard.TargetName="Paw9" AutoReverse="True" Storyboard.TargetProperty="Opacity" From="0" To="1.0"/>
+                <DoubleAnimation BeginTime="0:0:7.2" Duration="0:00:0.8" Storyboard.TargetName="Paw92" AutoReverse="false" Storyboard.TargetProperty="Opacity" From="0" To="0.5"/>
+            </Storyboard>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="70"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+		<Grid.CacheMode>
+			<BitmapCache EnableClearType="False"
+						 RenderAtScale="1"
+						 SnapsToDevicePixels="False"/>
+		</Grid.CacheMode>	
+        <Image Name="Background_Image"
+		       Grid.ColumnSpan="2"
+		       Grid.RowSpan="3"
+		       Width="500"
+		       Height="500"
+		       RenderOptions.BitmapScalingMode="NearestNeighbor"
+		       VerticalAlignment="Stretch"
+			   CacheMode="BitmapCache"
+		       HorizontalAlignment="Stretch">
+        </Image>
+        <Grid Grid.Row="0" Name="Header">
+            <VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="20,0,0,0">
+                <Label Name="SplashTitle" Content="" Margin="5,0,0,0" VerticalAlignment="Top" Foreground="White" FontSize="30"/>
+            </VirtualizingStackPanel>
+        </Grid>
+        <VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Name="SplashProgressStackpanel" Orientation="Vertical" Panel.ZIndex="2" Width="500" MinHeight="65" MaxHeight="65" OpacityMask="{StaticResource FlipViewGradient}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Grid.Row="1" Margin="0,0,0,50" Background="#54000000">
+            <VirtualizingStackPanel.CacheMode>
+                <BitmapCache EnableClearType="False"
+                             RenderAtScale="1"
+                             SnapsToDevicePixels="False" />
+            </VirtualizingStackPanel.CacheMode>
+            <TextBlock Name="LoadingLabel"  TextWrapping="Wrap" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16" Margin="0,0,0,3"/>
+            <VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Name="SplashPawStackPanel" Tag="#FF12100F" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,0">
+                <VirtualizingStackPanel.CacheMode>
+                    <BitmapCache EnableClearType="False"
+                                 RenderAtScale="2"
+                                 SnapsToDevicePixels="False" />
+                </VirtualizingStackPanel.CacheMode>
+                <Grid Margin="0,0,0,20">
+                    <iconPacks:PackIconMaterial Name="Paw1" Panel.ZIndex="2"  Style="{StaticResource SplashProgressIcons}" HorizontalAlignment="Center" VerticalAlignment="Bottom" RenderTransformOrigin="0.5,0.5" Opacity="0">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                        <iconPacks:PackIconMaterial.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard Storyboard="{StaticResource SlashProgressStoryboard}">
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </iconPacks:PackIconMaterial.Triggers>
+                    </iconPacks:PackIconMaterial>
+                    <iconPacks:PackIconMaterial Name="Paw12" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Style="{StaticResource SplashProgressIconsOutline}" RenderTransformOrigin="0.5,0.5">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                </Grid>
+                <Grid Margin="0,20,0,0" >
+                    <iconPacks:PackIconMaterial Name="Paw2" Panel.ZIndex="2"  Style="{StaticResource SplashProgressIcons}" HorizontalAlignment="Center" VerticalAlignment="Bottom" RenderTransformOrigin="0.5,0.5" Opacity="0">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                    <iconPacks:PackIconMaterial Name="Paw22" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Style="{StaticResource SplashProgressIconsOutline}" RenderTransformOrigin="0.5,0.5">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                </Grid>
+                <Grid Margin="0,0,0,20" >
+                    <iconPacks:PackIconMaterial Name="Paw3" Panel.ZIndex="2"  Style="{StaticResource SplashProgressIcons}" HorizontalAlignment="Center" VerticalAlignment="Bottom"  RenderTransformOrigin="0.5,0.5" Opacity="0">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                    <iconPacks:PackIconMaterial Name="Paw32" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Style="{StaticResource SplashProgressIconsOutline}" RenderTransformOrigin="0.5,0.5">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                </Grid>
+                <Grid Margin="0,20,0,0" >
+                    <iconPacks:PackIconMaterial Name="Paw4" Panel.ZIndex="2"  Style="{StaticResource SplashProgressIcons}" HorizontalAlignment="Center" VerticalAlignment="Bottom" RenderTransformOrigin="0.5,0.5" Opacity="0">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                    <iconPacks:PackIconMaterial Name="Paw42" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Style="{StaticResource SplashProgressIconsOutline}" RenderTransformOrigin="0.5,0.5">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                </Grid>
+                <Grid Margin="0,0,0,20" >
+                    <iconPacks:PackIconMaterial Name="Paw5" Panel.ZIndex="2"  Style="{StaticResource SplashProgressIcons}" HorizontalAlignment="Center" VerticalAlignment="Bottom" RenderTransformOrigin="0.5,0.5" Opacity="0">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                    <iconPacks:PackIconMaterial Name="Paw52" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Style="{StaticResource SplashProgressIconsOutline}" RenderTransformOrigin="0.5,0.5">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                </Grid>
+                <Grid Margin="0,20,0,0" >
+                    <iconPacks:PackIconMaterial Name="Paw6" Panel.ZIndex="2"  Style="{StaticResource SplashProgressIcons}" HorizontalAlignment="Center" VerticalAlignment="Bottom" RenderTransformOrigin="0.5,0.5" Opacity="0">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                    <iconPacks:PackIconMaterial Name="Paw62" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Style="{StaticResource SplashProgressIconsOutline}" RenderTransformOrigin="0.5,0.5">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                </Grid>
+                <Grid Margin="0,0,0,20" >
+                    <iconPacks:PackIconMaterial Name="Paw7" Panel.ZIndex="2"  Style="{StaticResource SplashProgressIcons}" HorizontalAlignment="Center" VerticalAlignment="Bottom" RenderTransformOrigin="0.5,0.5" Opacity="0">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                    <iconPacks:PackIconMaterial Name="Paw72" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Style="{StaticResource SplashProgressIconsOutline}" RenderTransformOrigin="0.5,0.5">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                </Grid>
+                <Grid Margin="0,20,0,0" >
+                    <iconPacks:PackIconMaterial Name="Paw8" Panel.ZIndex="2"  Style="{StaticResource SplashProgressIcons}" HorizontalAlignment="Center" VerticalAlignment="Bottom"  RenderTransformOrigin="0.5,0.5" Opacity="0">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                    <iconPacks:PackIconMaterial Name="Paw82" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Style="{StaticResource SplashProgressIconsOutline}" RenderTransformOrigin="0.5,0.5">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                </Grid>
+                <Grid Margin="0,0,0,20" >
+                    <iconPacks:PackIconMaterial Name="Paw9" Panel.ZIndex="2"  Style="{StaticResource SplashProgressIcons}" HorizontalAlignment="Center" VerticalAlignment="Bottom"  RenderTransformOrigin="0.5,0.5" Opacity="0">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                    <iconPacks:PackIconMaterial Name="Paw92" Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Bottom" Style="{StaticResource SplashProgressIconsOutline}" RenderTransformOrigin="0.5,0.5">
+                        <iconPacks:PackIconMaterial.RenderTransform>
+                            <RotateTransform Angle="90"/>
+                        </iconPacks:PackIconMaterial.RenderTransform>
+                    </iconPacks:PackIconMaterial>
+                </Grid>
+            </VirtualizingStackPanel>
+            <TextBlock Name="More_info_Msg" Visibility="Hidden" TextWrapping="Wrap" Margin="0,0,0,0" VerticalAlignment="Center" Foreground="White" FontSize="6" />
+        </VirtualizingStackPanel>
+    </Grid>
+</mah:MetroWindow>

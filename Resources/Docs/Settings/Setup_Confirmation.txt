@@ -1,0 +1,7 @@
+Are you finished configuring settings and wish to continue setup?
+
+NOTE: Choosing yes will start setup and install any required components and then, if needed, the app may restart. 
+
+Media you have configured will begin scanning in the background while the main UI is loaded. Some media will not be available until this is complete. 
+
+You can check each respective media library to see current progress. You may also begin playing any media that is available or set up any custom playlists.

@@ -1,0 +1,109 @@
+<TabItem
+ Header="Local Media"
+         BorderBrush="gray"
+         Visibility="Collapsed"
+         Name="LocalMedia_Browser_Tab"
+         IsEnabled="true">
+	<TabItem.HeaderTemplate>
+		<DataTemplate>
+			<VirtualizingStackPanel Orientation="Horizontal" IsVirtualizing="True" VirtualizationMode="Recycling" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Black">
+				<iconPacks:PackIconMaterial Kind="Harddisk"
+				                            Margin="2 5 2 0"
+				                            Width="24"
+				                            Height="24"
+				                            VerticalAlignment="Top"/>
+				<Label Name="Local_Tab_Label" Content="Local Media" FontWeight="Bold" Foreground="#FF7A7A7A" HorizontalAlignment="Center" FontSize="18"/>
+			</VirtualizingStackPanel>
+		</DataTemplate>
+	</TabItem.HeaderTemplate>
+	<Grid Background="{StaticResource GridGradient}" Name="Local_Media_Grid" VerticalAlignment="stretch" Opacity="1" Margin="0,0,0,0" AllowDrop="true">	
+		<VirtualizingStackPanel Name="LocalMedia_Progress_StackPanel" Grid.Row="1" IsVirtualizing="True" VirtualizationMode="Recycling" Margin="0,35,0,0" Grid.ColumnSpan="2" VerticalAlignment="Center" Panel.ZIndex="4">
+			<TextBlock Name="LocalMedia_Progress_Label" Text="Scanning Local Media..." TextWrapping="Wrap" FontWeight="Bold" Visibility="{Binding ElementName=LocalMedia_Progress_Ring, Path=IsActive, Converter={StaticResource boolToVisiblityConverter}}" VerticalAlignment="Center" Foreground="White" FontSize="18" HorizontalAlignment="Center"/>
+			<TextBlock Name="LocalMedia_Progress2_Label" Text="" MinWidth="200" TextWrapping="Wrap" FontWeight="Bold" Visibility="Hidden" VerticalAlignment="Center" Foreground="White" FontSize="18" HorizontalAlignment="Center"/>
+			<mah:ProgressRing Foreground="White" Name='LocalMedia_Progress_Ring' IsActive="false" VerticalAlignment="Center"/>
+		</VirtualizingStackPanel>
+		<VirtualizingStackPanel Orientation="Horizontal" Margin="5,5,0,0" IsVirtualizing="True" VirtualizationMode="Recycling" VerticalAlignment="Top" HorizontalAlignment="Left" Grid.ColumnSpan="2" Grid.Column="0">
+ 			<Label Content="Search" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top"/>
+			<WpfExtensions:IOTextBox Name="FilterTextBox" mah:TextBoxHelper.ClearTextButton="True" HorizontalAlignment="Left" Height="28" UndoLimit="10" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="100"/>
+			<!-- <CheckBox Content="Enable Row Filter" Name="LocalMediaRowFilter" Background="Transparent" Margin="10,0,0,0" Foreground="#ffffff" />  -->			
+			<CheckBox Content="Collapse Groups" Name="LocalMediaCollapseGroups" Background="Transparent" Margin="10,0,0,0" Foreground="#ffffff" />
+			<mah:DropDownButton Name='LocalMedia_Column_Button' FontSize="12" ToolTip="Columns" FontWeight="Bold" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Margin="10,0,0,0" ArrowVisibility="Collapsed" BorderBrush="Transparent" ButtonStyle="{StaticResource DetailButtonStyle}" Background="Transparent" BorderThickness="0" Orientation="Vertical" RenderTransformOrigin="0.5,0.5">		
+				<mah:DropDownButton.Content>
+					<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+						<iconPacks:PackIconMaterial Kind="ViewColumnOutline"
+													Margin="2 0 2 0"
+													Width="14"
+													Height="14"
+													VerticalAlignment="Center"/>
+					</VirtualizingStackPanel>
+				</mah:DropDownButton.Content>
+			</mah:DropDownButton>	
+			<StackPanel Margin="5,0,5,0" Orientation="Horizontal" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+				<Separator Background="#FF6F7373" HorizontalAlignment="Stretch" Width="2" VerticalAlignment="Stretch" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"  RenderTransformOrigin="0.5,0.5"/>
+			</StackPanel>					
+			<mah:DropDownButton Name='LocalMedia_Actions_Button' ToolTip="Actions" FontSize="12" FontWeight="Bold" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Margin="0,0,0,0" ArrowVisibility="Collapsed" BorderBrush="Transparent" ButtonStyle="{StaticResource DetailButtonStyle}" Background="Transparent" BorderThickness="0" Orientation="Vertical" RenderTransformOrigin="0.5,0.5">		
+				<mah:DropDownButton.Content>
+					<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+						<iconPacks:PackIconMaterial Kind="LightningBolt"
+													Margin="2 0 2 0"
+													Width="16"
+													Height="16"
+													VerticalAlignment="Center"/>
+					</VirtualizingStackPanel>
+				</mah:DropDownButton.Content>
+			</mah:DropDownButton>
+		</VirtualizingStackPanel>	
+		<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" HorizontalAlignment="Right" Orientation="Horizontal" Margin="0,0,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2" Grid.Column="0">
+			<TextBlock Name="MediaTable_RefreshLabel" Text="Scanning..." HorizontalAlignment="Right" FontSize="14" FontStyle="Italic" Margin="10,10,0,0" Visibility="Collapsed" Foreground="#ffffff" VerticalAlignment="Stretch" />
+			<mah:ProgressRing Foreground="White" Name='LocalMedia_RefreshProgress_Ring' IsActive="false" Height="14" Width="14" HorizontalAlignment="Right" Margin="5,10,10,0" VerticalAlignment="Stretch"/>	
+			<TextBlock Name="MediaTable_RefreshProgress_Label" Text="" HorizontalAlignment="Right" FontSize="14" FontStyle="Italic" Margin="5,10,0,0" Visibility="{Binding ElementName=LocalMedia_RefreshProgress_Ring, Path=IsActive, Converter={StaticResource boolToVisiblityConverter}}" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" VerticalAlignment="Stretch" />																							
+			<StackPanel Margin="5,10,5,0" Orientation="Horizontal" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+				<Separator Background="#FF6F7373" HorizontalAlignment="Stretch" Width="2" VerticalAlignment="Stretch" Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}"  RenderTransformOrigin="0.5,0.5"/>
+			</StackPanel>
+			<TextBlock Name="Media_Table_Total_Media" Text="" Visibility="{Binding ElementName=LocalMedia_RefreshProgress_Ring, Path=IsActive, Converter={StaticResource reverseVisibilityConverter}}" HorizontalAlignment="Right" FontSize="14" Margin="0,10,0,0" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" VerticalAlignment="Stretch" Background="Transparent"/>	
+        </VirtualizingStackPanel>			
+		<syncfusion:SfDataGrid Name="MediaTable" Margin="5,40,5,15" VerticalAlignment="Top" HorizontalAlignment="stretch" Opacity="1" SelectionUnit="Row" SelectionMode="Extended" ScrollViewer.CanContentScroll="true" ColumnSizer="Star" ScrollMode="Async" AllowFrozenGroupHeaders="True" ShowGroupDropArea="True"
+		          VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling" MaxHeight="1600" RowHeight="30" EnableDataVirtualization="true" AllowGrouping="true" AllowResizingColumns="true" AutoExpandGroups="True" AllowFiltering="true" SummaryCalculationMode="OndemandCaptionSummary"
+		          VirtualizingPanel.IsVirtualizing="True" VirtualizingStackPanel.ScrollUnit="Pixel" AutoGenerateColumns="false" ShowSortNumbers="True" UseDrawing="Default" ShowBusyIndicator="true" IsGroupDropAreaExpanded="True"
+		            AllowDraggingRows="True" ShowRowHeader="False" FilterRowPosition="None" AllowDraggingColumns="True" RowDragDropTemplate="{StaticResource dragPreviewTemplate}" AllowEditing="True"  AllowSelectionOnPointerPressed="true" RowStyle="{StaticResource SfDataGridRowStyle}">
+ 			<syncfusion:SfDataGrid.CellStyle>
+				<Style TargetType="syncfusion:GridCell">								
+					<Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>
+					<Setter Property="SelectionForegroundBrush" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>						
+					<Setter Property="BorderThickness" Value="0"/>
+					<Setter Property="BorderBrush" Value="Transparent"/>
+					<Setter Property="SelectionBorderVisibility" Value="Hidden"/>		
+					<Setter Property="CurrentCellBorderThickness" Value="0"/>
+					<Setter Property="CurrentCellBorderBrush" Value="Transparent"/>						
+				</Style>
+			</syncfusion:SfDataGrid.CellStyle>	
+			<syncfusion:SfDataGrid.Columns>
+				<syncfusion:GridTemplateColumn SetCellBoundValue="True" MappingName="id" HeaderText="Play" AllowFiltering="False" AllowFocus="False" FilterRowOptionsVisibility="Collapsed" AllowResizing="false"  AllowGrouping="False" Width="50" MinimumWidth="50" MaximumWidth="50" IsReadOnly="True" AllowSorting="False">
+					<syncfusion:GridTemplateColumn.CellTemplate>
+						<DataTemplate>
+							<VirtualizingStackPanel Orientation="Horizontal" IsVirtualizing="True">
+								<ToggleButton Style="{StaticResource PlayGridButtonStyle}" Background="Transparent" RenderTransformOrigin="0.5,0.5" Tag="{Binding Path=Value}"/>
+							</VirtualizingStackPanel>
+						</DataTemplate>
+					</syncfusion:GridTemplateColumn.CellTemplate>	
+				</syncfusion:GridTemplateColumn>
+				<syncfusion:GridTextColumn SetCellBoundValue="True" HeaderText="Display Name" MappingName="Display_Name" FilterBehavior="StringTyped" AllowFiltering="true" AllowFocus="True" ImmediateUpdateColumnFilter="true" IsReadOnly="False" AllowEditing="True" AllowSorting="True" MinimumWidth="80" AllowBlankFilters="True"/>				
+				<syncfusion:GridTextColumn SetCellBoundValue="True" CellTemplate="{StaticResource cellTemplate}" MappingName="title" HeaderText="Title" FilterBehavior="StringTyped" AllowFiltering="true" ImmediateUpdateColumnFilter="true" IsReadOnly="False" AllowSorting="True" AllowEditing="True" MinimumWidth="80" AllowBlankFilters="True" />		
+				<syncfusion:GridNumericColumn SetCellBoundValue="True" NumberDecimalDigits="0" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="Track" ImmediateUpdateColumnFilter="true" FilterRowEditorType="Numeric" Width="95" MaximumWidth="95" AllowEditing="True" MinimumWidth="95" IsReadOnly="False" AllowSorting="True" />	
+				<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="Artist" FilterRowEditorType="MultiSelectComboBox" FilterRowOptionsVisibility="Visible" ImmediateUpdateColumnFilter="false" AllowEditing="True" FilterBehavior="StringTyped" MinimumWidth="90" IsReadOnly="False" AllowSorting="True" AllowBlankFilters="True"/>	
+				<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="Album" FilterRowEditorType="MultiSelectComboBox" FilterRowOptionsVisibility="Visible" ImmediateUpdateColumnFilter="False" AllowEditing="True" FilterBehavior="StringTyped" MinimumWidth="95" IsReadOnly="False" AllowSorting="True" AllowBlankFilters="True"/>	
+				<syncfusion:GridTimeSpanColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="Duration" Width="115" MaximumWidth="115" MinimumWidth="115" IsReadOnly="True" AllowEditing="False" AllowSorting="True"/>
+				<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="type" HeaderText="Type" ImmediateUpdateColumnFilter="False" FilterRowEditorType="MultiSelectComboBox" AllowEditing="False" FilterRowOptionsVisibility="Visible" MinimumWidth="95" IsReadOnly="True" AllowSorting="True"/>	
+				<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="Bitrate" ImmediateUpdateColumnFilter="False" FilterRowEditorType="MultiSelectComboBox" AllowEditing="False" FilterRowOptionsVisibility="Visible" MinimumWidth="95" IsReadOnly="True" AllowSorting="True" AllowBlankFilters="True"/>	
+				<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" HeaderText="Video" MappingName="hasVideo" ImmediateUpdateColumnFilter="False" FilterRowEditorType="MultiSelectComboBox" AllowEditing="False" FilterRowOptionsVisibility="Visible" MinimumWidth="95" IsReadOnly="True" AllowSorting="True"/>	
+            	<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="SourceDirectory" ImmediateUpdateColumnFilter="False" FilterRowEditorType="MultiSelectComboBox" AllowEditing="False" FilterRowOptionsVisibility="Visible" MinimumWidth="80" IsReadOnly="True" AllowSorting="True"/>				
+				<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="directory" HeaderText="Directory" ImmediateUpdateColumnFilter="False" FilterRowEditorType="MultiSelectComboBox" AllowEditing="False" FilterRowOptionsVisibility="Visible" MinimumWidth="110" IsReadOnly="True" AllowSorting="True"/>			
+	            <syncfusion:GridDateTimeColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" HeaderText="Added" ImmediateUpdateColumnFilter="False" FilterRowEditorType="DateTime" AllowEditing="False" MappingName="Profile_Date_Added" MinimumWidth="115" IsReadOnly="True" AllowSorting="True">
+					<syncfusion:GridDateTimeColumn.DateTimeFormat>
+						<global:DateTimeFormatInfo ShortDatePattern="MM/dd/yyyy hh:mm:ss"/>
+					</syncfusion:GridDateTimeColumn.DateTimeFormat>						
+				</syncfusion:GridDateTimeColumn>					
+			</syncfusion:SfDataGrid.Columns>
+		</syncfusion:SfDataGrid>					
+	</Grid>
+</TabItem>
