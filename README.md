@@ -111,14 +111,43 @@ For a code line count and language breakdown, see [Latest Code Count](/CODECOUNT
 - A small skinned UI with playback controls and shortcuts to various settings/features
 - Can open quickly from system tray icon/menu, switch back and forth with main player skin or set to always start in mini-player mode
 
+<<<<<<< HEAD
 ### Discord <a name="Discord"></a>
+=======
+### Spotify <a name="Spotify"></a>
+>>>>>>> 4ef4565c38f8c99f60080a00740f27f1e6f6edf6
 
 <img src="/Images/Discord_Integration.png" Alt="Discord Rich Presence integration to display media playback info in your Discord status/profile"/>
 
+<<<<<<< HEAD
 - Discord Rich Presence integration to display media playback info in your Discord status/profile
 - Supports clickable label links when playing Spotify, YouTube and Twitch media 
   
 ### Other Features, Notes and Requirements <a name="CoreOther"></a>
+=======
+### Youtube <a name="Youtube"></a>
+
+- Ability to import and play YouTube playlists and videos
+  - Playlists from Youtube account can be imported automatically when providing credentials
+- Ability to auto-sync Youtube playlists and playlist videos with the apps media library
+- Preferred Quality option so videos always play or download at the specified quality
+- Ability to download Youtube videos to local disk (via yt-dlp)
+- Alternate Youtube player options such as using Invidious for the Web Player vs the native Youtube embedded player
+- Supports playing YoutubeTV channels (currently channels must be added manually)
+- (WIP) Ability to use apps native EQ and audio filters for Youtube playback
+
+### Twitch <a name="Twitch"></a>
+<img src="/Images/Twitch.png" Alt="Supports Twitch live streams with chat integration"/>
+
+- Ability to import and play Twitch live streams with chat integration
+  - Ability to import all followed/subscribed channels when providing Twitch account 
+  - Includes option to enable auto-update/refresh followed streams and their status
+  - (SOON) Ability to display notifications for configured channels when they go live
+  - Multiple Twitch AD blocking solutions supported, including [TTVLOL](https://github.com/TTV-LOL/extensions) and [luminous](https://github.com/AlyoshaVasilieva/luminous-ttv)
+  - [BetterTTV](https://github.com/night/betterttv) supported for enhancing in-app chat viewer
+  
+### Local Media <a name="Local_Media"></a>
+>>>>>>> 4ef4565c38f8c99f60080a00740f27f1e6f6edf6
 
 See **[FEATURES](/FEATURES.MD)** for a more exhaustive list of core features and important requirements
 
