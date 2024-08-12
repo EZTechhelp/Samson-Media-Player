@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+## 0.9.9 - BETA-002
+> - Branch: Samson
+
+### Changes
++ Updated Syncfusion assemblies to 26.2462.4
++ Mini-player skin now expands horizontally from the display screen
+  + The media title and animations in the display does not yet expand dynamically
++ More README.MD updates
+
+### Fixed
++ Samson.exe from previous build was not the latest version
++ An error and potential crash can occur in state changed events for floating windows
+
+### Comments
++ To install, go to title bar menu - check for updates - click install
++ Will NOT trigger first time setup
+
 ## 0.9.9 - BETA-001
 > - Branch: Samson
 
