@@ -146,7 +146,12 @@ function Start-SpotifyMedia{
             $newProc.CreateNoWindow = $true
             $newProc.RedirectStandardOutput = $true
             $Process = [System.Diagnostics.Process]::Start($newProc)
-            $netstat = $Process.StandardOutput.ReadToEnd() | Where-Object {($_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974') -and ($_ -match 'LISTENING' -or $_ -match 'ESTABLISHED')}
+            while(!$Process.StandardOutput.EndOfStream -and !$netStat){
+              $line = $Process.StandardOutput.ReadLine()
+              if(($line -match '127.0.0.1:8974' -or $line -match '0.0.0.0:8974') -and ($line -match 'LISTENING' -or $line -match 'ESTABLISHED')){
+                $netStat = $line
+              }
+            } 
           }catch{
             write-ezlogs "An exception occurred executing: $env:SYSDIR32\NETSTAT.EXE" -catcherror $_
           }finally{
@@ -414,7 +419,7 @@ function Start-SpotifyMedia{
                 $Spotify_app = (Get-appxpackage 'Spotify*')
                 #$Spotify_app = $installed_apps | where {$_.'Display Name' -eq 'Spotify' -or $_.'Display Name' -eq 'Spotify Music'} | select -Unique
                 if($Spotify_app){
-                  $Spotify_Path = "$($Spotify_app.InstallLocation)\\Spotify.exe"
+                  $Spotify_Path = "$($Spotify_app.InstallLocation)\Spotify.exe"
                 }
               }catch{
                 write-ezlogs "An exception occurred looking for Spotify install" -showtime -catcherror $_
@@ -430,9 +435,10 @@ function Start-SpotifyMedia{
                   $Spotify_Process = Start-Process $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --uri=$playback_url --enable-developer-mode --show-console --remote-debugging-port=9222 --no-default-browser-check" -PassThru
                 }else{
                   #$Spotify_Process = Start $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --enable-developer-mode --show-console --remote-debugging-port=9222 --no-default-browser-check" -PassThru  
-                  $Spotify_Process = Start-Process $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --uri=$playback_url --enable-developer-mode --show-console --remote-debugging-port=9222 --no-default-browser-check" -PassThru
+                  $Spotify_Process = Start-Process $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --enable-developer-mode --remote-debugging-port=9222 --no-default-browser-check" -PassThru
                 }
               }
+              $Spotify_Process = [System.Diagnostics.Process]::GetProcessesByName('Spotify')
               Set-WindowState -InputObject $Spotify_Process -State HIDE
               #wait for spotify to launch
               #start-sleep 1
@@ -518,6 +524,7 @@ function Start-SpotifyMedia{
                   $Spotify_Process = (Get-Process -Name 'Spotify*')
                   start-sleep -Milliseconds 100
                 }
+                Set-WindowState -InputObject $Spotify_Process -State HIDE
               }                    
               $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name 
               $device = $devices | Where-Object {$_.is_active -eq $true} 
@@ -537,7 +544,7 @@ function Start-SpotifyMedia{
             if($Spotify_Process.id){
               write-ezlogs ">>>> Found Spotify Process $($Spotify_Process.Id)" -showtime
               try{
-                write-ezlogs "| Hiding Spotify Process window" -showtime
+                write-ezlogs "| Hiding Spotify Process window" -showtime    
                 Set-WindowState -InputObject $Spotify_Process -State HIDE
               }catch{
                 write-ezlogs "An exception occurred in Set-WindowState" -showtime -catcherror $_
@@ -577,6 +584,15 @@ function Start-SpotifyMedia{
                 }
                 $waittimer++
                 start-sleep 1
+              }
+              if($Spotify_Process){
+                try{
+                  write-ezlogs "| Hiding Spotify Process window..again?" -showtime    
+                  $Spotify_Process = [System.Diagnostics.Process]::GetProcessesByName('Spotify')
+                  Set-WindowState -InputObject $Spotify_Process -State HIDE
+                }catch{
+                  write-ezlogs "An exception occurred in Set-WindowState" -showtime -catcherror $_
+                } 
               }
             }else{
               if($Media.type -eq 'Playlist'){
@@ -893,7 +909,12 @@ function Start-SpotifyMedia{
                 $newProc.CreateNoWindow = $true
                 $newProc.RedirectStandardOutput = $true
                 $Process = [System.Diagnostics.Process]::Start($newProc)
-                $netstat = $Process.StandardOutput.ReadToEnd() | Where-Object {($_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974') -and ($_ -match 'LISTENING' -or $_ -match 'ESTABLISHED')}
+                while(!$Process.StandardOutput.EndOfStream -and !$netStat){
+                  $line = $Process.StandardOutput.ReadLine()
+                  if(($line -match '127.0.0.1:8974' -or $line -match '0.0.0.0:8974') -and ($line -match 'LISTENING' -or $line -match 'ESTABLISHED')){
+                    $netStat = $line
+                  }
+                }
               }catch{
                 write-ezlogs "An exception occurred executing: $env:SYSDIR32\NETSTAT.EXE" -catcherror $_
               }finally{

@@ -6,7 +6,7 @@
     0.9.9
 
     .Build 
-    BETA-001
+    BETA-003
 
     .SYNOPSIS
     Universal Media Player built in Powershell
@@ -10646,15 +10646,13 @@ if($ChatView_Events_Measure){
 #region Spicetify Options
 #----------------------------------------------
 $synchash.pode_server_scriptblock = {
-  try{
-    if(!(Get-command -Module Pode)){         
-      try{  
-        write-ezlogs ">>> Importing Module PODE" -showtime
-        Import-Module "$($thisApp.Config.Current_folder)\Modules\Pode\Pode.psm1" -Force -NoClobber -DisableNameChecking
-      }catch{
-        write-ezlogs "An exception occurred Importing required module Pode" -showtime -catcherror $_
-      }     
-    }  
+  try{        
+    try{  
+      write-ezlogs ">>>> Importing Module PODE and starting PODE server" -showtime
+      Import-Module "$($thisApp.Config.Current_folder)\Modules\Pode\Pode.psm1" -Force -NoClobber -DisableNameChecking
+    }catch{
+      write-ezlogs "An exception occurred Importing required module Pode" -showtime -catcherror $_
+    }        
     try{  
       $podestate = Get-PodeServerPath  -ErrorAction SilentlyContinue
       if($podestate){
@@ -10669,21 +10667,21 @@ $synchash.pode_server_scriptblock = {
       Add-PodeEndpoint -Address 127.0.0.1 -Port 8974 -Protocol Ws -PassThru -Force
       Add-PodeEndpoint -Address 127.0.0.1 -Port 8974 -Protocol Http -PassThru -Force
       Add-PodeRoute -Method Get -Path '/PLAY' -PassThru -ScriptBlock {
-        $logfile = $using:logfile
+        #$logfile = $using:logfile
         $thisapp = $using:thisapp
         $synchash = $using:synchash
         Send-PodeSignal -Value 'PLAY'
         write-ezlogs ">>>> Spotify PODE webevent sent [PLAY]" -showtime -logtype Spotify -LogLevel 2 -thisApp $thisApp
       }    
       Add-PodeRoute -Method Get -Path '/PAUSE' -PassThru -ScriptBlock {
-        $logfile = $using:logfile
+        #$logfile = $using:logfile
         $thisapp = $using:thisapp
         $synchash = $using:synchash
         Send-PodeSignal -Value 'PAUSE'
         write-ezlogs ">>>> Spotify PODE webevent sent [PAUSE]" -showtime -logtype Spotify -LogLevel 2 -thisApp $thisApp
       }
       Add-PodeRoute -Method Get -Path '/SETVOLUME' -PassThru -ScriptBlock {
-        $logfile = $using:logfile
+        #$logfile = $using:logfile
         $thisapp = $using:thisapp
         $synchash = $using:synchash
         $Volume = ($WebEvent.Request.URL -split '\?')[1]
@@ -10691,14 +10689,14 @@ $synchash.pode_server_scriptblock = {
         write-ezlogs ">>>> Spotify PODE webevent sent [SETVOLUME $($Volume)]" -showtime -logtype Spotify -LogLevel 2 -thisApp $thisApp
       }
       Add-PodeRoute -Method Get -Path '/TOGGLEMUTE' -PassThru -ScriptBlock {
-        $logfile = $using:logfile
+        #$logfile = $using:logfile
         $thisapp = $using:thisapp
         $synchash = $using:synchash
         Send-PodeSignal -Value "TOGGLEMUTE"
         write-ezlogs ">>>> Spotify PODE webevent sent [TOGGLEMUTE]" -showtime -logtype Spotify -LogLevel 2 -thisApp $thisApp
       }
       Add-PodeRoute -Method Get -Path '/SETPOSITION' -PassThru -ScriptBlock {
-        $logfile = $using:logfile
+        #$logfile = $using:logfile
         $thisapp = $using:thisapp
         $synchash = $using:synchash
         $Position = ($WebEvent.Request.URL -split '\?')[1]
@@ -10706,7 +10704,7 @@ $synchash.pode_server_scriptblock = {
         write-ezlogs ">>>> Spotify PODE webevent sent [SETPOSITION $($Position)]" -showtime -logtype Spotify -LogLevel 2 -thisApp $thisApp
       }
       Add-PodeRoute -Method Get -Path '/PLAYURI' -PassThru -ScriptBlock {
-        $logfile = $using:logfile
+        #$logfile = $using:logfile
         $thisapp = $using:thisapp
         $synchash = $using:synchash
         $URI = ($WebEvent.Request.URL -split '\?')[1]
@@ -10714,7 +10712,7 @@ $synchash.pode_server_scriptblock = {
         write-ezlogs ">>>> Spotify PODE webevent sent [PLAYURI]: $($URI)" -showtime -logtype Spotify -LogLevel 2 -thisApp $thisApp
       }    
       Add-PodeRoute -Method Get -Path '/CLOSEPODE' -PassThru -ScriptBlock {
-        $logfile = $using:logfile
+        #$logfile = $using:logfile
         $thisapp = $using:thisapp
         $synchash = $using:synchash
         write-ezlogs ">>>> Spotify PODE webevent sent [CLOSEPODE]: Close-PodeServer" -showtime -logtype Spotify -LogLevel 2 -thisApp $thisApp
@@ -10722,7 +10720,7 @@ $synchash.pode_server_scriptblock = {
       }    
       Add-PodeSignalRoute -Path '/' -ScriptBlock {        
         $spicetify = ($SignalEvent.data.message | ConvertFrom-Json)
-        $logfile = $using:logfile
+        #$logfile = $using:logfile
         $thisapp = $using:thisapp
         $synchash = $using:synchash
         $synchash.Spicetify = $spicetify
@@ -10741,6 +10739,7 @@ if($thisapp.config.Use_Spicetify -and $thisApp.Config.Import_Spotify_Media){
   if($thisApp.Config.startup_perf_timer){
     $Spicetify_Startup_Measure = [system.diagnostics.stopwatch]::StartNew()
   }
+  write-ezlogs ">>>> Staring new PODE Server Runspace for Spicetify" -showtime
   $synchash.Spicetify = ''
   $Variable_list = (Get-Variable -Scope Local) | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
   Start-Runspace -scriptblock $synchash.pode_server_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'PODE_SERVER_RUNSPACE' -thisApp $thisApp -synchash $synchash

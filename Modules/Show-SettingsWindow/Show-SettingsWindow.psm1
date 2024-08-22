@@ -9003,13 +9003,16 @@ function Update-Settings {
             $hashsetup.Spotify_WebPlayer_transitioningControl.Height = '0'
             if($thisapp.config.Spotify_WebPlayer){
               $hashsetup.Spotify_WebPlayer_Toggle.isOn = $true
+              if($thisApp.Config.Use_Spicetify){
+                $thisApp.Config.Use_Spicetify = $false
+              }
               if($hashsetup.Spicetify_Toggle){
                 $hashsetup.Spicetify_Toggle.isOn = $false
               }
             }else{
               $hashsetup.Spotify_WebPlayer_Toggle.isOn = $false
-              if($hashsetup.Spicetify_Toggle){
-                $hashsetup.Spicetify_Toggle.isOn = $true
+              if($hashsetup.Spicetify_Toggle -and $thisApp.Config.Use_Spicetify){
+                $hashsetup.Spicetify_Toggle.isOn = $true   
               }
             }
             #---------------------------------------------- 

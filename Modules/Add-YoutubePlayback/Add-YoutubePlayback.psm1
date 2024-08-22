@@ -119,7 +119,7 @@ function Add-YoutubePlayback
     }else{
       $DisplayName = $Null
     }
-    $media = [PSCustomObject]@{
+    $media = [Media]@{
       'title' =  $title
       'Artist' = $channel_title
       'Channel_Name' = $channel_title

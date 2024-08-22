@@ -161,7 +161,7 @@ function Send-SpotifyCall {
     if($verboselog){Write-ezlogs "We got an API JSON response - URI $($Uri) - body $($body | out-string) - header $($Header | out-string)" -showtime}
     return $Response | ConvertFrom-Json
   }else{
-    Write-ezlogs "We did not get a valid API response - URI $($Uri) - body $($body | out-string) - header $($Header | out-string)" -showtime -warning -logtype Spotify
+    Write-ezlogs "We did not get a valid API response - URI $($Uri) - body $($body | out-string)" -showtime -warning -logtype Spotify
     if($retry){
       write-ezlogs "Attempting to retry Send-SpotifyCall for url $uri" -showtime -warning -logtype Spotify
       Send-SpotifyCall -Method $Method -Uri $Uri -Body $Body -ApplicationName $ApplicationName -First_Run:$First_Run -retry:$false

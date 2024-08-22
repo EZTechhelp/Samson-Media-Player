@@ -130,7 +130,7 @@ function Update-MediaTimer{
         $synchashWeak.Target.MediaPlayer_Slider.Value = 0
         $synchashWeak.Target.timer.Stop()    
       }      
-      if(!$synchashWeak.Target.vlc.IsPlaying -or ($synchashWeak.Target.is_playing -and $synchashWeak.Target.Spotify_Status -ne 'Stopped')){
+      if(!$synchashWeak.Target.vlc.IsPlaying -or ($synchashWeak.Target.Spicetify.is_playing -and $synchashWeak.Target.Spotify_Status -ne 'Stopped')){
         #Must be spotify track
         $current_track = $synchashWeak.Target.current_track_playing
         if($thisapp.Config.Use_Spicetify){
@@ -155,7 +155,7 @@ function Update-MediaTimer{
           $duration = $current_track.item.duration_ms
         }      
       }           
-      if(($synchashWeak.Target.vlc.IsPlaying -and $synchashWeak.Target.VLC.Time -ne -1 -and $synchashWeak.Target.Spotify_Status -in 'Stopped',$null,'')){
+      if(($synchashWeak.Target.vlc.IsPlaying -and $synchashWeak.Target.VLC.Time -ne -1 -and $synchashWeak.Target.Spotify_Status -in 'Stopped',$null,'' -and !$synchashWeak.Target.Spicetify.is_playing)){
         try{           
           [int]$hrs = $($([timespan]::FromMilliseconds($synchashWeak.Target.VLC.Time)).Hours)
           [int]$mins = $($([timespan]::FromMilliseconds($synchashWeak.Target.VLC.Time)).Minutes)
@@ -622,7 +622,7 @@ function Update-MediaTimer{
         }    
       }else{
         write-ezlogs '| Unsure what to do! Looping...' -showtime -warning
-        write-ezlogs "| Spotify_Status: $($synchashWeak.Target.Spotify_Status) - Vlc status: $($synchashWeak.Target.vlc.isPlaying) - Vlc media state: $($synchashWeak.Target.vlc.media.State)" -showtime
+        write-ezlogs "| Spotify_Status: $($synchashWeak.Target.Spotify_Status) - Spicetify.is_playing: $($synchashWeak.Target.Spicetify.is_playing) - Vlc status: $($synchashWeak.Target.vlc.isPlaying) - Vlc media state: $($synchashWeak.Target.vlc.media.State) -- current_track.is_playing: $($current_track.is_playing) - Progress: $progress - Name: $Name - Last_Played_title: $($synchashWeak.Target.Last_Played_title)" -showtime
       }   
     }elseif($([string]$synchashWeak.Target.vlc.media.Mrl).StartsWith("dshow://")){
       write-ezlogs "Vlc is currently playing dshow which is for webplayers, stopping this timer" -showtime -warning

@@ -600,7 +600,7 @@ function Set-WindowState {
           }
           if ($handle -eq 0) {
             if (-not $SuppressErrors) {
-              Write-output "Main Window handle is '0'...ignoring" | out-file $logfile -Append -force -Encoding unicode
+              Write-ezlogs "Main Window handle is '0'...ignoring"
             }
             continue
           }elseif($WindowStates[$State] -ne $Null){
@@ -609,11 +609,11 @@ function Set-WindowState {
             if ($SetForegroundWindow) {
               [void][User32Wrapper.WindowHelper]::SetForegroundWindow($handle)
             }
-            Write-output $("Set Window State '{1} on '{0}'" -f $handle, $State) | out-file $logfile -Append -force -Encoding unicode
+            Write-ezlogs $("Set Window State '{1} on '{0}'" -f $handle, $State)
             return
           }
         }catch{
-          write-output "[ERROR] An exception occurred processing WindowHandle states for handle $($handle | out-string) -- $($_ | out-string)" | out-file $logfile -Append -force -Encoding unicode
+          Write-ezlogs "An exception occurred processing WindowHandle states for handle $($handle | out-string)" -CatchError $_
         }
       }
     }else{
@@ -625,7 +625,7 @@ function Set-WindowState {
           }
           if ($handle -eq 0) {
             if (-not $SuppressErrors) {
-              Write-output "Main Window handle is '0'...ignoring" | out-file $logfile -Append -force -Encoding unicode
+              Write-ezlogs "Main Window handle is '0'...ignoring"
             }
             continue
           }elseif($WindowStates[$State] -ne $Null){
@@ -634,11 +634,11 @@ function Set-WindowState {
             if ($SetForegroundWindow) {
               [void][User32Wrapper.WindowHelper]::SetForegroundWindow($handle)
             }
-            Write-output $("Set Window State '{1} on '{0}'" -f $handle, $State) | out-file $logfile -Append -force -Encoding unicode
+            Write-ezlogs $("Set Window State '{1} on '{0}'" -f $handle, $State)
             return
           }
         }catch{
-          write-output "[ERROR] An exception occurred processing WindowHandle states for process $($process | out-string) -- $($_ | out-string)" | out-file $logfile -Append -force -Encoding unicode
+          Write-ezlogs "An exception occurred processing WindowHandle states for process $($process | out-string)" -CatchError $_
         }
       }
     }

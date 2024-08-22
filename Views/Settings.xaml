@@ -16,6 +16,7 @@
                  xmlns:mdhtml="clr-namespace:MdXaml.Html;assembly=MdXaml.Html"
                  xmlns:mdplug="clr-namespace:MdXaml.Plugins;assembly=MdXaml.Plugins"
                  xmlns:mdsvg="clr-namespace:MdXaml.Svg;assembly=MdXaml.Svg"
+				 xmlns:mdgif="clr-namespace:MdXaml.AnimatedGif;assembly=MdXaml.AnimatedGif"
                  xmlns:emoji="clr-namespace:Emoji.Wpf;assembly=Emoji.Wpf"
                  WindowStartupLocation="CenterOwner"
                  WindowTransitionsEnabled="False"
@@ -2109,6 +2110,7 @@
 							<mdplug:MdXamlPlugins>
 								<mdhtml:HtmlPluginSetup/>
 								<mdsvg:SvgPluginSetup/>
+								<mdgif:AnimatedGifPluginSetup/>
 							</mdplug:MdXamlPlugins>
 						</mdxam:MarkdownScrollViewer.Plugins>
 					</mdxam:MarkdownScrollViewer>

@@ -16,10 +16,10 @@
     let currState = 0;
     const storage = {};
     function updateStorage(data) {
-        if (!data?.track?.metadata) {
+        if (!data?.item?.metadata) {
             return;
         }
-        const meta = data.track.metadata;
+        const meta = data.item.metadata;
         storage.TITLE = meta.title;
         storage.ALBUM = meta.album_title;
         storage.DURATION = convertTimeToString(parseInt(meta.duration));
@@ -31,8 +31,8 @@
 		storage.ALBUM_URI = meta.album_uri;
 		storage.TRACK_NUMBER = meta.album_track_number;
 		storage.CONTEXT_URI = meta.context_uri;
-		storage.TRACK_DATA = data.track;
-		storage.URI = data.track.uri;
+		storage.TRACK_DATA = data.item;
+		storage.URI = data.item.uri;
         storage.is_playing = data.is_playing;
 		storage.is_paused = data.isPaused;
 		storage.is_Mute = Spicetify.Player.getMute();
@@ -51,7 +51,7 @@
             storage.ARTIST = meta.album_title; // Podcast
         }
 
-        Spicetify.Platform.LibraryAPI.contains(data.track.uri).then(([added]) => (storage.RATING = added ? 5 : 0));
+        Spicetify.Platform.LibraryAPI.contains(data.item.uri).then(([added]) => (storage.RATING = added ? 5 : 0));
 
         const cover = meta.image_xlarge_url;
         if (cover?.indexOf("localfile") === -1) {
@@ -66,7 +66,12 @@
     function updateInfo() {
         if (!Spicetify.Player.data && currState !== 0) {
             //ws.send("STATE:" + 0);
-			ws.send(JSON.stringify({ message: $("STATE:" + 0).val(), path: '/receive' }));
+			try {
+				ws.send(JSON.stringify({ message: $("STATE:" + 0).val(), path: '/receive' }));
+		   } catch (e) {
+                ws.send(`Error:Error sending json string for Spotify Desktop`);
+                ws.send("ErrorD:" + e);
+            }	
             currState = 0;
             return;
         }
@@ -75,14 +80,35 @@
         storage.VOLUME = Math.round(Spicetify.Player.getVolume() * 100);
 		storage.is_Mute = Spicetify.Player.getMute();
 		storage.is_paused = Spicetify.Player.data.isPaused;
-		storage.TITLE = Spicetify.Player.data.track.metadata.title;
-		storage.ARTIST = Spicetify.Player.data.track.metadata.artist_name;
-		storage.duration_ms = Spicetify.Player.data.track.metadata.duration;
+		try {
+			storage.TITLE = Spicetify.Player.data.item.metadata.title;
+			storage.ARTIST = Spicetify.Player.data.item.metadata.artist_name;
+			storage.duration_ms = Spicetify.Player.data.item.metadata.duration;	
+		} catch (e) {
+            ws.send(`Error:Error getting metadata`);
+            ws.send("ErrorD:" + e);
+        }
 		storage.STATE = !Spicetify.Player.data.isPaused ? 1 : 2;
 		storage.is_playing = !Spicetify.Player.data.isPaused ? 1 : 0;
-		storage.URI = Spicetify.Player.data.track.uri;
-		storage.Data = Spicetify.Player.data;
-		ws.send(JSON.stringify({ message: JSON.stringify(storage), path: '/receive' }));
+		try {
+			storage.URI = Spicetify.Player.data.item.uri;
+		} catch (e) {
+            ws.send(`Error:Error getting metadata`);
+            ws.send("ErrorD:" + e);
+        }		
+		try {
+			storage.Data = Spicetify.Player.data;
+		} catch (e) {
+            ws.send(`Error:Error getting metadata`);
+            ws.send("ErrorD:" + e);
+        }	
+		try {
+			ws.send(JSON.stringify({ message: JSON.stringify(storage), path: '/receive' }));
+		} catch (e) {
+            ws.send(`Error:Error sending metadata`);
+            ws.send("ErrorD:" + e);
+        }		
+		
         for (const field in storage) {
             try {
                 const data = storage[field];

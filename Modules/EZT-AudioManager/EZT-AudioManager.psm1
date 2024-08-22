@@ -346,15 +346,19 @@ function Set-ApplicationAudioDevice
         $capture_device = $all_Audio_Devices | Where-Object {$_.friendlyname -match 'CABLE Input \(VB-Audio Virtual Cable\)'}
         if($start){
           if($ProcessID){
-            write-ezlogs "[Set-ApplicationAudioDevice] >>> Looking up process with provided id $($ProcessID)"
+            write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking up process with provided id $($ProcessID)"
             $webviewProcesses = [System.Diagnostics.Process]::GetProcessById($ProcessID)
             $Process = $webviewProcesses.Id
           }else{
             if($ProcessName){
-              write-ezlogs "[Set-ApplicationAudioDevice] >>> Looking for process name $ProcessName"
-              $processes = [System.Diagnostics.Process]::GetProcessesByName($ProcessName)
+              write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking for process name $ProcessName"
+              if($ProcessName -match '\.exe'){
+                $processes = [System.Diagnostics.Process]::GetProcessesByName([System.IO.Path]::GetFileNameWithoutExtension($ProcessName))
+              }else{
+                $processes = [System.Diagnostics.Process]::GetProcessesByName($ProcessName)
+              }             
               if($Processes){
-                write-ezlogs "[Set-ApplicationAudioDevice] | Found process with name: $($ProcessName) - IDs: $($Processes.ProcessId)" -Success
+                write-ezlogs "[Set-ApplicationAudioDevice] | Found process with name: $($ProcessName) - IDs: $($Processes.Id)" -Success
                 $Process = $ProcessName
               }elseif($wait){
                 $timeout = 0
@@ -428,11 +432,11 @@ function Set-ApplicationAudioDevice
           if($Process){
             if($Startlibvlc){
               write-ezlogs "[Set-ApplicationAudioDevice] | Executing Update-MainPlayer and creating libvlc session for dshow://"
+              $allDevices = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::EnumerateDevices([CSCore.CoreAudioAPI.DataFlow]::All)
+              $capture_device = $allDevices | Where-Object {$_.friendlyname -match 'CABLE Input \(VB-Audio Virtual Cable\)'}
               if($thisApp.Config.Enable_EQ -and !$synchash.libvlc){  
                 try{
                   write-ezlogs "[Set-ApplicationAudioDevice] >>>> Creating new Libvlc instance for webplayer EQ" -logtype Libvlc -linesbefore 1
-                  $allDevices = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::EnumerateDevices([CSCore.CoreAudioAPI.DataFlow]::All)
-                  $capture_device = $allDevices | Where-Object {$_.friendlyname -match 'CABLE Input \(VB-Audio Virtual Cable\)'}
                   if($capture_device){
                     $vlcArgs = [System.Collections.Generic.List[String]]::new()
                     $null = $vlcArgs.add('--file-logging')
@@ -519,6 +523,7 @@ function Set-ApplicationAudioDevice
             } 
             write-ezlogs "[Set-ApplicationAudioDevice] >>> Redirecting audio output for process: $($Process) to virtual audio cable" -logtype Libvlc   
             try{
+              write-ezlogs "[Set-ApplicationAudioDevice] Rerouting audio for process '$process' to deviceid: $($capture_device.DeviceID)" -showtime
               $newProc = [System.Diagnostics.ProcessStartInfo]::new("$soundviewpath`svcl.exe")
               $newProc.WindowStyle = 'Hidden'
               $newProc.Arguments = "/Stdout /SetAppDefault $($capture_device.DeviceID) All $Process"

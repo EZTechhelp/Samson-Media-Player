@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+## 0.9.9 - BETA-003
+> - Branch: Samson
+
+### Changes
++ Updated Syncfusion.SfTreeView.WPF.dll with custom patch from Syncfusion
+  + Resolves issues with TreeView node content not expanding properly
++ Compiled 1.27 updated MdXaml assemblies from latest repo
+  + Adds support for displaying animated gifs and other fixes
++ Spotify desktop client now launches silently when using Spicetify
++ Improved performance for batch lookups of Youtube video ids
+
+### Fixed
++ Fixed #382: Spicetify (Free Spotify) is not working
+  + At least until some Spotify update breaks it again..
++ Fixed #383: EQ not working with Non Spotify Webplayer
++ Fixed issue introduced in last update that broke Window helper methods
++ Fixed issue where app would hang during Spicetify install
+
+### Comments
++ The free Spotify/Spicetify solution is a nasty hacky mess, needs re-engineering
++ Will NOT trigger first time setup
+
 ## 0.9.9 - BETA-002
 > - Branch: Samson
 

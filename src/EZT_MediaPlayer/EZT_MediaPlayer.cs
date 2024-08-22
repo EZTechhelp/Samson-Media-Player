@@ -27,6 +27,8 @@ using System.Windows.Threading;
 using System.Windows.Documents;
 using System.Runtime.Serialization;
 using System.Globalization;
+using static ControlzEx.Standard.NativeMethods;
+using System.Text;
 
 namespace ScrollAnimateBehavior.AttachedBehaviors
 {
@@ -1435,6 +1437,72 @@ namespace User32Wrapper
     {
         [DllImport("user32.dll")]
         public static extern bool DestroyWindow(IntPtr hwnd);
+        [DllImport("user32.dll")]
+        public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool SetForegroundWindow(IntPtr hWnd);
+        [DllImport("USER32.DLL")]
+        static extern bool EnumWindows(EnumWindowsProc enumFunc, int lParam);
+        [DllImport("USER32.DLL")]
+        static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+        [DllImport("USER32.DLL")]
+        static extern int GetWindowTextLength(IntPtr hWnd);
+        [DllImport("USER32.DLL")]
+        static extern bool IsWindowVisible(IntPtr hWnd);
+        [DllImport("USER32.DLL")]
+        static extern IntPtr GetShellWindow();
+        [DllImport("User32.dll")]
+        static extern bool IsIconic(IntPtr hwnd);
+        [DllImport("user32.dll")]
+        public static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetParent(IntPtr hWndChild);
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern Int32 GetWindowThreadProcessId(IntPtr hWnd, out Int32 lpdwProcessId);
+
+
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern IntPtr GetForegroundWindow();
+        public static IDictionary<IntPtr, string> GetCurrentForegroundWindow()
+        {
+            IntPtr lShellWindow = GetForegroundWindow();
+            Dictionary<IntPtr, string> lWindows = new Dictionary<IntPtr, string>();
+            int lLength = GetWindowTextLength(lShellWindow);
+            StringBuilder lBuilder = new StringBuilder(lLength);
+            GetWindowText(lShellWindow, lBuilder, lLength + 1);
+            lWindows[lShellWindow] = lBuilder.ToString();
+            return lWindows;
+        }
+        public delegate bool EnumWindowsProc(IntPtr hWnd, int lParam);
+        /// <summary>Returns a dictionary that contains the handle and title of all opened windows.</summary>
+        /// <returns>A dictionary that contains the handle and title of all opened windows.</returns>
+        public static IDictionary<IntPtr, string> GetOpenWindows()
+        {
+            IntPtr lShellWindow = GetShellWindow();
+            Dictionary<IntPtr, string> lWindows = new Dictionary<IntPtr, string>();
+
+            EnumWindows(delegate (IntPtr hWnd, int lParam)
+            {
+                if (hWnd == lShellWindow) return true;
+                if (!IsWindowVisible(hWnd)) return true;
+                if (IsIconic(hWnd)) return true;
+
+                int lLength = GetWindowTextLength(hWnd);
+                if (lLength == 0) return true;
+
+                StringBuilder lBuilder = new StringBuilder(lLength);
+                GetWindowText(hWnd, lBuilder, lLength + 1);
+
+                lWindows[hWnd] = lBuilder.ToString();
+                return true;
+
+            }, 0);
+
+            return lWindows;
+        }
+
     }
     public class DPIAware
     {

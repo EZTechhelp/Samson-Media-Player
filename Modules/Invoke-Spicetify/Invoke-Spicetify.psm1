@@ -92,7 +92,13 @@ function Enable-Spicetify
       if($hash.Window.Dispatcher){       
         Update-SplashScreen -hash $hash -More_Info_Visibility 'Visible' -Splash_More_Info 'Installing Spicetify' 
       }               
-      Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.ps1" | Invoke-Expression -Verbose
+      Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.ps1" -OutFile "$($thisApp.Config.Temp_Folder)\install.ps1" #| Invoke-Expression -Verbose
+      if([System.IO.File]::Exists("$env:ProgramW6432\PowerShell\7\pwsh.exe")){
+        $processpath = "$env:ProgramW6432\PowerShell\7\pwsh.exe"
+      }else{         
+        $processpath = "$psHome\powershell.exe"
+      }
+      Start-Process $processpath -ArgumentList "-file `"$($thisApp.Config.Temp_Folder)\install.ps1`"" -Wait
       #Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-marketplace/master/install.ps1" | Invoke-Expression -Verbose
       Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-marketplace/main/resources/install.ps1" | Invoke-Expression -Verbose
       if([System.IO.File]::Exists("$($env:USERPROFILE)\spicetify-cli\spicetify.exe") -and [System.IO.File]::Exists("$($env:USERPROFILE)\.spicetify\config-xpui.ini")){
@@ -560,18 +566,18 @@ function Disable-Spicetify
           #Watch the log file and output all new lines. If the new line matches our exit trigger text, break out of wait
           $count = 0
           Get-Content -Path $spicetifyrestorebackup_logfile -force -Tail 1 -wait | & { process {
-            $count++
-            Write-EZLogs "$($_)" -showtime
-            $pattern1 = 'Download	- (?<value>.*) MiB\/s \(raw\)'
-            $pattern2 = 'Install size: (?<value>.*) MiB'               
-            if($_ -match 'Everything is ready, you can start applying now'){
-              $spicetifyexit_code = $_ 
-            break}  
-            #if($_ -match 'Number of applicable updates for the current system configuration:'){ $dellupdates_code = $_.Substring(($_.IndexOf('configuration: ')+15))}
-            if($break){break}
-            if($(Get-Job -State Running).count -eq 0){write-ezlogs 'Ended due to job ending, loop once more then break'
-              $break = $true
-            }
+              $count++
+              Write-EZLogs "$($_)" -showtime
+              $pattern1 = 'Download	- (?<value>.*) MiB\/s \(raw\)'
+              $pattern2 = 'Install size: (?<value>.*) MiB'               
+              if($_ -match 'Everything is ready, you can start applying now'){
+                $spicetifyexit_code = $_ 
+              break}  
+              #if($_ -match 'Number of applicable updates for the current system configuration:'){ $dellupdates_code = $_.Substring(($_.IndexOf('configuration: ')+15))}
+              if($break){break}
+              if($(Get-Job -State Running).count -eq 0){write-ezlogs 'Ended due to job ending, loop once more then break'
+                $break = $true
+              }
           }}
         }      
       }  
