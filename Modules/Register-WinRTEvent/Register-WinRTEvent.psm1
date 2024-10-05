@@ -96,15 +96,10 @@ function Register-WinRTEvent {
     $thisScript,  
     [switch]$Verboselog
   )
-
-  if($RegisterSessionChange){
-    #$eventname = "CurrentSessionChanged"
-    $eventname = 'SessionsChanged'
-    $control = "Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager"
-    #$controlType = 'Windows.Media.Control.CurrentSessionChangedEventArgs'
-    $controlType = 'Windows.Media.Control.SessionsChangedEventArgs'
+  write-ezlogs ">>>> Registering SystemMediaTransportControl event: $eventName" -showtime
+  if($eventName -eq 'SessionsChanged'){
     $action = { 
-      param($sender,[Windows.Media.SystemMediaTransportControlsButtonPressedEventArgs]$e)
+      param($sender,[Windows.Media.Control.SessionChangedEventArgs]$e)
       $synchash = $Event.MessageData
       if($psversiontable.PSVersion.Major -gt 5){
         $Result = $e 
@@ -112,9 +107,9 @@ function Register-WinRTEvent {
         $Result = $e.Result
       }     
       try{
-        write-ezlogs "SessionsChanged Sender $($sender.GetSessions())" -showtime
+        write-ezlogs ">>>> Received SessionsChanged Event - All sessions: $($sender.GetSessions() | out-string)" -showtime
       }catch{
-        write-ezlogs "An exception occurred Unregistering an event" -showtime -catcherror $_
+        write-ezlogs "An exception occurred in SessionsChanged event" -showtime -catcherror $_
       }  
     }
   }elseif($eventName -eq 'ButtonPressed'){
@@ -166,42 +161,39 @@ function Register-WinRTEvent {
         write-ezlogs "An exception occurred Unregistering an event" -showtime -catcherror $_
       }  
     }
-  }elseif($eventName -eq 'PropertyChanged'){
+  }elseif($eventName -eq 'PropertyChanged'){   
     $action = { 
       param($sender,$e)
-      $synchash = $Event.MessageData
       write-ezlogs "Received PropertyChanged Event from SystemMediaTransportControl" -showtime
+      $synchash = $Event.MessageData
       #$Result = [Windows.Media.SystemMediaTransportControlsPropertyChangedEventArgs]$args[1].Result
       try{
-        write-ezlogs "PropertyChanged Sender $($sender)" -showtime 
-        write-ezlogs "PropertyChanged Result received $($e)" -showtime 
+        write-ezlogs "PropertyChanged Sender $($sender | out-string)" -showtime 
+        write-ezlogs "PropertyChanged Result received $($e | out-string)" -showtime 
       }catch{
         write-ezlogs "An exception occurred Unregistering an event" -showtime -catcherror $_ 
       }  
     }
-  }else{
-    write-ezlogs "Unrecognized Event name '$eventname', unable to continue!" -showtime -Warning
-    return
   }
-  #Unregister any existing
-  try{
-    $existing = (Get-EventSubscriber -force | Where-Object {$_.Action.Command -eq $action -or $_.Action.Name -eq 'FireEvent' -or $_.Action.Name -eq $eventName})
-    if($existing){
-      write-ezlogs "Unregistering existing event 'FireEvent' for Name: $($existing.Action.Name) | ID: $($existing.Action.ID) | State: $($existing.Action.State)" -showtime -warning
-      $existing | unregister-event -force
-    }
-  }catch{
-    write-ezlogs "An exception occurred Unregistering an event" -showtime -catcherror $_
-  }  
-
+  #Unregister any existing first, then register new. PS5 requires wrapping WinRT events using the FireEvent
   if($psversiontable.PSVersion.Major -gt 5){
     try{
+      $existing = (Get-EventSubscriber -force | Where-Object {$_.Action.Command -eq $action -or $_.Action.Name -eq $eventName})
+      if($existing){
+        write-ezlogs "Unregistering existing event 'FireEvent' for Name: $($existing.Action.Name) | ID: $($existing.Action.ID) | State: $($existing.Action.State) | Command: $($existing.Action.Command)" -showtime -warning
+        $existing | unregister-event -force
+      }
       [void](Register-ObjectEvent -InputObject $InputObject -EventName $eventName -MessageData $synchash -Action $action)
     }catch{
       write-ezlogs "An exception occurred Registering WinRT event $eventName" -showtime -catcherror $_
     } 
   }else{
     try{
+      $existing = (Get-EventSubscriber -force | Where-Object {$_.Action.Command -eq $action -or $_.Action.Name -eq 'FireEvent'})
+      if($existing){
+        write-ezlogs "Unregistering existing event 'FireEvent' for Name: $($existing.Action.Name) | ID: $($existing.Action.ID) | State: $($existing.Action.State) | Command: $($existing.Action.Command)" -showtime -warning
+        $existing | unregister-event -force
+      }
       [void](Register-ObjectEvent -InputObject (New-EventWrapper -Target $InputObject -eventname $eventName -control $control -controlType $controlType) -EventName FireEvent -MessageData $synchash -Action $action)
     }catch{
       write-ezlogs "An exception occurred Registering WinRT event $eventName" -showtime -catcherror $_

@@ -126,7 +126,7 @@ function Invoke-DownloadMedia{
     }
     $yt_dlp_tempfile = "$($thisApp.config.Temp_folder)\yt_dlp.log"     
     $thisApp.config.Download_logfile = $yt_dlp_tempfile  
-    if(($media_link -match 'youtube\.com' -or $media_link -match 'youtu\.be' -or $media_link -match 'yewtu.be' -or $media_link -match 'soundcloud\.com') -and $media_link -notmatch 'tv\.youtube\.com'){
+    if(($media_link -match 'youtube\.com' -or $media_link -match 'youtu\.be' -or $media_link -match 'yewtu.be|invidious' -or $media_link -match 'soundcloud\.com') -and $media_link -notmatch 'tv\.youtube\.com'){
       if($media_link -match '&t='){
         $media_link = ($($media_link) -split('&t='))[0].trim()
       }

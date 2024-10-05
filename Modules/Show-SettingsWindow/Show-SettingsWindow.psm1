@@ -2539,7 +2539,7 @@ function Show-SettingsWindow{
                     if($DeviceID){
                       try{
                         write-ezlogs " | Current Default Audio Device: $($DeviceName) -- ID: $DeviceID" -logtype setup            
-                        Start-Process "$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -ArgumentList '-i -h' -Wait -Verb RunAs                  
+                        Start-Process "$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -ArgumentList '-i -h' -Wait -Verb RunAs
                         write-ezlogs " | Resetting Default Audio Device to: $($DeviceName)" -logtype setup
                         $set_AudioDevice = Get-AudioDevice -ID $DeviceID | Set-AudioDevice -DefaultOnly
                       }catch{
@@ -5769,7 +5769,7 @@ function Show-SettingsWindow{
           $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()        
           $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalInputExternal($hashsetup.Window,"Add New Youtube URL","Enter the url of the Youtube Playlist, Channel or Video",$button_settings)
           if(-not [string]::IsNullOrEmpty($result)){
-            if((Test-URL $result) -and ($result -match 'youtube\.com' -or $result -match 'yewtu\.be' -or $result -match 'soundcloud\.com')){
+            if((Test-URL $result) -and ($result -match 'youtube\.com' -or $result -match 'yewtu\.be|invidious' -or $result -match 'soundcloud\.com')){
               if($hashsetup.YoutubePlaylists_Grid.items.path -notcontains $result){
                 write-ezlogs "Adding URL $result" -showtime -logtype Setup -LogLevel 2
                 if($result -match 'tv\.youtube'){

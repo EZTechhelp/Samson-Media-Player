@@ -736,7 +736,10 @@ function Set-AvalonDock {
                   'Icon_Color' = 'White'
                   'Command' = $synchash.ChatView_Command
                   'Icon_kind' = $chaticon
-                  'Enabled' = $synchash.Chat_View_Button.isEnabled
+                  'Binding' = $synchash.Chat_View_Button
+                  'binding_property_path' = 'isEnabled'
+                  'binding_mode' = 'OneWay'
+                  'binding_property' = 'IsEnabledProperty'
                   'IsCheckable' = $false
                 }
                 $null = $items.Add($Chat_View)
@@ -979,7 +982,10 @@ function Set-AvalonDock {
                     'Icon_Color' = 'White'
                     'Command' = $synchash.ChatView_Command
                     'Icon_kind' = $chaticon
-                    'Enabled' = $synchash.Chat_View_Button.isEnabled
+                    'Binding' = $synchash.Chat_View_Button
+                    'binding_property_path' = 'isEnabled'
+                    'binding_mode' = 'OneWay'
+                    'binding_property' = 'IsEnabledProperty'
                     'IsCheckable' = $false
                   }
                   $null = $items.Add($Chat_View)

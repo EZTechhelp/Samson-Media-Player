@@ -492,7 +492,7 @@ function Pause-Media
       return
     }elseif($synchash.WebPlayer_State -ne 0 -and $synchash.Youtube_WebPlayer_title){
       write-ezlogs ">>>> Toggling pause of Youtube Webplayer video" -showtime
-      if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be'){
+      if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
         $synchash.YoutubeWebView2_PauseScript = @"
 try {
   var state = player.paused();

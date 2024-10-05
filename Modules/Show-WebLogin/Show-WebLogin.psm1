@@ -301,10 +301,10 @@ function Show-WebLogin{
       $MahDialog_hash.Closed_Event = {
         param($sender)
         try{                                  
-          write-ezlogs "Show-Weblogin Closed" -showtime -logtype Setup -loglevel 2
+          write-ezlogs ">>>> Show-Weblogin Closed" -showtime
           try{  
             if($Listener -is [System.IDisposable]){
-              write-ezlogs " | Disposing HTTP Listener" -showtime -logtype Setup -loglevel 2
+              write-ezlogs "| Disposing HTTP Listener" -showtime
               $Listener.close()
               $Listener.dispose()
               $Listener = $Null
@@ -316,7 +316,9 @@ function Show-WebLogin{
             #Clean up webview2 - remove event handlers then dispose
             if($MahDialog_hash.Dialog_WebView2 -is [System.IDisposable]){
               write-ezlogs " | Disposing Dialog_WebView2" -showtime -logtype Setup -loglevel 2
-              $Null = $MahDialog_hash.Dialog_WebView2.CoreWebView2.Remove_WebResourceRequested($MahDialog_hash.Dialog_WebView2_WebResourceRequested_Scriptblock)
+              if($MahDialog_hash.Dialog_WebView2.CoreWebView2){
+                $MahDialog_hash.Dialog_WebView2.CoreWebView2.Remove_WebResourceRequested($MahDialog_hash.Dialog_WebView2_WebResourceRequested_Scriptblock)
+              }
               $Null = $MahDialog_hash.Dialog_WebView2.Remove_NavigationCompleted($MahDialog_hash.Dialog_WebView2_NavigationCompleted_Scriptblock)
               $Null = $MahDialog_hash.Dialog_WebView2.Remove_CoreWebView2InitializationCompleted($MahDialog_hash.Dialog_WebView2_InitializationCompleted_Scriptblock)
               $MahDialog_hash.Dialog_WebView2.dispose()
@@ -328,7 +330,7 @@ function Show-WebLogin{
         }catch{
           write-ezlogs "An exception occurred closing Show-Weblogin window" -showtime -catcherror $_
         }
-      }.GetNewClosure()
+      }
       $Null = $MahDialog_hash.Window.Add_Closed($MahDialog_hash.Closed_Event)
       #endregion Closed Event
 

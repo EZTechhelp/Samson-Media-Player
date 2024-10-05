@@ -2693,7 +2693,12 @@ function Add-WPFMenu {
             $Binding.Source = $item.binding
             $Binding.Path = $item.binding_property_path
             $Binding.Mode = $item.binding_mode
-            $null = [System.Windows.Data.BindingOperations]::SetBinding($menuItem,[System.Windows.Controls.MenuItem]::IsCheckedProperty, $Binding) 
+            if($item.binding_property){
+             $BindingProperty = $item.binding_property
+            }else{
+             $BindingProperty = 'IsCheckedProperty'
+            }
+            $null = [System.Windows.Data.BindingOperations]::SetBinding($menuItem,[System.Windows.Controls.MenuItem]::$BindingProperty, $Binding) 
           }
           if(-not [string]::IsNullOrEmpty($item.Sub_items)){
             foreach($subitem in $item.Sub_items){

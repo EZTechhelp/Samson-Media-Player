@@ -872,51 +872,130 @@ function Get-TwitchAPI {
     [string]$Media_Profile_Directory,
     [switch]$Verboselog = $thisApp.Config.Dev_mode
   )
-  #Add-Type -AssemblyName System.Web
   if($Verboselog){write-ezlogs "#### Checking Twitch Stream $StreamName ####" -enablelogs -color yellow -linesbefore 1 -logtype Twitch -VerboseDebug:$Verboselog}
-  #$illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
-  #$pattern = "[™$illegal]"
-  #$pattern2 = "[:$illegal]"
   try{
-    $Name = $($thisApp.Config.App_Name)
-    $Application = Get-TwitchApplication -Name $thisApp.Config.App_Name
-    $token_expires = $Application.token.expires
-    $Twitchaccess_token = $Application.token.access_token
-    $TwitchClientId = $Application.ClientId
-    if(-not [string]::IsNullOrEmpty($token_expires)){
-      if([Datetime]::TryParse($token_expires,[ref]([Datetime]::Now))){
-        $token_expires = [Datetime]::Parse($token_expires)
-      }else{
-        $token_expires = Get-Date $token_expires -ErrorAction Continue
-      }
-    }
-    if($token_expires -le ([Datetime]::Now) -or !$Twitchaccess_token -or !$TwitchClientId){
-      $Twitchaccess_token  = Get-TwitchAccessToken -thisApp $thisApp -ApplicationName $thisApp.Config.App_Name
-      if(!$TwitchClientId){
-        $TwitchClientId = Get-secret -name TwitchClientId  -Vault $Name -ErrorAction SilentlyContinue
-      }
-    }
+    $internet_Connectivity = Test-ValidPath -path 'www.twitch.tv' -PingConnection -timeout_milsec 1000
   }catch{
-    write-ezlogs "[Get-TwitchAPI] An exception occurred getting or refreshing Twitch access tokens" -CatchError $_ -showtime
-  } 
-  if($StreamName -and $Twitchaccess_token -and $TwitchClientId){
+    write-ezlogs "Ping test failed for: www.twitch.tv - trying 1.1.1.1" -Warning -logtype Twitch
+  }finally{
     try{
-      #Get twitch streamers
-      #"https://api.twitch.tv/helix/users?login=Pepp"
-      #'https://api.twitch.tv/helix/users/follows?to_id=<user ID>'
-      $headers = @{
-        "client-id"     = $TwitchClientId
-        "Authorization" = "Bearer $Twitchaccess_token"
-      } 
-      $user_data = [System.Collections.Generic.List[Object]]::new()     
-      $streamer_data_output = [System.Collections.Generic.List[Object]]::new()
-      if(@($StreamName).count -gt 1){
-        $group = 100
-        $i = 0       
-        do {
-          $names = ($StreamName[$i..(($i += $group) - 1)]).replace(" ",[string]::Empty)
-          $uri = 'https://api.twitch.tv/helix/users?login=' + "$($names -join "&login=")"
-          $streamer_uri = "https://api.twitch.tv/helix/streams?user_login=" + "$($names -join "&user_login=")"
+      if(!$internet_Connectivity){
+        $internet_Connectivity = Test-ValidPath -path '1.1.1.1' -PingConnection -timeout_milsec 2000
+      }
+    }catch{
+      write-ezlogs "Secondary ping test failed for: 1.1.1.1" -Warning -logtype Twitch
+      $internet_Connectivity = $null
+    }
+  }
+  if($internet_Connectivity){
+    try{
+      $Name = $($thisApp.Config.App_Name)
+      $Application = Get-TwitchApplication -Name $thisApp.Config.App_Name
+      $token_expires = $Application.token.expires
+      $Twitchaccess_token = $Application.token.access_token
+      $TwitchClientId = $Application.ClientId
+      if(-not [string]::IsNullOrEmpty($token_expires)){
+        if([Datetime]::TryParse($token_expires,[ref]([Datetime]::Now))){
+          $token_expires = [Datetime]::Parse($token_expires)
+        }else{
+          $token_expires = Get-Date $token_expires -ErrorAction Continue
+        }
+      }
+      if($token_expires -le ([Datetime]::Now) -or !$Twitchaccess_token -or !$TwitchClientId){
+        $Twitchaccess_token  = Get-TwitchAccessToken -thisApp $thisApp -ApplicationName $thisApp.Config.App_Name
+        if(!$TwitchClientId){
+          $TwitchClientId = Get-secret -name TwitchClientId  -Vault $Name -ErrorAction SilentlyContinue
+        }
+      }
+    }catch{
+      write-ezlogs "[Get-TwitchAPI] An exception occurred getting or refreshing Twitch access tokens" -CatchError $_ -showtime
+    } 
+    if($StreamName -and $Twitchaccess_token -and $TwitchClientId){
+      try{
+        #Get twitch streamers
+        #"https://api.twitch.tv/helix/users?login=Pepp"
+        #'https://api.twitch.tv/helix/users/follows?to_id=<user ID>'
+        $headers = @{
+          "client-id"     = $TwitchClientId
+          "Authorization" = "Bearer $Twitchaccess_token"
+        } 
+        $user_data = [System.Collections.Generic.List[Object]]::new()     
+        $streamer_data_output = [System.Collections.Generic.List[Object]]::new()
+        if(@($StreamName).count -gt 1){
+          $group = 100
+          $i = 0       
+          do {
+            $names = ($StreamName[$i..(($i += $group) - 1)]).replace(" ",[string]::Empty)
+            $uri = 'https://api.twitch.tv/helix/users?login=' + "$($names -join "&login=")"
+            $streamer_uri = "https://api.twitch.tv/helix/streams?user_login=" + "$($names -join "&user_login=")"
+            try{
+              $req=[System.Net.HTTPWebRequest]::Create($uri)
+              $req.Method='GET'
+              $headers = [System.Net.WebHeaderCollection]::new()
+              $headers.add('client-id',$TwitchClientId)
+              $headers.add('Authorization',"Bearer $Twitchaccess_token")
+              $req.Headers = $headers              
+              $response = $req.GetResponse()
+              $strm=$response.GetResponseStream()
+              $sr=[System.IO.Streamreader]::new($strm)
+              $output=$sr.ReadToEnd()
+              $data = $output | ConvertFrom-Json
+              [void]$user_data.add($data)
+              $headers.Clear()
+              $response.Dispose()
+              $strm.Dispose()
+              $sr.Dispose()
+            }catch{
+              write-ezlogs "[Get-TwitchAPI] An exception occured when getting user_data with uri: $uri" -showtime -catcherror $_ -callpath $((Get-PSCallStack)[0].FunctionName)
+            }finally{
+              if($response -is [System.IDisposable]){
+                $response.Dispose()
+              }
+              if($strm -is [System.IDisposable]){
+                $strm.Dispose()
+              }
+              if($sr -is [System.IDisposable]){
+                $sr.Dispose()
+              }
+            }
+            try{   
+              $req=[System.Net.HTTPWebRequest]::Create($streamer_uri)
+              $req.Method='GET'
+              $headers = [System.Net.WebHeaderCollection]::new()
+              $headers.add('client-id',$TwitchClientId)
+              $headers.add('Authorization',"Bearer $Twitchaccess_token")
+              $req.Headers = $headers              
+              $response = $req.GetResponse()
+              $strm=$response.GetResponseStream()
+              $sr=[System.IO.Streamreader]::new($strm)
+              $output=$sr.ReadToEnd()
+              $stream_data = $output | ConvertFrom-Json
+              [void]$streamer_data_output.add($stream_data)   
+              $headers.Clear()
+              $response.Dispose()
+              $strm.Dispose()
+              $sr.Dispose()                             
+            }catch{
+              write-ezlogs "[Get-TwitchAPI] An exception occurred in getting stream data with streamer_uri: $streamer_uri" -showtime -catcherror $_
+            }finally{
+              if($response -is [System.IDisposable]){
+                $response.Dispose()
+              }
+              if($strm -is [System.IDisposable]){
+                $strm.Dispose()
+              }
+              if($sr -is [System.IDisposable]){
+                $sr.Dispose()
+              }
+            }
+          }
+          until ($i -ge $StreamName.count -1)
+        }else{
+          $uri = 'https://api.twitch.tv/helix/users'
+          $streamer_uri = "https://api.twitch.tv/helix/streams"
+          $name = $StreamName.replace(" ",[string]::Empty)
+          $uri += "?login=$name"
+          $streamer_uri += "?user_login=$name"
           try{
             $req=[System.Net.HTTPWebRequest]::Create($uri)
             $req.Method='GET'
@@ -931,11 +1010,8 @@ function Get-TwitchAPI {
             $data = $output | ConvertFrom-Json
             [void]$user_data.add($data)
             $headers.Clear()
-            $response.Dispose()
-            $strm.Dispose()
-            $sr.Dispose()
           }catch{
-            write-ezlogs "[Get-TwitchAPI] An exception occured when getting user_data with uri: $uri" -showtime -catcherror $_ -callpath $((Get-PSCallStack)[0].FunctionName)
+            write-ezlogs "[Get-TwitchAPI] An exception occured with HTTPWebRequest to: $uri" -showtime -catcherror $_
           }finally{
             if($response -is [System.IDisposable]){
               $response.Dispose()
@@ -947,25 +1023,22 @@ function Get-TwitchAPI {
               $sr.Dispose()
             }
           }
-          try{   
+          try{ 
             $req=[System.Net.HTTPWebRequest]::Create($streamer_uri)
             $req.Method='GET'
             $headers = [System.Net.WebHeaderCollection]::new()
             $headers.add('client-id',$TwitchClientId)
             $headers.add('Authorization',"Bearer $Twitchaccess_token")
-            $req.Headers = $headers              
+            $req.Headers = $headers
             $response = $req.GetResponse()
             $strm=$response.GetResponseStream()
             $sr=[System.IO.Streamreader]::new($strm)
             $output=$sr.ReadToEnd()
             $stream_data = $output | ConvertFrom-Json
-            [void]$streamer_data_output.add($stream_data)   
-            $headers.Clear()
-            $response.Dispose()
-            $strm.Dispose()
-            $sr.Dispose()                             
+            [void]$streamer_data_output.add($stream_data)     
+            $headers.Clear()             
           }catch{
-            write-ezlogs "[Get-TwitchAPI] An exception occurred in getting stream data with streamer_uri: $streamer_uri" -showtime -catcherror $_
+            write-ezlogs "[Get-TwitchAPI] An exception occurred with HTTPWebRequest to: $streamer_uri" -showtime -catcherror $_
           }finally{
             if($response -is [System.IDisposable]){
               $response.Dispose()
@@ -975,152 +1048,94 @@ function Get-TwitchAPI {
             }
             if($sr -is [System.IDisposable]){
               $sr.Dispose()
-            }
+            } 
           }
+        }    
+        $TwitchData_output = [System.Collections.Generic.List[Object]]::new()
+        if($user_data.data){    
+          foreach($streamer in $user_data.data){       
+            $profile_image_url = $Null
+            $offline_image_url = $Null
+            $description = $null      
+            $id = $null
+            $streams_data = $null
+            if($streamer.id){
+              $id = $streamer.id
+            }else{
+              $id = $streamer.data.id
+            } 
+            try{     
+              if($streamer_data_output.data.user_id){
+                $streams_data = $streamer_data_output.data | & { process {if ($_.user_id -eq $streamer.id){$_}}}
+              }
+            }catch{
+              write-ezlogs "[Get-TwitchAPI] An exception occurred finding streamer data with id $($streamer.id)" -showtime -catcherror $_
+            }
+            if($id -and $TwitchData_output.user_id -notcontains $id){
+              if($streamer.type){
+                $type = $((Get-Culture).textinfo.totitlecase(($streamer.type).tolower()))
+              }elseif($streams_data.type){
+                $type = $streams_data.type
+              }else{
+                $type = $Null
+              }
+              if($streamer.profile_image_url){
+                $profile_image_url = $streamer.profile_image_url
+                $offline_image_url = $streamer.offline_image_url
+                $description = $streamer.description
+              }else{
+                $profile_image_url = $Null
+                $offline_image_url = $Null
+                $description = $Null
+              }
+              if($streamer.login){
+                $user_login = $streamer.login
+              }elseif($streams_data.user_login){
+                $user_login = $streams_data.user_login
+              }elseif($streams_data.user_name){
+                $user_login = $streams_data.user_name
+              }else{
+                $user_login = $Null
+              }
+              if($streams_data.user_name){
+                $user_name = $streams_data.user_name
+              }elseif($streamer.display_name){
+                $user_name = $streamer.display_name
+              }else{
+                $user_name = $Null
+              }
+              if($Verboselog){write-ezlogs "[Get-TwitchAPI] >>>> Found Stream $($streamer.display_name)`n | $($id)`n | Type $($type)`n | Title $($streams_data.title)`n | Description $description" -showtime -logtype Twitch -VerboseDebug:$Verboselog}       
+              $TwitchData = [PSCustomObject]::new(@{
+                  'Title' = $streams_data.title
+                  'User_id' = $id
+                  'user_login' = $user_login
+                  'user_name' =  $user_name
+                  'game_name' = $streams_data.game_name
+                  'type' = $type
+                  'description' = $description
+                  'profile_image_url' = $profile_image_url
+                  'offline_image_url' = $offline_image_url
+                  'created_at' = $streamer.created_at
+                  'started_at' = $streams_data.started_at
+                  'viewer_count' = $streams_data.viewer_count
+                  'thumbnail_url' = $streams_data.thumbnail_url
+              })
+              [void]$TwitchData_output.add($TwitchData)
+            }
+          }  
+        }else{
+          write-ezlogs "[Get-TwitchAPI] Unable to get data for stream ($StreamName)" -showtime -enablelogs -warning -logtype Twitch -LogLevel 2
         }
-        until ($i -ge $StreamName.count -1)
-      }else{
-        $uri = 'https://api.twitch.tv/helix/users'
-        $streamer_uri = "https://api.twitch.tv/helix/streams"
-        $name = $StreamName.replace(" ",[string]::Empty)
-        $uri += "?login=$name"
-        $streamer_uri += "?user_login=$name"
-        try{
-          $req=[System.Net.HTTPWebRequest]::Create($uri)
-          $req.Method='GET'
-          $headers = [System.Net.WebHeaderCollection]::new()
-          $headers.add('client-id',$TwitchClientId)
-          $headers.add('Authorization',"Bearer $Twitchaccess_token")
-          $req.Headers = $headers              
-          $response = $req.GetResponse()
-          $strm=$response.GetResponseStream()
-          $sr=[System.IO.Streamreader]::new($strm)
-          $output=$sr.ReadToEnd()
-          $data = $output | ConvertFrom-Json
-          [void]$user_data.add($data)
-          $headers.Clear()
-        }catch{
-          write-ezlogs "[Get-TwitchAPI] An exception occured with HTTPWebRequest to: $uri" -showtime -catcherror $_
-        }finally{
-          if($response -is [System.IDisposable]){
-            $response.Dispose()
-          }
-          if($strm -is [System.IDisposable]){
-            $strm.Dispose()
-          }
-          if($sr -is [System.IDisposable]){
-            $sr.Dispose()
-          }
-        }
-        try{ 
-          $req=[System.Net.HTTPWebRequest]::Create($streamer_uri)
-          $req.Method='GET'
-          $headers = [System.Net.WebHeaderCollection]::new()
-          $headers.add('client-id',$TwitchClientId)
-          $headers.add('Authorization',"Bearer $Twitchaccess_token")
-          $req.Headers = $headers
-          $response = $req.GetResponse()
-          $strm=$response.GetResponseStream()
-          $sr=[System.IO.Streamreader]::new($strm)
-          $output=$sr.ReadToEnd()
-          $stream_data = $output | ConvertFrom-Json
-          [void]$streamer_data_output.add($stream_data)     
-          $headers.Clear()             
-        }catch{
-          write-ezlogs "[Get-TwitchAPI] An exception occurred with HTTPWebRequest to: $streamer_uri" -showtime -catcherror $_
-        }finally{
-          if($response -is [System.IDisposable]){
-            $response.Dispose()
-          }
-          if($strm -is [System.IDisposable]){
-            $strm.Dispose()
-          }
-          if($sr -is [System.IDisposable]){
-            $sr.Dispose()
-          } 
-        }
-      }    
-      $TwitchData_output = [System.Collections.Generic.List[Object]]::new()
-      if($user_data.data){    
-        foreach($streamer in $user_data.data){       
-          $profile_image_url = $Null
-          $offline_image_url = $Null
-          $description = $null      
-          $id = $null
-          $streams_data = $null
-          if($streamer.id){
-            $id = $streamer.id
-          }else{
-            $id = $streamer.data.id
-          } 
-          try{     
-            if($streamer_data_output.data.user_id){
-              $streams_data = $streamer_data_output.data | & { process {if ($_.user_id -eq $streamer.id){$_}}}
-            }
-          }catch{
-            write-ezlogs "[Get-TwitchAPI] An exception occurred finding streamer data with id $($streamer.id)" -showtime -catcherror $_
-          }
-          if($id -and $TwitchData_output.user_id -notcontains $id){
-            if($streamer.type){
-              $type = $((Get-Culture).textinfo.totitlecase(($streamer.type).tolower()))
-            }elseif($streams_data.type){
-              $type = $streams_data.type
-            }else{
-              $type = $Null
-            }
-            if($streamer.profile_image_url){
-              $profile_image_url = $streamer.profile_image_url
-              $offline_image_url = $streamer.offline_image_url
-              $description = $streamer.description
-            }else{
-              $profile_image_url = $Null
-              $offline_image_url = $Null
-              $description = $Null
-            }
-            if($streamer.login){
-              $user_login = $streamer.login
-            }elseif($streams_data.user_login){
-              $user_login = $streams_data.user_login
-            }elseif($streams_data.user_name){
-              $user_login = $streams_data.user_name
-            }else{
-              $user_login = $Null
-            }
-            if($streams_data.user_name){
-              $user_name = $streams_data.user_name
-            }elseif($streamer.display_name){
-              $user_name = $streamer.display_name
-            }else{
-              $user_name = $Null
-            }
-            if($Verboselog){write-ezlogs "[Get-TwitchAPI] >>>> Found Stream $($streamer.display_name)`n | $($id)`n | Type $($type)`n | Title $($streams_data.title)`n | Description $description" -showtime -logtype Twitch -VerboseDebug:$Verboselog}       
-            $TwitchData = [PSCustomObject]::new(@{
-                'Title' = $streams_data.title
-                'User_id' = $id
-                'user_login' = $user_login
-                'user_name' =  $user_name
-                'game_name' = $streams_data.game_name
-                'type' = $type
-                'description' = $description
-                'profile_image_url' = $profile_image_url
-                'offline_image_url' = $offline_image_url
-                'created_at' = $streamer.created_at
-                'started_at' = $streams_data.started_at
-                'viewer_count' = $streams_data.viewer_count
-                'thumbnail_url' = $streams_data.thumbnail_url
-            })
-            [void]$TwitchData_output.add($TwitchData)
-          }
-        }  
-      }else{
-        write-ezlogs "[Get-TwitchAPI] Unable to get data for stream ($StreamName)" -showtime -enablelogs -warning -logtype Twitch -LogLevel 2
-      }
-      $PSCmdlet.WriteObject($TwitchData_output)
-    }catch{
-      write-ezlogs "[Get-TwitchAPI] An exception occurred getting Twitch info for stream $StreamName" -CatchError $_ -showtime -enablelogs
-    }   
+        $PSCmdlet.WriteObject($TwitchData_output)
+      }catch{
+        write-ezlogs "[Get-TwitchAPI] An exception occurred getting Twitch info for stream $StreamName" -CatchError $_ -showtime -enablelogs
+      }   
+    }else{
+      write-ezlogs "[Get-TwitchAPI] Unable to Authenticate with Twitch, cannot continue - Streamname: $StreamName - Twitch ClientID: $TwitchClientId - TwitchAccess TOken: $Twitchaccess_token" -showtime -warning -logtype Twitch -LogLevel 2
+      return
+    }
   }else{
-    write-ezlogs "[Get-TwitchAPI] Unable to Authenticate with Twitch, cannot continue - Streamname: $StreamName - Twitch ClientID: $TwitchClientId - TwitchAccess TOken: $Twitchaccess_token" -showtime -warning -logtype Twitch -LogLevel 2
+    write-ezlogs "Cannot get Twitch streams, unable to connect to 'www.twitch.tv' due to network issue" -warning
     return
   }
 }
@@ -1240,7 +1255,6 @@ function Update-TwitchStatus
             }elseif($Available_Twitch_Media.url){
               write-ezlogs "[Get-TwitchStatus] >>>> Getting Twitch Stream names" -showtime -logtype Twitch -LogLevel 2
               $twitch_Streams = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase((($Available_Twitch_Media.url | Where-Object {$_}) | split-path -leaf).tolower()) -split ' '
-              #$twitch_Streams = $((Get-Culture).textinfo.totitlecase((($Available_Twitch_Media.url | Where-Object {$_}) | split-path -leaf).tolower())) -split ' '
               write-ezlogs "[Get-TwitchStatus] | Stream names: $twitch_Streams" -showtime -logtype Twitch -LogLevel 2
               $TwitchData = Get-TwitchAPI -StreamName $twitch_Streams -thisApp $thisApp
               write-ezlogs "[Get-TwitchStatus] | Received data: $TwitchData" -showtime -logtype Twitch -LogLevel 2
@@ -1357,7 +1371,7 @@ function Update-TwitchStatus
                   if($UpdateAlert -and $thisApp.Config.Enable_Twitch_Notifications -and ($twitchmedia.Enable_LiveAlert -or $playlist_track.Enable_LiveAlert -or $Config_Twitch.Enable_LiveAlert)){
                     try{
                       #Import-Module "$($thisApp.Config.Current_Folder)\Modules\BurntToast\BurntToast.psm1" -NoClobber -DisableNameChecking -Scope Local
-                      $Message = "Twitch Channel '$twitch_channel' is now $twitch_status!`nPlaying: $($TwitchAPI.game_name)"
+                      $Message = "Twitch Channel '$twitch_channel' is now $twitch_status!`nPlaying: $($TwitchAPI.game_name)$TimeLive"
                       if($TwitchAPI.profile_image_url){
                         $applogo = $TwitchAPI.profile_image_url                           
                       }elseif($twitchmedia.profile_image_url){

@@ -300,7 +300,7 @@ Function Initialize-YoutubeWebPlayer
         Write-EZLogs ">>>> YoutubeWebview2 NavigationCompleted for $($sender.source)" -showtime -logtype $logtype
         #$synchash.YoutubeWebView2.CoreWebView2.Settings.UserAgent = "Chrome"
         #$synchash.YoutubeWebView2.CoreWebView2.Settings.UserAgent =  "Android"
-        if(($thisApp.Config.Use_invidious -or $sender.source -match 'yewtu.be') -and $sender.source -notmatch 'tv\.youtube\.com'){
+        if(($thisApp.Config.Use_invidious -or $sender.source -match 'yewtu.be|invidious') -and $sender.source -notmatch 'tv\.youtube\.com'){
           Write-EZLogs ">>>> Adding YoutubeWebview2 Script for Invidious session" -showtime -logtype $logtype
           $synchash.YoutubeWebView2_Script = @"
 var options = {
@@ -741,7 +741,7 @@ try {
 
 try {
   function onYouTubeError(event) {
-      console.log('Youtube ERROR: event');
+      console.log('Youtube ERROR:', event);
       var ErrorObject = {
           Key: 'error',
           Value: event
@@ -1213,7 +1213,7 @@ try {
             }catch{
               Write-EZLogs 'An exception occurred loading YoutubeWebView2 extensions' -catcherror $_
             }finally{
-              if($synchash.Youtube_WebPlayer_URL -and $synchash.Youtube_WebPlayer_URL -match 'youtube' -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be'){
+              if($synchash.Youtube_WebPlayer_URL -and $synchash.Youtube_WebPlayer_URL -match 'youtube' -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
                 Write-EZLogs "[YoutubeWebView2] >>>> Navigating with YoutubeWebView2 CoreWebView2.Navigate: $($synchash.Youtube_WebPlayer_URL)" -enablelogs -showtime -logtype $logtype 
                 $synchash.YoutubeWebView2.CoreWebView2.Navigate($synchash.Youtube_WebPlayer_URL)      
                 if($synchash.YoutubeWebView2.Source -notmatch ($synchash.Youtube_WebPlayer_URL)){
@@ -1222,7 +1222,7 @@ try {
               }
             }
           }else{
-            if($synchash.Youtube_WebPlayer_URL -and $synchash.Youtube_WebPlayer_URL -match 'youtube' -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be'){
+            if($synchash.Youtube_WebPlayer_URL -and $synchash.Youtube_WebPlayer_URL -match 'youtube' -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
               Write-EZLogs "[YoutubeWebView2] >>>> Navigating with YoutubeWebView2 CoreWebView2.Navigate: $($synchash.Youtube_WebPlayer_URL)" -enablelogs -showtime -logtype $logtype 
               $synchash.YoutubeWebView2.CoreWebView2.Navigate($synchash.Youtube_WebPlayer_URL)      
               if($synchash.YoutubeWebView2.Source -notmatch ($synchash.Youtube_WebPlayer_URL)){
@@ -1817,7 +1817,7 @@ try {
         $synchash.MediaPlayer_TotalDuration = $result.value
       }
       if($result.key -eq 'volume'){
-        if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be'){
+        if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
           $volume = $result.value * 100
         }else{
           $volume = $result.value
@@ -3053,7 +3053,7 @@ function onYoutubevolumechange(event) {
 
 
 function onYouTubeError(event) {
-  console.log('Youtube ERROR: event');
+  console.log('Youtube ERROR:', event);
   console.log(event);
   var ErrorObject =
   {
@@ -4652,7 +4652,9 @@ Function Start-WebNavigation{
         $Youtube = Get-YoutubeURL -thisApp $thisApp -URL $uri -APILookup
         if($Youtube.playlist_id){
           if($thisApp.Config.Use_invidious){            
-            $uri = "https://yewtu.be/embed/videoseries?list=$($Youtube.playlist_id)`&autoplay=1"
+            #$uri = "https://yewtu.be/embed/videoseries?list=$($Youtube.playlist_id)`&autoplay=1"
+            #$uri = "https://invidious.nerdvpn.de/embed/videoseries?list=$($Youtube.playlist_id)`&autoplay=1"
+            $uri = "https://invidious.jing.rocks/embed/videoseries?list=$($Youtube.playlist_id)`&autoplay=1"          
             $synchash.Use_invidious_url = $uri            
           }else{
             if($No_YT_Embed -or $Youtube.id){
@@ -4674,7 +4676,9 @@ Function Start-WebNavigation{
           }
         }elseif($Youtube.id){
           if($thisApp.Config.Use_invidious -and $uri -notmatch 'tv\.youtube\.com'){
-            $uri = "https://yewtu.be/embed/$($Youtube.id)`&autoplay=1"
+            #$uri = "https://yewtu.be/embed/$($Youtube.id)`&autoplay=1"
+            #$uri = "https://invidious.nerdvpn.de/embed/$($Youtube.id)`&autoplay=1"
+            $uri = "https://invidious.jing.rocks/embed/$($Youtube.id)`&autoplay=1"           
             $synchash.Use_invidious_url = $uri
           }elseif($uri -notmatch 'tv\.youtube\.com'){
             if($No_YT_Embed){

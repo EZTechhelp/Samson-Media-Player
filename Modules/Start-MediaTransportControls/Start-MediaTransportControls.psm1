@@ -59,18 +59,17 @@ function Start-MediaTransportControls{
         $null = [System.Reflection.Assembly]::LoadFrom("$($thisApp.Config.Current_Folder)\Assembly\WinRT\PoshWinRT.dll")
         [void][Windows.Media.Playback.MediaPlayer,Windows.Media.Playback,ContentType=WindowsRuntime]
       }
-      <#      if($psversiontable.PSVersion.Major -gt 5){
-          [void][System.Reflection.Assembly]::LoadWithPartialName('Microsoft.Windows.SDK.NET')
-          [void][System.Reflection.Assembly]::LoadWithPartialName('WinRT.Runtime')
-          }else{
-          [void][Windows.Media.Playback.MediaPlayer,Windows.Media.Playback,ContentType=WindowsRuntime]
-      }#> 
       Import-module "$($thisApp.Config.Current_Folder)\Modules\Register-WinRTEvent\Register-WinRTEvent.psm1" -NoClobber -DisableNameChecking -Scope Local
       Import-Module "$($thisApp.Config.Current_Folder)\Modules\EZT-AudioManager\EZT-AudioManager.psm1" -NoClobber -DisableNameChecking
+      #Dont use BackgroundMediaPlayer, Microsoft says it will be deprecated: https://learn.microsoft.com/en-us/uwp/api/windows.media.playback.backgroundmediaplayer?view=winrt-26100
+      #$synchash.systemmediaplayer = [Windows.Media.Playback.BackgroundMediaPlayer]::Current
       $synchash.systemmediaplayer = [Windows.Media.Playback.MediaPlayer]::new()
       $synchash.systemmediaplayer.CommandManager.IsEnabled = $false
       $file = New-StorageFile -path "$($thisApp.Config.Current_folder)\Resources\Samson_Icon1.png"
       $synchash.systemmediaplayer.SystemMediaTransportControls.IsNextEnabled = $true
+      Register-WinRTEvent -InputObject $synchash.systemmediaplayer.SystemMediaTransportControls -eventName 'ButtonPressed' -synchash $synchash -thisapp $thisApp  -control 'Windows.Media.SystemMediaTransportControls' -controlType 'Windows.Media.SystemMediaTransportControlsButtonPressedEventArgs'
+      #TODO: PropertyChanged event does not fire for some reason, there must be something that has to be done different for this specific event?
+      #Register-WinRTEvent -InputObject $synchash.systemmediaplayer.SystemMediaTransportControls -eventName 'PropertyChanged' -synchash $synchash -thisapp $thisApp  -control 'Windows.Media.SystemMediaTransportControls' -controlType 'Windows.Media.SystemMediaTransportControlsPropertyChangedEventArgs'
       $synchash.systemmediaplayer.SystemMediaTransportControls.IsPreviousEnabled = $true
       $synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled = $true
       $synchash.systemmediaplayer.SystemMediaTransportControls.IsPlayEnabled = $true
@@ -88,7 +87,7 @@ function Start-MediaTransportControls{
       #$synchash.systemmediaplayer.SystemMediaTransportControls.UpdateTimelineProperties($Timeline)
       $synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Type = 'Music'
       $synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
-      Register-WinRTEvent -InputObject $synchash.systemmediaplayer.SystemMediaTransportControls -eventName 'ButtonPressed' -synchash $synchash -thisapp $thisApp  -control 'Windows.Media.SystemMediaTransportControls' -controlType 'Windows.Media.SystemMediaTransportControlsButtonPressedEventArgs'
+
       $synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.MusicProperties.artist = "$($thisApp.Config.App_name) Media Player"
       if($file){
         $thumbnail = [Windows.Storage.Streams.RandomAccessStreamReference]::CreateFromFile($file)
@@ -97,6 +96,10 @@ function Start-MediaTransportControls{
       $synchash.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus = 'Stopped'
       $synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
 
+
+      #TODO: Potential for retrieving or controlling self (or even other apps) media sessions
+      #$synchash.SessionManager = Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])
+      #Register-WinRTEvent -InputObject $synchash.SessionManager -eventName 'SessionsChanged' -synchash $synchash -thisapp $thisApp  -control 'Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager' -controlType 'Windows.Media.Control.SessionsChangedEventArgs'
       #---------------------------------------------- 
       #region Get-AudioSessions
       #----------------------------------------------
@@ -116,8 +119,11 @@ function Start-MediaTransportControls{
       do{
         [void]$waithandle.target.runspace.AsyncWaitHandle.WaitOne(50)
       }while($synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled -and $waithandle.IsAlive)
-    }
-    write-ezlogs "SystemMediaTransportControls has ended!" -warning
+      write-ezlogs "SystemMediaTransportControls has ended!" -warning
+      if($synchash.systemmediaplayer -is [System.IDisposable]){
+        $synchash.systemmediaplayer.Dispose()
+      } 
+    }  
   }
   if($use_Runspace){
     #$Variable_list = Get-Variable -Scope Local | & { process {if (($_.Name -in $PSBoundParameters.keys -or $_.Name -in 'thisApp','synchash','jobs')){$_}}}

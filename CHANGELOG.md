@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+## 0.9.9 - BETA-004
+> - Branch: Samson
+
+### Changes
++ Improved error handling and internet status checking for Get-Twitch
++ Improved error handling for Send-SpotifyCall
++ Chat view button and context menu items enabled states are now data bound
++ Minor code cleanup and refactoring, no user or functional changes
++ SystemMediaPlayer is now properly disposed when its runspace finishes
++ Updated Streamlink to version 6.10.0.1
+
+### Fixed
++ Fixed #393: Twitch streams fail to play when ad blocking is disabled
++ Fixed #394: Streamlink fails to update when new versions are included
++ Fixed #395: Youtube playback with Invidious no longer works
+  + Workaround by switching to a working stance at least for now
+
+### Comments
++ Will NOT trigger first time setup
+
 ## 0.9.9 - BETA-003
 > - Branch: Samson
 

@@ -93,7 +93,7 @@ function Start-Media{
     $synchashWeak.Target.WebPlayer_State = $null
     $synchashWeak.Target.Start_media = $null
     $synchashWeak.Target.Start_media_timer.stop()
-    $IsValidYoutube_Media = (((Test-ValidPath $media -Type URL) -or (Test-ValidPath $media.url -Type URL)) -and ($media -match 'yewtu\.be|youtu\.be|youtube\.com' -or $media.url -match 'yewtu\.be|youtu\.be|youtube\.com'))
+    $IsValidYoutube_Media = (((Test-ValidPath $media -Type URL) -or (Test-ValidPath $media.url -Type URL)) -and ($media -match 'yewtu\.be|youtu\.be|youtube\.com|invidious' -or $media.url -match 'yewtu\.be|youtu\.be|youtube\.com'))
     $DisableChatView = $(!$IsValidYoutube_Media -or !$thisApp.Config.Chat_View -or ($media.url -match 'tv\.youtube\.com' -or $media -match 'tv\.youtube\.com'))
     if($thisapp.config.Youtube_WebPlayer -and $IsValidYoutube_Media){
       $CanUse_WebPlayer = $true
@@ -443,7 +443,9 @@ function Start-Media{
               $Playlistitem = $Playlist_items[$Index]
           }#>
           if($thisApp.Config.Use_invidious -or $Use_invidious){            
-            [Uri]$vlcurl = "https://yewtu.be/embed/videoseries?list=$($youtube.playlist_id)" 
+            #[Uri]$vlcurl = "https://yewtu.be/embed/videoseries?list=$($youtube.playlist_id)" 
+            #[Uri]$vlcurl = "https://invidious.nerdvpn.de/embed/videoseries?list=$($youtube.playlist_id)"
+            [Uri]$vlcurl = "https://invidious.jing.rocks/embed/videoseries?list=$($youtube.playlist_id)"           
           }else{
             if($No_YT_Embed -or $youtube.id){
               [Uri]$vlcurl = "https://www.youtube.com/watch?v=$($youtube.id)&list=$($youtube.playlist_id)" 
@@ -453,7 +455,9 @@ function Start-Media{
           }
         }elseif($youtube.id){
           if($thisApp.Config.Use_invidious -or $Use_invidious){
-            [Uri]$vlcurl = "https://yewtu.be/embed/$($youtube.id)"
+            #[Uri]$vlcurl = "https://yewtu.be/embed/$($youtube.id)"
+            #[Uri]$vlcurl = "https://invidious.nerdvpn.de/embed/$($youtube.id)"
+            [Uri]$vlcurl = "https://invidious.jing.rocks/embed/$($youtube.id)"
             write-ezlogs "| Youtube invidious URL for playback: $($vlcurl)" -loglevel 2
           }else{
             if($No_YT_Embed){
@@ -882,7 +886,7 @@ function Start-Media{
           $duration = $media.duration_ms
         }     
         $title = $media.title
-      }elseif((Test-ValidPath $Media_link) -and ($media_link -match 'youtube.com|yewtu.be')){
+      }elseif((Test-ValidPath $Media_link) -and ($media_link -match 'youtube.com|yewtu.be|invidious')){
         $mediaType = 'Youtube'
         write-ezlogs "| Media is type Youtube URL" -showtime
         $delay = $null
@@ -1963,7 +1967,7 @@ function Start-Streamlink {
         }else{
           $HTTP_Interface = ''
         }
-        if($thisapp.config.Skip_Twitch_Ads){
+        if($thisapp.config.Skip_Twitch_Ads -and ($thisapp.config.Use_Twitch_TTVLOL -or $thisapp.config.Use_Twitch_luminous -or $thisapp.config.UseTwitchCustom)){
           if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Streamlink\twitch.py")){
             $TwitchPlugin = [System.IO.FileInfo]::new("$($thisApp.Config.Current_Folder)\Resources\Streamlink\twitch.py")
             $TwitchPlugin_exist = [System.IO.FileInfo]::new("$env:APPDATA\Streamlink\Plugins\twitch.py")
@@ -2008,16 +2012,24 @@ function Start-Streamlink {
             $TwitchProxies = $null
           }
           write-ezlogs "| Streamlink Adblocking solutions to use: $twitch_disable_ads $TwitchProxies" -loglevel 2 -logtype Twitch
+        }elseif($thisapp.config.Skip_Twitch_Ads){
+          $twitch_disable_ads = '--twitch-disable-ads'
+          $TwitchProxies = $null  
+          write-ezlogs "| Streamlink will attempt to skip ADs" -loglevel 2 -logtype Twitch
         }else{
           $twitch_disable_ads = $null
           $TwitchProxies = $null
           write-ezlogs "| Streamlink will not attempt to block ADs" -loglevel 2 -logtype Twitch
         } 
-        #client id for nintendo switch, used as a hack/bypass for twitch ads, not likely needed anymore: --twitch-api-header="Client-Id=ue6666qo983tsx6so1t0vnawi233wa"
+        #TODO: OLD: client id for nintendo switch, used as a hack/bypass for twitch ads, not likely needed anymore: --twitch-api-header="Client-Id=ue6666qo983tsx6so1t0vnawi233wa"
+        #TODO: Passing twitch token currently broken - need to update - seems a patch is soon to be available from streamlink
+        $Twitch_oauth = $Null
         if($TwitchProxies){
           #Dont pass twitch token when using proxy playlists - ignored anyway
           $Twitch_oauth = $Null
         }
+        $StreamLinkCommand = "$($media.url) $qualities --player-external-http --player-external-http-port $Streamlink_Port --player-external-http-continuous 0 --loglevel $($thisApp.Config.Streamlink_Verbose_logging) --retry-streams 1 --hls-segment-queue-threshold 4 --hls-playlist-reload-attempts 4 --retry-max 10 $twitch_disable_ads $TwitchProxies --stream-segment-threads 3 --ringbuffer-size 128M --hls-segment-stream-data  --twitch-low-latency $Twitch_oauth $HTTP_Interface"
+        write-ezlogs ">>>> Starting streamlink at path: $streamlinkpath -- Command: $StreamLinkCommand" -showtime -logtype Twitch
         Write-EZLogs "############## [STREAMLINK MONITOR START] ##############" -logtype Twitch -loglevel 2
         $qualitypattern = '\[cli\]\[info\] Opening stream:(?<value>.*)'
         #$Availablestreamspattern = 'Available streams: (?<value>.*)'
@@ -2028,7 +2040,7 @@ function Start-Streamlink {
         try{
           $newProc = [System.Diagnostics.ProcessStartInfo]::new($streamlinkpath)
           $newProc.WindowStyle = 'Hidden'
-          $newProc.Arguments = "$($media.url) $qualities --player-external-http --player-external-http-port $Streamlink_Port --player-external-http-continuous 0 --loglevel $($thisApp.Config.Streamlink_Verbose_logging) --retry-streams 1 --hls-segment-queue-threshold 4 --hls-playlist-reload-attempts 4 --retry-max 10 $twitch_disable_ads $TwitchProxies --stream-segment-threads 3 --ringbuffer-size 128M --hls-segment-stream-data  --twitch-low-latency $Twitch_oauth $HTTP_Interface"
+          $newProc.Arguments = $StreamLinkCommand
           $newProc.UseShellExecute = $false
           $newProc.CreateNoWindow = $true
           $newProc.RedirectStandardOutput = $true
@@ -2036,6 +2048,12 @@ function Start-Streamlink {
         }catch{
           write-ezlogs "An exception occurred executing svcl" -catcherror $_
         }finally{
+          $streamlink_wait_timer = 0
+          while($streamlink_wait_timer -lt 40 -and !$([System.Diagnostics.Process]::GetProcessesByName('streamlink'))){
+            $streamlink_wait_timer++
+            write-ezlogs "| Waiting for streamlink process...." -showtime -logtype Twitch
+            start-sleep -Milliseconds 500
+          }
           while($Process.StandardOutput.EndOfStream -eq $false){
             $Process.StandardOutput.ReadLine() | & { process {
                 write-ezlogs $_ -logfile $($thisApp.Config.Streamlink_Log_File) -callpath 'Start-Streamlink'

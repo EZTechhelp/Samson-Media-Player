@@ -6,7 +6,7 @@
     0.9.9
 
     .Build 
-    BETA-003
+    BETA-004
 
     .SYNOPSIS
     Universal Media Player built in Powershell
@@ -6249,14 +6249,18 @@ $synchash.Add_to_Playlist_timer.add_Tick({
               $youtube_id = ($youtube_id -split '\&pp=')[0]
             } 
             if($thisApp.Config.Use_invidious){
-              $url = "https://yewtu.be/embed/$youtube_id`?&autoplay=1"
+              #$url = "https://yewtu.be/embed/$youtube_id`?&autoplay=1"
+              #$url = "https://invidious.nerdvpn.de/embed/$youtube_id`?&autoplay=1"
+              $url = "https://invidious.jing.rocks/embed/$youtube_id`?&autoplay=1"             
             }else{
               $url = "https://www.youtube.com/embed/$youtube_id`?&autoplay=1"
             }
           }elseif($Media.url -match 'list='){
             $playlist_id = ($($Media.url) -split('list='))[1].trim()
             if($thisApp.Config.Use_invidious){            
-              $url = "https://yewtu.be/embed/videoseries?list=$playlist_id`&autoplay=1"       
+              #$url = "https://yewtu.be/embed/videoseries?list=$playlist_id`&autoplay=1" 
+              #$url = "https://invidious.nerdvpn.de/embed/videoseries?list=$playlist_id`&autoplay=1"
+              $url = "https://invidious.jing.rocks/embed/videoseries?list=$playlist_id`&autoplay=1"      
             }else{
               $url = "https://www.youtube.com/embed/videoseries?list=$youtube_id`&autoplay=1"
             }                   
@@ -9029,7 +9033,7 @@ if($thisApp.Config.startup_perf_timer){
           Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop
           $newvalue = $([timespan]::FromSeconds($($synchash.MediaPlayer_Slider.Value))).TotalSeconds
           write-ezlogs ">>>> Seeking Youtube webplayer to: $newvalue" -dev_mode
-          if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be'){
+          if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
             $synchash.YoutubeWebView2_SeekScript =  @"
 try {
   //var state = player.paused();
@@ -9184,7 +9188,7 @@ if($synchash.Mini_Progress_Slider){
           $synchash.Webview2_VolumeScript      
         )
       }else{
-        if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be'){
+        if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
           $synchash.YoutubeWebView2_VolumeScript =  @"       
         var volume = player.volume();
         console.log('Invidious volume',volume)

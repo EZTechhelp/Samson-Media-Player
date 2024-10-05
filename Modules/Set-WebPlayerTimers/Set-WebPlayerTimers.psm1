@@ -50,7 +50,7 @@ function Set-WebPlayerTimer
             $Current_Playing_Id = $null
             if(($synchash.Youtube_WebPlayer_title -or $synchash.Spotify_WebPlayer_title) -and ($synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio -or $synchash.Webview2.CoreWebView2.IsDocumentPlayingAudio -or $synchash.Webview2.CoreWebView2.IsMuted -or $synchash.YoutubeWebView2.CoreWebView2.IsMuted) -or ($synchash.WebPlayer_State -ne 0 -or $synchash.Spotify_WebPlayer_State.playbackstate -ne 0)){        
               if($synchash.Youtube_WebPlayer_title){
-                if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be'){
+                if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
                   $synchash.YoutubeWebView2_Script = @"
 `n
 var player_data = JSON.parse(document.getElementById('player_data').textContent);
@@ -420,7 +420,7 @@ var state = getStatePosition();
                 $synchash.Now_Playing_Label.DataContext = "PLAYING" 
                 $synchash.VideoView_Play_Icon.kind = 'PauseCircleOutline'
               }               
-              if($synchash.Invidious_webplayer_current_Media -and ($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be')){
+              if($synchash.Invidious_webplayer_current_Media -and ($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|')){
                 if($synchash.Invidious_webplayer_current_Media.length_seconds -match ":"){
                   $total_time = $synchash.Invidious_webplayer_current_Media.length_seconds
                 }else{

@@ -42,32 +42,26 @@ function Send-SpotifyCall {
   }catch{
     write-ezlogs "[Send-SpotifyCall] An exception occurred executing Get-SpotifyAccessToken to retreive bearer token for API header" -showtime -catcherror $_
   }
-  if($Verboselog){Write-ezlogs ">>>> Attempting to send request to API $Uri" -showtime -color cyan}
+  if($Verboselog){Write-ezlogs ">>>> Attempting to send request to API $Uri" -showtime -logtype Spotify -Dev_mode:$verboselog}
   $ProgressPreference = 'SilentlyContinue'
   if($header){
     try {
       if($Body -and $Body.GetType() -notmatch 'Switch'){
         $Response = Invoke-WebRequest -Method $Method -Headers $Header -Body $Body -Uri $Uri -UseBasicParsing
       }else{
-        $req=[System.Net.HTTPWebRequest]::Create($Uri);
+        $req=[System.Net.HTTPWebRequest]::Create($Uri)
         $req.Method=$Method
         $req.ContentLength = '0'
         $headers = [System.Net.WebHeaderCollection]::new()
         $headers.add('Authorization',($header.values))
         $req.Headers = $headers              
         $GetResponse = $req.GetResponse()
-        $strm=$GetResponse.GetResponseStream();
-        $sr=New-Object System.IO.Streamreader($strm);
+        $strm=$GetResponse.GetResponseStream()
+        $sr=[System.IO.Streamreader]::new($strm)
         $Response=$sr.ReadToEnd()
-        #$Response = $output | convertfrom-json   
         $headers.Clear()
-        $GetResponse.dispose()
-        $strm.Dispose()
-        $sr.Dispose()
-        #$Response = Invoke-WebRequest -Method $Method -Headers $Header -Uri $Uri -UseBasicParsing
       }  
-    }
-    catch {
+    }catch {
       # if we hit the rate limit of Spotify API, code is 429
       if ($_.Exception.Response.StatusCode -eq 429) {
         $WaitTime = ([int]$_.Exception.Response.Headers['retry-after']) + 1
@@ -77,18 +71,17 @@ function Send-SpotifyCall {
         Start-Sleep -Seconds $WaitTime 
 
         # then make request again (no try catch this time)
-        #$Response = Invoke-WebRequest -Method $Method -Headers $Header -Body $Body -Uri $Uri -UseBasicParsing  
         if($Body -and $Body.GetType() -notmatch 'Switch'){
           $Response = Invoke-WebRequest -Method $Method -Headers $Header -Body $Body -Uri $Uri -UseBasicParsing
         }else{
-          $req=[System.Net.HTTPWebRequest]::Create($Uri);
+          $req=[System.Net.HTTPWebRequest]::Create($Uri)
           $req.Method=$Method
           $headers = [System.Net.WebHeaderCollection]::new()
           $headers.add('Authorization',($header.values))
           $req.Headers = $headers              
           $GetResponse = $req.GetResponse()
-          $strm=$GetResponse.GetResponseStream();
-          $sr=New-Object System.IO.Streamreader($strm);
+          $strm=$GetResponse.GetResponseStream()
+          $sr=[System.IO.Streamreader]::new($strm)
           $Response=$sr.ReadToEnd()
           $headers.Clear()
           $GetResponse.dispose()
@@ -102,14 +95,14 @@ function Send-SpotifyCall {
           if($Body -and $Body.GetType() -notmatch 'Switch'){
             $Response = Invoke-WebRequest -Method $Method -Headers $Header -Body $Body -Uri $Uri -UseBasicParsing
           }else{
-            $req=[System.Net.HTTPWebRequest]::Create($Uri);
+            $req=[System.Net.HTTPWebRequest]::Create($Uri)
             $req.Method=$Method
             $headers = [System.Net.WebHeaderCollection]::new()
             $headers.add('Authorization',($header.values))
             $req.Headers = $headers              
             $GetResponse = $req.GetResponse()
-            $strm=$GetResponse.GetResponseStream();
-            $sr=New-Object System.IO.Streamreader($strm);
+            $strm=$GetResponse.GetResponseStream()
+            $sr=[System.IO.Streamreader]::new($strm)
             $Response=$sr.ReadToEnd()
             $headers.Clear()
             $GetResponse.dispose()
@@ -126,14 +119,14 @@ function Send-SpotifyCall {
         if($Body -and $Body.GetType() -notmatch 'Switch'){
           $Response = Invoke-WebRequest -Method $Method -Headers $Header -Body $Body -Uri $Uri -UseBasicParsing
         }else{
-          $req=[System.Net.HTTPWebRequest]::Create($Uri);
+          $req=[System.Net.HTTPWebRequest]::Create($Uri)
           $req.Method=$Method
           $headers = [System.Net.WebHeaderCollection]::new()
           $headers.add('Authorization',($header.values))
           $req.Headers = $headers              
           $GetResponse = $req.GetResponse()
-          $strm=$GetResponse.GetResponseStream();
-          $sr=New-Object System.IO.Streamreader($strm);
+          $strm=$GetResponse.GetResponseStream()
+          $sr=[System.IO.Streamreader]::new($strm)
           $Response=$sr.ReadToEnd()
           $headers.Clear()
           $GetResponse.dispose()
@@ -146,27 +139,53 @@ function Send-SpotifyCall {
           $synchash.Stop_media_Timer.start()
         }       
         return
-      }
-      else {
+      }else {
         # Exception is not Rate Limit so throw it
         write-ezlogs "An exception occurred in Send-Spotifycall for Invoke-webrequest to $Uri - header $($header.values | out-string) - Body: $($Body | out-string)" -showtime -catcherror $_
       }
+    }finally{
+      if($GetResponse -is [System.IDisposable]){
+        $GetResponse.dispose()
+      }
+      if($strm -is [System.IDisposable]){
+        $strm.Dispose()
+      }
+      if($sr -is [System.IDisposable]){
+        $sr.Dispose()
+      }
     }
   }
-  $ProgressPreference = 'Continue'
-  if($Response.Content){
-    if($verboselog){Write-ezlogs 'We got an API JSON response' -showtime}
-    return $Response.Content | ConvertFrom-Json
-  }elseif($Response){
-    if($verboselog){Write-ezlogs "We got an API JSON response - URI $($Uri) - body $($body | out-string) - header $($Header | out-string)" -showtime}
-    return $Response | ConvertFrom-Json
-  }else{
-    Write-ezlogs "We did not get a valid API response - URI $($Uri) - body $($body | out-string)" -showtime -warning -logtype Spotify
-    if($retry){
-      write-ezlogs "Attempting to retry Send-SpotifyCall for url $uri" -showtime -warning -logtype Spotify
-      Send-SpotifyCall -Method $Method -Uri $Uri -Body $Body -ApplicationName $ApplicationName -First_Run:$First_Run -retry:$false
+  #Output
+  try{
+    $ProgressPreference = 'Continue'
+    if($Response.Content){
+      if($verboselog){Write-ezlogs 'We got an API JSON response' -showtime -logtype Spotify -Dev_mode:$verboselog}
+      try {
+        $output = $Response.Content | ConvertFrom-Json -ErrorAction SilentlyContinue
+      } catch {
+        Write-ezlogs "Spotify API returned content but it was not JSON: $($Response.Content)" -showtime -logtype Spotify -Warning
+        $output = $Null
+      }
+      return $output
+    }elseif($Response){
+      if($verboselog){Write-ezlogs "We got an API JSON response - URI $($Uri) - Response: $($Response | out-string) - header: $($Header)" -showtime -logtype Spotify -Dev_mode:$verboselog}
+      try {
+        $output = $Response | ConvertFrom-Json -ErrorAction SilentlyContinue
+      } catch {
+        Write-ezlogs "Spotify API returned content but it was not JSON: $($Response)" -showtime -logtype Spotify -Warning
+        $output = $Null
+      }
+      return $output
     }else{
-      return $false
+      Write-ezlogs "We did not get a valid API response - URI $($Uri) - body $($body | out-string)" -showtime -warning -logtype Spotify
+      if($retry){
+        write-ezlogs "Attempting to retry Send-SpotifyCall for url $uri" -showtime -warning -logtype Spotify
+        Send-SpotifyCall -Method $Method -Uri $Uri -Body $Body -ApplicationName $ApplicationName -First_Run:$First_Run -retry:$false
+      }else{
+        return $false
+      }
     }
+  }catch{
+    write-ezlogs "[Send-SpotifyCall] An exception occurred in the output block of Send-Spotify - Response.Content: $($Response.Content | out-string)" -showtime -catcherror $_
   }
 }

@@ -2,8 +2,8 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Samson"
-#define MyAppVersion "0.9.8"
-#define MyAppBuild "BETA-008"
+#define MyAppVersion "0.9.9"
+#define MyAppBuild "BETA-003"
 #define Arguments ""
 #define MyAppPublisher "EZTechhelp"
 #define MyAppURL "https://www.EZTechhelp.com/"

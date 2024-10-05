@@ -325,11 +325,11 @@ function Set-Mute
         $synchash.WebView2.ExecuteScriptAsync(
           $synchash.Webview2_MuteScript      
         )
-      }elseif(($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be') -and $synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio -and !$synchash.YoutubeWebView2.CoreWebView2.IsMuted){
+      }elseif(($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious') -and $synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio -and !$synchash.YoutubeWebView2.CoreWebView2.IsMuted){
         write-ezlogs ">>>> Muting YoutubeWebView2.CoreWebView2 for Invidious" -loglevel 2
         $synchash.YoutubeWebView2.CoreWebView2.IsMuted = $true
         $synchash.MuteButton_ToggleButton.isChecked = $true
-      }elseif(($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be') -and $synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio -and $synchash.YoutubeWebView2.CoreWebView2.IsMuted){
+      }elseif(($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious') -and $synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio -and $synchash.YoutubeWebView2.CoreWebView2.IsMuted){
         write-ezlogs ">>>> UnMuting YoutubeWebView2.CoreWebView2 for Invidious" -loglevel 2
         $synchash.YoutubeWebView2.CoreWebView2.IsMuted = $false 
         $synchash.MuteButton_ToggleButton.isChecked = $false

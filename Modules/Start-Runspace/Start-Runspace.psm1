@@ -93,7 +93,9 @@ function Start-RunspaceJobHandler {
       $thisApp.JobCleanup = [hashtable]::Synchronized(@{})
       $thisApp.Jobs = [system.collections.arraylist]::Synchronized(([System.Collections.ArrayList]::new()))
       $thisApp.JobCleanup.Flag = $True
-      if($thisApp.Config.Threading_Log_File){
+      if($thisApp.Dev -and $thisApp.Log_File){
+        $logfile = $thisApp.Log_File
+      }elseif($thisApp.Config.Threading_Log_File){
         $logfile = $thisApp.Config.Threading_Log_File
       }
       if($UseTimer){
@@ -468,7 +470,7 @@ function Start-Runspace
     [switch]$verboselog
   )
   #Start a new Runspace JobHandler if one is not already running
-  if($StartRunspaceJobHandler -and !$thisApp.JobCleanup) {
+  if($StartRunspaceJobHandler -and (!$thisApp.JobCleanup -or $JobCleanup_Startonly)) {
     try{
       $Null = Start-RunspaceJobHandler -thisApp $thisApp -Function_list write-ezlogs -PassCallPath:$PassCallPath -logfile $logfile -UseRestrictedRunspace:$Dev -UseTimer:$JobHandlerUseTimer -SourceRunspace $runspace_name
       if($JobCleanup_Startonly){

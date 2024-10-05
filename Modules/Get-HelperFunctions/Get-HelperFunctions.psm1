@@ -970,11 +970,17 @@ function confirm-requirements
             }else{
               $Do_Install = $true
             }
-            if($appinstalled -and $latestversion -gt $appinstalled){
+            if($latestversion -match '-'){
+              $latestversion = $latestversion -replace '-','.'
+            } 
+            if($appinstalled -match '-'){
+              $appinstalled = $appinstalled -replace '-','.'
+            }
+            if($appinstalled -and [System.Version]$latestversion -gt [System.Version]$appinstalled){
               write-ezlogs ">>>> Found existing version of Streamlink ($($appinstalled)) but is lower version than the version included with this build ($($latestversion)) -- executing silent install/update" -warning
               $Do_Install = $true
               $Do_Update = $true
-            }elseif($appinstalled -and $latestversion -lt $appinstalled){
+            }elseif($appinstalled -and [System.Version]$latestversion -lt [System.Version]$appinstalled){
               write-ezlogs ">>>> Found existing version of Streamlink ($($appinstalled)) that is a newer version than the version included with this build ($($latestversion))" -warning
               $Do_Install = $false
               $Do_Update = $false
@@ -1694,10 +1700,10 @@ function Get-ChildProcesses {
     }   
     if($Full){
       Get-CIMInstance -ClassName win32_process -filter $Processfilter | & { process {
-        $_
-        if ($_.ParentProcessId -ne $_.ProcessId) {
-          Get-ChildProcesses $_.ProcessId
-        }
+          $_
+          if ($_.ParentProcessId -ne $_.ProcessId) {
+            Get-ChildProcesses $_.ProcessId
+          }
       }}
     }else{
       Get-CIMInstance -Class Win32_Process -Filter $Processfilter
@@ -1849,10 +1855,10 @@ Function Set-Window {
           Write-warning "Window is minimized! Coordinates will not be accurate."
         }
         $Object = [PSCustomObject]@{
-            ProcessName = $ProcessName
-            Size = $Size
-            TopLeft = $TopLeft
-            BottomRight = $BottomRight
+          ProcessName = $ProcessName
+          Size = $Size
+          TopLeft = $TopLeft
+          BottomRight = $BottomRight
         }
         $Object.PSTypeNames.insert(0,'System.Automation.WindowInfo')
         $Object            

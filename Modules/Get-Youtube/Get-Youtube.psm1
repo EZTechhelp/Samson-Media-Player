@@ -1467,7 +1467,9 @@ function Get-YoutubeURL
       }
       if($youtube_id){
         if($url -notmatch 'tv\.youtube\.com'){
-          $InvidiousUrl = "https://yewtu.be/embed/$youtube_id"
+          #$InvidiousUrl = "https://yewtu.be/embed/$youtube_id"
+          #$InvidiousUrl = "https://invidious.nerdvpn.de/embed/$youtube_id"          
+          $InvidiousUrl = "https://invidious.jing.rocks/embed/$youtube_id" 
           $embedurl = "https://www.youtube.com/embed/$youtube_id`?autoplay=1&enablejsapi=1"
           if($playlist_id){
             $PlaylistUrl = "https://www.youtube.com/watch?v=$($youtube_id)&list=$($playlist_id)`&autoplay=1&enablejsapi=1"
