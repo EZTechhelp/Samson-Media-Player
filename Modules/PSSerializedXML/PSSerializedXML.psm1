@@ -567,6 +567,7 @@ public class Config
     public int TwitchBrowser_Paging { get; set; }
     public ArrayList Media_Directories { get; set; }
     public List<Custom_EQ_Preset> Custom_EQ_Presets { get; set; }
+    public ArrayList Playlists_SortBy { get; set; }
     public ArrayList Spotify_Playlists { get; set; }
     public ArrayList Youtube_Playlists { get; set; }
     public SerializableDictionary<int, string> Current_Playlist { get; set; }
@@ -994,6 +995,8 @@ public class Playlist : INotifyPropertyChanged
     public bool AllowDrop { get; set; }
     public string Type { get; set; }
     public bool Enable_LiveAlert { get; set; }
+    public string SortItemsBy { get; set; }
+    public string SortItemsDirection { get; set; }
     public string Playlist_Date_Added { get; set; }
     private bool isexpanded;
     public bool IsExpanded
@@ -1245,6 +1248,8 @@ function ConvertTo-Playlists {
             #Image = $playlist.image
             Source = $playlist.Source
             Type = $playlist.Type
+            SortItemsBy = $playlist.SortItemsBy
+            SortItemsDirection = $playlist.SortItemsDirection
             Playlist_Date_Added = $playlist.Playlist_Date_Added
             IsExpanded = $playlist.IsExpanded
           }
@@ -1511,6 +1516,7 @@ function Export-SerializedXML {
         'TwitchBrowser_Paging' = $InputObject.TwitchBrowser_Paging
         'Media_Directories' = $InputObject.Media_Directories
         'Custom_EQ_Presets' = $Custom_EQ_Presets
+        'Playlists_SortBy' = $InputObject.Playlists_SortBy
         'Spotify_Playlists' = $InputObject.Spotify_Playlists
         'Youtube_Playlists' = $InputObject.Youtube_Playlists
         'Current_Playlist' = $Current_Playlist

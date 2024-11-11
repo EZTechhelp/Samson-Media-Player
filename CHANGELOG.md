@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+## 0.9.9 - BETA-005
+> - Branch: Samson
+
+### Added
++ Ability to assign a global hotkey for restarting media
++ Ability sort custom playlists via playlist dropdown sort button
+  + Currently can only sort by playlist name or date added
+  + Chosen sort option is saved to config
+  + WIP - ability to choose direction and sort playlist items planned
++ New video player toggle and restart media button for Miniplayer skin 
+
+### Changes
++ Refactored restart media command into new function Restart-Media
++ Miniplayer skin display screen now dynamically resizes with width changes
+  + Scrolling text animation also starts/stops depending on display width
+
+### Fixed
++ DropDown menu item style not applied to context menus in some situations
++ Entries in custom Twitch proxy list can get duplicated or wont remove
++ Multiple windows can sometimes appear for Youtube authentication
++ Context menus with large amount of items sometimes fail to allow scrolling
+
+### Comments
++ Will NOT trigger first time setup
+
 ## 0.9.9 - BETA-004
 > - Branch: Samson
 

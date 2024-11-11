@@ -47,6 +47,7 @@ function Get-WPFAnimation
     #[System.Windows.Media.MediaTimeline]::DesiredFrameRateProperty.OverrideMetadata([System.Windows.Media.MediaTimeline],[System.Windows.FrameworkPropertyMetadata]::new(30))
     #[System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace
     #$synchash.PlayIcon1_Storyboard.Storyboard.BeginAnimation([System.Windows.Media.RotateTransform]::AngleProperty,$null)
+    $CurrentMiniDisplayScreenWidth = $synchash.TrayPlayer_Background_TileGrid.ActualWidth + 327
     switch ($Action) {
       'Begin' {
         if($thisApp.Config.Enable_Performance_Mode -or $thisApp.Force_Performance_Mode){
@@ -59,8 +60,8 @@ function Get-WPFAnimation
           $synchash.PlayIcon2_Storyboard.Storyboard.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
           $synchash.PlayIcon2_Storyboard.Storyboard.SetValue([System.Windows.Media.MediaTimeline]::DesiredFrameRateProperty,30)
           $synchash.PlayIcon2_Storyboard.Storyboard.Begin($synchash.PlayIcon2,[System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace,$true)
-        }
-        if($synchash.MiniDisplayPanel_Storyboard -and $synchash.MiniSlideText_StackPanel.ActualWidth -gt 300){
+        }          
+        if($synchash.MiniDisplayPanel_Storyboard -and $synchash.MiniSlideText_StackPanel.ActualWidth -gt $CurrentMiniDisplayScreenWidth){
           $target = [System.Windows.Media.Animation.Storyboard]::GetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard)
           if(!$target){
             $null = [System.Windows.Media.Animation.Storyboard]::SetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard,$synchash.MiniDisplayPanel_Text_StackPanel)
@@ -85,7 +86,7 @@ function Get-WPFAnimation
         if($synchash.DisplayPanel_Storyboard -and $synchash.SlideText_StackPanel.ActualWidth -gt 500){
           $synchash.DisplayPanel_Storyboard.Storyboard.Pause($synchash.DisplayPanel_Text_StackPanel)
         }
-        if($synchash.miniDisplayPanel_Storyboard -and $synchash.miniSlideText_StackPanel.ActualWidth -gt 300){
+        if($synchash.miniDisplayPanel_Storyboard -and $synchash.miniSlideText_StackPanel.ActualWidth -gt $CurrentMiniDisplayScreenWidth){
           $target = [System.Windows.Media.Animation.Storyboard]::GetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard)
           if(!$target){
             $null = [System.Windows.Media.Animation.Storyboard]::SetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard,$synchash.MiniDisplayPanel_Text_StackPanel)
@@ -104,12 +105,12 @@ function Get-WPFAnimation
           $synchash.DisplayPanel_Storyboard.Storyboard.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::new(0)      
           $synchash.DisplayPanel_Storyboard.Storyboard.Stop($synchash.DisplayPanel_Text_StackPanel)
         }
-        if($synchash.MiniDisplayPanel_Storyboard){
+        if($synchash.MiniDisplayPanel_Storyboard -and $synchash.MiniDisplayPanel_Storyboard.Storyboard.RepeatBehavior -ne [System.Windows.Media.Animation.RepeatBehavior]::new(0)){
           $target = [System.Windows.Media.Animation.Storyboard]::GetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard)
           if(!$target){
             $null = [System.Windows.Media.Animation.Storyboard]::SetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard,$synchash.MiniDisplayPanel_Text_StackPanel)
           }
-          $synchash.MiniDisplayPanel_Storyboard.Storyboard.RepeatBehavior = '0.1x'
+          $synchash.MiniDisplayPanel_Storyboard.Storyboard.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::new(0)
           $synchash.MiniDisplayPanel_Storyboard.Storyboard.Stop()
         }
         if($synchash.AudioSpectrum.DataContext.IsCapturing){
@@ -124,7 +125,7 @@ function Get-WPFAnimation
         if($synchash.DisplayPanel_Storyboard -and $synchash.SlideText_StackPanel.ActualWidth -gt 500){
           $synchash.DisplayPanel_Storyboard.Storyboard.Resume($synchash.DisplayPanel_Text_StackPanel)
         }
-        if($synchash.MiniDisplayPanel_Storyboard -and $synchash.MiniSlideText_StackPanel.ActualWidth -gt 300){
+        if($synchash.MiniDisplayPanel_Storyboard -and $synchash.MiniSlideText_StackPanel.ActualWidth -gt $CurrentMiniDisplayScreenWidth){
           $synchash.MiniDisplayPanel_Storyboard.Storyboard.Resume()
         }
       }

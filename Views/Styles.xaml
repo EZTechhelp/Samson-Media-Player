@@ -3481,7 +3481,23 @@
 							<Setter TargetName="ButtonIcon" Property="HorizontalAlignment" Value="Center"/>
 							<Setter TargetName="ButtonIconBackground" Property="HorizontalAlignment" Value="Center"/>
 							<Setter Property="Effect" TargetName="Rectangle" Value="{x:Null}"/>							
-                        </MultiTrigger>							
+                        </MultiTrigger>		
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="Name" Value="MiniRestartButton_Button" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="ButtonIcon" Property="Kind" Value="Replay"/>	
+							<Setter TargetName="ButtonIcon" Property="Width" Value="13"/>
+							<Setter TargetName="ButtonIcon" Property="Height" Value="13"/>
+							<Setter TargetName="ButtonIcon" Property="Margin" Value="0,0,0,0"/>
+							<Setter TargetName="ButtonIconBackground" Property="Kind" Value="Replay"/>
+							<Setter TargetName="ButtonIconBackground" Property="Margin" Value="0,0,0,0"/>
+							<Setter TargetName="ButtonIconBackground" Property="Width" Value="13"/>
+							<Setter TargetName="ButtonIconBackground" Property="Height" Value="13"/>
+							<Setter TargetName="ButtonIcon" Property="HorizontalAlignment" Value="Center"/>
+							<Setter TargetName="ButtonIconBackground" Property="HorizontalAlignment" Value="Center"/>
+							<Setter Property="Effect" TargetName="Rectangle" Value="{x:Null}"/>							
+                        </MultiTrigger>						
 						<Trigger Property="Tag" Value="VolumeMute">	
 						   <Setter TargetName="ButtonIcon" Property="Kind" Value="VolumeMute"/>
                            <Setter TargetName="ButtonIconBackground" Property="Kind" Value="VolumeMute"/>							
@@ -3606,6 +3622,21 @@
 						   <Setter TargetName="MiniMuteButtonIconBackground" Property="Margin" Value="0,0,0,0"/>
 						   <Setter TargetName="MiniMuteButtonIconBackground" Property="Width" Value="13"/>
 					       <Setter TargetName="MiniMuteButtonIconBackground" Property="Height" Value="13"/>
+						   <Setter TargetName="MiniMuteButtonIcon" Property="HorizontalAlignment" Value="Center"/>
+						   <Setter TargetName="MiniMuteButtonIconBackground" Property="HorizontalAlignment" Value="Center"/>
+						   <Setter TargetName="MiniMuteButtonIcon" Property="VerticalAlignment" Value="Center"/>
+						   <Setter TargetName="MiniMuteButtonIconBackground" Property="HorizontalAlignment" Value="Center"/>
+						   <Setter Property="Effect" TargetName="Rectangle" Value="{x:Null}"/>							   
+						</Trigger>
+						<Trigger Property="Name" Value="MiniVideo_ToggleButton">	
+						   <Setter TargetName="MiniMuteButtonIcon" Property="Kind" Value="TelevisionPlay"/>
+                           <Setter TargetName="MiniMuteButtonIconBackground" Property="Kind" Value="TelevisionPlay"/>	
+						   <Setter TargetName="MiniMuteButtonIcon" Property="Width" Value="15"/>
+						   <Setter TargetName="MiniMuteButtonIcon" Property="Height" Value="15"/>
+						   <Setter TargetName="MiniMuteButtonIcon" Property="Margin" Value="0,0,0,0"/>
+						   <Setter TargetName="MiniMuteButtonIconBackground" Property="Margin" Value="0,0,0,0"/>
+						   <Setter TargetName="MiniMuteButtonIconBackground" Property="Width" Value="15"/>
+					       <Setter TargetName="MiniMuteButtonIconBackground" Property="Height" Value="15"/>
 						   <Setter TargetName="MiniMuteButtonIcon" Property="HorizontalAlignment" Value="Center"/>
 						   <Setter TargetName="MiniMuteButtonIconBackground" Property="HorizontalAlignment" Value="Center"/>
 						   <Setter TargetName="MiniMuteButtonIcon" Property="VerticalAlignment" Value="Center"/>
@@ -4160,14 +4191,16 @@
 		<Setter Property="HasDropShadow" Value="False"/>
 		<Setter Property="Background" Value="#FF252525"/>
 		<!-- <Setter Property="Margin" Value="0,0,0,0"/> -->
-		<Setter Property="MinWidth" Value="100"/>
+		<Setter Property="MinWidth" Value="100"/>		
 		<Setter Property="HorizontalAlignment" Value="Stretch"/>
 		<Setter Property="Foreground" Value="{StaticResource MahApps.Brushes.IdealForeground}"/>		
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="{x:Type ContextMenu}">
 					<Border Name="Border" Background="#FF252525" CornerRadius="2.5, 3, 2.5, 3" BorderBrush="{StaticResource MahApps.Brushes.Accent}" BorderThickness="1" Opacity="1" >	
-						<VirtualizingStackPanel IsVirtualizing="True" ClipToBounds="True" Orientation="Vertical" IsItemsHost="True" Margin="5,4,5,4"/>
+						<ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+							<VirtualizingStackPanel IsVirtualizing="True" ClipToBounds="True" Orientation="Vertical" IsItemsHost="True" Margin="5,4,5,4" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+						</ScrollViewer>	
 					</Border>
 <!-- 					<ControlTemplate.Triggers>
 						<Trigger Property="IsMouseOver" Value="true">
@@ -4241,7 +4274,9 @@
 									BorderBrush="{StaticResource MahApps.Brushes.Accent}"
 									BorderThickness="1"
 									SnapsToDevicePixels="False">
-									<VirtualizingStackPanel IsVirtualizing="True" IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+									<ScrollViewer ScrollViewer.CanContentScroll="false" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" >
+										<VirtualizingStackPanel IsVirtualizing="True" ClipToBounds="True" Orientation="Vertical" IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+									</ScrollViewer>																			
 								</Border>
 							</Popup>									   
 						</Grid>
@@ -4289,7 +4324,9 @@
 			<Setter.Value>
 				<ControlTemplate TargetType="{x:Type ContextMenu}">
 					<Border Background="#FF252525" CornerRadius="7, 7, 8, 8" BorderBrush="{StaticResource MahApps.Brushes.Accent}" BorderThickness="1" Opacity="1">
-						<VirtualizingStackPanel IsVirtualizing="True" ClipToBounds="True" Orientation="Vertical" IsItemsHost="True" Margin="5,4,5,4"/>
+						<ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" >
+							<VirtualizingStackPanel IsVirtualizing="True" ClipToBounds="True" Orientation="Vertical" IsItemsHost="True" Margin="5,4,5,4" KeyboardNavigation.DirectionalNavigation="Cycle"/>
+						</ScrollViewer>	
 					</Border>
 				</ControlTemplate>
 			</Setter.Value>

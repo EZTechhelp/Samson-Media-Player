@@ -60,6 +60,11 @@ function Get-GlobalHotKeys{
         [Void]$synchash.VolMutehotkey.dispose()
         $synchash.VolMutehotkey = $null
       }
+      if($synchash.Restarthotkey -is [System.IDisposable]){
+        write-ezlogs "| Disposing and unregistering existing Restarthotkeykey" -loglevel 2
+        [Void]$synchash.Restarthotkey.dispose()
+        $synchash.Restarthotkey = $null
+      }
       if(!$Register -and !$Shutdown){
         if($synchash.Hotkeys_Button.isEnabled -and !$synchash.Hotkeys_Button.isChecked){
           $synchash.Hotkeys_Button.isChecked = $false
@@ -117,8 +122,10 @@ function Get-GlobalHotKeys{
               }
             }elseif($args -eq $synchash.VolMutehotkey){
               write-ezlogs ">>>> Global VolMutehotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" -showtime  
-              write-ezlogs " | Toggling Mute" -showtime
               Set-Mute -thisApp $thisApp -synchash $synchash
+            }elseif($args -eq $synchash.Restarthotkey){
+              write-ezlogs ">>>> Global Restarthotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" -showtime  
+              Restart-Media -thisApp $thisApp -synchash $synchash    
             }else{
               write-ezlogs "Pressed registered Hotkey with action assigned: $($args | out-string)" -showtime -Warning
             }
@@ -165,7 +172,7 @@ $($thisApp.Config.GlobalHotKeys.name[1])  : $($thisApp.Config.GlobalHotKeys.key[
 $($thisApp.Config.GlobalHotKeys.name[2])   : $($thisApp.Config.GlobalHotKeys.key[2])
 "@
         }else{
-         $ToolTip = 'Global HotKeys Currently Disabled - No Hotkeys have been configured'
+          $ToolTip = 'Global HotKeys Currently Disabled - No Hotkeys have been configured'
         }
         if($synchash.Hotkeys_Button.isEnabled -and !$synchash.Hotkeys_Button.isChecked){
           $synchash.Hotkeys_Button.isChecked = $true

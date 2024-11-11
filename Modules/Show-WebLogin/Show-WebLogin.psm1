@@ -113,9 +113,9 @@ function Show-WebLogin{
       $imagebrush.ViewportUnits = "Absolute"
       $imagebrush.Viewport = "0,0,600,283"
       $imagebrush.ImageSource.freeze()
-      $MahDialog_hash.Background_TileGrid.Background = $imagebrush     
+      $MahDialog_hash.Background_TileGrid.Background = $imagebrush
       $MahDialog_hash.Window.Style = $MahDialog_hash.Window.TryFindResource('WindowChromeStyle')
-      $MahDialog_hash.Window.UpdateDefaultStyle()
+      #$MahDialog_hash.Window.UpdateDefaultStyle()
       if($SplashTitle -match 'Twitch'){
         $MahDialog_hash.Background_Grid_Row_1.Height = '400'
         $MahDialog_hash.Window.MinHeight="550"
@@ -124,7 +124,7 @@ function Show-WebLogin{
         $message = "$message`n`n$Message_2"
       }    
       if([system.io.file]::Exists($MarkDownFile)){
-        write-ezlogs ">>>> Opening Markdown Help File: $MarkDownFile" -loglevel 2 -logtype Setup
+        write-ezlogs ">>>> Opening Markdown Help File: $MarkDownFile" -loglevel 2 -logtype Webview2
         $Message += "`n`n" + ([system.io.file]::ReadAllText($MarkDownFile) -replace '\[USERNAME\]',$env:USERNAME -replace '\[appname\]',$thisApp.Config.App_Name -replace '\[appversion\]',$thisApp.Config.App_Version -replace '\[CURRENTFOLDER\]',$thisApp.Config.Current_Folder)
       }
       if($Message){
@@ -148,7 +148,7 @@ function Show-WebLogin{
       write-ezlogs "An exception occurred Show-WebLogin Xaml" -showtime -catcherror $_
     }
     $Webview2_Path = 'WebView2'
-    write-ezlogs " | Opening URL $($WebView2_URL) - Webview2 folder: $($thisApp.config.Temp_Folder)\$Webview2_Path" -showtime -logtype Setup -loglevel 2
+    write-ezlogs " | Opening URL $($WebView2_URL) - Webview2 folder: $($thisApp.config.Temp_Folder)\$Webview2_Path" -showtime -logtype Webview2 -loglevel 2
     try{  
       #region Create Webview2 
       if($MahDialog_hash.Dialog_WebView2_Grid.Children -contains $MahDialog_hash.Dialog_WebView2){
@@ -173,12 +173,26 @@ function Show-WebLogin{
         $WebView2Options = [Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions]::new()
         $WebView2Options.AdditionalBrowserArguments = '--autoplay-policy=no-user-gesture-required --Disable-features=HardwareMediaKeyHandling,OverscrollHistoryNavigation,msExperimentalScrolling'
         $WebView2Options.IsCustomCrashReportingEnabled = $true
+        if(-not [string]::IsNullOrEmpty($WebView2Options.AreBrowserExtensionsEnabled)){
+          Write-EZLogs '>>>> Enabling browser extension support for Dialog_WebView2' -logtype Webview2
+          $WebView2Options.AreBrowserExtensionsEnabled = $true
+          $MahDialog_hash.Dialog_WebView2.CreationProperties = [Microsoft.Web.WebView2.Wpf.CoreWebView2CreationProperties]::new()
+          $MahDialog_hash.Dialog_WebView2.CreationProperties.AreBrowserExtensionsEnabled = $true  
+        }
         $MahDialog_hash.WebView2Env = [Microsoft.Web.WebView2.Core.CoreWebView2Environment]::CreateAsync(
           [String]::Empty, [IO.Path]::Combine( [String[]]($($thisApp.config.Temp_Folder), $Webview2_Path) ), $WebView2Options
         )
-        $MahDialog_hash.WebView2Env.GetAwaiter().OnCompleted(
+        if(!$MahDialog_hash.Dialog_WebView2.CoreWebView2){
+          $MahDialog_hash.WebView2Env.GetAwaiter().OnCompleted(
+            [Action]{
+              Write-EZLogs ">>>> Executing Dialog_WebView2 EnsureCoreWebView2Async for WebView2Env result -- BrowserVersionString: $($MahDialog_hash.WebView2Env.Result.BrowserVersionString) -- UserDataFolder: $($MahDialog_hash.WebView2Env.Result.UserDataFolder)" -showtime -logtype Webview2
+              $MahDialog_hash.Dialog_WebView2.EnsureCoreWebView2Async($MahDialog_hash.WebView2Env.Result)     
+            }
+          )
+        }
+<#        $MahDialog_hash.WebView2Env.GetAwaiter().OnCompleted(
           [Action]{$MahDialog_hash.Dialog_WebView2.EnsureCoreWebView2Async( $MahDialog_hash.WebView2Env.Result )}
-        )      
+        )#>      
       }
       #endregion Initialize Webview2  
 
@@ -349,7 +363,7 @@ function Show-WebLogin{
             $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
             write-ezlogs ">>>> Registering Miniplayer window handle: $($Window_Helper.Handle) -- to appid: $appid" -Dev_mode
             $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)  
-            Add-Member -InputObject $thisapp.config -Name 'Installed_AppID' -Value $appid -MemberType NoteProperty -Force
+            $thisapp.config.Installed_AppID = $appid
           }               
         }catch{
           write-ezlogs "An exception occurred in MahDialog_hash.Window.Add_Loaded" -showtime -catcherror $_

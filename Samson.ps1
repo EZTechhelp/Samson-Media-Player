@@ -6,7 +6,7 @@
     0.9.9
 
     .Build 
-    BETA-004
+    BETA-005
 
     .SYNOPSIS
     Universal Media Player built in Powershell
@@ -5964,6 +5964,94 @@ $synchash.Add_to_Playlist_timer.add_Tick({
 #----------------------------------------------
 
 #---------------------------------------------- 
+#region Sort Playlists
+#TODO: Finish - make sure to bind menu items states together
+#----------------------------------------------
+[System.Windows.RoutedEventHandler]$Sort_Playlist_Click_Command = {
+  try{
+    #Write-ezlogs "[NOT FINISHED] Sort Menu item of button $($this.Name) Clicked for: $($this.Header) - isChecked: $($this.isChecked)" -Warning
+    $thisApp.Config.Playlists_SortBy.clear()
+    if($this.isChecked){
+      Write-EZLogs ">>>> Adding $($this.Header) to Playlists_SortBy"
+      [void]$thisApp.Config.Playlists_SortBy.add($this.Header)
+    }elseif($this.Header -in $thisApp.Config.Playlists_SortBy){
+      [void]$thisApp.Config.Playlists_SortBy.Remove($this.Header)
+    }
+    Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -Startup -use_Runspace -SortBy $this.Header
+    $this.parent.items | & { process {
+        if($_.Header -eq $this.Header){
+          Write-ezlogs "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning
+          $_.isChecked = $this.isChecked
+        }else{
+          Write-ezlogs "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning
+          $_.isChecked = $false
+        }
+    }}
+    if($this.Name -ne $Synchash.Sort_Playlist_Button.name){
+      $Synchash.Sort_Playlist_Button.items | & { process {
+          if($_.Header -eq $this.Header){
+            Write-ezlogs "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning
+            $_.isChecked = $this.isChecked
+          }else{
+            Write-ezlogs "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning
+            $_.isChecked = $false
+          }
+      }}
+    }
+    if($this.Name -ne $synchash.Sort_Playlist_VideoView_Button.name){
+      $Synchash.Sort_Playlist_VideoView_Button.items | & { process {
+          if($_.Header -eq $this.Header){
+            Write-ezlogs "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning
+            $_.isChecked = $this.isChecked
+          }else{
+            Write-ezlogs "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning
+            $_.isChecked = $false
+          }
+      }}
+    }
+    if($this.Name -ne $Synchash.Sort_Playlist_Button_Library.name){
+      $Synchash.Sort_Playlist_Button_Library.items | & { process {
+          if($_.Header -eq $this.Header){
+            Write-ezlogs "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning
+            $_.isChecked = $this.isChecked
+          }else{
+            Write-ezlogs "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning
+            $_.isChecked = $false
+          }
+      }}
+    }
+  }catch{
+    write-ezlogs "An exception occurred in Click event for menuitem: $($this.Header)" -catcherror $_
+  }
+}
+
+[System.Windows.RoutedEventHandler]$synchash.Sort_Playlist_Loaded_Command = {
+  param($sender)
+  try{
+    write-ezlogs "[NOT FINISHED] $($sender.Name) Loaded Event" -Warning
+    #$sender.items.clear()
+    'Name','Playlist_Date_Added' | & { process {
+        $Header = $_
+        if($Header -and $sender.items.header -notcontains $Header){
+          $MenuItem = [System.Windows.Controls.MenuItem]::new()
+          $MenuItem.IsCheckable = $true
+          $MenuItem.Header = $Header
+          $MenuItem.Name = $sender.Name
+          $MenuItem.isChecked = [bool]($Header -in $thisApp.Config.Playlists_SortBy)
+          [Void]$MenuItem.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Sort_Playlist_Click_Command)
+          #[Void]$MenuItem.AddHandler([System.Windows.Controls.MenuItem]::UncheckedEvent,$Sort_Playlist_UnChecked_Command)
+          [Void]$sender.items.add($MenuItem)
+        }                    
+    }}
+  }catch{
+    write-ezlogs "An exception occurred in $($sender.Name).add_Loaded" -catcherror $_
+  }
+}
+#---------------------------------------------- 
+#endregion Sort Playlists
+#----------------------------------------------
+
+#---------------------------------------------- 
 #region Delete Playlists
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.DeletePlaylist_Command = {
@@ -8066,7 +8154,7 @@ if($synchash.ScreenShot_Button){
 [System.Windows.RoutedEventHandler]$synchash.Show_Video_Button_CLick_Command = {
   param($sender)
   try{   
-    if($synchash.VideoButton_ToggleButton.isChecked){
+    if($sender.isChecked){
       $Action = 'Open'
     }else{
       $Action = 'Close'
@@ -9281,16 +9369,7 @@ if($thisApp.Config.startup_perf_timer){
   param([Parameter(Mandatory)]$sender)
   try{
     write-ezlogs ">>>> Received Restart Command" -showtime
-    $mediatorestart = $synchash.current_playing_Media
-    if($mediatorestart.id){
-      if($mediatorestart.source -eq 'Spotify' -or $mediatorestart.url -match 'spotify\:'){
-        Start-SpotifyMedia -Media $mediatorestart -thisApp $thisapp -synchash $synchash -use_WebPlayer:$thisapp.config.Spotify_WebPlayer -Show_notifications:$thisApp.config.Show_notifications -RestrictedRunspace:$thisapp.config.Spotify_WebPlayer
-      }else{
-        Start-Media -Media $mediatorestart -thisApp $thisapp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification -restart
-      }
-    }else{
-      write-ezlogs "Didnt find any current playing media to restart" -AlertUI -warning
-    }
+    Restart-Media -thisApp $thisApp -synchash $synchash
   }catch{
     write-ezlogs 'An exception occurred in Restart_Media click event' -showtime -catcherror $_
   }
@@ -9576,7 +9655,15 @@ if($synchash.Refresh_Playlist_Button){
 if($synchash.Refresh_Playlist_Button_Library){
   [Void]$synchash.Refresh_Playlist_Button_Library.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.Refresh_PlaylistCommand)
 }
-
+if($synchash.Sort_Playlist_Button){
+  [Void]$synchash.Sort_Playlist_Button.AddHandler([System.Windows.Controls.Button]::LoadedEvent,$synchash.Sort_Playlist_Loaded_Command)
+}
+if($synchash.Sort_Playlist_VideoView_Button){
+  [Void]$synchash.Sort_Playlist_VideoView_Button.AddHandler([System.Windows.Controls.Button]::LoadedEvent,$synchash.Sort_Playlist_Loaded_Command)
+}
+if($synchash.Sort_Playlist_Button_Library){
+  [Void]$synchash.Sort_Playlist_Button_Library.AddHandler([System.Windows.Controls.Button]::LoadedEvent,$synchash.Sort_Playlist_Loaded_Command)
+}
 #videoview controls
 if($synchash.VideoView_Play_Button){
   [Void]$synchash.VideoView_Play_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,[System.Windows.RoutedEventHandler]$Synchash.PauseMedia_Command)

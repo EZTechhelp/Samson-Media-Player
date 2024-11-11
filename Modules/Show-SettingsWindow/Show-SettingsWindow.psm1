@@ -7187,7 +7187,33 @@ function Show-SettingsWindow{
             }
           }catch{
             write-ezlogs "An exception occurred saving VolMutehotkey global hotkey" -CatchError $_       
-          }       
+          }  
+          
+          try{
+            if($HashSetup.Restarthotkey.Hotkey -is [MahApps.Metro.Controls.HotKey] -and $HashSetup.Restarthotkey.text){
+              if($thisApp.Config.GlobalHotKeys.Name -notcontains 'Restarthotkey'){
+                $Hotkey = [GlobalHotKey]::New()
+                [void]$thisApp.Config.GlobalHotKeys.add($Hotkey)
+              }else{
+                $Hotkey = $thisApp.Config.GlobalHotKeys | Where-Object {$_.Name -eq 'Restarthotkey'}
+              }
+              if($Hotkey.Name -ne 'Restarthotkey'){
+                $Hotkey.Name = 'Restarthotkey'
+              }
+              if($Hotkey.Modifier -ne $HashSetup.Restarthotkey.Hotkey.ModifierKeys){
+                $Hotkey.Modifier = $HashSetup.Restarthotkey.Hotkey.ModifierKeys
+              }
+              if($Hotkey.Key -ne $HashSetup.Restarthotkey.Hotkey.Key){
+                $Hotkey.Key = $HashSetup.Restarthotkey.Hotkey.Key
+              }
+            }elseif($thisApp.Config.GlobalHotKeys.Name -contains 'Restarthotkey'){
+              write-ezlogs "| Removing Restarthotkey from GlobalHotkeys"
+              $Hotkey = $thisApp.Config.GlobalHotKeys | Where-Object {$_.Name -eq 'Restarthotkey'}
+              [void]$thisApp.Config.GlobalHotKeys.Remove($Hotkey)
+            }
+          }catch{
+            write-ezlogs "An exception occurred saving Restarthotkey global hotkey" -CatchError $_       
+          }
           try{
             Update-MainWindow -thisApp $thisApp -synchash $synchash -PSGlobalHotkeys
           }catch{
@@ -7504,6 +7530,7 @@ function Show-SettingsWindow{
           #Proxies
           if($hashsetup.Twitch_Custom_Proxy_Toggle.isOn){
             $thisApp.config.UseTwitchCustom = $true
+            $thisApp.config.TwitchProxies.clear()
             foreach($proxy in $hashsetup.Twitch_Custom_Proxy_Grid.items){
               if(Test-URL $proxy.url){
                 if($thisApp.config.TwitchProxies -notcontains $proxy.url){

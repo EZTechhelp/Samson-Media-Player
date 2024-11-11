@@ -1201,7 +1201,46 @@ function Open-MiniPlayer
           write-ezlogs "An exception occurred in Window MouseLeftButtonDown event" -showtime -catcherror $_
         }
     })
+    $synchash.MiniPlayer_Viewer.Add_SizeChanged({
+        Param($Sender,[System.Windows.SizeChangedEventArgs]$e)
+        try{     
+          if($thisApp.Config.Dev_mode){write-ezlogs ">>>> MiniPlayer_Viewer sized changed from $($e.PreviousSize) to $($e.NewSize)" -Dev_mode}
+          if(-not [string]::IsNullOrEmpty($synchash.MiniDisplayPanel_Title_TextBlock.Text)){
+            $CurrentMiniDisplayScreenWidth = $synchash.TrayPlayer_Background_TileGrid.ActualWidth + 327
+            if($thisApp.Config.Dev_mode){write-ezlogs "| Checking mini display screen current size: $CurrentMiniDisplayScreenWidth - miniSlideText_StackPanel width: $($synchash.miniSlideText_StackPanel.ActualWidth)" -Dev_mode}
+            if($synchash.miniDisplayPanel_Storyboard -and $synchash.miniSlideText_StackPanel.ActualWidth -gt $CurrentMiniDisplayScreenWidth){              
+              $target = [System.Windows.Media.Animation.Storyboard]::GetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard)
+              if(!$target){
+                $null = [System.Windows.Media.Animation.Storyboard]::SetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard,$synchash.MiniDisplayPanel_Text_StackPanel)
+              }
+              if($thisApp.Config.Dev_mode){write-ezlogs "| Checking if current media is playing and not paused" -Dev_mode}
+              if($synchash.Current_playing_media.id -and !$synchash.PauseButton_ToggleButton.isChecked){
+                if($thisApp.Config.Dev_mode){write-ezlogs "| Starting Miniplayer storyboard" -Dev_mode}
+                $synchash.MiniDisplayPanel_Storyboard.Storyboard.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
+                $synchash.MiniDisplayPanel_Storyboard.Storyboard.AutoReverse = $false
+                if($thisApp.Config.Enable_Performance_Mode -or $thisApp.Force_Performance_Mode){
+                  $synchash.MiniDisplayPanel_Storyboard.Storyboard.SetValue([System.Windows.Media.MediaTimeline]::DesiredFrameRateProperty,5)
+                }else{
+                  $synchash.MiniDisplayPanel_Storyboard.Storyboard.SetValue([System.Windows.Media.MediaTimeline]::DesiredFrameRateProperty,$null)
+                }
+                $synchash.MiniDisplayPanel_Storyboard.Storyboard.Begin()
+              }
+            }elseif($synchash.miniDisplayPanel_Storyboard -and $synchash.Current_playing_media.id){
+              $target = [System.Windows.Media.Animation.Storyboard]::GetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard)
+              if(!$target){
+                $null = [System.Windows.Media.Animation.Storyboard]::SetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard,$synchash.MiniDisplayPanel_Text_StackPanel)
+              }
+              if($thisApp.Config.Dev_mode){write-ezlogs "| Stopping Miniplayer storyboard" -Dev_mode}
+              $synchash.MiniDisplayPanel_Storyboard.Storyboard.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::new(0)
+              $synchash.MiniDisplayPanel_Storyboard.Storyboard.Stop()
+            }
+          }
+        }catch{
+          write-ezlogs "An exception occurred in TrayPlayerPopUpGrid.Add_SizeChanged event" -CatchError $_ -showtime
+        }  
+    })
 
+    
     #$synchash.MiniPlayer_Viewer.Remove_Loaded({})
     if(!$Synchash.MiniPlayer_LoadedScriptblock){
       $Synchash.MiniPlayer_LoadedScriptblock = {
@@ -1299,7 +1338,7 @@ function Open-MiniPlayer
           $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::SizeChangedEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)
           $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::PreviewGotKeyboardFocusEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)
           $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::loadedEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)
-          $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::UnloadedEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)
+          $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::UnloadedEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)        
           [void][System.Windows.Data.BindingOperations]::ClearAllBindings($synchash.TaskbarItem_PlayButton)
           [void][System.Windows.Data.BindingOperations]::ClearAllBindings($synchash.Mini_TaskbarItem_StopButton)         
           $synchash.MiniPlayer_Viewer.Remove_closing($Synchash.MiniPlayer_ClosingScriptblock)
@@ -2618,9 +2657,10 @@ function Add-WPFMenu {
           $menuItem.Header = $item.Header
           if(-not [string]::IsNullOrEmpty($item.Style)){
             $menuItem.Style = $sourceWindow.Window.TryFindResource($item.Style)
-          }
-          if($trayMenu){                  
+          }elseif($trayMenu){                  
             $menuItem.Style = $sourceWindow.Window.TryFindResource("TrayDropDownMenuitemStyle")
+          }else{
+            $menuItem.Style = $sourceWindow.Window.TryFindResource("DropDownMenuitemStyle")
           }
           if(-not [string]::IsNullOrEmpty($item.FontWeight)){
             $menuItem.FontWeight = $item.FontWeight
@@ -2694,9 +2734,9 @@ function Add-WPFMenu {
             $Binding.Path = $item.binding_property_path
             $Binding.Mode = $item.binding_mode
             if($item.binding_property){
-             $BindingProperty = $item.binding_property
+              $BindingProperty = $item.binding_property
             }else{
-             $BindingProperty = 'IsCheckedProperty'
+              $BindingProperty = 'IsCheckedProperty'
             }
             $null = [System.Windows.Data.BindingOperations]::SetBinding($menuItem,[System.Windows.Controls.MenuItem]::$BindingProperty, $Binding) 
           }
@@ -2736,10 +2776,12 @@ function Add-WPFMenu {
                 if(-not [string]::IsNullOrEmpty($subitem.BackGround)){
                   $SubmenuItem.BackGround = $subitem.BackGround
                 }
-                if($trayMenu){                  
+                if(-not [string]::IsNullOrEmpty($subitem.Style)){
+                  $SubmenuItem.Style = $sourceWindow.Window.TryFindResource($subitem.Style)
+                }elseif($trayMenu){                  
                   $SubmenuItem.Style = $sourceWindow.Window.TryFindResource("TrayDropDownMenuitemStyle")
-                  #$SubmenuItem.BorderThickness = '0'
-                  #$SubmenuItem.BackGround = '#FF252525'
+                }else{
+                  $SubmenuItem.Style = $sourceWindow.Window.TryFindResource("DropDownMenuitemStyle")
                 }
                 $SubmenuItem.IsEnabled = $subitem.enabled
                 if($SubItem.IsCheckable){
@@ -2835,8 +2877,12 @@ function Add-WPFMenu {
                         $SubmenuItem_lvl2.BackGround = $subitem_lvl2.BackGround
                       }
                       $SubmenuItem_lvl2.IsEnabled = $subitem_lvl2.enabled
-                      if($trayMenu){
+                      if(-not [string]::IsNullOrEmpty($subitem_lvl2.Style)){
+                        $SubmenuItem_lvl2.Style = $sourceWindow.Window.TryFindResource($subitem_lvl2.Style)
+                      }elseif($trayMenu){                  
                         $SubmenuItem_lvl2.Style = $sourceWindow.Window.TryFindResource("TrayDropDownMenuitemStyle")
+                      }else{
+                        $SubmenuItem_lvl2.Style = $sourceWindow.Window.TryFindResource("DropDownMenuitemStyle")
                       }
                       if($SubItem_lvl2.IsCheckable){
                         $SubmenuItem_lvl2.IsCheckable = $SubItem_lvl2.IsCheckable
@@ -2914,13 +2960,17 @@ function Add-WPFMenu {
       if($AddContextMenu){
         $contextMenu.Style = $null
         $contextMenu.Style =  $style
-        $control.ContextMenu = $null 
-        $control.ContextMenu = $contextMenu
         if($AnchorableContextMenu){
-          $control.AnchorableContextMenu = $null
+          if($control.AnchorableContextMenu){
+            [void][System.Windows.Data.BindingOperations]::ClearAllBindings($control.AnchorableContextMenu)
+            $control.AnchorableContextMenu = $null
+          }
           $control.AnchorableContextMenu = $contextMenu
         }else{
-          $control.ContextMenu = $null
+          if($control.ContextMenu){
+            [void][System.Windows.Data.BindingOperations]::ClearAllBindings($control.ContextMenu)
+            $control.ContextMenu = $null
+          }
           $control.ContextMenu = $contextMenu
         }   
       }elseif($addchild){

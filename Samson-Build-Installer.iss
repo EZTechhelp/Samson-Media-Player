@@ -3,7 +3,7 @@
 
 #define MyAppName "Samson"
 #define MyAppVersion "0.9.9"
-#define MyAppBuild "BETA-003"
+#define MyAppBuild "BETA-005"
 #define Arguments ""
 #define MyAppPublisher "EZTechhelp"
 #define MyAppURL "https://www.EZTechhelp.com/"

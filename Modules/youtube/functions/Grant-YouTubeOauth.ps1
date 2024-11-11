@@ -34,7 +34,6 @@ function Grant-YoutubeOauth {
   <#
       .SYNOPSIS
       Implementation of oAuth authentication for YouTube APIs.
-
   #>
   [CmdletBinding()]
   param (
@@ -54,7 +53,7 @@ function Grant-YoutubeOauth {
   if(!$secretstore){
     write-ezlogs "[Grant-YoutubeOauth] >>>> Couldnt find secret vault, Attempting to create new application: $Name" -showtime -LogLevel 2 -logtype Youtube
     try{
-      $secretstore = New-YoutubeApplication -thisApp $thisApp -Name $Name -ConfigPath $ConfigPath                  
+      $secretstore = New-YoutubeApplication -thisApp $thisApp -Name $Name -ConfigPath $ConfigPath
     }catch{
       write-ezlogs "An exception occurred when setting or configuring the secret vault $Name" -CatchError $_ -showtime -enablelogs 
     }   
@@ -83,9 +82,9 @@ function Grant-YoutubeOauth {
     try{
       write-ezlogs "[Grant-YoutubeOauth] >>>> Attempting to refresh access token" -showtime -LogLevel 2 -logtype Youtube
       write-ezlogs "[Grant-YoutubeOauth] | URL: $refresh_Uri" -showtime -LogLevel 2 -logtype Youtube -Dev_mode      
-      $refresh_response = Invoke-RestMethod -Method Post -Uri $refresh_Uri 
+      $refresh_response = Invoke-RestMethod -Method Post -Uri $refresh_Uri -ErrorAction SilentlyContinue
     }catch{
-      write-ezlogs "[Grant-YoutubeOauth] An exception occurred in invoke-restmethod for $refresh_Uri" -CatchError $_ -showtime
+      write-ezlogs "[Grant-YoutubeOauth] An exception occurred attempting to refresh the youtube access token" -CatchError $_ -showtime
     }
     if($refresh_response.access_token){
       Set-Secret -Name YoutubeAccessToken -Secret $refresh_response.access_token -Vault $secretstore
@@ -101,14 +100,13 @@ function Grant-YoutubeOauth {
     } 
   }else{
     write-ezlogs "[Grant-YoutubeOauth] Did not receive refresh token from Youtuberefresh_token secret of vault $($thisApp.Config.App_name) - Web Dialog Window Visible: $($MahDialog_hash.Window.isVisible)" -showtime -warning -logtype Youtube
-    if($MahDialog_hash.Window.isVisible){
-      write-ezlogs "[Grant-YoutubeOauth] WebCapture window is alreay open! Not launching another" -showtime -warning -logtype Youtube
-      return
-    }else{
-      write-ezlogs "[Grant-YoutubeOauth] Starting Youtube Web Auth capture" -showtime -warning -logtype Youtube
-    }
   }
-
+  if($MahDialog_hash.Window.isVisible){
+    write-ezlogs "[Grant-YoutubeOauth] WebCapture window is alreay open! Not launching another" -showtime -warning -logtype Youtube
+    return
+  }else{
+    write-ezlogs "[Grant-YoutubeOauth] Starting Youtube Web Auth capture" -showtime -warning -logtype Youtube
+  }
   $pode_Youtube_scriptblock = { 
     try{
       if(!(Get-command -Module Pode)){         
@@ -246,7 +244,7 @@ function Grant-YoutubeOauth {
         $WaitingMainWindow = $true
       }else{
         $WaitingMainWindow = $false
-      }            
+      }
       $MahDialog_hash = Show-WebLogin -SplashTitle "Youtube Account Login" -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_WebAuth.md"  -SplashLogo "$($thisApp.Config.Current_Folder)\Resources\Youtube\Material-Youtube_Auth.png" -WebView2_URL $URI -thisApp $thisApp -First_Run $First_Run -MahDialog_hash $MahDialog_hash    
       $wait = 0
       while(!$MahDialog_hash.Window.isVisible){
@@ -309,7 +307,7 @@ function Grant-YoutubeOauth {
     }catch{
       write-ezlogs "[Grant-YoutubeOauth] An exception occurred in Show-Weblogin" -showtime -catcherror $_
     }finally{
-       $PodeServerNetStat = ((NETSTAT.EXE -an).where({($_ -match '127.0.0.1:8000' -or $_ -match '0.0.0.0:8000') -and $_ -match 'LISTENING|ESTABLISHED'}))
+      $PodeServerNetStat = ((NETSTAT.EXE -an).where({($_ -match '127.0.0.1:8000' -or $_ -match '0.0.0.0:8000') -and $_ -match 'LISTENING|ESTABLISHED'}))
       if($PodeServerNetStat){
         try{ 
           write-ezlogs ">>>> Closing PodeServer for Youtube Auth Redirect capture with url: http://127.0.0.1:8000/CLOSE_YT_PODE - Netstat: $($PodeServerNetStat) - Get-PodeServerPath: $(Get-PodeServerPath)" -showtime -logtype Youtube -LogLevel 2        

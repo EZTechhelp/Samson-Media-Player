@@ -2517,6 +2517,7 @@ public class Config
     public int TwitchBrowser_Paging { get; set; }
     public ArrayList Media_Directories { get; set; }
     public List<Custom_EQ_Preset> Custom_EQ_Presets { get; set; }
+    public ArrayList Playlists_SortBy { get; set; }
     public ArrayList Spotify_Playlists { get; set; }
     public ArrayList Youtube_Playlists { get; set; }
     public SerializableDictionary<int, string> Current_Playlist { get; set; }
@@ -2954,6 +2955,8 @@ public class Playlist : INotifyPropertyChanged
     public bool AllowDrop { get; set; }
     public string Type { get; set; }
     public bool Enable_LiveAlert { get; set; }
+    public string SortItemsBy { get; set; }
+    public string SortItemsDirection { get; set; }
     public string Playlist_Date_Added { get; set; }
     private bool isexpanded;
     public bool IsExpanded

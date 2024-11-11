@@ -407,6 +407,16 @@ function Add-TrayMenu
           write-ezlogs "An exception occurred initializing MiniAutoPlay_ToggleButton" -CatchError $_
         }
       }
+      #Mini Video Viewer Toggle
+      if($synchash.MiniVideo_ToggleButton){
+        try{
+          $synchash.MiniVideoButton.Source = $image
+          [void]$synchash.MiniVideo_ToggleButton.AddHandler([Windows.Controls.Primitives.ToggleButton]::ClickEvent,$Synchash.VideoView_Command)
+        }catch{
+          write-ezlogs "An exception occurrerd initializing MiniShuffle_ToggleButton" -CatchError $_
+        }
+      }
+      #Mini Shuffle Toggle 
       if($synchash.MiniShuffle_ToggleButton){
         try{
           $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Openbutton.png") 
@@ -434,6 +444,15 @@ function Add-TrayMenu
             }
           }
           [void]$synchash.MiniShuffle_ToggleButton.AddHandler([System.Windows.Controls.Button]::ClickEvent,$Synchash.Shuffle_Playback_Button_command)
+        }catch{
+          write-ezlogs "An exception occurrerd initializing MiniShuffle_ToggleButton" -CatchError $_
+        }
+      }
+      #Mini Restart Button
+      if($synchash.MiniRestartButton_Button){
+        try{
+          $synchash.MiniRestartButton.Source = $image
+          [void]$synchash.MiniRestartButton_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$Synchash.RestartMedia_Command)
         }catch{
           write-ezlogs "An exception occurrerd initializing MiniShuffle_ToggleButton" -CatchError $_
         }
@@ -696,7 +715,8 @@ function Add-TrayMenu
       }) 
 
       $synchash.MiniDisplayPanel_Title_TextBlock.Add_SizeChanged({
-          try{
+          Param($Sender,[System.Windows.SizeChangedEventArgs]$e)
+          try{                   
             $target = [System.Windows.Media.Animation.Storyboard]::GetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard)
             if(!$target){
               $null = [System.Windows.Media.Animation.Storyboard]::SetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard,$synchash.MiniDisplayPanel_Text_StackPanel)
@@ -716,8 +736,10 @@ function Add-TrayMenu
               $null = [System.Windows.Media.Animation.Storyboard]::SetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard,$synchash.MiniDisplayPanel_Text_StackPanel)
             }  
             $synchash.MiniDisplayPanel_Slide_Storyboard.From = $($synchash.MiniSlideText_StackPanel.ActualWidth + 20)
-            $synchash.MiniSlideText_StackPanel2.SetValue([System.Windows.Controls.Canvas]::LeftProperty,$(-($synchash.MiniSlideText_StackPanel.ActualWidth) -20))      
-            if($synchash.MiniDisplayPanel_Storyboard -and $synchash.MiniSlideText_StackPanel.ActualWidth -gt 300){
+            $synchash.MiniSlideText_StackPanel2.SetValue([System.Windows.Controls.Canvas]::LeftProperty,$(-($synchash.MiniSlideText_StackPanel.ActualWidth) -20))  
+            
+            $CurrentDisplayScreenWidth = $synchash.TrayPlayer_Background_TileGrid.ActualWidth + 327
+            if($synchash.MiniDisplayPanel_Storyboard -and $synchash.MiniSlideText_StackPanel.ActualWidth -gt $CurrentDisplayScreenWidth){
               $synchash.MiniDisplayPanel_Storyboard.Storyboard.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
               $synchash.MiniDisplayPanel_Storyboard.Storyboard.AutoReverse = $false
               if($thisApp.Config.Enable_Performance_Mode -or $thisApp.Force_Performance_Mode){
@@ -735,6 +757,8 @@ function Add-TrayMenu
             write-ezlogs "An exception occurred in SlideText_StackPanel.Add_SizeChanged event" -CatchError $_ -showtime
           }  
       })
+
+
       $synchash.TrayPlayer.add_PreviewTrayPopupOpen({
           try{   
             if($synchash.MiniPlayer_Viewer.isVisible){

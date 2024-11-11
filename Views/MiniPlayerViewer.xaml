@@ -16,8 +16,8 @@
 		xmlns:gif="http://wpfanimatedgif.codeplex.com"
         Name='MiniPlayer_Viewer' 
 		xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
-		Width="824"  
-		MinWidth="824"
+		Width="861"  
+		MinWidth="861"
 		Height="60" 
 		MinHeight="60"
 		MaxHeight="60" 

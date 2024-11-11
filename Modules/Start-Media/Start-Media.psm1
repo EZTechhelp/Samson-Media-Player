@@ -3267,4 +3267,35 @@ function Update-Subtitles {
 #---------------------------------------------- 
 #endregion Update-Subtitles Function
 #----------------------------------------------
-Export-ModuleMember -Function @('Start-Media','Start-Streamlink','Start-MediaCast','Start-NewMedia','Update-MediaRenderers','Update-Subtitles')
+
+#---------------------------------------------- 
+#region Restart-Media Function
+#----------------------------------------------
+function Restart-Media {
+  Param (
+    $synchash,
+    $thisApp,
+    [switch]$VerboseLog
+  )
+  try{
+    write-ezlogs ">>>> Executing Restart-Media" -showtime
+    $mediatorestart = $synchash.current_playing_Media
+    if($mediatorestart.id){
+      if($mediatorestart.source -eq 'Spotify' -or $mediatorestart.url -match 'spotify\:'){
+        if($VerboseLog -or $thisApp.Config.Dev_mode){write-ezlogs "| Restarting Spotify Media: $($mediatorestart.title)" -showtime -Dev_mode:$thisApp.Config.Dev_mode}
+        Start-SpotifyMedia -Media $mediatorestart -thisApp $thisapp -synchash $synchash -use_WebPlayer:$thisapp.config.Spotify_WebPlayer -Show_notifications:$thisApp.config.Show_notifications -RestrictedRunspace:$thisapp.config.Spotify_WebPlayer
+      }else{
+        if($VerboseLog -or $thisApp.Config.Dev_mode){write-ezlogs "| Restarting Media: $($mediatorestart.title)" -showtime -Dev_mode:$thisApp.Config.Dev_mode}
+        Start-Media -Media $mediatorestart -thisApp $thisapp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification -restart
+      }
+    }else{
+      write-ezlogs "Didnt find any current playing media to restart" -AlertUI -warning
+    }
+  }catch{
+    write-ezlogs "An exception occurred in Restart-Media" -showtime -catcherror $_
+  }   
+}
+#---------------------------------------------- 
+#endregion Restart-Media Function
+#----------------------------------------------
+Export-ModuleMember -Function @('Start-Media','Start-Streamlink','Start-MediaCast','Start-NewMedia','Update-MediaRenderers','Update-Subtitles','Restart-Media')

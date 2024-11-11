@@ -486,7 +486,8 @@ function Get-Playlists
     [string]$Media_Profile_Directory,
     [string]$Playlist_Profile_Directory,
     $Group,
-    [string]$SortBy = 'Name',
+    [string]$SortBy,
+    [string]$SortDirection,
     [switch]$VerboseLog,
     [switch]$Import_Playlists_Cache,
     [switch]$Test
@@ -519,7 +520,8 @@ function Get-Playlists
           [string]$Media_Profile_Directory,
           [string]$Playlist_Profile_Directory,
           $Group,
-          [string]$SortBy = 'Name',
+          [string]$SortBy,
+          [string]$SortDirection,
           [switch]$VerboseLog,
           [switch]$Import_Playlists_Cache,
           [switch]$Test
@@ -564,9 +566,16 @@ function Get-Playlists
               #$synchashWeak.Target.all_playlists = [System.Windows.Data.CollectionViewSource]::GetDefaultView($synchashWeak.Target.all_playlists)
               $synchashWeak.Target.all_playlists = [System.Collections.ObjectModel.ObservableCollection[playlist]]::new($synchashWeak.Target.all_playlists)
             }
-            if($SortBy -eq 'Name'){
+            if(!$SortBy -and $thisApp.Config.Playlists_SortBy.Count -gt 0){
+              $SortBy = $thisApp.Config.Playlists_SortBy[0]
+            }
+            if($SortBy -and $SortBy -in $synchashWeak.Target.all_playlists[0].psobject.properties.name){
               write-ezlogs "| Sorting playlists by: $SortBy"
-              [System.Collections.ObjectModel.ObservableCollection[playlist]]$synchashWeak.Target.all_playlists = ($synchashWeak.Target.all_playlists | Sort-Object -Property Name)
+              if($SortDirection -eq 'Descending'){
+                [System.Collections.ObjectModel.ObservableCollection[playlist]]$synchashWeak.Target.all_playlists = ($synchashWeak.Target.all_playlists | Sort-Object -Property $SortBy -Descending)
+              }else{
+                [System.Collections.ObjectModel.ObservableCollection[playlist]]$synchashWeak.Target.all_playlists = ($synchashWeak.Target.all_playlists | Sort-Object -Property $SortBy)
+              } 
             }
             $PlaylistIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\PlaylistMusic.png"
             $HardDiskIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\Material-Harddisk.png"

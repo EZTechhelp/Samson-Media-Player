@@ -380,7 +380,16 @@
 														   HorizontalAlignment="Left"
 														   mah:TextBoxHelper.Watermark="Enter hot key"
 														   AreModifierKeysRequired="False" />			
-										</VirtualizingStackPanel>														   														   
+										</VirtualizingStackPanel>
+										<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="20,0,0,0">										
+											<TextBlock Text="Restart Media" Margin="0,0,0,0"/>
+											<mah:HotKeyBox mah:TextBoxHelper.ClearTextButton="false"
+														   Margin="0,0,0,0"
+														   Name="Restarthotkey"
+														   HorizontalAlignment="Left"
+														   mah:TextBoxHelper.Watermark="Enter hot key"
+														   AreModifierKeysRequired="False" />			
+										</VirtualizingStackPanel>										
 								</VirtualizingStackPanel>									
 							</VirtualizingStackPanel>
 						</Expander>

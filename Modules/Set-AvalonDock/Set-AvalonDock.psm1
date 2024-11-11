@@ -239,6 +239,9 @@ function Set-AvalonDock {
               $sender.icon = $synchash.Window.icon
               $sender.icon.freeze()
             }
+            if($synchash.MiniVideo_ToggleButton -and !$synchash.MiniVideo_ToggleButton.isChecked){
+              $synchash.MiniVideo_ToggleButton.isChecked = $true
+            }
             if($synchash.VideoButton_ToggleButton.isChecked -and $thisApp.Config.Open_VideoPlayer -and !$synchash.MiniPlayer_Viewer.isVisible){
               write-ezlogs ">>>> Video player has been undocked to new window, closing Docking Manager View" -showtime
               Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Close
@@ -467,6 +470,9 @@ function Set-AvalonDock {
             if(!$synchash.MainWindow_IsClosing -and $synchash.VideoViewAirControl -and $synchash.VLC_Grid.Children -notcontains $synchash.VideoViewAirControl){
               Write-EZLogs '| Re-adding VideoViewAirControl to VLC_Grid'
               [void]$synchash.VLC_Grid.AddChild($synchash.VideoViewAirControl)
+            }
+            if($synchash.MiniVideo_ToggleButton.isChecked){
+              $synchash.MiniVideo_ToggleButton.isChecked = $false
             }
             if(!$synchash.MainWindow_IsClosing -and $synchash.VideoView_Grid.Parent.Parent -and $synchash.Window.IsLoaded){
               write-ezlogs "| Setting videoview parent window Owner to main window"
