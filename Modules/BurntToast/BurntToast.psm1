@@ -2307,6 +2307,29 @@ function Remove-BTNotification {
     }
   }
 }
+#----------------------------------------------
+#region New-EventWrapper Function
+#----------------------------------------------
+function New-EventWrapper
+{
+  param(
+    $target, 
+    $eventName,
+    $control,
+    $controlType
+  )
+  try{
+    if($control -and $controlType){
+      $wrapper = new-object "PoshWinRT.EventWrapper[$control,$controlType]"
+      $wrapper.Register($target, $eventName)
+    }
+  }catch{
+    write-ezlogs "An exception occurred creating a new EventWrapper $eventName" -showtime -catcherror $_
+  } 
+}
+#---------------------------------------------- 
+#endregion New-EventWrapper Function
+#----------------------------------------------
 function Submit-BTNotification {
   <#
       .SYNOPSIS
@@ -2462,19 +2485,31 @@ function Submit-BTNotification {
   }
 
   if ($ActivatedAction -or $DismissedAction -or $FailedAction) {
-    if ($Script:ActionsSupported) {
-      if ($ActivatedAction) {
+    #if ($Script:ActionsSupported) {
+    if ($ActivatedAction) {
+      if($psversiontable.PSVersion.Major -gt 5){
         $null = Register-ObjectEvent -InputObject $Toast -EventName Activated -Action $ActivatedAction
-      }
-      if ($DismissedAction) {
-        $null = Register-ObjectEvent -InputObject $Toast -EventName Dismissed -Action $DismissedAction
-      }
-      if ($FailedAction) {
-        $null = Register-ObjectEvent -InputObject $Toast -EventName Failed -Action $FailedAction
-      }
-    } else {
-      Write-Warning $Script:UnsupportedEvents
+      }else{
+        [void](Register-ObjectEvent -InputObject (New-EventWrapper -Target $Toast -eventname Activated -control 'Windows.UI.Notifications.ToastNotification' -controlType 'System.Object') -EventName FireEvent -Action $ActivatedAction)
+      }        
     }
+    if ($DismissedAction) {
+      if($psversiontable.PSVersion.Major -gt 5){
+        $null = Register-ObjectEvent -InputObject $Toast -EventName Dismissed -Action $DismissedAction
+      }else{
+        [void](Register-ObjectEvent -InputObject (New-EventWrapper -Target $Toast -eventname Dismissed -control 'Windows.UI.Notifications.ToastNotification' -controlType 'System.Object') -EventName FireEvent -Action $DismissedAction)
+      }
+    }
+    if ($FailedAction) {
+      if($psversiontable.PSVersion.Major -gt 5){
+        $null = Register-ObjectEvent -InputObject $Toast -EventName Failed -Action $FailedAction
+      }else{
+        [void](Register-ObjectEvent -InputObject (New-EventWrapper -Target $Toast -eventname Failed -control 'Windows.UI.Notifications.ToastNotification' -controlType 'System.Object') -EventName FireEvent -Action $FailedAction)
+      }
+    }
+    #} else {
+    #Write-Warning $Script:UnsupportedEvents
+    #}
   }
 
   if($PSCmdlet.ShouldProcess( "submitting: [$($Toast.GetType().Name)] with AppId $AppId, Id $UniqueIdentifier, Sequence Number $($Toast.Data.SequenceNumber) and XML: $($Content.GetContent())")) {
@@ -2571,20 +2606,7 @@ $WinMajorVersion = $results.version.Split('.')[0]
 $results.Dispose()
 
 if ($WinMajorVersion -ge 10) {
-
-  #TODO: Library already included with base app
-  #$Library = @( Get-ChildItem -Path $PSScriptRoot\lib\Microsoft.Toolkit.Uwp.Notifications\*.dll -Recurse -ErrorAction SilentlyContinue )
-
-  if ($IsWindows) {
-    #TODO: Library already included with base app
-    # $Library += @( Get-ChildItem -Path $PSScriptRoot\lib\Microsoft.Windows.SDK.NET\*.dll -Recurse -ErrorAction SilentlyContinue )
-  }
-
   # Add one class from each expected DLL here:
-  #TODO: Library already included with base app
-  <#  $LibraryMap = @{
-      'Microsoft.Toolkit.Uwp.Notifications.dll' = 'Microsoft.Toolkit.Uwp.Notifications.ToastContent'
-  }#>
   $Script:Config = [system.io.file]::ReadAllText("$PSScriptRoot\config.json")| ConvertFrom-Json
   $Script:DefaultImage = if ($Script:Config.AppLogo -match '^[.\\]') {
     "$PSScriptRoot$($Script:Config.AppLogo)"
@@ -2596,7 +2618,16 @@ if ($WinMajorVersion -ge 10) {
   try {
     if (-not ('Microsoft.Toolkit.Uwp.Notifications.ToastContent'  -as [type])) {
       [void][System.Reflection.Assembly]::LoadFrom("$PSScriptRoot\lib\Microsoft.Toolkit.Uwp.Notifications\Microsoft.Toolkit.Uwp.Notifications.dll")
-      #Add-Type -Path $Type.FullName -ErrorAction Stop
+      $AssemblyPath = "$([System.IO.DirectoryInfo]::new($PSScriptRoot).parent.parent.FullName)\Assembly\WinRT"
+      if([system.IO.File]::Exists("$AssemblyPath\Microsoft.Windows.SDK.NET.dll")){
+        [void][System.Reflection.Assembly]::LoadFrom("$AssemblyPath\Microsoft.Windows.SDK.NET.dll")
+      }      
+      if([system.IO.File]::Exists("$AssemblyPath\WinRT.Runtime.dll")){
+        [void][System.Reflection.Assembly]::LoadFrom("$AssemblyPath\WinRT.Runtime.dll")
+      }
+      if([system.IO.File]::Exists("$AssemblyPath\PoshWinRT.dll")){
+        [void][System.Reflection.Assembly]::LoadFrom("$AssemblyPath\PoshWinRT.dll")
+      }
     }
   } catch {
     Write-Error -Message "Failed to load library 'Microsoft.Toolkit.Uwp.Notifications.ToastContent': $_"

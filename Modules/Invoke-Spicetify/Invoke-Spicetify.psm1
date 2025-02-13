@@ -185,26 +185,26 @@ function Enable-Spicetify
       spicetify.exe config extensions webnowplaying.js
       if(Get-Process *Spotify* -ErrorAction SilentlyContinue){Get-Process *Spotify* | Stop-Process -Force -ErrorAction SilentlyContinue}
     }
-    $webnowplaying_file_content = [system.io.file]::ReadAllText($webnowplaying_file)
-    if ($webnowplaying_file_content -eq $custom_webnowplaying_content){
-      Write-ezlogs '>>>> Webnowplaying extension already patched, skipping...' -color cyan -showtime
-    }else{
-      try{         
-        write-ezlogs '>>>> Executing Spicetify backup' -showtime -color cyan
-        spicetify.exe backup
-        write-ezlogs '>>>> Creating Backup of existing webnowplaying.js' -Color cyan -showtime
-        $null = Copy-Item $webnowplaying_file -Destination ([System.IO.Path]::Combine("$Spicetify_Install_Dir\Extensions", 'backup_webnowplaying.js')) -Force -ErrorAction stop -Verbose:$thisapp.Config.Verbose_logging
-        #backup js file within directory
-        if(![System.IO.File]::Exists($webnowplaying_file_backup)){
-          $null = [system.io.file]::Move($webnowplaying_file,'webnowplaying.js.bak')
-        }
-        write-ezlogs ' | Adding patched webnowplaying.js' -showtime 
-        [system.io.file]::WriteAllText($webnowplaying_file,$custom_webnowplaying_content,[System.Text.Encoding]::Default)
-        Write-ezlogs 'Successfully patched webnowplaying.js' -showtime -Success                  
-      }catch{
-        write-ezlogs 'An error occurred while applying customized webnowplaying.js' -showtime -catcherror $_
+    #$webnowplaying_file_content = [system.io.file]::ReadAllText($webnowplaying_file)
+    #if ($webnowplaying_file_content -eq $custom_webnowplaying_content){
+    #  Write-ezlogs '>>>> Webnowplaying extension already patched, skipping...' -color cyan -showtime
+    #}else{
+    try{         
+      write-ezlogs '>>>> Executing Spicetify backup' -showtime -color cyan
+      spicetify.exe backup
+      write-ezlogs ">>>> Creating Backup of existing webnowplaying.js: $webnowplaying_file" -Color cyan -showtime
+      $null = Copy-Item $webnowplaying_file -Destination ([System.IO.Path]::Combine("$Spicetify_Install_Dir\Extensions", 'backup_webnowplaying.js')) -Force -ErrorAction SilentlyContinue -Verbose:$thisapp.Config.Verbose_logging
+      #backup js file within directory
+      if(![System.IO.File]::Exists($webnowplaying_file_backup)){
+        $null = [system.io.file]::Move($webnowplaying_file,'webnowplaying.js.bak')
       }
-    } 
+      write-ezlogs "| Adding patched webnowplaying to: $webnowplaying_file" -showtime 
+      [system.io.file]::WriteAllText($webnowplaying_file,$custom_webnowplaying_content,[System.Text.Encoding]::Default)
+      Write-ezlogs 'Successfully patched webnowplaying.js' -showtime -Success                  
+    }catch{
+      write-ezlogs 'An error occurred while applying customized webnowplaying.js' -showtime -catcherror $_
+    }
+    #} 
     try{              
       write-ezlogs '>>>> Applying Spicetify customizations' -Color cyan -showtime
       if($hash.Window){

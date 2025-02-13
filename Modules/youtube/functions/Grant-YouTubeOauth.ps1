@@ -39,7 +39,7 @@ function Grant-YoutubeOauth {
   param (
     [Parameter(Mandatory = $false)]
     $thisApp,
-    [string]$Name = $($thisApp.Config.App_Name),
+    [string]$VaultName = $($thisApp.Config.App_Name),
     [string]$ConfigPath = "$($thisApp.Config.Current_Folder)\Resources\API\Youtube-API-Config.xml",
     [switch]$First_Run,
     $MahDialog_hash = $MahDialog_hash   
@@ -49,19 +49,17 @@ function Grant-YoutubeOauth {
     $Client = [Management.Automation.PSSerializer]::Deserialize([System.IO.File]::ReadAllText($ConfigPath))
     $RedirectUri = $Client.RedirectUri
   } 
-  $secretstore = Get-SecretVault -Name $Name -ErrorAction SilentlyContinue
+  $secretstore = Get-SecretVault -Name $VaultName -ErrorAction SilentlyContinue
   if(!$secretstore){
-    write-ezlogs "[Grant-YoutubeOauth] >>>> Couldnt find secret vault, Attempting to create new application: $Name" -showtime -LogLevel 2 -logtype Youtube
+    write-ezlogs "[Grant-YoutubeOauth] >>>> Couldnt find secret vault, Attempting to create new application: $VaultName" -showtime -LogLevel 2 -logtype Youtube
     try{
-      $secretstore = New-YoutubeApplication -thisApp $thisApp -Name $Name -ConfigPath $ConfigPath
+      $secretstore = New-YoutubeApplication -thisApp $thisApp -Name $VaultName -ConfigPath $ConfigPath
     }catch{
-      write-ezlogs "An exception occurred when setting or configuring the secret vault $Name" -CatchError $_ -showtime -enablelogs 
+      write-ezlogs "An exception occurred when setting or configuring the secret vault $VaultName" -CatchError $_ -showtime -enablelogs 
     }   
   }else{
-    $secretstore = $secretstore.name 
-    write-ezlogs "[Grant-YoutubeOauth] >>>> Retrieved SecretVault: $secretstore" -showtime -LogLevel 3 -logtype Youtube    
+    write-ezlogs "[Grant-YoutubeOauth] >>>> Retrieved SecretVault: $VaultName" -showtime -LogLevel 3 -logtype Youtube    
   }
-
   #try refreshing token
   try{
     $refresh_access_token = Get-secret -name Youtuberefresh_token -Vault $($thisApp.Config.App_name) -ErrorAction SilentlyContinue
@@ -81,20 +79,47 @@ function Grant-YoutubeOauth {
     $refresh_Uri = 'https://oauth2.googleapis.com/token?&grant_type=refresh_token&client_id={0}&client_secret={1}&refresh_token={2}' -f $Client.client_id,$Client.client_secret,$refresh_access_token
     try{
       write-ezlogs "[Grant-YoutubeOauth] >>>> Attempting to refresh access token" -showtime -LogLevel 2 -logtype Youtube
-      write-ezlogs "[Grant-YoutubeOauth] | URL: $refresh_Uri" -showtime -LogLevel 2 -logtype Youtube -Dev_mode      
-      $refresh_response = Invoke-RestMethod -Method Post -Uri $refresh_Uri -ErrorAction SilentlyContinue
+      write-ezlogs "[Grant-YoutubeOauth] | URL: $refresh_Uri" -showtime -LogLevel 2 -logtype Youtube -Dev_mode  
+      $req=[System.Net.HTTPWebRequest]::Create($refresh_Uri)
+      $req.Method='POST'    
+      $req.ContentLength = '0'         
+      $response = $req.GetResponse()
+      $strm=$response.GetResponseStream()
+      $sr=[System.IO.Streamreader]::new($strm)
+      $output=$sr.ReadToEnd()
+      $refresh_response = $output | ConvertFrom-Json
     }catch{
-      write-ezlogs "[Grant-YoutubeOauth] An exception occurred attempting to refresh the youtube access token" -CatchError $_ -showtime
+      write-ezlogs "[Grant-YoutubeOauth] An exception occurred attempting to refresh the youtube access token" -showtime -catcherror $_
+      $Retry = $true
+    }finally{
+      if($response -is [System.IDisposable]){
+        $response.Dispose()
+      }
+      if($strm -is [System.IDisposable]){
+        $strm.Dispose()
+      }
+      if($sr -is [System.IDisposable]){
+        $sr.Dispose()
+      }
+    }
+    if($Retry -and !$refresh_response.access_token){
+      try{
+        write-ezlogs "[Grant-YoutubeOauth] >>>> Attempting to retry refresh of Youtube access token after 2 sec delay with Invoke-RestMethod" -showtime -LogLevel 2 -logtype Youtube -Warning
+        Start-Sleep -Seconds 2
+        $refresh_response = Invoke-RestMethod -Method Post -Uri $refresh_Uri -ErrorAction SilentlyContinue
+      }catch{
+        write-ezlogs "[Grant-YoutubeOauth] An exception occurred on retry attempt to refresh the youtube access token" -CatchError $_ -showtime
+      }   
     }
     if($refresh_response.access_token){
-      Set-Secret -Name YoutubeAccessToken -Secret $refresh_response.access_token -Vault $secretstore
+      Set-Secret -Name YoutubeAccessToken -Secret $refresh_response.access_token -Vault $VaultName
       write-ezlogs "[Grant-YoutubeOauth] Refreshed access_token" -showtime -LogLevel 2 -logtype Youtube -Success
       if($refresh_response.expires_in){
         $token_expires = (Get-date).AddSeconds($refresh_response.expires_in)  
-        Set-Secret -Name Youtubeexpires_in -Secret "$($token_expires)" -Vault $secretstore
+        Set-Secret -Name Youtubeexpires_in -Secret "$($token_expires)" -Vault $VaultName
         write-ezlogs "[Grant-YoutubeOauth] | Refresh token expires_in: $($token_expires)" -showtime -LogLevel 2 -logtype Youtube
       }
-      return      
+      return
     }else{
       write-ezlogs "[Grant-YoutubeOauth] Did not receive refresh token! - Response: $refresh_response" -showtime -warning -LogLevel 2 -logtype Youtube
     } 
@@ -134,10 +159,10 @@ function Grant-YoutubeOauth {
           Add-PodeRoute -Method Get -Path '/CLOSE_YT_PODE' -PassThru -ScriptBlock {
             #$logfile = $using:logfile
             $thisapp = $using:thisapp
-            $Name = $using:Name
-            $secretstore = $using:secretstore
+            #$Name = $using:Name
+            #$VaultName = $using:VaultName
             $synchash = $using:synchash
-            $client = $using:client
+            #$client = $using:client
             write-ezlogs ">>>> Youtube Auth webevent sent [CLOSE_YT_PODE]: Close-PodeServer" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp
             $PodeServerNetStat = ((NETSTAT.EXE -an).where({$_ -match '127.0.0.1:8000' -or $_ -match '0.0.0.0:8000'}))
             if($PodeServerNetStat){
@@ -151,8 +176,8 @@ function Grant-YoutubeOauth {
           Add-PodeRoute -Method Get -Path '/auth/complete' -PassThru -ScriptBlock  {
             #$logfile = $using:logfile
             $thisapp = $using:thisapp
-            $Name = $using:Name
-            $secretstore = $using:secretstore
+            #$Name = $using:Name
+            $VaultName = $using:VaultName
             $synchash = $using:synchash
             $client = $using:client
             $code = $WebEvent.Query['code'] 
@@ -161,8 +186,8 @@ function Grant-YoutubeOauth {
             # Try to save application to file.
             if($code){
               try{ 
-                write-ezlogs "[Add-PodeRoute-AuthComplete] >>>> Attempting to save secret Youtubecode to SecretStore: $Name" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp                           
-                Set-Secret -Name Youtubecode -Secret $code -Vault $secretstore
+                write-ezlogs "[Add-PodeRoute-AuthComplete] >>>> Attempting to save secret Youtubecode to SecretStore: $VaultName" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp                           
+                Set-Secret -Name Youtubecode -Secret $code -Vault $VaultName
                 $Response_Uri = 'https://oauth2.googleapis.com/token?&grant_type=authorization_code&client_id={0}&client_secret={1}&redirect_uri={2}&code={3}' -f $Client.client_id,$Client.client_secret, $Client.RedirectUri,$code
                 try {
                   write-ezlogs "[Add-PodeRoute-AuthComplete] >>>> Attempting to request youtube access token from: https://oauth2.googleapis.com/token?&grant_type=authorization_code" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp
@@ -174,19 +199,19 @@ function Grant-YoutubeOauth {
                   if($auth_response.access_token){
                     $access_token_json = @{access_token = $auth_response.access_token} | ConvertTo-Json
                     write-ezlogs "[Add-PodeRoute-AuthComplete] >>>> Received authorization access_token" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp -Success 
-                    Set-Secret -Name YoutubeAccessToken -Secret $auth_response.access_token -Vault $secretstore
-                    write-ezlogs "[Add-PodeRoute-AuthComplete] | Saved secret YoutubeAccessToken to vault: $($secretstore)" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp  
+                    Set-Secret -Name YoutubeAccessToken -Secret $auth_response.access_token -Vault $VaultName
+                    write-ezlogs "[Add-PodeRoute-AuthComplete] | Saved secret YoutubeAccessToken to vault: $($VaultName)" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp  
                   }
                   if($auth_response.refresh_token){
                     write-ezlogs "[Add-PodeRoute-AuthComplete] >>>> Received authorization refresh_token" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp
-                    Set-Secret -Name Youtuberefresh_token -Secret $auth_response.refresh_token -Vault $secretstore
-                    write-ezlogs "[Add-PodeRoute-AuthComplete] | Saved secret Youtuberefresh_token to vault: $($secretstore)" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp
+                    Set-Secret -Name Youtuberefresh_token -Secret $auth_response.refresh_token -Vault $VaultName
+                    write-ezlogs "[Add-PodeRoute-AuthComplete] | Saved secret Youtuberefresh_token to vault: $($VaultName)" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp
                   }
                   if($auth_response.expires_in){
                     $token_expires = (Get-date).AddSeconds($auth_response.expires_in)  
                     write-ezlogs "[Add-PodeRoute-AuthComplete]>>>> Received authorization expires_in $($token_expires)" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp 
-                    Set-Secret -Name Youtubeexpires_in -Secret "$($token_expires)" -Vault $secretstore
-                    write-ezlogs "[Add-PodeRoute-AuthComplete] | Saved secret Youtubeexpires_in to vault: $($secretstore)" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp
+                    Set-Secret -Name Youtubeexpires_in -Secret "$($token_expires)" -Vault $VaultName
+                    write-ezlogs "[Add-PodeRoute-AuthComplete] | Saved secret Youtubeexpires_in to vault: $($VaultName)" -showtime -LogLevel 2 -logtype Youtube -thisApp $thisApp
                   }
                 }catch{
                   write-ezlogs "[Add-PodeRoute-AuthComplete] An exception occurred saving Youtube Auth response $($auth_response | out-string)" -CatchError $_ -thisApp $thisApp

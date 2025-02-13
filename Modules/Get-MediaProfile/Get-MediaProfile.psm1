@@ -194,13 +194,13 @@ function Get-MediaProfile
             }
           } 
           #Is it in a custom playlist
-          if(!$track -and $synchash.all_playlists.Playlist_tracks){
+          if(!$track -and $synchash.all_playlists.Playlist_tracks.values.$Property){
             try{ 
               $track = lock-object -InputObject $synchash.all_playlists_ListLock -ScriptBlock {
                 if($synchash.all_playlists.Playlist_tracks){
                   $index = $synchash.all_playlists.Playlist_tracks.values.$Property.IndexOf($_)
                   if($index -ne -1){                 
-                    $synchash.all_playlists.Playlist_tracks.values[$index]                
+                    $synchash.all_playlists.Playlist_tracks.values[$index]
                   }  
                 }
               }

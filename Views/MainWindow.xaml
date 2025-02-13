@@ -57,7 +57,7 @@
                  UseNoneWindowStyle="false"
 				 IgnoreTaskbarOnMaximize="false"
                  ShowIconOnTitleBar="false"
-                 AllowsTransparency="true"
+                 AllowsTransparency="false"
 				 ShowMaxRestoreButton="True" 
                  xmlns:module="clr-namespace:SpectrumAnalyzer.Singleton;assembly=SpectrumAnalyzer"
                  xmlns:models="clr-namespace:SpectrumAnalyzer.Models;assembly=SpectrumAnalyzer">
@@ -1119,8 +1119,8 @@
 										<RowDefinition Name="VLC_Grid_Row1" Height="*"/>
 										<RowDefinition Name="VLC_Grid_Row2" Height="*"/>
 									</Grid.RowDefinitions>
-									<vlc:VideoView Name="VideoView" Grid.Row="0" Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="#01000000">
-										<Grid Name="VideoView_Grid" Background="#01000000" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,0">
+									<vlc:VideoView Name="VideoView" Grid.Row="0" Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="Black">
+										<Grid Name="VideoView_Grid" Background="Black" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,0" MaxHeight="0">
 											<Grid Name="VideoView_Overlay_Grid" VerticalAlignment="Stretch" Background="Transparent" HorizontalAlignment="Stretch" MinHeight="50" Opacity="0" Grid.Style="{StaticResource OverlayGridFade}">
 												<Grid.RowDefinitions>
 													<RowDefinition Height="20*"/>
@@ -1245,166 +1245,7 @@
 																								<Setter Property="AttachedBehavior:ScrollAnimationBehavior.TimeDuration" Value="00:00:00.30"/>
 																								<Setter Property="AttachedBehavior:ScrollAnimationBehavior.PointsToScroll" Value="35"/>
 																								<Setter Property="VerticalScrollBarVisibility" Value="Visible"/>
-																							</Style>																						
-	<!-- 																						<Style TargetType="syncfusion:TreeViewItem">
-																								<Setter Property="Template">
-																									<Setter.Value>
-																										<ControlTemplate TargetType="{x:Type syncfusion:TreeViewItem}">
-																											<Grid Name="ROOT" Background="{TemplateBinding Background}">
-																												<VisualStateManager.VisualStateGroups>
-																													<VisualStateGroup x:Name="DropStates">
-																														<VisualState x:Name="Normal"/>
-																														<VisualState x:Name="DropAsChild">
-																															<Storyboard>
-																																<ObjectAnimationUsingKeyFrames BeginTime="00:00:00"
-																																							   Duration="00:00:00"
-																																							   Storyboard.TargetName="BorderContent"
-																																							   Storyboard.TargetProperty="Background">
-																																	<DiscreteObjectKeyFrame KeyTime="00:00:00">
-																																		<DiscreteObjectKeyFrame.Value>
-																																			<SolidColorBrush Color="#D2DFF2"/>
-																																		</DiscreteObjectKeyFrame.Value>
-																																	</DiscreteObjectKeyFrame>
-																																</ObjectAnimationUsingKeyFrames>
-																																<ObjectAnimationUsingKeyFrames BeginTime="00:00:00"
-																																							   Duration="00:00:00"
-																																							   Storyboard.TargetName="BorderContent"
-																																							   Storyboard.TargetProperty="BorderBrush">
-																																	<DiscreteObjectKeyFrame KeyTime="00:00:00">
-																																		<DiscreteObjectKeyFrame.Value>
-																																			<SolidColorBrush Color="#2B579A"/>
-																																		</DiscreteObjectKeyFrame.Value>
-																																	</DiscreteObjectKeyFrame>
-																																</ObjectAnimationUsingKeyFrames>
-																																<ObjectAnimationUsingKeyFrames BeginTime="00:00:00"
-																																							   Duration="00:00:00"
-																																							   Storyboard.TargetName="BorderContent"
-																																							   Storyboard.TargetProperty="BorderThickness">
-																																	<DiscreteObjectKeyFrame KeyTime="00:00:00">
-																																		<DiscreteObjectKeyFrame.Value>
-																																			<Thickness>1</Thickness>
-																																		</DiscreteObjectKeyFrame.Value>
-																																	</DiscreteObjectKeyFrame>
-																																</ObjectAnimationUsingKeyFrames>
-																																<ObjectAnimationUsingKeyFrames BeginTime="00:00:00"
-																																							   Duration="00:00:00"
-																																							   Storyboard.TargetName="PART_ExpanderView"
-																																							   Storyboard.TargetProperty="Background">
-																																	<DiscreteObjectKeyFrame KeyTime="00:00:00">
-																																		<DiscreteObjectKeyFrame.Value>
-																																			<SolidColorBrush Color="#D2DFF2"/>
-																																		</DiscreteObjectKeyFrame.Value>
-																																	</DiscreteObjectKeyFrame>
-																																</ObjectAnimationUsingKeyFrames>
-																															</Storyboard>
-																														</VisualState>
-																													</VisualStateGroup>
-																												</VisualStateManager.VisualStateGroups>
-																												<Grid.ColumnDefinitions>
-																													<ColumnDefinition MaxWidth="{TemplateBinding IndentationWidth}"/>
-																													<ColumnDefinition Width="Auto"/>
-																													<ColumnDefinition Width="*"/>
-																													<ColumnDefinition Width="Auto"/>
-																												</Grid.ColumnDefinitions>
-																												<Border Name="BorderContent"
-																														BorderThickness="{TemplateBinding BorderThickness}"
-																														BorderBrush="{TemplateBinding BorderBrush}"/>
-																							 
-																												<Border Name="PART_HoverBorder"
-																														Visibility="Collapsed"
-																														Margin="1"
-																														Background="{StaticResource ThemeAccentColor}"/>								 
-																												<StackPanel Name="PART_IndentContainer"
-																															Panel.ZIndex="0"
-																															Orientation="Horizontal"
-																															Grid.Column="0">
-																													<Rectangle x:Name="PART_IndentLine"
-																															   StrokeDashArray="2,2"
-																															   HorizontalAlignment="Stretch"
-																															   Visibility="Hidden">
-																													</Rectangle>
-																												</StackPanel>
-																							 
-																												<Grid Name="PART_LineGrid"
-																													  Grid.Column="1"
-																													  Panel.ZIndex="0"
-																													  Width="{TemplateBinding ExpanderWidth}"
-																													  Visibility="Hidden">
-																													<Rectangle x:Name="PART_HorizontalLine"
-																															   StrokeDashArray="2,2"
-																															   Margin="10,0,0,0"
-																															   Width="10"
-																															   VerticalAlignment="Center"/>
-																													<Rectangle x:Name="PART_VerticalLine"
-																															   StrokeDashArray="2,2"
-																															   HorizontalAlignment="Stretch"/>
-																												</Grid>
-																							 
-																												<ContentControl Name="PART_ExpanderView"
-																																Focusable="False"
-																																Width="{TemplateBinding ExpanderWidth}"
-																																Visibility="{Binding HasChildNodes, Converter={StaticResource bool2vis}}"
-																																ContentTemplate="{TemplateBinding ExpanderTemplate}">
-																												</ContentControl>
-																							 
-																												<syncfusion:TreeNodeView Name="PART_ContentView" Grid.Column="2"
-																																		 Margin="4,0,4,0"
-																																		 VerticalAlignment="Center"
-																																		 Focusable="False"
-																																		 ContentTemplate="{TemplateBinding ItemTemplate}">
-																												</syncfusion:TreeNodeView>
-																							 
-																												<Border Name="PART_DragLine" Grid.ColumnSpan="3" Visibility="Collapsed" BorderBrush="#2B579A"/>
-																							 
-																											</Grid>
-																							 
-																											<ControlTemplate.Triggers>
-																												<Trigger Property="FullRowSelect" Value="True">
-																													<Setter Property="Grid.Column" TargetName="BorderContent" Value="0"/>
-																													<Setter Property="Grid.ColumnSpan" TargetName="BorderContent" Value="4"/>
-																													<Setter Property="Grid.Column" TargetName="PART_HoverBorder" Value="0"/>
-																													<Setter Property="Grid.ColumnSpan" TargetName="PART_HoverBorder" Value="4"/>
-																												</Trigger>
-																												<MultiTrigger>
-																													<MultiTrigger.Conditions>
-																														<Condition Property="FullRowSelect" Value="False"/>
-																														<Condition Property="ExpanderPosition" Value="Start"/>
-																													</MultiTrigger.Conditions>
-																													<Setter Property="Grid.Column" TargetName="BorderContent" Value="2"/>
-																													<Setter Property="Grid.ColumnSpan" TargetName="BorderContent" Value="1"/>
-																													<Setter Property="Grid.Column" TargetName="PART_HoverBorder" Value="2"/>
-																													<Setter Property="Grid.ColumnSpan" TargetName="PART_HoverBorder" Value="1"/>
-																												</MultiTrigger>
-																												<MultiTrigger>
-																													<MultiTrigger.Conditions>
-																														<Condition Property="FullRowSelect" Value="False"/>
-																														<Condition Property="ExpanderPosition" Value="End"/>
-																													</MultiTrigger.Conditions>
-																													<Setter Property="Grid.Column" TargetName="BorderContent" Value="0"/>
-																													<Setter Property="Grid.ColumnSpan" TargetName="BorderContent" Value="3"/>
-																													<Setter Property="Grid.Column" TargetName="PART_HoverBorder" Value="0"/>
-																													<Setter Property="Grid.ColumnSpan" TargetName="PART_HoverBorder" Value="3"/>
-																												</MultiTrigger>
-																												<Trigger Property="ExpanderPosition" Value="Start">
-																													<Setter Property="Grid.Column" TargetName="PART_ExpanderView" Value="1"/>
-																												</Trigger>
-																												<Trigger Property="ExpanderPosition" Value="End">
-																													<Setter Property="Grid.Column" TargetName="PART_ExpanderView" Value="3"/>
-																												</Trigger>
-																												<Trigger Property="ShowLines" Value="True">
-																													<Setter Property="Visibility" TargetName="PART_LineGrid" Value="Visible"/>
-																												</Trigger>
-																												<DataTrigger Binding="{Binding ShowExpanderAnimation}" Value="True">
-																													<Setter Property="ContentTemplate" TargetName="PART_ExpanderView" Value="{StaticResource busyIndicatorTemplate}"/>
-																												</DataTrigger>																												
-																												<Trigger Property="IsEnabled" Value="False">
-																													<Setter Property="Opacity" Value="0.3"/>
-																												</Trigger>
-																											</ControlTemplate.Triggers>
-																										</ControlTemplate>
-																									</Setter.Value>
-																								</Setter>
-																							</Style> -->																						
+																							</Style>																	
 																						</syncfusion:SfTreeView.Resources>																					
 																					</syncfusion:SfTreeView>
 																			</Grid>
@@ -1563,13 +1404,6 @@
 																							 SnapsToDevicePixels="True" />
 																			</WpfExtensions:OutlinedTextBlock.CacheMode>					   
 																		</WpfExtensions:OutlinedTextBlock>																		
-<!-- 																		<TextBlock Text="{Binding Path=Display_Name}"  ToolTip="{Binding Path=ToolTip}" >
-																			<TextBlock.CacheMode>
-																				<BitmapCache EnableClearType="False" 
-																							 RenderAtScale="2" 
-																							 SnapsToDevicePixels="False"  />
-																			</TextBlock.CacheMode>
-																		</TextBlock> -->
 																		<WpfExtensions:OutlinedTextBlock Text="{Binding Path=Status}"
 																				   FontStyle="{Binding Path=FontStyle, FallbackValue=Normal}"
 																				   Stroke="Black"
@@ -1586,14 +1420,7 @@
 																							 RenderAtScale="2" 
 																							 SnapsToDevicePixels="True" />
 																			</WpfExtensions:OutlinedTextBlock.CacheMode>							   
-																		 </WpfExtensions:OutlinedTextBlock>																		
-<!-- 																		<TextBlock Text="{Binding Path=Status}" FontStyle="{Binding Path=FontStyle}" Foreground="{Binding Path=FontColor,FallbackValue=White}" FontWeight="{Binding Path=FontWeight,FallbackValue=Normal}" FontSize="{Binding Path=FontSize,FallbackValue=12}" Margin="5,3,0,0">
-																			<TextBlock.CacheMode>
-																				<BitmapCache EnableClearType="False" 
-																							 RenderAtScale="2" 
-																							 SnapsToDevicePixels="False"  />
-																			</TextBlock.CacheMode>																		
-																		</TextBlock> -->
+																		 </WpfExtensions:OutlinedTextBlock>
 																		<WpfExtensions:OutlinedTextBlock Text="{Binding Path=Status_Msg}"
 																				   FontStyle="{Binding Path=Status_FontStyle, FallbackValue=Normal}"
 																				   Stroke="Black"
@@ -1610,20 +1437,7 @@
 																							 RenderAtScale="2" 
 																							 SnapsToDevicePixels="True"  />
 																			</WpfExtensions:OutlinedTextBlock.CacheMode>							   
-																		</WpfExtensions:OutlinedTextBlock>																		
-<!-- 																		<TextBlock 
-																			Text="{Binding Path=Status_Msg}" 
-																			FontStyle="{Binding Path=Status_FontStyle}" 
-																			Foreground="{Binding Path=Status_FontColor,FallbackValue=White}" 
-																			FontWeight="Normal"
-																			FontSize="12"
-																			Margin="2,2">
-																				<TextBlock.CacheMode>
-																					<BitmapCache EnableClearType="False" 
-																								 RenderAtScale="2" 
-																								 SnapsToDevicePixels="False"  />
-																				</TextBlock.CacheMode>																			
-																			</TextBlock> -->
+																		</WpfExtensions:OutlinedTextBlock>
 																										</VirtualizingStackPanel>
 																									</Border>
 																								</DataTemplate>
@@ -1645,19 +1459,68 @@
 														<RowDefinition Height="*"/>
 														<RowDefinition Height="*"/>
 													</Grid.RowDefinitions>
-													<VirtualizingStackPanel Name="VideoViewOverlayTitleStackPanel" Orientation="Horizontal" Background="Transparent" Margin="0,10,0,0" HorizontalAlignment="Center" Grid.Row="0" VerticalAlignment="Top">
+													<Grid Name="VideoViewOverlayTitleStackPanel" Background="Transparent" Margin="0,10,0,0" HorizontalAlignment="Center" Grid.Row="0" VerticalAlignment="Top">
+														<Grid.ColumnDefinitions>
+															<ColumnDefinition Width="Auto"/>
+															<ColumnDefinition Width="Auto"/>
+															<ColumnDefinition Width="Auto"/>
+															<ColumnDefinition Width="Auto"/>
+															<ColumnDefinition Width="Auto"/>
+														</Grid.ColumnDefinitions>
+														<TextBlock Name="VideoView_Title_Label" Grid.Column="0" TextWrapping="Wrap" FontWeight="Normal" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" HorizontalAlignment="Center" FontSize="18" Background="Transparent" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/>	
+														<TextBlock Name="VideoView_Sep2_Label" Grid.Column="1" Text=" - " HorizontalAlignment="Center" FontSize="18" Background="Transparent" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/>
+														<TextBlock Name="VideoView_Artist_Label" Grid.Column="2" TextWrapping="Wrap" FontWeight="Normal" HorizontalAlignment="Center" FontSize="18" Background="Transparent"  Foreground="{StaticResource MahApps.Brushes.IdealForeground}" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/>
+														<TextBlock Name="VideoView_Sep3_Label" Grid.Column="3" Text=" || Viewers: " FontWeight="Normal" HorizontalAlignment="Center" FontSize="18" Background="Transparent" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/>
+														<TextBlock Name="VideoView_ViewCount_Label" Grid.Column="4" FontWeight="Normal" HorizontalAlignment="Center" Visibility="Hidden" FontSize="18" Background="Transparent"  Foreground="{StaticResource MahApps.Brushes.IdealForeground}" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/>														
+                                                    </Grid>														
+<!-- 													<VirtualizingStackPanel Name="VideoViewOverlayTitleStackPanel" Orientation="Horizontal" Background="Transparent" Margin="0,10,0,0" HorizontalAlignment="Center" Grid.Row="0" VerticalAlignment="Top">
 													<TextBlock Name="VideoView_Title_Label" TextWrapping="Wrap" FontWeight="Normal" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" HorizontalAlignment="Center" FontSize="18" Background="Transparent" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/>
-														<!-- <emoji:TextBlock Name="VideoView_Title_Label" TextWrapping="Wrap" FontWeight="Normal" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Effect="{StaticResource TextDropShadow}" HorizontalAlignment="Center" FontSize="18" Background="Transparent" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/> -->
 														<TextBlock Name="VideoView_Sep2_Label" Text=" - " HorizontalAlignment="Center" FontSize="18" Background="Transparent" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/>
 														<TextBlock Name="VideoView_Artist_Label" TextWrapping="Wrap" FontWeight="Normal" HorizontalAlignment="Center" FontSize="18" Background="Transparent"  Foreground="{StaticResource MahApps.Brushes.IdealForeground}" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/>
-														<!-- <emoji:TextBlock Name="VideoView_Artist_Label" TextWrapping="Wrap" FontWeight="Normal" HorizontalAlignment="Center" FontSize="18" Background="Transparent" Effect="{StaticResource TextDropShadow}" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/> -->
 														<TextBlock Name="VideoView_Sep3_Label" Text=" || Viewers: " FontWeight="Normal" HorizontalAlignment="Center" FontSize="18" Background="Transparent" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/>
 														<TextBlock Name="VideoView_ViewCount_Label" FontWeight="Normal" HorizontalAlignment="Center" Visibility="Hidden" FontSize="18" Background="Transparent"  Foreground="{StaticResource MahApps.Brushes.IdealForeground}" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/>
-													</VirtualizingStackPanel>
+													</VirtualizingStackPanel> -->
 													<WpfExtensions:FormattedSlider Minimum="0" Grid.Row="1" Name="VideoView_Progress_Slider" AutoToolTipFormat="{}{0} Seconds" AutoToolTipasTimeSpan="true"
 																				   HorizontalAlignment="Left" AutoToolTipPlacement="TopLeft" VerticalAlignment="Bottom" Margin="0,0,0,0" Cursor="Hand" ForceCursor="True" IsMoveToPointEnabled="true"
 																				   Style="{StaticResource VideoView_Horizontal_Slider}" Orientation="Horizontal" Tag="{DynamicResource MahApps.Brushes.AccentBase}"/>
-													<VirtualizingStackPanel Name="VideoViewOverlayStackpanelLeft" Orientation="Horizontal" HorizontalAlignment="Stretch" Grid.Row="2" VerticalAlignment="Bottom" Background="Transparent">
+													<Grid Name="VideoViewOverlayStackpanelLeft" HorizontalAlignment="Stretch" Grid.Row="2" VerticalAlignment="Bottom" Background="Transparent">
+														<Grid.ColumnDefinitions>
+															<ColumnDefinition Width="Auto"/>
+															<ColumnDefinition Width="Auto"/>
+															<ColumnDefinition Width="Auto"/>
+															<ColumnDefinition Width="Auto"/>
+															<ColumnDefinition Width="Auto"/>
+															<ColumnDefinition Width="Auto"/>
+															<ColumnDefinition Width="Auto"/>
+														</Grid.ColumnDefinitions>	
+														<Button Name='VideoView_Play_Button' IsEnabled="true" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" ToolTip="Play/Pause Media" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}">
+															<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Play_Icon' Kind="PlayCircleOutline" Height="21" Width="21" BorderThickness="0"/>
+														</Button>
+														<Button Name='VideoView_Stop_Button' IsEnabled="true" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Left" ToolTip="Stop Media" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}">
+															<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Stop_Icon' Kind="StopCircleOutline" Height="21" Width="21" BorderThickness="0"/>
+														</Button>
+														<Button Name='VideoView_Restart_Button' IsEnabled="true" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Left" ToolTip="Restart Media" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}">
+															<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Restart_Icon' Kind="Replay" Height="21" Width="21" BorderThickness="0"/>
+														</Button>
+														<Button Name='VideoView_Back_Button' IsEnabled="true" Grid.Column="3" VerticalAlignment="Center" ToolTip="Prev Media" HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}">
+															<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Back_Icon' Kind="SkipPrevious" Height="16" Width="16" BorderThickness="0"/>
+														</Button>
+														<Button Name='VideoView_Next_Button' IsEnabled="true" Grid.Column="4" VerticalAlignment="Center" ToolTip="Next Media" HorizontalAlignment="Left" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}">
+															<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Next_Icon' Kind="SkipNext" Height="16" Width="16" BorderThickness="0"/>
+														</Button>
+														<VirtualizingStackPanel Orientation="Horizontal" Grid.Column="5" Margin="0,0,0,0" HorizontalAlignment="Left">
+															<Button Name='VideoView_Mute_Button' ToolTip="Toggle Mute Audio" IsEnabled="true" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}">
+																<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Mute_Icon' Kind="Volumeoff" Height="18" Width="18" BorderThickness="0"/>
+															</Button>
+															<Slider Minimum="0" Maximum="100" Name="VideoView_Volume_Slider" VerticalAlignment="Center" HorizontalAlignment="Left" AutoToolTipPlacement="TopLeft" Margin="0,0,0,5" Style="{StaticResource VideoView_Horizontal_Slider}" Cursor="Hand" ForceCursor="True"/>
+														</VirtualizingStackPanel>
+														<VirtualizingStackPanel Orientation="Horizontal" Grid.Column="6" Margin="10,3,0,0" HorizontalAlignment="Left">
+															<TextBlock Name="VideoView_Current_Length_TextBox" Margin="0,0,0,0" HorizontalAlignment="Left" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" FontSize="14" FontWeight="Normal" Background="Transparent" RenderTransformOrigin="0.5, 0.5" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto" />
+															<TextBlock Name="VideoView_Length_Sep" Margin="0,0,0,0" HorizontalAlignment="Left" Text=" / " Foreground="{StaticResource MahApps.Brushes.IdealForeground}" FontSize="14" FontWeight="Normal" Background="Transparent" RenderTransformOrigin="0.5, 0.5" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/>
+															<TextBlock Name="VideoView_Total_Length_TextBox" Margin="0,0,0,0" HorizontalAlignment="Left" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" FontSize="14" FontWeight="Normal" Background="Transparent" RenderTransformOrigin="0.5, 0.5" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto" />
+														</VirtualizingStackPanel>														
+													</Grid>																				   
+<!-- 													<VirtualizingStackPanel Name="VideoViewOverlayStackpanelLeft" Orientation="Horizontal" HorizontalAlignment="Stretch" Grid.Row="2" VerticalAlignment="Bottom" Background="Transparent">
 														<Button Name='VideoView_Play_Button' IsEnabled="true" VerticalAlignment="Center" HorizontalAlignment="Left" ToolTip="Play/Pause Media" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}">
 															<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Play_Icon' Kind="PlayCircleOutline" Height="21" Width="21" BorderThickness="0"/>
 														</Button>
@@ -1684,9 +1547,45 @@
 															<TextBlock Name="VideoView_Length_Sep" Margin="0,0,0,0" HorizontalAlignment="Left" Text=" / " Foreground="{StaticResource MahApps.Brushes.IdealForeground}" FontSize="14" FontWeight="Normal" Background="Transparent" RenderTransformOrigin="0.5, 0.5" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto"/>
 															<TextBlock Name="VideoView_Total_Length_TextBox" Margin="0,0,0,0" HorizontalAlignment="Left" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" FontSize="14" FontWeight="Normal" Background="Transparent" RenderTransformOrigin="0.5, 0.5" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto" />
 														</VirtualizingStackPanel>
-													</VirtualizingStackPanel>
+													</VirtualizingStackPanel> -->
 												</Grid>
-												<VirtualizingStackPanel Name="VideoViewOverlayStackpanelRight" Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="1" VerticalAlignment="Bottom" Panel.ZIndex="4">
+												<Grid Name="VideoViewOverlayStackpanelRight" HorizontalAlignment="Right" Grid.Row="1" VerticalAlignment="Bottom" Panel.ZIndex="4">
+													<Grid.ColumnDefinitions>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+														<ColumnDefinition Width="Auto"/>
+													</Grid.ColumnDefinitions>
+													<mah:DropDownButton Name='VideoView_Subtitles_Button' Grid.Column="0" Background="Transparent" ButtonStyle="{StaticResource VideoViewDropDownButtonStyle}" Width="41" MenuStyle="{StaticResource TrayDropDownMenuStyle}" ArrowVisibility="Collapsed" Style="{StaticResource DropDownStyle}" BorderBrush="transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+														<mah:DropDownButton.Content>
+															<Grid Width="20" Height="20">
+																<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Subtitles_Icon' Kind="SubtitlesOutline" Margin="0,0,0,0" Height="20" Width="20" BorderThickness="0" RenderTransformOrigin="0.5,0.5"/>
+															</Grid>
+														</mah:DropDownButton.Content>
+													</mah:DropDownButton>
+													<mah:DropDownButton Name='VideoView_Cast_Button' Grid.Column="1" Background="Transparent" ButtonStyle="{StaticResource VideoViewDropDownButtonStyle}" Width="41" MenuStyle="{StaticResource TrayDropDownMenuStyle}" ArrowVisibility="Collapsed" Style="{StaticResource DropDownStyle}" BorderBrush="transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+														<mah:DropDownButton.Content>
+															<Grid Width="20" Height="20">
+																<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Cast_Icon' Kind="Cast" Margin="0,0,0,0" Height="20" Width="20" BorderThickness="0" RenderTransformOrigin="0.5,0.5"/>
+															</Grid>
+														</mah:DropDownButton.Content>
+													</mah:DropDownButton>
+													<ToggleButton Name='VideoView_Playlists_Button' Grid.Column="2" ToolTip="View Playlists" IsEnabled="True" HorizontalAlignment="Right" VerticalAlignment="Bottom" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewToggleButtonStyle}">
+														<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Playlists_Icon' Kind="AnimationPlayOutline" Height="20" Width="20" BorderThickness="0"/>
+													</ToggleButton>
+													<ToggleButton Name='Chat_View_Button' Grid.Column="3" ToolTip="Toggle Chat View" IsEnabled="false" HorizontalAlignment="Right" VerticalAlignment="Bottom" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewToggleButtonStyle}">
+														<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='Chat_Icon' Kind="Chat" Height="20" Width="20" BorderThickness="0"/>
+													</ToggleButton>
+													<Button Name='VideoView_LargePlayer_Button' Grid.Column="4" ToolTip="Expand Video Player" IsEnabled="true" HorizontalAlignment="Right" VerticalAlignment="Bottom" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}">
+														<iconPacks:PackIconCodicons Style="{StaticResource VideoViewCodiconsStyle}" Name='VideoView_LargePlayer_Icon' Kind="ScreenFull" Height="21" Width="21" BorderThickness="0"/>
+													</Button>
+													<Button Name='VideoView_Dock_Button' Grid.Column="5" ToolTip='UnDock Window' HorizontalAlignment="Right" IsEnabled="true" VerticalAlignment="Bottom" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}">
+														<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Dock_Icon' Kind="DockWindow" Height="21" Width="21" BorderThickness="0"/>
+													</Button>														
+												</Grid>												
+<!-- 												<VirtualizingStackPanel Name="VideoViewOverlayStackpanelRight" Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="1" VerticalAlignment="Bottom" Panel.ZIndex="4">
 													<mah:DropDownButton Name='VideoView_Subtitles_Button' Background="Transparent" ButtonStyle="{StaticResource VideoViewDropDownButtonStyle}" Width="41" MenuStyle="{StaticResource TrayDropDownMenuStyle}" ArrowVisibility="Collapsed" Style="{StaticResource DropDownStyle}" BorderBrush="transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
 														<mah:DropDownButton.Content>
 															<Grid Width="20" Height="20">
@@ -1713,7 +1612,7 @@
 													<Button Name='VideoView_Dock_Button' ToolTip='UnDock Window' HorizontalAlignment="Right" IsEnabled="true" VerticalAlignment="Bottom" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}">
 														<iconPacks:PackIconMaterial Style="{StaticResource VideoViewIconStyle}" Name='VideoView_Dock_Icon' Kind="DockWindow" Height="21" Width="21" BorderThickness="0"/>
 													</Button>
-												</VirtualizingStackPanel>
+												</VirtualizingStackPanel> -->
 											</Grid>
 										</Grid>
 									</vlc:VideoView>
@@ -3341,16 +3240,7 @@
 						<Image Name='ChatBot_Button_Icon' Height="16" Width="16" VerticalAlignment="Center" Margin="0 0 0 0"/>
 					</VirtualizingStackPanel>
 				</Button>
-				<!--<Button Name='TinyDesk_Button' FontSize="12" FontWeight="Bold" Height="25" Style="{StaticResource FilterButtonStyle}" Background="transparent" VerticalAlignment="Top" IsEnabled="true" ToolTip="Tiny Desk">
-					<StackPanel Orientation="Horizontal">
-						<iconPacks:PackIconMaterial Kind="Desk"
-						                            Margin="0 0 0 0"
-						                            Width="16"
-						                            Height="16"
-						                            VerticalAlignment="Center"/>
-					</StackPanel>
-				</Button> -->
-				<Button Name='Dispose_Button' Visibility='Hidden' FontSize="12" FontWeight="Bold" Height="25" ToolTip="Manually Clear ScriptBlockCache and Execute GC/Memory Cleanup" Style="{StaticResource FilterButtonStyle}" Background="transparent" VerticalAlignment="Top" IsEnabled="false" >
+				<Button Name='Dispose_Button' Visibility='Collapsed' FontSize="12" FontWeight="Bold" Height="25" ToolTip="Manually Clear ScriptBlockCache and Execute GC/Memory Cleanup" Style="{StaticResource FilterButtonStyle}" Background="transparent" VerticalAlignment="Top" IsEnabled="false" >
 					<VirtualizingStackPanel IsVirtualizing="True" Orientation="Horizontal">
 						<iconPacks:PackIconMaterial Kind="Cancel"
 						                            Margin="0 0 0 0"
@@ -3358,7 +3248,10 @@
 						                            Height="16"
 						                            VerticalAlignment="Center"/>
 					</VirtualizingStackPanel>
-				</Button>		
+				</Button>
+				<ToggleButton Name='Overlay_Button' Visibility='Collapsed' FontSize="12" ToolTip="Overlay Currently Disabled" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Style="{StaticResource ToggleButtonStyle}" IsEnabled="false">
+					<iconPacks:PackIconMaterial Name='Overlay_Icon' Kind="MonitorDashboard" BorderThickness="0"/>
+				</ToggleButton>				
 				<ToggleButton Name='Hotkeys_Button' FontSize="12" ToolTip="Global HotKeys Currently Disabled" VerticalAlignment="Center" Background="Transparent" BorderThickness="0" Style="{StaticResource ToggleButtonStyle}">
 					<iconPacks:PackIconMaterial Name='Hotkeys_Icon' Kind="KeyboardOffOutline" BorderThickness="0"/>
 				</ToggleButton>

@@ -1973,6 +1973,161 @@ namespace HighlightText
     }
 }
 
+public class WindowTopMost
+{
+    #region Properties
+
+    const UInt32 SWP_NOSIZE = 0x0001;
+    const UInt32 SWP_NOMOVE = 0x0002;
+    const UInt32 SWP_NOACTIVATE = 0x0010;
+    const UInt32 SWP_NOZORDER = 0x0004;
+    const int WM_ACTIVATEAPP = 0x001C;
+    const int WM_ACTIVATE = 0x0006;
+    const int WM_SETFOCUS = 0x0007;
+    const int WM_WINDOWPOSCHANGING = 0x0046;
+
+    static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+    static readonly IntPtr HWND_BOTTOM = new IntPtr(1);
+    static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+
+    Window Window = null;
+
+    #endregion
+
+    #region WindowTopMost
+
+    public WindowTopMost(Window Window)
+    {
+        this.Window = Window;
+    }
+
+    #endregion
+
+    #region Methods
+
+    [DllImport("user32.dll")]
+    static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+    [DllImport("user32.dll")]
+    static extern IntPtr DeferWindowPos(IntPtr hWinPosInfo, IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
+
+    [DllImport("user32.dll")]
+    static extern IntPtr BeginDeferWindowPos(int nNumWindows);
+
+    [DllImport("user32.dll")]
+    static extern bool EndDeferWindowPos(IntPtr hWinPosInfo);
+
+    void OnClosing(object sender, System.ComponentModel.CancelEventArgs e)
+    {
+        var Handle = (new WindowInteropHelper(Window)).Handle;
+
+        var Source = HwndSource.FromHwnd(Handle);
+        Source.RemoveHook(new HwndSourceHook(WndProc));
+        Window.Loaded -= OnLoaded;
+        Window.Closing -= OnClosing;
+    }
+
+    void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        var Hwnd = new WindowInteropHelper(Window).Handle;
+        SetWindowPos(Hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+
+        var Handle = (new WindowInteropHelper(Window)).Handle;
+
+        var Source = HwndSource.FromHwnd(Handle);
+        Source.AddHook(new HwndSourceHook(WndProc));
+    }
+
+    IntPtr WndProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg == WM_SETFOCUS)
+        {
+            hWnd = new WindowInteropHelper(Window).Handle;
+            SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+            handled = true;
+        }
+        return IntPtr.Zero;
+    }
+
+    public void SetTopMost()
+    {
+        Window.Loaded -= OnLoaded;
+        Window.Closing -= OnClosing;
+
+        var Hwnd = new WindowInteropHelper(Window).Handle;
+        SetWindowPos(Hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+
+        var Handle = (new WindowInteropHelper(Window)).Handle;
+
+        var Source = HwndSource.FromHwnd(Handle);
+        Source.AddHook(new HwndSourceHook(WndProc));
+
+        Window.Loaded += OnLoaded;
+        Window.Closing += OnClosing;
+    }
+
+    public void UnSetTopMost()
+    {
+        var Handle = (new WindowInteropHelper(Window)).Handle;
+        var Source = HwndSource.FromHwnd(Handle);
+
+        var Hwnd = new WindowInteropHelper(Window).Handle;
+        SetWindowPos(Hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+        Source.RemoveHook(new HwndSourceHook(WndProc));
+        Window.Loaded -= OnLoaded;
+        Window.Closing -= OnClosing;
+    }
+
+    #endregion
+}
+
+public static class WindowExtensions
+{
+    #region Always On Top
+
+    public static readonly DependencyProperty WindowTopMostProperty = DependencyProperty.RegisterAttached("WindowTopMost", typeof(WindowTopMost), typeof(WindowExtensions), new UIPropertyMetadata(null));
+    public static WindowTopMost GetWindowTopMost(DependencyObject obj)
+    {
+        return (WindowTopMost)obj.GetValue(WindowTopMostProperty);
+    }
+    public static void SetWindowTopMost(DependencyObject obj, WindowTopMost value)
+    {
+        obj.SetValue(WindowTopMostProperty, value);
+    }
+
+    public static readonly DependencyProperty AlwaysOnTopProperty = DependencyProperty.RegisterAttached("AlwaysOnTop", typeof(bool), typeof(WindowExtensions), new UIPropertyMetadata(false, OnAlwaysOnTopChanged));
+    public static bool GetAlwaysOnTop(DependencyObject obj)
+    {
+        return (bool)obj.GetValue(AlwaysOnTopProperty);
+    }
+    public static void SetAlwaysOnTop(DependencyObject obj, bool value)
+    {
+        obj.SetValue(AlwaysOnTopProperty, value);
+    }
+    static void OnAlwaysOnTopChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        var Window = sender as Window;
+        var Hwnd = new WindowInteropHelper(Window).Handle;
+        if (Window != null && Hwnd != IntPtr.Zero)
+        {
+            if ((bool)e.NewValue)
+            {
+                var WindowTopMost = new WindowTopMost(Window);
+                WindowTopMost.SetTopMost();
+                SetWindowTopMost(Window, WindowTopMost);
+            }
+            else
+            {
+                var WindowTopMost = GetWindowTopMost(Window);
+                WindowTopMost.UnSetTopMost();
+                SetWindowTopMost(Window, null);
+            }
+        }
+    }
+
+    #endregion
+}
+
 [XmlRoot("dictionary")]
 public class SerializableDictionary<TKey, TValue>
     : Dictionary<TKey, TValue>, IXmlSerializable, INotifyCollectionChanged, INotifyPropertyChanged
@@ -2409,7 +2564,19 @@ public class Media : INotifyPropertyChanged
             RaisedOnPropertyChanged("Display_Name");
         }
     }
-    public int TimesPlayed { get; set; }
+    private int timesplayed;
+    public int TimesPlayed
+    {
+        get
+        {
+            return timesplayed;
+        }
+        set
+        {
+            timesplayed = value;
+            RaisedOnPropertyChanged("TimesPlayed");
+        }
+    }
 }
 
 public class EQ_Band
@@ -2589,6 +2756,7 @@ public class Config
     public bool Start_Paused { get; set; }
     public string Current_Visualization { get; set; }
     public bool Use_Visualizations { get; set; }
+    public bool Use_Visualizations_Video { get; set; }
     public bool Use_MediaCasting { get; set; }
     public bool LocalMedia_SkipDuplicates { get; set; }
     public bool Enable_LocalMedia_Monitor { get; set; }
@@ -2652,6 +2820,7 @@ public class Config
     public string logfile_directory { get; set; }
     public string SpotifyMedia_logfile { get; set; }
     public string YoutubeMedia_logfile { get; set; }
+    public string PlexMedia_logfile { get; set; }
     public string TwitchMedia_logfile { get; set; }
     public string Tor_Log_File { get; set; }
     public string Download_logfile { get; set; }
@@ -2677,6 +2846,7 @@ public class Config
     public List<GlobalHotKey> GlobalHotKeys { get; set; }
     public bool EnableGlobalHotKeys { get; set; }
     public bool Enable_HighDPI { get; set; }
+    public bool DisableTransparency { get; set; }
 }
 public class API
 {
@@ -2969,71 +3139,6 @@ public class Playlist : INotifyPropertyChanged
         {
             isexpanded = value;
             RaisedOnPropertyChanged("IsExpanded");
-        }
-    }
-}
-
-public class HotKeys : INotifyPropertyChanged
-{
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-
-    protected bool Set<T>(ref T? field, T? newValue = default, [CallerMemberName] string? propertyName = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field!, newValue!))
-        {
-            return false;
-        }
-
-        field = newValue;
-
-        this.RaisedOnPropertyChanged(propertyName);
-
-        return true;
-    }
-
-    protected virtual void RaisedOnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    private HotKey? _mute;
-    public HotKey Mute
-    {
-        get
-        {
-            return _mute;
-        }
-        set
-        {
-            _mute = value;
-            RaisedOnPropertyChanged("Mute");
-        }
-    }
-    private HotKey? _volup;
-    public HotKey VolUp
-    {
-        get
-        {
-            return _volup;
-        }
-        set
-        {
-            _volup = value;
-            RaisedOnPropertyChanged("VolUp");
-        }
-    }
-    private HotKey? _voldown;
-    public HotKey VolDown
-    {
-        get
-        {
-            return _voldown;
-        }
-        set
-        {
-            _voldown = value;
-            RaisedOnPropertyChanged("VolDown");
         }
     }
 }

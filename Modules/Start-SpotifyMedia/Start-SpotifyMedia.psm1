@@ -322,7 +322,8 @@ function Start-SpotifyMedia{
                 $allDevices = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::EnumerateDevices([CSCore.CoreAudioAPI.DataFlow]::All)
                 $capture_device = $allDevices | Where-Object {$_.friendlyname -match 'CABLE Input \(VB-Audio Virtual Cable\)'}
                 if($capture_device){
-                  $vlcArgs = [System.Collections.Generic.List[String]]::new()
+                  Update-LibVLC -thisApp $thisApp -synchash $synchash -force -ForceVisualizations:$($thisApp.Config.Use_Visualizations)
+  <#                $vlcArgs = [System.Collections.Generic.List[String]]::new()
                   [void]$vlcArgs.add('--file-logging')
                   [void]$vlcArgs.add("--logfile=$($thisapp.config.Vlc_Log_file)")
                   [void]$vlcArgs.add("--log-verbose=$($thisapp.config.Vlc_Verbose_logging)")
@@ -339,7 +340,18 @@ function Start-SpotifyMedia{
                   if($thisApp.Config.Use_Visualizations){ 
                     [void]$vlcArgs.add("--video-on-top")
                     [void]$vlcArgs.add("--spect-show-original")
-                    if($thisApp.Config.Current_Visualization -eq 'Spectrum'){
+                    if([system.io.Directory]::Exists("$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop")){
+                      [void]$vlcArgs.add("--audio-visual=projectm")
+                      [void]$vlcArgs.add("--projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`"")          
+                      $Screen = [System.Windows.Forms.Screen]::PrimaryScreen
+                      [void]$vlcArgs.add("--projectm-width=$($Screen.Bounds.Width)")
+                      [void]$vlcArgs.add("--projectm-height=$($Screen.Bounds.Height)")   
+                      [void]$vlcArgs.add("--no-video")   
+                      [void]$vlcArgs.add("--projectm-meshx=$($Screen.Bounds.Width)")
+                      [void]$vlcArgs.add("--projectm-meshy=$($Screen.Bounds.Height)")
+                      [void]$vlcArgs.add("--effect-list=spectrum")           
+                      write-ezlogs "| Enabling ProjectM Visualizations: --projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`" --projectm-width=$($Screen.Bounds.Width) --projectm-height=$($Screen.Bounds.Height)" -Warning -logtype Libvlc
+                    }elseif($thisApp.Config.Current_Visualization -eq 'Spectrum'){
                       #$effect = "--effect-list=spectrum"             
                       [void]$vlcArgs.add("--audio-visual=Visual")
                       [void]$vlcArgs.add("--effect-list=spectrum")
@@ -386,7 +398,7 @@ function Start-SpotifyMedia{
                   if($appid -and $synchash.libvlc){
                     $synchash.libvlc.SetAppId($appid,$thisApp.Config.App_Version,"$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico")
                   }
-                  Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchash -start -wait -Startlibvlc
+                  Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchash -start -wait -Startlibvlc#>
                 }else{
                   write-ezlogs "Unable to find required 'CABLE Input (VB-Audio Virtual Cable)' audio device - cannot enable EQ for Webplayer!" -AlertUI -Warning
                 }      
@@ -774,15 +786,7 @@ function Start-SpotifyMedia{
             Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'VLC_Grid_Row1' -Property 'Height' -value "*"
           }                                            
           if($thisApp.config.Show_notifications){
-            try{
-              $spotify_startapp = Get-AllStartApps *spotify
-              if($spotify_startapp){
-                $spotify_appid = $spotify_startapp.AppID
-              }elseif($thisApp.Config.Installed_AppID){
-                $spotify_appid =  $thisApp.Config.Installed_AppID
-              }else{
-                $spotify_appid = $Spotify_Path
-              }              
+            try{              
               if(!$cached_image){
                 $applogo = "$($thisApp.Config.Current_folder)\Resources\Spotify\Material-Spotify.png"
               }else{
@@ -792,10 +796,23 @@ function Start-SpotifyMedia{
               [int]$mins = $($([timespan]::FromMilliseconds($current_track.item.duration_ms)).Minutes)
               [int]$secs = $($([timespan]::FromMilliseconds($current_track.item.duration_ms)).Seconds)                 
               $total_time = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
-              $Message = "Song : $($Name) - $($Artist)`nPlay Duration : $total_time`nSource : Spotify"
-              Import-Module "$($thisApp.Config.Current_Folder)\Modules\BurntToast\BurntToast.psm1" -NoClobber -DisableNameChecking -Scope Local           
-              New-BurntToastNotification -AppID $spotify_appid -Text $Message -AppLogo $applogo
-
+              $Message = "Song : $($Name) - $($Artist)`nPlay Duration : $total_time`nSource : Spotify"                    
+              if($thisApp.Config.Installed_AppID){
+                $appid = $thisApp.Config.Installed_AppID
+              }else{
+                $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
+                if($appid){
+                  $thisapp.config.Installed_AppID = $appid
+                }else{
+                  $appid = (Get-AllStartApps -Name 'Powershell').AppID
+                }
+              }                        
+              $Toast = @{
+                AppID = $appid
+                Text = $Message
+                AppLogo = $applogo
+              }
+              Update-MainWindow -synchash $synchash -thisApp $thisApp -Toast $Toast
             }catch{
               write-ezlogs "An exception occurred attempting to generate the notification balloon" -showtime -catcherror $_
             }
@@ -1027,7 +1044,7 @@ function Start-SpotifyMedia{
     }else{
       write-ezlogs "Provided media is null or invalid! Cannot continue!" -showtime -warning -AlertUI
     }
-    $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}  
+    #$Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}  
     $Runspace_Args = @{
       'scriptblock' = $spotify_scriptblock
       'arguments' = $PSBoundParameters
@@ -1055,6 +1072,7 @@ function Start-SpotifyMedia{
       'Test-ValidPath',
       'Set-ApplicationAudioDevice',
       'Set-WindowState',
+      'Update-LibVLC',
       'Set-SpotifyWebPlayerTimer'
     }
     Start-Runspace @Runspace_Args

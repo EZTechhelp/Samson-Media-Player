@@ -201,7 +201,7 @@ function Write-EZLogs
     [switch]$GetMemoryUsage,
     [switch]$forceCollection,
     [int]$StartSpaces,
-    [ValidateSet('Main','Twitch','Spotify','Youtube','Startup','Launcher','LocalMedia','VLC','Streamlink','Error','Discord','Libvlc','Perf','Webview2','Setup','Threading','Tor','Uninstall')]
+    [ValidateSet('Main','Twitch','Spotify','Youtube','Startup','Launcher','LocalMedia','VLC','Streamlink','Error','Discord','Libvlc','Perf','Webview2','Setup','Threading','Tor','Uninstall','Plex')]
     [string]$logtype = 'Main',
     [string]$Separator,
     [ValidateSet('Black','Blue','Cyan','Gray','Green','Magenta','Red','White','Yellow','DarkBlue','DarkCyan','DarkGreen','DarkMagenta','DarkRed','DarkYellow')]
@@ -287,6 +287,9 @@ function Write-EZLogs
           }
           'Youtube' {
             $logfile = $thisApp.Config.YoutubeMedia_logfile
+          }
+          'Plex' {
+            $logfile = $thisApp.Config.PlexMedia_logfile
           }
           'Startup' {
             if(-not [string]::IsNullOrEmpty($thisApp.Config.Startup_Log_File)){
@@ -433,14 +436,20 @@ function Write-EZLogs
         $messagebox = 'Information'
       }
       try{
-        if($synchash.MiniPlayer_Viewer.isVisible){
+        if($synchash.MiniPlayer_Viewer.isVisible -or !$synchash.Window.isVisible){
           try{
             Import-Module "$($thisApp.Config.Current_Folder)\Modules\BurntToast\BurntToast.psm1" -NoClobber -DisableNameChecking -Scope Local
             if($thisApp.Config.Installed_AppID){
               $appid = $thisApp.Config.Installed_AppID
             }else{
-              $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID 
-              $thisApp.Config.Installed_AppID = $appid
+              $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
+              if($appid){
+                if($thisApp.Config){
+                  $thisapp.config.Installed_AppID = $appid
+                }              
+              }else{
+                $appid = (Get-AllStartApps -Name 'Powershell').AppID
+              }
             }
             $Guid = [System.Guid]::NewGuid()
             if($Guid){
@@ -448,7 +457,12 @@ function Write-EZLogs
             }
             $Title = "$Level - $logtype"
             $Header = [Microsoft.Toolkit.Uwp.Notifications.ToastHeader]::new($Id, ($Title -replace '\x01'), $null)
-            New-BurntToastNotification -AppID $appid -Text "$AlertMessage" -AppLogo "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico" -Header $Header
+            if($logtype -and [system.io.File]::exists("$($thisApp.Config.Current_Folder)\Resources\Images\Material-$logtype.png")){
+              $AppLogo = "$($thisApp.Config.Current_Folder)\Resources\$logtype\Material-$logtype.png"
+            }else{
+              $AppLogo = "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.png"
+            }
+            New-BurntToastNotification -AppID $appid -Text "$AlertMessage" -AppLogo $AppLogo -Header $Header -HeroImage "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"
           }catch{
             $Exception_MSG = $_.Exception
             $PositionMessage = $_.InvocationInfo.PositionMessage | out-string

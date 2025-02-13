@@ -438,7 +438,8 @@ function Set-ApplicationAudioDevice
                 try{
                   write-ezlogs "[Set-ApplicationAudioDevice] >>>> Creating new Libvlc instance for webplayer EQ" -logtype Libvlc -linesbefore 1
                   if($capture_device){
-                    $vlcArgs = [System.Collections.Generic.List[String]]::new()
+                  Update-LibVLC -thisApp $thisApp -synchash $synchash -force -ForceVisualizations:($thisApp.Config.Use_Visualizations)
+<#                    $vlcArgs = [System.Collections.Generic.List[String]]::new()
                     $null = $vlcArgs.add('--file-logging')
                     $null = $vlcArgs.add("--logfile=$($thisapp.config.Vlc_Log_file)")
                     $null = $vlcArgs.add("--log-verbose=$($thisapp.config.Vlc_Verbose_logging)")
@@ -465,7 +466,14 @@ function Set-ApplicationAudioDevice
                     if($thisApp.Config.Use_Visualizations){ 
                       $null = $vlcArgs.add("--video-on-top")
                       $null = $vlcArgs.add("--spect-show-original")
-                      if($thisApp.Config.Current_Visualization -eq 'Spectrum'){
+                      if([system.io.Directory]::Exists("$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop")){
+                        [void]$vlcArgs.add("--audio-visual=projectm")
+                        [void]$vlcArgs.add("--projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`"")
+                        $Screen = [System.Windows.Forms.Screen]::PrimaryScreen
+                        [void]$vlcArgs.add("--projectm-width=$($Screen.Bounds.Width)")
+                        [void]$vlcArgs.add("--projectm-height=$($Screen.Bounds.Height)")
+                        write-ezlogs "| Enabling ProjectM Visualizations: $($vlcArgs | out-string)"
+                      }elseif($thisApp.Config.Current_Visualization -eq 'Spectrum'){
                         #$effect = "--effect-list=spectrum"             
                         $null = $vlcArgs.add("--audio-visual=Visual")
                         $null = $vlcArgs.add("--effect-list=spectrum")
@@ -511,7 +519,7 @@ function Set-ApplicationAudioDevice
                     #$startapp = Get-AllStartApps "*$($thisApp.Config.App_name)*"
                     if($appid -and $synchash.libvlc){
                       $synchash.libvlc.SetAppId($appid,$thisApp.Config.App_Version,"$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico")
-                    }
+                    }#>
                   }else{
                     write-ezlogs "[Set-ApplicationAudioDevice] Unable to find required 'CABLE Input (VB-Audio Virtual Cable)' audio device - cannot enable EQ for Webplayer!" -AlertUI -Warning -logtype Libvlc
                   }      
@@ -787,7 +795,7 @@ function Set-ApplicationAudioDevice
     }
     #$Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"}
     $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
-    start-runspace -scriptblock $cscore_VirtualAudio_Scriptblock -thisApp $thisApp  -synchash $synchash -runspace_name 'Set_VirtualAudio_Runspace' -ApartmentState MTA -Variable_list $Variable_list -RestrictedRunspace -function_list 'write-ezlogs','Update-MainPlayer'
+    start-runspace -scriptblock $cscore_VirtualAudio_Scriptblock -thisApp $thisApp  -synchash $synchash -runspace_name 'Set_VirtualAudio_Runspace' -ApartmentState MTA -Variable_list $Variable_list -RestrictedRunspace -function_list 'write-ezlogs','Update-MainPlayer','Update-Libvlc'
     $Variable_list = $null
     $cscore_VirtualAudio_Scriptblock = $Null
   }catch{

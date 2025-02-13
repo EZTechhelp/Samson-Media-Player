@@ -237,6 +237,7 @@ function Stop-Media
       }  
     }
     $synchashWeak.Target.Spotify_Status = 'Stopped'
+    $synchashWeak.Target.Spicetify = $Null
     
     #Disable ChatView
     Update-ChatView -synchash $synchashWeak.Target -thisApp $thisApp -Disable -Hide

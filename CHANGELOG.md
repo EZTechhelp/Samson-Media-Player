@@ -1,6 +1,91 @@
 # Changelog
 
-## Unreleased
+## [Unreleased]
+
+## 1.0.0 - PUBLIC-001
+> - Branch: Samson
+
+### 1.0 PUBLIC RELEASE VERSION!!
++ 1.0 reflects a build ready for public use and open to any contributors or those who may find any of the code useful
++ Don't consider it finished or perfect by any means, but stable and feature complete enough to use
++ My own personal focus will start to shift away from this project, but will still work on it here and there
++ Unfinished/Planned features likely to get finished, more fixes/optimizations, just at slower pace/depending on interest
++ Current UI wasn't really intended for public release but unsure if I will ever redo it so releasing it as is
++ While it's an impractical, and silly project for PowerShell, I'm still quite proud of it. I think its unique and fun anyway
++ Final THANK YOU to those who helped along the way, especially the 2 main QA testers. See CREDITS!
++ Final shout out to my friend Dan (and his cat Samson) to whom this project was dedicated to!
+
+### Added
++ New setting under General - STARTUP/UI Settings - `Disable Main Window Transparency`
+  +  Disables transparency effects for the Main Window on startup. Can fix some issues
++ New audio visualization - ProjectM (Milkdrop) - available in visualization settings
+  + Includes nearly 10k presets, additional presets can be added to `resources/libvlc/Prests/Presets_milkdrop`
+  + ISSUE: Currently video player window must be undocked/floating for visualizations to be visible
+	+ Alternatively enable new option `Disable Main Window Transparency` in settings as a workaround
+  + ISSUE: Currently not possible to use hotkeys to change or modify presets during playback (vlc has same limitation)
+  + ISSUE: Presets do not dynamically resize with window size, has to be set to a static size
+  + Ability to manually set size for video/texture/mesh and other settings is planned to be added
++ New setting under General - Media Player Options - `Enable Audio Visualizations - Apply to Media with Video`
+  + Allows visualizations to display in place of video content. Does not apply to Youtube content using webplayer
++ First iteration of 'Overlay' that allows quick access to media controls from fullscreen applications
+  + Test feature - debated putting it in 1.0 but will either finish it or remove it
+  + To use must assign a Hotkey from Settings - General - Media Player Options - Media Control Hotkeys
+  + Overlay is technically just the miniplayer UI that opens to the primary screen as the top most window
+  + If the miniplayer is already open it is moved to the primary screen then back then back to its OG position
+  + Overlay may not open from fullscreen apps that block hotkeys (Remote Desktop..etc)
++ Ability to browse, add and play Spotify media directly from integrated Web Browser
+  + Spotify's right-click menu has been replaced with custom Samson commands - may look into adding to vs replacing
+  + Right-click on valid Spotify media links (playlist,track,show,episode) to bring up custom Samson actions
+  + Actions include `Play with Samson`, `Add to Play Queue`, `Add to Playlist`, `Add to Spotify Media Library`
++ New Module and framework additions for eventual support for Plex Media Server integration
+
+### Changes
++ Autoplay and next media commands will now play the next media from its respective library
+  + Only if starting playback directly from the media library and no more media is in queue
+  + If shuffle is enabled, then a random media item will be selected from the library
+  + Spotify and Youtube will prioritize media in their native playlists
+  + Does not apply to Twitch media
++ Changes made to `Mute state` and related UI elements based on volume changes
+  + Mute enables if volume is 0, disables above 0 only if it was not manually muted
+  + When volume is set at 0, clicking unmute will set the volume to 1
++ Additional workarounds to addresss `LibVLCSharp` background flashbang issue
++ Improvements for video overlay updating on mouse over or when moving window
++ Updated `LibVLCSharp` assemblies to version 3.9.1
++ Consolidated libvlc initialization into single module Update-LibVLC
++ Various refactors, comments, code formatting cleanup and updates to logging
++ `Spicetify` installs with `Chocolatey` now supported
++ Toast notifications (`Burnttoast`) now support click/action events on PS 5
+  + Implemented with event wrappers via `PoshWinRT`
++ Refactored XAML for some video view overlay controls to use grid in place of stackpanel
+  + Improves resizing/scaling with floating window
++ Title and Artist for Youtube media will now update accordingly when playing
+  + Youtube TV media will update with the name of channel
++ First pass (of many) for general code format best practice refactoring
++ Add-WPFMenu now supports adding contextmenus to `DropDownButton`
++ Disabled menu items in contextmenu's are now greyed out
++ Updated `YT-DLP` to latest version: 2025.1.26.0
++ Updated Spotify integration to comply with upcoming Spotify auth security requirements
+
+### Fixed
++ New followed Twitch channels do not add to library when Twitch monitor is enabled
++ Chat/comments view automatically opens when playing Youtube TV media
++ App hangs on splash screen when installing Spicetify on startup
++ Fixed #397: Hotkeys not working when using multiple modifier keys
++ Installer not updating launcher exe on version upgrades/installs
++ Video Margquee not displaying over video content in some situations
++ Thin bar of video viewer can still be seen even when docked and video tray is closed
++ Toast notifications sometimes dont work when called from separate runspaces
++ Unable to disable Twitch notifications on media after enabling
++ Visualization settings sometimes not saving when changing from settings window
++ Fixed #396: Can't stop playing YouTube stream
++ Fixed #398: Stay on Top - Mini mode doesn't work
+
+### Comments
++ Using Spotify without a premium subscription is now 'officially' unsupported as Spicetify solution is too buggy
++ Spicetify and features for free Spotify accounts are left in this build for those who wish to experiment with it
++ At the time of these notes, the Spicetify solution does work for free Spotify accounts but setup/enabling isn't smooth
++ Its best to have Spotify already installed, logged in with your account then enable and click Install to Spotify from settings
++ Will NOT trigger first time setup when upgrading
 
 ## 0.9.9 - BETA-005
 > - Branch: Samson

@@ -218,7 +218,13 @@
 									<Button Name="High_DPI_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
 										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
 									</Button>
-								</Grid>									
+								</Grid>
+								<Grid Margin="0,-2,0,0">
+									<mah:ToggleSwitch Content="Disable Main Window Transparency" Name="DisableTransparency_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff"/>
+									<Button Name="DisableTransparency_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>								
 							</VirtualizingStackPanel>
 						</Expander>
 						<Expander
@@ -284,6 +290,12 @@
 										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
 									</Button>
 								</Grid>
+								<Grid Margin="30,0,0,0">
+									<mah:ToggleSwitch Content="Apply to Media with Video" Name="Use_Visualizations_Video_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="{Binding ElementName=Use_Visualizations_Toggle, Path=IsOn}"/>
+									<Button Name="Use_Visualizations_Video_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>								
 								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0">
 									<Label Name='Current_Visualization_Label' Grid.Column="0" Content="Select Visualization Plugin:" VerticalAlignment="Top" Foreground="#ffffff" Visibility="Visible" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
 									<ComboBox
@@ -296,7 +308,7 @@
 									          mah:TextBoxHelper.UseFloatingWatermark="True"
 									          HorizontalAlignment="Left"
 									          IsEditable="False"
-									          IsEnabled="false"
+									          IsEnabled="{Binding ElementName=Use_Visualizations_Toggle, Path=IsOn}"
 									          SelectedIndex="-1">
 										<ComboBox.ContextMenu>
 											<ContextMenu IsEnabled="False" Visibility="Collapsed"/>
@@ -386,6 +398,15 @@
 											<mah:HotKeyBox mah:TextBoxHelper.ClearTextButton="false"
 														   Margin="0,0,0,0"
 														   Name="Restarthotkey"
+														   HorizontalAlignment="Left"
+														   mah:TextBoxHelper.Watermark="Enter hot key"
+														   AreModifierKeysRequired="False" />			
+										</VirtualizingStackPanel>	
+										<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="20,0,0,0">										
+											<TextBlock Text="Overlay Controls" Margin="0,0,0,0"/>
+											<mah:HotKeyBox mah:TextBoxHelper.ClearTextButton="false"
+														   Margin="0,0,0,0"
+														   Name="Overlayhotkey"
 														   HorizontalAlignment="Left"
 														   mah:TextBoxHelper.Watermark="Enter hot key"
 														   AreModifierKeysRequired="False" />			

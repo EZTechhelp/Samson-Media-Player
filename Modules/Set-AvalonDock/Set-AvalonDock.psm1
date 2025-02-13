@@ -242,27 +242,43 @@ function Set-AvalonDock {
             if($synchash.MiniVideo_ToggleButton -and !$synchash.MiniVideo_ToggleButton.isChecked){
               $synchash.MiniVideo_ToggleButton.isChecked = $true
             }
-            if($synchash.VideoButton_ToggleButton.isChecked -and $thisApp.Config.Open_VideoPlayer -and !$synchash.MiniPlayer_Viewer.isVisible){
-              write-ezlogs ">>>> Video player has been undocked to new window, closing Docking Manager View" -showtime
-              Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Close
-            }elseif($synchash.MiniPlayer_Viewer.isVisible){
-              #write-ezlogs ">>>> Video player has been undocked to new window, miniplayer is open, taking no action" -showtime
-              write-ezlogs ">>>> Video player has been undocked to new window, miniplayer is open, calling show/hide to on main window to update visual tree" -showtime -warning
-              #Trick to prerender window without showing it - Set opacity to 0, show to render, then hide
-              $synchash.window.ShowActivated = $false #Prevent window from activating/taking focus while rendering
-              $synchash.window.ShowInTaskbar = $false
-              $synchash.window.Opacity = 0
-              [void]$synchash.window.Show()
-              #$synchash.window.Hide()
-              #$synchash.window.Opacity = 1
-              #$synchash.window.ShowActivated = $true
-              #$synchash.window.ShowInTaskbar = $true
-            }
           }
         }catch{
           write-ezlogs "An exception occurred in FloatingWindow_LoadedCommand event" -showtime -catcherror $_
         }
       }
+      $Synchash.FloatingWindow_ContentRenderedScriptblock = {
+        param($sender)
+        try{
+          $synchash = $synchash
+          write-ezlogs ">>>> $($sender.name) window has rendered" -showtime -loglevel 2
+          if($sender.name -eq 'VideoViewWindow'){
+            if($synchash.VideoButton_ToggleButton.isChecked -and $thisApp.Config.Open_VideoPlayer -and !$synchash.MiniPlayer_Viewer.isVisible){
+              write-ezlogs "| Video player has been undocked to new window, closing Docking Manager View" -showtime
+              Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Close
+            }elseif($synchash.MiniPlayer_Viewer.isVisible -and $synchash.Window){
+              write-ezlogs "| Video player has been undocked to new window, miniplayer is open, calling show/hide to on main window to update visual tree" -showtime -warning
+              #Trick to prerender or update window without showing it - Set opacity to 0, show to render, then hide
+              $synchash.window.ShowActivated = $false #Prevent window from activating/taking focus while rendering
+              $synchash.window.ShowInTaskbar = $false
+              $synchash.window.Opacity = 0
+              [void]$synchash.window.Show()
+              #TODO: This is only needed if main window allowstransparency is set to false
+              if(!$synchash.Window.AllowsTransparency){
+                [void]$synchash.window.Hide()
+              }
+            }
+            if($synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
+              write-ezlogs "| Calling Activate for VideoView_Grid.Parent.Parent window" -showtime -warning
+              $synchash.VideoView_Grid.Parent.Parent.Show()
+              $synchash.VideoView_Grid.Parent.Parent.Activate()
+            }
+          }
+        }catch{
+          write-ezlogs "An exception occurred in FloatingWindow_ContentRenderedScriptBlock event" -showtime -catcherror $_
+        }
+      }
+
       $Synchash.FloatingWindow_StateChangedScriptblock = {
         param($sender)
         try{
@@ -285,6 +301,24 @@ function Set-AvalonDock {
                 $synchash.VideoViewFloat.ResizeMode = 'CanResize'
                 $synchash.VideoViewFloat.Visibility = 'Visible'
                 $synchash.VideoViewFloat.WindowState = 'Maximized'
+                #TODO: Setting floating window AllowsTransparency to true fixes the issue where libvlc video player window background sometimes becomes solid white or flashes white
+                #https://code.videolan.org/videolan/LibVLCSharp/-/issues/555
+                #Has to be false in order for sftreeview control that holds youtube comments to display, otherwise its just black.
+                #Need to find a fix that allows AllowsTransparency to always stay true (until libvlcsharp fixes the core issue). Maybe use another airhackcontrol?
+                if(($thisApp.Config.Enable_YoutubeComments) -and $synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
+                  <#                  if($synchash.VideoView -and $synchash.VideoView.Background -ne 'Black'){
+                      #TODO: Fixes the issue where libvlc video player window background sometimes becomes solid white or flashes white if AllowsTransparency  is false on floating window
+                      #https://code.videolan.org/videolan/LibVLCSharp/-/issues/555
+                      write-ezlogs "| Setting VideoView.Background $($synchash.VideoView.Background) to Black to prevent background from becoming solid white" -showtime -warning
+                      $synchash.VideoView.Background = 'Black'
+                  }#>
+                  if($synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
+                    write-ezlogs "| VideoViewFloat stated changed -- Calling Activate for VideoView_Grid.Parent.Parent window" -showtime -warning
+                    #$synchash.VideoView_Grid.Parent.Parent.hide()
+                    $synchash.VideoView_Grid.Parent.Parent.Show()
+                    $synchash.VideoView_Grid.Parent.Parent.Activate()
+                  }
+                }
               }
               if($synchash.VideoView_LargePlayer_Icon.Kind -ne 'ScreenNormal'){
                 $synchash.VideoView_LargePlayer_Icon.Kind = 'ScreenNormal'
@@ -303,6 +337,24 @@ function Set-AvalonDock {
                 #$synchash.VideoViewFloat.WindowStyle = 'SingleBorderWindow'
                 $synchash.VideoViewFloat.ResizeMode = 'CanResize'
                 #$synchash.VideoViewFloat.Visibility = 'Visible'
+                #TODO: Setting floating window AllowsTransparency to true fixes the issue where libvlc video player window background sometimes becomes solid white or flashes white
+                #https://code.videolan.org/videolan/LibVLCSharp/-/issues/555
+                #Has to be false in order for sftreeview control that holds youtube comments to display, otherwise its just black.
+                #Need to find a fix that allows AllowsTransparency to always stay true (until libvlcsharp fixes the core issue). Maybe use another airhackcontrol?
+                if(($thisApp.Config.Enable_YoutubeComments) -and $synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
+                  <#                  if($synchash.VideoView -and $synchash.VideoView.Background -ne 'Black'){
+                      #TODO: Fixes the issue where libvlc video player window background sometimes becomes solid white or flashes white if AllowsTransparency  is false on floating window
+                      #https://code.videolan.org/videolan/LibVLCSharp/-/issues/555
+                      write-ezlogs "| Setting VideoView.Background $($synchash.VideoView.Background) to Black to prevent background from becoming solid white" -showtime -warning
+                      $synchash.VideoView.Background = 'Black'
+                  }#>
+                  if($synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
+                    write-ezlogs "| VideoViewFloat stated changed -- Calling activate for VideoView_Grid.Parent.Parent window" -showtime -warning
+                    #$synchash.VideoView_Grid.Parent.Parent.hide()
+                    $synchash.VideoView_Grid.Parent.Parent.Show()
+                    $synchash.VideoView_Grid.Parent.Parent.Activate()
+                  }
+                }
               }
             }
             $LibVLCSharpWPFForegroundWindow = Get-VisualParentUp -source $synchash.VideoView_Grid -type ([System.Windows.Window])
@@ -414,9 +466,44 @@ function Set-AvalonDock {
           write-ezlogs "An exception occurred in $($sender.name) PreviewGotKeyboardFocus event" -showtime -catcherror $_
         }
       }
+      $synchash.LocationChanged_Timer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Normal)
+      $synchash.LocationChanged_Timer.Interval = [timespan]::FromMilliseconds(100)
+      $synchash.LocationChanged_Timer_ScriptBlock = {
+        try{
+          if($synchash.MediaViewAnchorable.isFloating -and $synchash.VideoViewFloat.isVisible){
+            if($synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
+              if($thisApp.Config.Dev_mode){write-ezlogs "| LocationChanged -- VideoViewFloat stated changed -- Calling activate for VideoView_Grid.Parent.Parent window" -showtime -warning -Dev_mode}
+              $synchash.VideoView_Grid.Parent.Parent.Activate()
+            }
+          }
+        }catch{
+          write-ezlogs "An exception occurred executing LocationChanged_Timer_ScriptBlock" -showtime -catcherror $_
+        }finally{
+          $this.stop()
+        }     
+      }
+      $synchash.LocationChanged_Timer.add_tick($synchash.LocationChanged_Timer_ScriptBlock)
+      
+      $synchash.FloatingWindow_LocationChangedScriptblock = {
+        Param($sender,$e)
+        try{
+          if($sender.name -eq 'VideoViewWindow' -and $synchash.MediaViewAnchorable.isFloating -and $synchash.VideoViewFloat.isVisible){
+            if(!$synchash.LocationChanged_Timer.IsEnabled){
+              $synchash.LocationChanged_Timer.Start()
+            }
+          }
+        }catch{
+          write-ezlogs "An exception occurred in $($sender.name) LocationChanged event" -showtime -catcherror $_
+        }
+      }
+
       $Synchash.FloatingWindow_ClosingScriptblock = {
         param($sender)
         try{
+          if($synchash.LocationChanged_Timer){
+            $synchash.LocationChanged_Timer.stop()
+            $synchash.LocationChanged_Timer.Remove_Tick($synchash.LocationChanged_Timer_ScriptBlock)
+          }
           if($sender.name -eq 'VideoViewWindow'){
             if($synchash.VideoView_Grid.Parent.Parent -and $synchash.Window.IsLoaded){
               write-ezlogs ">>>> Clearing focus for VideoView_Grid.Parent.Parent and clearing window owner"
@@ -460,6 +547,7 @@ function Set-AvalonDock {
           #$element = [System.WeakReference]::new($sender).Target
           write-ezlogs ">>>> Floating window $($sender.Name) has unloaded - Top: $($Sender.Top) - Left: $($Sender.Left)" -showtime -loglevel 2
           $sender.Remove_StateChanged($Synchash.FloatingWindow_StateChangedScriptblock)
+          $sender.Remove_ContentRendered($Synchash.FloatingWindow_ContentRenderedScriptblock)
           $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::PreviewGotKeyboardFocusEvent) -RemoveHandlers -VerboseLog
           $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::SizeChangedEvent) -RemoveHandlers -VerboseLog
           $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::PreviewGotKeyboardFocusEvent) -RemoveHandlers -VerboseLog
@@ -467,6 +555,8 @@ function Set-AvalonDock {
           $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::UnloadedEvent) -RemoveHandlers
           if($sender.name -eq 'VideoViewWindow'){
             $sender.Remove_Closing($Synchash.FloatingWindow_ClosingScriptblock)
+            $sender.Remove_LocationChanged($synchash.FloatingWindow_LocationChangedScriptblock)
+            
             if(!$synchash.MainWindow_IsClosing -and $synchash.VideoViewAirControl -and $synchash.VLC_Grid.Children -notcontains $synchash.VideoViewAirControl){
               Write-EZLogs '| Re-adding VideoViewAirControl to VLC_Grid'
               [void]$synchash.VLC_Grid.AddChild($synchash.VideoViewAirControl)
@@ -478,6 +568,10 @@ function Set-AvalonDock {
               write-ezlogs "| Setting videoview parent window Owner to main window"
               $synchash.VideoView_Grid.Parent.Parent.Owner = $Null
               $synchash.VideoView_Grid.Parent.Parent.Owner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($synchash.Window)
+              $synchash.VideoView_Grid.Parent.Parent.Activate()
+              if($synchash.vlc.isPlaying -and $synchash.VideoView_Grid.Background){
+                $synchash.VideoView_Grid.Background = '#01000000'
+              }
             }
             if(!$synchash.MainWindow_IsClosing -and $synchash.MiniPlayer_Viewer.isVisible -and $synchash.VideoView.Visibility -notin 'Hidden','Collapsed'){
               write-ezlogs ">>>> Miniplayer is visible, hiding VideoView and VideoViewAirControl" -showtime -loglevel 2
@@ -893,6 +987,9 @@ function Set-AvalonDock {
                 write-ezlogs "Vlc is playing, Youtube/Spotify webplayer not playing and videoView.Visibility is hidden, setting to visible" -warning
                 $synchash.videoView.Visibility = 'Visible'
               }
+              if($synchash.VideoView_Grid.MaxHeight -eq 0){
+                $synchash.VideoView_Grid.MaxHeight = [Double]::PositiveInfinity
+              }            
               if($floatingwindow.MinHeight -ne '400' -or $floatingwindow.MinWidth -ne "600"){
                 $floatingwindow.MinHeight="400"
                 $floatingwindow.MinWidth="600"
@@ -1264,7 +1361,7 @@ function Set-AvalonDock {
               #https://code.videolan.org/videolan/LibVLCSharp/-/issues/555
               #Has to be false in order for sftreeview control that holds youtube comments to display, otherwise its just black.
               #Need to find a fix that allows AllowsTransparency to always stay true (until libvlcsharp fixes the core issue). Maybe use another airhackcontrol?
-              if($thisApp.Config.Enable_YoutubeComments){
+              if(($thisApp.Config.Enable_YoutubeComments)){
                 $FloatingWindowControl.AllowsTransparency = $false
               }else{
                 $FloatingWindowControl.AllowsTransparency = $true
@@ -1272,13 +1369,14 @@ function Set-AvalonDock {
               $FloatingWindowControl.WindowStyle = 'None'
               $FloatingWindowControl.Name = "VideoViewWindow"
               $FloatingWindowControl.add_loaded($Synchash.FloatingWindow_LoadedScriptblock)
+              $FloatingWindowControl.add_LocationChanged($synchash.FloatingWindow_LocationChangedScriptblock)
               #$FloatingWindowControl.add_PreviewGotKeyboardFocus($synchash.FloatingWindow_KeyboardFocusScriptblock)
               $FloatingWindowControl.add_IsKeyboardFocusedChanged($synchash.FloatingWindow_KeyboardFocusScriptblock)
               if($synchash.VideoViewAirControl.front.parent.parent -is [System.Windows.Window]){
                 $FloatingWindowOwner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($FloatingWindowControl)
                 if($synchash.VideoViewAirControl.front.parent.parent.Owner -ne $FloatingWindowOwner){
                   write-ezlogs "| Setting VideoViewAirControl.front.parent.parent.Owner to VideoView floating window" -warning
-                  $synchash.VideoViewAirControl.front.parent.parent.Owner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($FloatingWindowControl)
+                  $synchash.VideoViewAirControl.front.parent.parent.Owner = $FloatingWindowOwner
                   if($synchash.VideoViewAirControl.Visibility -in 'Hidden','Collapsed'){
                     write-ezlogs "| Unhiding VideoViewAirControl"
                     $synchash.VideoViewAirControl.Visibility = 'Visible'
@@ -1383,6 +1481,7 @@ function Set-AvalonDock {
               #$FloatingWindowControl.add_PreviewGotKeyboardFocus($synchash.FloatingWindow_KeyboardFocusScriptblock)
             }
             $FloatingWindowControl.add_Unloaded($Synchash.FloatingWindow_UnLoadedScriptblock)
+            $FloatingWindowControl.add_ContentRendered($Synchash.FloatingWindow_ContentRenderedScriptblock)
           }catch{
             write-ezlogs "An exception occurred in LayoutFloatingWindowControlCreated" -catcherror $_
           }

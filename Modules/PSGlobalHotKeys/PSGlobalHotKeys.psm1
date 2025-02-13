@@ -65,6 +65,11 @@ function Get-GlobalHotKeys{
         [Void]$synchash.Restarthotkey.dispose()
         $synchash.Restarthotkey = $null
       }
+      if($synchash.Overlayhotkey -is [System.IDisposable]){
+        write-ezlogs "| Disposing and unregistering existing Overlayhotkey" -loglevel 2
+        [Void]$synchash.Overlayhotkey.dispose()
+        $synchash.Overlayhotkey = $null
+      }
       if(!$Register -and !$Shutdown){
         if($synchash.Hotkeys_Button.isEnabled -and !$synchash.Hotkeys_Button.isChecked){
           $synchash.Hotkeys_Button.isChecked = $false
@@ -126,6 +131,9 @@ function Get-GlobalHotKeys{
             }elseif($args -eq $synchash.Restarthotkey){
               write-ezlogs ">>>> Global Restarthotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" -showtime  
               Restart-Media -thisApp $thisApp -synchash $synchash    
+            }elseif($args -eq $synchash.Overlayhotkey){
+              write-ezlogs ">>>> Global Overlayhotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" -showtime  
+              Open-MiniPlayer -thisApp $thisApp -synchash $synchash -Overlay         
             }else{
               write-ezlogs "Pressed registered Hotkey with action assigned: $($args | out-string)" -showtime -Warning
             }
@@ -135,7 +143,20 @@ function Get-GlobalHotKeys{
         }
         try{
           foreach($Hotkey in $thisApp.Config.GlobalHotKeys){
-            if($hotkey.Modifier -eq 'Shift'){
+            if($hotkey.Modifier -match ','){
+              if($hotkey.Modifier -match 'Shift'){
+                $Modifier = [System.Windows.Input.ModifierKeys]::Shift
+              }
+              if($hotkey.Modifier -match 'Alt'){
+                $Modifier = $Modifier + [System.Windows.Input.ModifierKeys]::Alt
+              }
+              if($hotkey.Modifier -match 'Control'){
+                $Modifier = $Modifier + [System.Windows.Input.ModifierKeys]::Control
+              }
+              if($hotkey.Modifier -match 'Windows'){
+                $Modifier = [System.Windows.Input.ModifierKeys]::Windows
+              }
+            }elseif($hotkey.Modifier -eq 'Shift'){
               $Modifier = [System.Windows.Input.ModifierKeys]::Shift
             }elseif($hotkey.Modifier -eq 'Alt'){
               $Modifier = [System.Windows.Input.ModifierKeys]::Alt
@@ -166,10 +187,7 @@ function Get-GlobalHotKeys{
         if($thisApp.Config.GlobalHotKeys.name){
           $toolTip = @"
 Global HotKeys Currently Enabled:
-
-$($thisApp.Config.GlobalHotKeys.name[0])       : $($thisApp.Config.GlobalHotKeys.key[0])
-$($thisApp.Config.GlobalHotKeys.name[1])  : $($thisApp.Config.GlobalHotKeys.key[1])
-$($thisApp.Config.GlobalHotKeys.name[2])   : $($thisApp.Config.GlobalHotKeys.key[2])
+$($thisApp.Config.GlobalHotKeys | out-string)
 "@
         }else{
           $ToolTip = 'Global HotKeys Currently Disabled - No Hotkeys have been configured'
@@ -201,4 +219,3 @@ $($thisApp.Config.GlobalHotKeys.name[2])   : $($thisApp.Config.GlobalHotKeys.key
 #endregion Get-GlobalHotKeys Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Get-GlobalHotKeys')
-

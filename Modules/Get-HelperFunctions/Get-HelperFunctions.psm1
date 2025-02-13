@@ -835,7 +835,7 @@ function confirm-requirements
           write-ezlogs "[Confirm-Requirements] Chocolatey is not installed, installing...." -showtime -warning
           Set-ExecutionPolicy Bypass -Scope Process -Force
           [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-          iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex *>&1 | write-ezlogs 
+          iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex *>&1 | write-ezlogs -CallBack:$false
           if([System.IO.File]::Exists("$env:ChocolateyInstall\redirects\Choco.exe")){
             write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey -- restarting app" -showtime -Success
             if(!$noRestart){
@@ -843,7 +843,7 @@ function confirm-requirements
             }        
           }else{
             if($(get-command choco*)){
-              choco upgrade chocolatey --confirm --force *>&1 | write-ezlogs
+              choco upgrade chocolatey --confirm --force *>&1 | write-ezlogs -CallBack:$false
               if([System.IO.File]::Exists("$env:ChocolateyInstall\redirects\Choco.exe")){
                 write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey" -showtime -Success        
                 if(!$noRestart){
@@ -952,6 +952,12 @@ function confirm-requirements
                 if(!$appinstalled){
                   $appinstalled = "$($env:LOCALAPPDATA)\spicetify\spicetify.exe"
                 }    
+              }elseif([System.IO.File]::Exists("$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){    
+                $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"  
+                $appinstalled = (Get-iniFile "$Spicetify_Config_Dir\config-xpui.ini").Backup.with
+                if(!$appinstalled){
+                  $appinstalled = "$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\spicetify.exe"
+                }    
               }else{
                 $Do_Install = $true
               }        
@@ -1023,8 +1029,10 @@ function confirm-requirements
                 if($app -eq 'Spicetify'){
                   try{
                     write-ezlogs ">>>> Installing Spicetify" -showtime -loglevel 2          
-                    Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.ps1" | Invoke-Expression -Verbose
+                    #Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.ps1" | Invoke-Expression -Verbose
                     #Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-marketplace/master/install.ps1" | Invoke-Expression -Verbose
+                    #Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-marketplace/main/resources/install.ps1" | Invoke-Expression -Verbose
+                    choco upgrade spicetify-cli --confirm --force *>&1 | write-ezlogs -CallBack:$false
                     Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-marketplace/main/resources/install.ps1" | Invoke-Expression -Verbose
                     if([System.IO.File]::Exists("$($env:USERPROFILE)\spicetify-cli\spicetify.exe") -and [System.IO.File]::Exists("$($env:USERPROFILE)\.spicetify\config-xpui.ini")){
                       $Spicetify_Install_Dir = "$($env:USERPROFILE)\spicetify-cli\"
@@ -1060,12 +1068,12 @@ function confirm-requirements
                         write-ezlogs "[Confirm-Requirements] Chocolatey is not installed, installing...." -showtime -warning
                         Set-ExecutionPolicy Bypass -Scope Process -Force
                         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-                        iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex *>&1 | write-ezlogs 
+                        iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex *>&1 | write-ezlogs -CallBack:$false
                         if([System.IO.File]::Exists("$env:ChocolateyInstall\redirects\Choco.exe")){
                           write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey -- restarting app" -showtime -Success        
                         }else{
                           if($(get-command choco*)){
-                            choco upgrade chocolatey --confirm --force *>&1 | write-ezlogs
+                            choco upgrade chocolatey --confirm --force *>&1 | write-ezlogs -CallBack:$false
                             if([System.IO.File]::Exists("$env:ChocolateyInstall\redirects\Choco.exe")){
                               write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey" -showtime -Success         
                             }
@@ -2104,6 +2112,69 @@ function ConvertFrom-Roman {
 #endregion ConvertFrom-Roman Function
 #----------------------------------------------
 
+#--------------------------------------------- 
+#region Set-WindowTopMost Function
+#---------------------------------------------
+function Set-WindowTopMost {
+  <#
+      .LINK
+      https://stackoverflow.com/questions/365094/window-on-desktop/39150799#39150799
+  #>
+
+  param(
+    $thisApp,
+    $Window,
+    [switch]$Force,
+    [switch]$Disable
+  )
+
+  Begin {
+    if(-not [bool]('WindowTopMost' -as [Type])){
+      [void][System.Reflection.Assembly]::LoadFrom("$($thisApp.Config.Current_Folder)\Assembly\EZT-MediaPlayer\EZT_MediaPlayer.dll")
+    }
+  }
+  Process { 
+    try{
+      if($Window -is [System.Windows.Window]){
+        if($Window.GetValue([WindowExtensions]::WindowTopMostProperty) -eq $null){
+          $WindowTopMost = [WindowTopMost]::new($Window)
+          $Window.SetValue([WindowExtensions]::WindowTopMostProperty,$WindowTopMost)
+        }
+        $AlwaysOnTop = $Window.GetValue([WindowExtensions]::AlwaysOnTopProperty)
+        if($Force){
+          write-ezlogs ">>>> Unsetting then resetting AlwaysOnTop for Window: $($Window.Name) - $($Window.title)"
+          [WindowExtensions]::SetAlwaysOnTop($Window,$false)
+          [WindowExtensions]::SetAlwaysOnTop($Window,$true)
+          if($Window.Topmost -ne $true){
+            $Window.Topmost = $true
+          }
+        }elseif($Disable){
+          write-ezlogs ">>>> Unsetting AlwaysOnTop for Window: $($Window.Name) - $($Window.title)"
+          [WindowExtensions]::SetAlwaysOnTop($Window,$false)
+        }else{
+          if($AlwaysOnTop){
+            write-ezlogs ">>>> Unsetting AlwaysOnTop for Window: $($Window.Name) - $($Window.title)"
+            [WindowExtensions]::SetAlwaysOnTop($Window,$false)
+          }else{
+            write-ezlogs ">>>> Setting AlwaysOnTop for Window: $($Window.Name) - $($Window.title)"
+            [WindowExtensions]::SetAlwaysOnTop($Window,$true)
+            if($Window.Topmost -ne $true){
+              $Window.Topmost = $true
+            }
+          }
+        }  
+      }else{
+        write-ezlogs "Cannot set AlwaysOnTop -- no valid Window provided" -Warning
+      }     
+    }catch{
+      write-ezlogs "An exception occurred setting AlwaysOnTop for window: $($Window.Name) - $($Window)" -showtime -catcherror $_
+    }
+  }
+}
+#--------------------------------------------- 
+#endregion Set-WindowTopMost Function
+#---------------------------------------------
+
 Export-ModuleMember -Function @(
   'Test-URL',
   'Test-Folder',
@@ -2133,5 +2204,6 @@ Export-ModuleMember -Function @(
   'Get-IndexesOf',
   'Convert-Size',
   'Convertto-RelativeTime',
-  'ConvertFrom-Roman'
+  'ConvertFrom-Roman',
+  'Set-WindowTopMost'
 ) #-Alias 'Use'

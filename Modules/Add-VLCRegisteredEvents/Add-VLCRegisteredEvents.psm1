@@ -83,6 +83,10 @@ function Add-VLCRegisteredEvents
         }catch{
           write-ezlogs "An exception occurred in Update-Subtitles -clear" -catcherror $_
         } 
+        if($synchash.VideoView_Grid.Background -ne '#01000000'){
+          write-ezlogs "[VLC_Playing_EVENT] Setting VideoView_Grid background to #01000000" -warning
+          Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'VideoView_Grid' -Property 'Background' -value '#01000000'
+        }
         if($thisApp.Config.Debug_Logging){
           $existingjob_check = $(Get-Runspace) | where {$_.id -eq $Event.RunspaceId -or $_.InstanceId.Guid -eq $Event.RunspaceId} 
           write-ezlogs "[VLC_Playing_EVENT] VLC Playing Event: $($Event | select * | out-string)" -showtime -LogLevel 3 -logtype Libvlc
@@ -174,7 +178,7 @@ function Add-VLCRegisteredEvents
       try{
         if(-not $([string]$synchash.vlc.media.Mrl).StartsWith("dshow://")){
           $synchash.Now_Playing_Title_Label.DataContext = 'OPENING...'
-        }       
+        }        
         #write-ezlogs ">>>> VLC Opening event: $($event.SourceArgs | out-string)" -logtype Libvlc -Dev_mode
         #$synchash.VideoView.Background = [System.Windows.Media.Brushes]::Black
       }catch{
@@ -300,8 +304,7 @@ function Add-VLCRegisteredEvents
       }catch{
         write-ezlogs "An exception occurred in vlc Muted event" -showtime -catcherror $_
       }   
-    }
-    
+    }   
   }catch{
     write-ezlogs "An exception occurred Registering Muted event" -showtime -catcherror $_
   }
@@ -316,9 +319,13 @@ function Add-VLCRegisteredEvents
     $Null = Register-ObjectEvent -InputObject $synchash.Vlc -EventName UnMuted -MessageData $synchash -Action { 
       $synchash = $Event.MessageData
       try{   
-        $synchash.VLC_IsPlaying_State = $synchash.Vlc.isPlaying             
+        $synchash.VLC_IsPlaying_State = $synchash.Vlc.isPlaying
         write-ezlogs ">>>> [VLC_UnMuted_Event]: Vlc Volume: $($($synchash.vlc.Volume))" -showtime -LogLevel 2 -logtype Libvlc
-        $thisApp.Config.Media_Muted = $false        
+        $thisApp.Config.Media_Muted = $false
+        if($synchash.vlc -and $synchash.vlc.Volume -eq 0 -and $synchash.Volume_Slider.value -eq 0){
+          write-ezlogs "[VLC_UnMuted_Event] | Volume is currently 0, setting to 1 for unmute" -showtime -LogLevel 2 -logtype Libvlc
+          $synchash.Volume_Slider.value = 1
+        }
       }catch{
         write-ezlogs "An exception occurred in vlc UnMuted event" -showtime -catcherror $_
       }   

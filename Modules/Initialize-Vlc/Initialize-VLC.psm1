@@ -96,8 +96,12 @@ Function Initialize-VLC
       }
 
       
-      #Prevent vlc from catching input events
-      $synchash.VLC.EnableKeyInput = $false
+      #Prevent vlc from catching input events unless using visualizations
+      if($thisApp.Config.Use_Visualizations){
+        $synchash.VLC.EnableKeyInput = $true
+      }else{
+        $synchash.VLC.EnableKeyInput = $false
+      }
       #$synchash.VLC.EnableMouseInput = $false
 
       Add-VLCRegisteredEvents -synchash $synchash -thisApp $thisApp
@@ -167,27 +171,38 @@ Function Initialize-VLC
       $synchash.VideoView_IsVisibleChanged_Command = {
         param($sender)
         try{
-          if($synchash.VideoView.Visibility -in 'Hidden','Collapsed'){
-            write-ezlogs ">>>> Video View is: $($synchash.VideoView.Visibility)" -showtime -warning
+          if($sender.Visibility -in 'Hidden','Collapsed'){
+            write-ezlogs ">>>> Video View visibility changed: $($sender.Visibility)" -showtime -warning
             if($synchash.VideoView_Grid -and $synchash.VideoView_Grid.Visibility -eq 'Visible'){
-              write-ezlogs "| hiding VideoView_Grid" -showtime -warning
-              $synchash.VideoView_Grid.Visibility = 'Collapsed'        
-            }                        
-          }elseif($synchash.VideoView.Visibility -eq 'Visible'){            
+              write-ezlogs "| hiding VideoView_Grid and setting MaxHeight to 0" -showtime -warning
+              $synchash.VideoView_Grid.Visibility = 'Collapsed'
+              $synchash.VideoView_Grid.MaxHeight = 0
+            }
+            if($sender.IsEnabled){
+              write-ezlogs "| Disabling VideoView control" -showtime -warning
+              $sender.IsEnabled = $false
+            }                         
+          }elseif($sender.Visibility -eq 'Visible'){            
             if($synchash.VideoView_Grid.Visibility -in 'Hidden','Collapsed'){
-              write-ezlogs ">>>> Video View is Visible, setting VideoView_Grid to Visible" -showtime -warning -Dev_mode
+              write-ezlogs ">>>> Video View is Visible and VideoView_Grid is not, setting VideoView_Grid to Visible and MaxHeight to infinity" -showtime -warning
               $synchash.VideoView_Grid.Visibility = 'Visible'
+              $synchash.VideoView_Grid.MaxHeight = [Double]::PositiveInfinity
+            }
+            if(!$sender.IsEnabled){
+              write-ezlogs "| Enabling VideoView control" -showtime -warning
+              $sender.IsEnabled = $true
             }
             if($synchash.VideoView_Overlay_Grid.Visibility -in 'Hidden','Collapsed'){
-              write-ezlogs ">>>> Video View is Visible, setting VideoView_Overlay_Grid to Visible" -showtime -warning
+              write-ezlogs ">>>> Video View is Visible and VideoView_Overlay_Grid is not, setting VideoView_Overlay_Grid to Visible" -showtime -warning
               $synchash.VideoView_Overlay_Grid.Visibility = 'Visible'
             }
             if(!$synchash.vlc.IsPlaying -and !$synchash.VideoView_Grid.Parent.Parent.AllowsTransparency -and $thisApp.Config.Enable_YoutubeComments -and $synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
               #TODO: Fixes the issue where libvlc video player window background sometimes becomes solid white or flashes white if AllowsTransparency  is false on floating window
               #https://code.videolan.org/videolan/LibVLCSharp/-/issues/555
               write-ezlogs "| Calling Hide() then Show() on VideoView floating window to prevent background from becoming solid white" -showtime -warning
-              $synchash.VideoView_Grid.Parent.Parent.hide()
-              $synchash.VideoView_Grid.Parent.Parent.Show()
+              #$synchash.VideoView_Grid.Parent.Parent.hide()
+              #$synchash.VideoView_Grid.Parent.Parent.Show()
+              $synchash.VideoView_Grid.Parent.Parent.Activate()
             }
           }
         }catch{
@@ -219,7 +234,7 @@ Function Initialize-EQ
   try{
     write-ezlogs ">>>> Initialize-EQ Startup -- Startup_Playback: $Startup_Playback" -loglevel 2 -logtype Libvlc
     #EQ Preset Routed Event
-    $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))') 
+    #$audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))') 
     [System.Windows.RoutedEventHandler]$Synchash.EQPreset_Menuitem_Command = {
       param($sender)
       try{     
@@ -1241,17 +1256,26 @@ Function Update-LibVLC
   param (
     $synchash,
     $thisApp,
+    [string]$media_link,
     [switch]$force,
     [switch]$EnableCasting,
-    [switch]$UpdateVideoView
+    [switch]$UpdateStreamlink,
+    [switch]$UpdateVideoView,
+    [switch]$UpdateMainPlayer,
+    [switch]$UnRegisterEvents,
+    [switch]$ForceVisualizations
   ) 
   try{
-    $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))') 
+    if($thisApp.Config.Use_Visualizations -and $thisApp.Config.Use_Visualizations_Video){
+      $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mpeg|(?i)mpg4|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))') 
+    }else{
+      $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))') 
+    }
     if($synchash.Equalizer -ne $null -or $force){
       if($synchash.timer.isEnabled){
         $synchash.timer.stop()
       }    
-      if($synchash.streamlink -and -not [string]::IsNullOrEmpty($synchash.current_playing_Media.id) -and (Get-Process Streamlink*)){
+      if($UpdateStreamlink -and $synchash.streamlink -and -not [string]::IsNullOrEmpty($synchash.current_playing_Media.id) -and (Get-Process Streamlink*)){
         write-ezlogs "Playback from Streamlink content requires restarting, executing start_media_timer" -warning -logtype Libvlc -loglevel 2
         $synchash.Start_media = $synchash.current_playing_Media
         if($EnableCasting){
@@ -1261,15 +1285,21 @@ Function Update-LibVLC
         return
       }
       $currenttime = $synchash.VLC.Time
-      $media_link = $synchash.vlc.media.Mrl
+      if(!$media_link){
+        $media_link = $synchash.vlc.media.Mrl
+      }      
       $synchash.VLC_IsPlaying_State = $false
-      Add-VLCRegisteredEvents -synchash $synchash -thisApp $thisApp -UnregisterOnly
-      if($synchash.libvlc){
+      if($UnRegisterEvents){
+        Add-VLCRegisteredEvents -synchash $synchash -thisApp $thisApp -UnregisterOnly
+      }      
+      if($synchash.libvlc -is [System.IDisposable]){
         write-ezlogs ">>>> Disposing Libvlc" -logtype Libvlc -loglevel 2
         $synchash.libvlc.dispose()
         $synchash.libvlc = $Null
       }
-      [void]$synchash.vlc.stop()
+      if($synchash.vlc){
+        [void]$synchash.vlc.stop()
+      }     
       #Recreate new libvlc/media player instance with args
       $vlcArgs = [System.Collections.Generic.List[String]]::new()
       [void]$vlcArgs.add('--file-logging')
@@ -1287,79 +1317,132 @@ Function Update-LibVLC
         write-ezlogs "| Setting default global gain for libvlc: 4" -logtype Libvlc -loglevel 2
         [void]$vlcArgs.add('--gain=4.0') #Set gain to 4 which is default that VLC uses but for some reason libvlc does not
       }
-      #TODO: Apparently no audio filters work with libvlc 3 - hoping libvlc 4 will fix
-      <#      if($Enable_normalizer){
-          $null = $vlcArgs.add("--audio-filter=normalizer")
-      }#>
-      if($synchash.Enable_EQ2Pass_Toggle.isChecked){
+      #TODO: Add Video Output Module to config
+      #Use opengl for windows with tone mapping set to 2 (Reinhard) to properly play HDR video on SDR displays         
+      #[void]($vlcArgs.add("--vout=glwin32"))
+      #[void]($vlcArgs.add('--tone-mapping=2'))
+
+      #[void]$vlcArgs.add("--volume-step=2.56")
+      #Sadly no audio filters work with libvlc, all are overridden by the built-in EQ - hopefully libvlc 4 will fix
+      if($thisapp.config.Enable_EQ2Pass){
         [void]$vlcArgs.add("--equalizer-2pass")
         write-ezlogs ">>>> EQ2Pass Enabled" -showtime -logtype Libvlc -loglevel 2
-        Add-Member -InputObject $thisapp.config -Name 'Enable_EQ2Pass' -Value $true -MemberType NoteProperty -Force
-      }else{
-        write-ezlogs ">>>> EQ2Pass Disabled" -showtime -logtype Libvlc -loglevel 2
-        Add-Member -InputObject $thisapp.config -Name 'Enable_EQ2Pass' -Value $false -MemberType NoteProperty -Force
       }
       if($Loopback_Recording){
         [void]$vlcArgs.add("--wasapi-loopback")
       }
-      if($thisApp.Config.Use_Visualizations -and ($media_link -match $audio_media_pattern)){ 
+      #TODO: 
+      if($thisApp.Config.Use_Visualizations -and (($media_link -match $audio_media_pattern) -or $ForceVisualizations)){ 
         [void]$vlcArgs.add("--video-on-top")
-        [void]$vlcArgs.add("--spect-show-original")
-        if($thisApp.Config.Current_Visualization -eq 'Spectrum'){           
+        #[void]$vlcArgs.add("--spect-show-original")
+        if($thisApp.Config.Current_Visualization -eq 'ProjectM' -and [system.io.Directory]::Exists("$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop")){
+          if($synchash.VideoViewFloat.IsInitialized){
+            write-ezlogs "| Using VideoViewFloat window for ProjectM dimensions"
+            $ProjectMWidth = $synchash.VideoViewFloat.ActualWidth
+            $ProjectMHeight = $synchash.VideoViewFloat.ActualHeight            
+          }else{
+            $ProjectMWidth = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Width - 10
+            $ProjectMHeight = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Height - 10
+          }
+          [void]$vlcArgs.add("--audio-visual=projectm")
+          [void]$vlcArgs.add("--projectm-preset-path=$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop")
+          [void]$vlcArgs.add("--projectm-width=$($ProjectMWidth)")
+          [void]$vlcArgs.add("--projectm-height=$($ProjectMHeight)")   
+          #[void]$vlcArgs.add("--keyboard-events")  
+          if($thisApp.Config.Use_Visualizations_Video){
+            [void]$vlcArgs.add("--no-video")
+          }
+          #[void]$vlcArgs.add("--embedded-video")
+          [void]$vlcArgs.add("--projectm-meshx=64")
+          [void]$vlcArgs.add("--projectm-meshy=48")
+          [void]$vlcArgs.add("--projectm-texture-size=1024")
+          #[void]$vlcArgs.add("--effect-list=spectrum")
+          #[void]$vlcArgs.add("--projectm-title-font=$($thisApp.Config.Current_Folder)\Resources\Fonts\digital-7.ttf")      
+          #[void]$vlcArgs.add("--vout=glwin32")
+          #[void]$vlcArgs.add('--tone-mapping=2')
+          write-ezlogs "| Enabling ProjectM Visualizations: --projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`" --projectm-width=$($ProjectMWidth) --projectm-height=$($ProjectMHeight)" -Warning -logtype Libvlc
+        }elseif($thisApp.Config.Current_Visualization -eq 'Spectrum'){    
+          write-ezlogs "Enabling Visualization plugin '$($thisApp.Config.Current_Visualization)'" -showtime -logtype Libvlc -loglevel 2       
           [void]$vlcArgs.add("--audio-visual=Visual")
           [void]$vlcArgs.add("--effect-list=spectrum")
         }else{
+          write-ezlogs "Enabling Visualization plugin '$($thisApp.Config.Current_Visualization)'" -showtime -logtype Libvlc -loglevel 2  
           [void]$vlcArgs.add("--audio-visual=$($thisApp.Config.Current_Visualization)")
           [void]$vlcArgs.add("--effect-list=spectrum")
-        }
-        write-ezlogs "Enabling Visualization plugin '$($thisApp.Config.Current_Visualization)'" -showtime -logtype Libvlc -loglevel 2                                                                    
+        }                                                                         
       }else{  
         [void]$vlcArgs.add("--file-caching=1000")  
         write-ezlogs " | New libvlc instance, no visualization, (file-caching: 1000)" -showtime -loglevel 2 -logtype Libvlc      
       }
       if(-not [string]::IsNullOrEmpty($thisapp.config.vlc_Arguments)){
         try{
-          $thisapp.config.vlc_Arguments -split ',' | foreach{                  
-            if([regex]::Escape($_) -match '--' -and $vlcArgs -notcontains $_){
-              write-ezlogs " | Adding custom Libvlc option: $($_)" -loglevel 2 -logtype Libvlc
-              [void]$vlcArgs.add("$($_)")
-            }else{
-              write-ezlogs "Cannot add custom libvlc option $($_) - it does not meet the required format or is already added!" -warning -loglevel 2 -logtype Libvlc
-            }
-          }
+          $thisapp.config.vlc_Arguments -split ',' | & { process {               
+              if([regex]::Escape($_) -match '--' -and $vlcArgs -notcontains $_){
+                write-ezlogs "| Adding custom Libvlc option: $($_)" -loglevel 2 -logtype Libvlc
+                [void]($vlcArgs.add("$($_)"))
+              }else{
+                write-ezlogs "Cannot add custom libvlc option $($_) - it does not meet the required format or is already added!" -warning -loglevel 2 -logtype Libvlc
+              }
+          }}
         }catch{
           write-ezlogs "An exception occurred processing custom VLC arguments" -catcherror $_
         }          
       }
-      [String[]]$libvlc_arguments = $vlcArgs | foreach{
-        if($thisApp.Config.Dev_mode){write-ezlogs " | Applying Libvlc option: $($_)" -loglevel 2 -logtype Libvlc -Dev_mode}
-        if([regex]::Escape($_) -match '--'){
-          $_
-        }else{
-          write-ezlogs "Cannot apply libvlc option $($_) - it does not meet the required format!" -warning -loglevel 2 -logtype Libvlc
-        }
-      }
-      if($thisApp.Config.Libvlc_Version -eq '4'){
-        $synchash.libvlc = [LibVLCSharp.LibVLC]::new($libvlc_arguments) 
-      }else{
-        $synchash.libvlc = [LibVLCSharp.Shared.LibVLC]::new($libvlc_arguments) 
-      }
+      [String[]]$libvlc_arguments = $vlcArgs | & { process {
+          if($thisApp.Config.Dev_mode){write-ezlogs "| Applying Libvlc option: $($_)" -loglevel 2 -logtype Libvlc -Dev_mode} 
+          if([regex]::Escape($_) -match '--'){
+            $_
+          }else{
+            write-ezlogs "Cannot apply libvlc option $($_) - it does not meet the required format!" -warning -loglevel 2 -logtype Libvlc
+          }
+      }}
       try{
-        $synchash.libvlc.SetUserAgent("$($thisApp.Config.App_Name) Media Player","HTTP/User/Agent")  
-        $startapp = Get-AllStartApps "*$($thisApp.Config.App_name)*"  
+        if($thisApp.Config.Libvlc_Version -eq '4'){
+          $synchash.libvlc = [LibVLCSharp.LibVLC]::new($libvlc_arguments)
+        }else{
+          $synchash.libvlc = [LibVLCSharp.Shared.LibVLC]::new($libvlc_arguments)
+        }
+        if($thisApp.Config.Enable_EQ -and $media_link -eq 'dshow://'){
+          $useragent = "$($thisApp.Config.App_Name) Media Player - WebPlayer EQ"
+        }else{
+          $useragent = "$($thisApp.Config.App_Name) Media Player"
+        }
+        $synchash.libvlc.SetUserAgent($useragent,"HTTP/User/Agent")
+        $startapp = Get-AllStartApps "*$($thisApp.Config.App_name)*"
         if($startapp.AppID){
           $synchash.libvlc.SetAppId($startapp.AppID,$thisApp.Config.App_Version,"$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico")
         }
         if((($synchash.Spotify_WebPlayer_title -and $thisApp.Config.Spotify_WebPlayer) -or ($synchash.WebPlayer_State -ne 0 -and $synchash.Youtube_WebPlayer_title))){
           Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchash -start -wait -Startlibvlc
-          $synchash.Update_Libvlc_Status = $false
+          #$synchash.Update_Libvlc_Status = $false
           return
-        }  
+        }
+        if($thisApp.Config.Enable_EQ -and $media_link -eq 'dshow://'){
+          write-ezlogs "| Enabling dshow capture of virtual audio cable for Webplayer" -warning
+          $allDevices = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::EnumerateDevices([CSCore.CoreAudioAPI.DataFlow]::All)
+          $capture_device = $allDevices.where({$_.friendlyname -match 'CABLE Input \(VB-Audio Virtual Cable\)'})
+          if($capture_device){
+            Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchash -start -wait -Startlibvlc
+          }else{
+            write-ezlogs "Unable to find required 'CABLE Input (VB-Audio Virtual Cable)' audio device - cannot enable EQ for Webplayer!" -AlertUI -Warning -synchash $synchash
+          }
+        }          
       }catch{
         write-ezlogs "An exception occurred setting Libvlc user agent" -catcherror $_
-      } 
-      Update-MainPlayer -synchash $synchash -thisApp $thisApp -Now_Playing_Label "PLAYING" -New_MediaPlayer -media_link $media_link -Saved_Media_Progress $currenttime -start_media_Timer -EnableCasting:$EnableCasting
-      $synchash.Update_Libvlc_Status = $false
+      }finally{
+        if($allDevices -is [System.IDisposable]){
+          $allDevices.dispose()
+          $allDevices = $Null
+        }
+        if($capture_device -is [System.IDisposable]){
+          $capture_device.Dispose()
+          $capture_device = $null
+        }
+      }
+      if($UpdateMainPlayer){
+        Update-MainPlayer -synchash $synchash -thisApp $thisApp -Now_Playing_Label "PLAYING" -New_MediaPlayer -media_link $media_link -Saved_Media_Progress $currenttime -start_media_Timer -EnableCasting:$EnableCasting
+      }    
+      #$synchash.Update_Libvlc_Status = $false
     }else{
       write-ezlogs "Equalizer has not been initialized..unable to enable 2pass" -showtime -warning
     } 

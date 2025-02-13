@@ -25,7 +25,7 @@ function Get-AccessToken {
           $refresh_access_token = Get-secret -name Youtuberefresh_token  -Vault $secretstore -ErrorAction SilentlyContinue 
           $access_token_expires = Get-secret -name Youtubeexpires_in -Vault $($thisApp.Config.App_name) -ErrorAction SilentlyContinue
           if(!$access_token -or !$refresh_access_token){
-            write-ezlogs "[Get-AccessToken] Missing access_token $($access_token) or refresh_access_token $($refresh_access_token), trying again in case of transient issue" -showtime -warning -LogLevel 2 -logtype Youtube
+            write-ezlogs "[Get-AccessToken] Missing access_token or refresh_access_token, trying again in case of transient issue" -showtime -warning -LogLevel 2 -logtype Youtube
             start-sleep -Milliseconds 500
             $access_token = Get-secret -name YoutubeAccessToken  -Vault $($thisApp.Config.App_name) -ErrorAction SilentlyContinue
             $refresh_access_token = Get-secret -name Youtuberefresh_token  -Vault $($thisApp.Config.App_name) -ErrorAction SilentlyContinue
@@ -37,7 +37,7 @@ function Get-AccessToken {
       }
       if($access_token -and $refresh_access_token){
         if($access_token_expires -le (Get-date) -or !$access_token -or $ForceTokenRefresh){
-          write-ezlogs "[Get-AccessToken] Attempting to refresh access token - ForceTokenRefresh: $ForceTokenRefresh - access_token_expires: $($access_token_expires) - access_token: $($access_token)" -showtime -warning -LogLevel 2 -logtype Youtube
+          write-ezlogs "[Get-AccessToken] Attempting to refresh access token - ForceTokenRefresh: $ForceTokenRefresh - access_token_expires: $($access_token_expires)" -showtime -warning -LogLevel 2 -logtype Youtube
           try{
             Grant-YoutubeOauth -thisApp $thisApp
             $access_token = Get-secret -name YoutubeAccessToken -Vault $($thisApp.Config.App_name) -ErrorAction SilentlyContinue

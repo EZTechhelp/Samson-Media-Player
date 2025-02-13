@@ -136,7 +136,7 @@ function Uninstall-Application
             }
             if($appinstalled){
               write-ezlogs ">>>> Removing Streamlink via Chocolatey" -logtype Uninstall
-              choco uninstall Streamlink --confirm --force
+              choco uninstall Streamlink --confirm --force *>&1 | write-ezlogs -CallBack:$false
             }elseif([System.IO.File]::Exists("$("${env:ProgramFiles(x86)}\Streamlink\uninstall.exe")")){
               write-ezlogs ">>>> Removing Streamlink using uninstaller" -logtype Uninstall
               start-process "${env:ProgramFiles(x86)}\Streamlink\uninstall.exe" -Wait
@@ -153,10 +153,10 @@ function Uninstall-Application
           }    
           #Spicetify
           try{
-            if([System.IO.File]::Exists("$($env:USERPROFILE)\spicetify-cli\spicetify.exe") -and [System.IO.File]::Exists("$($env:USERPROFILE)\.spicetify\config-xpui.ini")){
-              write-ezlogs ">>>> Removing spicetify from $($env:USERPROFILE)\spicetify-cli\spicetify.exe" -logtype Uninstall
+            if(([System.IO.File]::Exists("$($env:USERPROFILE)\spicetify-cli\spicetify.exe") -or [System.IO.File]::Exists("$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\spicetify.exe")) -and [System.IO.File]::Exists("$($env:USERPROFILE)\.spicetify\config-xpui.ini")){
+              write-ezlogs ">>>> Removing spicetify" -logtype Uninstall
               write-ezlogs "| Restoring any changes to Spotify" -logtype Uninstall  
-              spicetify restore                          
+              spicetify restore *>&1 | write-ezlogs -CallBack:$false        
             }
             if([System.IO.Directory]::Exists("$env:USERPROFILE\.spicetify")){
               write-ezlogs "| Removing Spicetify files: $env:USERPROFILE\.spicetify" -logtype Uninstall
@@ -169,7 +169,11 @@ function Uninstall-Application
             if([System.IO.Directory]::Exists("$env:APPDATA\spicetify")){
               write-ezlogs "| Removing Spicetify files: $env:APPDATA\spicetify" -logtype Uninstall
               [void][System.IO.Directory]::Delete("$env:APPDATA\spicetify",$true)
-            }                           
+            }  
+            if([System.IO.Directory]::Exists("$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\")){
+              write-ezlogs "| Removing Spicetify via chocolatey" -logtype Uninstall
+              choco uninstall spicetify-cli --confirm --force *>&1 | write-ezlogs -CallBack:$false
+            }                                     
           }catch{
             write-ezlogs "An exception occurred removing Spicetify" -CatchError $_ -logtype Uninstall
           }

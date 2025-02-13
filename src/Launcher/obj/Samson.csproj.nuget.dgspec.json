@@ -5,7 +5,7 @@
   },
   "projects": {
     "C:\\Users\\DopaDodge\\OneDrive - EZTechhelp Company\\Development\\Repositories\\EZT-MediaPlayer-Samson\\src\\Launcher\\Samson.csproj": {
-      "version": "0.9.9",
+      "version": "1.0.0",
       "restore": {
         "projectUniqueName": "C:\\Users\\DopaDodge\\OneDrive - EZTechhelp Company\\Development\\Repositories\\EZT-MediaPlayer-Samson\\src\\Launcher\\Samson.csproj",
         "projectName": "Samson",
@@ -15,7 +15,7 @@
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
-          "C:\\Program Files (x86)\\Syncfusion\\Essential Studio\\WPF\\25.1.35\\ToolboxNuGetPackages"
+          "C:\\Program Files (x86)\\Syncfusion\\Essential Studio\\WPF\\26.2.4\\ToolboxNuGetPackages"
         ],
         "configFilePaths": [
           "C:\\Users\\DopaDodge\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -42,12 +42,29 @@
           "warnAsError": [
             "NU1605"
           ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
         }
       },
       "frameworks": {
         "net7.0-windows7.0": {
           "targetAlias": "net7.0-windows",
           "dependencies": {
+            "Microsoft.NET.ILLink.Analyzers": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[7.0.100-1.23401.1, )",
+              "autoReferenced": true
+            },
+            "Microsoft.NET.ILLink.Tasks": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[7.0.100-1.23401.1, )",
+              "autoReferenced": true
+            },
             "Microsoft.Win32.Registry": {
               "target": "Package",
               "version": "[4.3.0, )"
@@ -67,19 +84,19 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
-              "version": "[7.0.7, 7.0.7]"
+              "version": "[7.0.20, 7.0.20]"
             },
             {
               "name": "Microsoft.NETCore.App.Crossgen2.win-x64",
-              "version": "[7.0.7, 7.0.7]"
+              "version": "[7.0.20, 7.0.20]"
             },
             {
               "name": "Microsoft.NETCore.App.Runtime.win-x64",
-              "version": "[7.0.7, 7.0.7]"
+              "version": "[7.0.20, 7.0.20]"
             },
             {
               "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
-              "version": "[7.0.7, 7.0.7]"
+              "version": "[7.0.20, 7.0.20]"
             }
           ],
           "frameworkReferences": {
@@ -87,7 +104,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.304\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.404\\RuntimeIdentifierGraph.json"
         }
       },
       "runtimes": {

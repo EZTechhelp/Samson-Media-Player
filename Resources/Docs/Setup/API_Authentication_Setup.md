@@ -7,7 +7,7 @@
 	+ Click the `Create an app` button
 	+ Set `App Name` to `Samson Media Player` (required)
 	+ Set `App Description` to whatever you want (required)
-	+ Set `Redirect URI` to `http://localhost:8080/spotishell` (required)
+	+ Set `Redirect URI` to `http://127.0.0.1:8080/spotishell` (required)
 	+ Click the `Developer Terms of Service` checkbox and tap on the `Create` button
 + Once app is created, click on the `Settings` button
 + Click on `View client secret`
@@ -16,7 +16,7 @@
 	+ Creating a new Spotify app will put it in `Development Mode` which limits the amount of users that can access your app to 25 unless you submit a quota extension request
 + **Modify Spotify API Configuration File**
 	+ Open `Spotify-API-Config.xml` file at `/resources/API/Spotify-API-Config.xml`
-	+ Set `RedirectUri` to `http://localhost:8080/spotishell`
+	+ Set `RedirectUri` to `http://127.0.0.1:8080/spotishell`
 	+ Set `ClientID` and `ClientSecret` values to those you generated from the Web API setup process above
 	+ Save file and close
 

@@ -147,7 +147,7 @@ function Remove-Media {
           }
           if($thisapp.config.Current_Playlist.values -contains $Media.id){
             write-ezlogs " | Removing $($Media.id) from Play Queue" -showtime
-            $index_toremove = $thisapp.config.Current_Playlist.GetEnumerator() | where {$_.value -eq $Media.id} | select * -ExpandProperty key
+            $index_toremove = $thisapp.config.Current_Playlist.GetEnumerator() | Where-Object {$_.value -eq $Media.id} | Select-Object * -ExpandProperty key
             $null = $thisapp.config.Current_Playlist.Remove($index_toremove)                  
           }
           try{
@@ -164,9 +164,9 @@ function Remove-Media {
         
           if($playlist_to_modify){
             foreach($Playlist in $playlist_to_modify){
-              $index_toRemove = $Playlist.PlayList_tracks.GetEnumerator() | where {$_.value.id -eq $Media.id} | select * -ExpandProperty key 
+              $index_toRemove = $Playlist.PlayList_tracks.GetEnumerator() | Where-Object {$_.value.id -eq $Media.id} | Select-Object * -ExpandProperty key 
               if([string]::IsNullOrEmpty($index_toRemove)){
-                $index_toRemove = $Playlist.PlayList_tracks.GetEnumerator().where({($_.value.url -replace '\\\\','\') -eq ($Media.url -replace '\\\\','\')}) | select * -ExpandProperty key 
+                $index_toRemove = $Playlist.PlayList_tracks.GetEnumerator().where({($_.value.url -replace '\\\\','\') -eq ($Media.url -replace '\\\\','\')}) | Select-Object * -ExpandProperty key 
               }
               if(-not [string]::IsNullOrEmpty($index_toRemove)){
                 foreach($index in $index_toRemove){

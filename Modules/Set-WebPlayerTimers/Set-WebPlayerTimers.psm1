@@ -987,7 +987,7 @@ function Set-YoutubeWebPlayerTimer
                     $synchash.VideoViewAirControl.front.parent.parent.Owner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($synchash.Window)
                   }
                 }
-                if($synchash.MiniPlayer_Viewer.isVisible){
+                if($synchash.MiniPlayer_Viewer.isVisible -and $synchash.Window){
                   #Force show/render main window to update visual tree
                   write-ezlogs "| Miniplayer is open, quickly showing/hiding main window to force visual tree update" -showtime
                   [void]$synchash.window.Hide()
@@ -995,7 +995,9 @@ function Set-YoutubeWebPlayerTimer
                   $synchash.window.Opacity = 0
                   $synchash.window.ShowInTaskbar = $false
                   [void]$synchash.window.Show()
-                  #$synchash.window.Hide()
+                  if(!$synchash.Window.AllowsTransparency){
+                    [void]$synchash.window.Hide()
+                  }
                   #$synchash.window.Opacity = 1
                   #$synchash.window.ShowActivated = $true
                 }

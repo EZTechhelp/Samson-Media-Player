@@ -274,12 +274,15 @@ function Set-Mute
     if($synchash.vlc -and !$([string]$synchash.vlc.media.Mrl).StartsWith("dshow://")){
       $MuteAction = $true
       if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Current VLC Session $($synchash.vlc | out-string)" -Dev_mode}
-      if($synchash.vlc.Mute){
+      if($synchash.vlc.Mute -or $synchash.Volume_Slider.value -eq 0){
         write-ezlogs ">>>> VLC mute: $($synchash.vlc.Mute) - Unmuting VLC" -loglevel 2 
         if($synchash.MuteButton_ToggleButton.isChecked){
           $synchash.MuteButton_ToggleButton.isChecked = $false 
         }
         $synchash.vlc.Mute = $false
+        if($synchash.Volume_Slider.value -eq 0){
+          $synchash.Volume_Slider.value = 1
+        }
       }else{
         write-ezlogs ">>>> VLC mute: $($synchash.vlc.Mute) - Muting VLC" -loglevel 2
         if($synchash.MuteButton_ToggleButton -and !$synchash.MuteButton_ToggleButton.isChecked){

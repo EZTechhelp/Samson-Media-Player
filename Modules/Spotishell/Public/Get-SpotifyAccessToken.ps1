@@ -43,7 +43,7 @@ function Get-SpotifyAccessToken {
     
     if ($Expire_status) {
       # Access Token is still valid, then use it
-      if($thisApp.Config.Verbose_logging){write-ezlogs "Spotify Access Token is still valid" -showtime}
+      if($thisApp.Config.Dev_mode){write-ezlogs "Spotify Access Token is still valid" -showtime -logtype Spotify -Dev_mode}
       return $Application.Token.access_token
     }
     else {
@@ -62,7 +62,7 @@ function Get-SpotifyAccessToken {
 
       # STEP 2 : Make request to the Spotify Accounts service
       try {
-        Write-ezlogs ' | Sending request to refresh access token.' -showtime -logtype Spotify
+        Write-ezlogs '| Sending request to refresh access token.' -showtime -logtype Spotify
         $CurrentTime = Get-Date
         $Response = Invoke-WebRequest -Uri $Uri -Method $Method -Body $Body -UseBasicParsing
       }
@@ -149,8 +149,7 @@ function Get-SpotifyAccessToken {
     if ($Listener.IsListening) {
       Write-Verbose 'HTTP Server is ready to receive Authorization Code'
       $HttpServerReady = $true
-    }
-    else {
+    }else {
       Write-ezlogs 'HTTP Server is not ready. Fall back to manual method' -Warning -logtype Spotify
       $HttpServerReady = $false
     } 
@@ -171,21 +170,21 @@ function Get-SpotifyAccessToken {
   }
   else {
     # So we are on Windows
-    Write-ezlogs "Opening Show-Weblogin for capture of spotify login with URL $URI" -showtime -logtype Setup
+    Write-ezlogs ">>>> Opening Show-Weblogin for capture of spotify login with URL $URI" -showtime -logtype Setup
     if($thisApp){
       try{
         if($hashsetup.Window.isVisible){
           try{
-            Write-ezlogs "Hiding First Run Window" -showtime -logtype Setup
+            Write-ezlogs "| Hiding First Run Window" -showtime -logtype Setup
             #Update-FirstRun -hashsetup $hashsetup -Hide
             $hashsetup.Window.hide()
           }catch{
-            write-ezlogs 'An exception occurred in Window_Close_Command event' -showtime -catcherror $_
+            write-ezlogs 'An exception occurred hiding setup window' -showtime -catcherror $_
           }
         }     
         $MahDialog_hash = Show-WebLogin -SplashTitle "Spotify Account Login" -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Spotify_WebAuth.md" -SplashLogo "$($thisApp.Config.Current_Folder)\Resources\Spotify\Material-Spotify.png" -WebView2_URL $URI -thisApp $thisApp -verboselog -Listener $Listener -First_Run $First_Run -MahDialog_hash $MahDialog_hash     
       }catch{
-        write-ezlogs "[Get-SpotifyAccessToken] An exception occurred in Show-Weblogin" -showtime -catcherror $_
+        write-ezlogs "An exception occurred executing Show-Weblogin" -showtime -catcherror $_
       }     
     }else{
       write-ezlogs "thisApp settings synchashtable not available!! Cant start Show-WebLogin" -showtime -warning -logtype Setup
@@ -213,7 +212,7 @@ function Get-SpotifyAccessToken {
           $Response = $context.Request.Url
           $ContextResponse = $context.Response
     
-          [string]$html = '<script>close()</script>Thanks! You can close this window now.'
+          [string]$html = '<script>close()</script><h2><font color="#FF16D75F">Thanks! You can close this window now.</font> </h2>'
     
           $htmlBuffer = [System.Text.Encoding]::UTF8.GetBytes($html) # convert html to bytes
     
@@ -224,7 +223,7 @@ function Get-SpotifyAccessToken {
         }
         $httpserverwait++      
       }catch{
-        write-ezlogs "[Get-SpotifyAccessToken] An exception occurred in Spotishell HTTP listener" -showtime -catcherror $_
+        write-ezlogs "An exception occurred in Spotishell HTTP listener" -showtime -catcherror $_
       }
     } 
     if($Listener){
@@ -232,7 +231,7 @@ function Get-SpotifyAccessToken {
       $Listener.Dispose()
     }    
     if(((Get-Date) - $StartTime) -lt '0.00:01:00'){
-      write-ezlogs "[Get-SpotifyAccessToken] The HTTP listener timed out waiting for a response!" -warning -showtime -logtype Spotify
+      write-ezlogs "The HTTP listener timed out waiting for a response!" -warning -showtime -logtype Spotify
     }
   }
   else {
@@ -248,17 +247,17 @@ function Get-SpotifyAccessToken {
     # parse query
     $ResponseQuery = [System.Web.HttpUtility]::ParseQueryString($Response.Query)
   }catch{
-    write-ezlogs "[Get-SpotifyAccessToken] An exception parsing response query $($response.query | out-string)" -showtime -catcherror $_
+    write-ezlogs "An exception parsing response query $($response.query | out-string)" -showtime -catcherror $_
   }
   # check state
   if ($ResponseQuery['state'] -ne $State) {
-    write-ezlogs "[Get-SpotifyAccessToken] State returned during Authorization Code retrieval doesn''t match state passed" -showtime -warning -logtype Spotify
+    write-ezlogs "State returned during Authorization Code retrieval doesn't match state passed" -showtime -warning -logtype Spotify
     #Throw 'State returned during Authorization Code retrieval doesn''t match state passed'
   }
 
   # check if an error has been returned
   if ($ResponseQuery['error']) {
-    write-ezlogs "[Get-SpotifyAccessToken] Error occured during Authorization Code retrieval : $($ResponseQuery['error'])" -showtime -isError
+    write-ezlogs "Error occured during Authorization Code retrieval : $($ResponseQuery['error'])" -showtime -isError
   }
     
   # all checks are passed, we should have the code
@@ -266,7 +265,7 @@ function Get-SpotifyAccessToken {
     $AuthorizationCode = $ResponseQuery['code']
   }
   else {
-    write-ezlogs "[Get-SpotifyAccessToken] Authorization Code not returned during Authorization Code retrieval" -showtime -warning -logtype Spotify
+    write-ezlogs "Authorization Code not returned during Authorization Code retrieval" -showtime -warning -logtype Spotify
     #Throw 'Authorization Code not returned during Authorization Code retrieval'
   }
 
@@ -285,18 +284,16 @@ function Get-SpotifyAccessToken {
     }
 
     # STEP 2 : Make request to the Spotify Accounts service
-    try {
+    try{
       Write-Verbose 'Send request to get access token.'
       $CurrentTime = Get-Date
       $Response = Invoke-WebRequest -Uri $Uri -Method $Method -Body $Body -UseBasicParsing
-    }
-    catch {
-      write-ezlogs "[Get-SpotifyAccessToken] Error occured during request of access token : $($PSItem[0].ToString())" -showtime -CatchError $_
+    }catch{
+      write-ezlogs "Error occured during request of access token : $($PSItem[0].ToString())" -showtime -CatchError $_
       return $false
-      #Throw "Error occured during request of access token : $($PSItem[0].ToString())"
     }
     
-    try {
+    try{
       # STEP 3 : Parse and save response
       $ResponseContent = $Response.Content | ConvertFrom-Json
 
@@ -312,13 +309,11 @@ function Get-SpotifyAccessToken {
         $MahDialog_hash.window.Dispatcher.Invoke("Normal",[action]{ $MahDialog_hash.window.close() })
       }   
       return $Token.access_token
-    }
-    catch {
-      write-ezlogs "[Get-SpotifyAccessToken] Error occured while parsing and saving the response" -showtime -CatchError $_
-      #Throw "Error occured during request of access token : $($PSItem[0].ToString())"
+    }catch{
+      write-ezlogs "Error occured while parsing and saving the response" -showtime -CatchError $_
     }
   }else{
-    write-ezlogs "[Get-SpotifyAccessToken] Did not receive Authorization Code, cannot attempt Token retrieval" -showtime -warning -logtype Spotify
+    write-ezlogs "Did not receive Authorization Code, cannot attempt Token retrieval" -showtime -warning -logtype Spotify
     return $false
   }
 }

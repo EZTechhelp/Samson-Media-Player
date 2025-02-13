@@ -458,7 +458,19 @@ public class Media : INotifyPropertyChanged
             RaisedOnPropertyChanged("Display_Name");
         }
     }
-    public int TimesPlayed { get; set; }
+    private int timesplayed;
+    public int TimesPlayed
+    {
+        get
+        {
+            return timesplayed;
+        }
+        set
+        {
+            timesplayed = value;
+            RaisedOnPropertyChanged("TimesPlayed");
+        }
+    }
 }
 
 public class EQ_Band
@@ -639,6 +651,7 @@ public class Config
     public bool Start_Paused { get; set; }
     public string Current_Visualization { get; set; }
     public bool Use_Visualizations { get; set; }
+    public bool Use_Visualizations_Video { get; set; }
     public bool Use_MediaCasting { get; set; }
     public bool LocalMedia_SkipDuplicates { get; set; }
     public bool Enable_LocalMedia_Monitor { get; set; }
@@ -702,6 +715,7 @@ public class Config
     public string logfile_directory { get; set; }
     public string SpotifyMedia_logfile { get; set; }
     public string YoutubeMedia_logfile { get; set; }
+    public string PlexMedia_logfile { get; set; }
     public string TwitchMedia_logfile { get; set; }
     public string Tor_Log_File { get; set; }
     public string Download_logfile { get; set; }
@@ -727,6 +741,7 @@ public class Config
     public List<GlobalHotKey> GlobalHotKeys { get; set; }
     public bool EnableGlobalHotKeys { get; set; }
     public bool Enable_HighDPI { get; set; }
+    public bool DisableTransparency { get; set; }
 }
 public class API
 {
@@ -1072,6 +1087,7 @@ function ConvertTo-Media {
                 'Size' = $object.Size
                 'Subtitles_Path' = $object.Subtitles_Path
                 'Display_Name' = $object.Display_Name
+                'TimesPlayed' = $object.TimesPlayed
               }
             } 'Spotify' {
               $mediaObject = [Media]@{
@@ -1094,6 +1110,7 @@ function ConvertTo-Media {
                 'Track' = $object.Track
                 'Duration' = $object.Duration
                 'Display_Name' = $object.Display_Name
+                'TimesPlayed' = $object.TimesPlayed
               }
             } {@('Youtube','YoutubeChannel') -contains $_} {
               $mediaObject = [Media]@{
@@ -1115,6 +1132,7 @@ function ConvertTo-Media {
                 'Track' = $object.Track
                 'Duration' = $object.Duration
                 'Display_Name' = $object.Display_Name
+                'TimesPlayed' = $object.TimesPlayed
               }                 
             } 'Twitch' {
               $mediaObject = [Media]@{
@@ -1147,6 +1165,7 @@ function ConvertTo-Media {
                 'Duration' = $object.Duration
                 'Enable_LiveAlert' = $object.Enable_LiveAlert
                 'Display_Name' = $object.Display_Name
+                'TimesPlayed' = $object.TimesPlayed
               }
             }
           } 
@@ -1587,6 +1606,7 @@ function Export-SerializedXML {
         'Start_Paused' = $InputObject.Start_Paused
         'Current_Visualization' = $InputObject.Current_Visualization
         'Use_Visualizations' = $InputObject.Use_Visualizations
+        'Use_Visualizations_Video' = $InputObject.Use_Visualizations_Video
         'Use_MediaCasting' = $InputObject.Use_MediaCasting
         'LocalMedia_SkipDuplicates' = $InputObject.LocalMedia_SkipDuplicates
         'Enable_LocalMedia_Monitor' = $InputObject.Enable_LocalMedia_Monitor
@@ -1650,6 +1670,7 @@ function Export-SerializedXML {
         'logfile_directory' = $InputObject.logfile_directory
         'SpotifyMedia_logfile' = $InputObject.SpotifyMedia_logfile
         'YoutubeMedia_logfile' = $InputObject.YoutubeMedia_logfile
+        'PlexMedia_logfile' = $InputObject.PlexMedia_logfile
         'TwitchMedia_logfile' = $InputObject.TwitchMedia_logfile
         'Tor_Log_File' = $InputObject.Tor_Log_File
         'Download_logfile' = $InputObject.Download_logfile
@@ -1675,6 +1696,7 @@ function Export-SerializedXML {
         'GlobalHotKeys' = $GlobalHotKeys
         'EnableGlobalHotKeys' = $InputObject.EnableGlobalHotKeys
         'Enable_HighDPI' = $InputObject.Enable_HighDPI
+        'DisableTransparency' = $InputObject.DisableTransparency
       }
     }elseif($isPlaylist){
       $output = $InputObject | ConvertTo-Playlists -List -Force:$Force

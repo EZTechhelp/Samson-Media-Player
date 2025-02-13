@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Samson"
-#define MyAppVersion "0.9.9"
+#define MyAppVersion "1.0.0"
 #define MyAppBuild "BETA-005"
 #define Arguments ""
 #define MyAppPublisher "EZTechhelp"

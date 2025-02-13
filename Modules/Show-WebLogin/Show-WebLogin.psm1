@@ -148,7 +148,6 @@ function Show-WebLogin{
       write-ezlogs "An exception occurred Show-WebLogin Xaml" -showtime -catcherror $_
     }
     $Webview2_Path = 'WebView2'
-    write-ezlogs " | Opening URL $($WebView2_URL) - Webview2 folder: $($thisApp.config.Temp_Folder)\$Webview2_Path" -showtime -logtype Webview2 -loglevel 2
     try{  
       #region Create Webview2 
       if($MahDialog_hash.Dialog_WebView2_Grid.Children -contains $MahDialog_hash.Dialog_WebView2){
@@ -190,10 +189,11 @@ function Show-WebLogin{
             }
           )
         }
-<#        $MahDialog_hash.WebView2Env.GetAwaiter().OnCompleted(
-          [Action]{$MahDialog_hash.Dialog_WebView2.EnsureCoreWebView2Async( $MahDialog_hash.WebView2Env.Result )}
+        <#        $MahDialog_hash.WebView2Env.GetAwaiter().OnCompleted(
+            [Action]{$MahDialog_hash.Dialog_WebView2.EnsureCoreWebView2Async( $MahDialog_hash.WebView2Env.Result )}
         )#>      
       }
+      write-ezlogs "| Opening URL $($WebView2_URL) - Webview2 folder: $($thisApp.config.Temp_Folder)\$Webview2_Path" -showtime -logtype Webview2
       #endregion Initialize Webview2  
 
       #region NavigationCompleted Event
@@ -361,7 +361,7 @@ function Show-WebLogin{
           }
           if($Window_Helper.Handle -and $appid){
             $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
-            write-ezlogs ">>>> Registering Miniplayer window handle: $($Window_Helper.Handle) -- to appid: $appid" -Dev_mode
+            write-ezlogs ">>>> Registering WebLogin window handle: $($Window_Helper.Handle) -- to appid: $appid" -Dev_mode
             $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)  
             $thisapp.config.Installed_AppID = $appid
           }               

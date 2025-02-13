@@ -58,19 +58,18 @@ function Skip-Media
     write-ezlogs "[Caller: $((Get-PSCallStack)[1].Location -replace '.ps1')] >>>> Skip-Media received" -showtime
     write-ezlogs ">>>> Stopping play timers" -showtime         
     $Synchash.Timer.stop()
-    $synchash.Start_media_timer.stop()  
-    #$synchash.WebPlayer_Playing_timer.stop()  
+    $synchash.Start_media_timer.stop()
     Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop    
     if($synchash.vlc.IsPlaying -or $synchash.Vlc.state -match 'Paused'){
-      write-ezlogs ">>>> Stopping VLC Playback" -showtime 
+      write-ezlogs ">>>> Stopping VLC Playback" -showtime
       $Null = $synchash.VLC.stop()
       if($synchash.vlc.media -is [System.IDisposable]){
-        write-ezlogs " | Disposing Libvlc_media" -showtime
+        write-ezlogs "| Unsetting vlc.media" -showtime
+        #TODO: This was commented out due to some crashes when disposing libvlc here. Need to recheck - likely was issue disposing from difference runspace
         #$synchash.libvlc_media.dispose()
         #$synchash.libvlc_media = $Null
         $synchash.vlc.media = $Null
-      }      
-      #$synchash.vlc.media = $Null   
+      }
       $synchash.VLC_IsPlaying_State = $synchash.Vlc.isPlaying
     }
     if($thisApp.Config.Import_Spotify_Media -and (($thisapp.config.Spotify_WebPlayer -and $synchash.Spotify_WebPlayer_State.current_track.id) -or (Get-Process 'Spotify*'))){
@@ -103,7 +102,7 @@ function Skip-Media
             }
           }           
         }elseif($synchash.Webview2.CoreWebView2.IsDocumentPlayingAudio){
-          write-ezlogs " | Spotify Webplayer is playing audio: $($synchash.Spotify_WebPlayer_State)" -loglevel 2
+          write-ezlogs "| Spotify Webplayer is playing audio: $($synchash.Spotify_WebPlayer_State)" -loglevel 2
         }
         $synchash.Spotify_Status = 'Stopped'
       }catch{
@@ -212,27 +211,88 @@ function Skip-Media
       } 
       
       if(!$next_item -and $Synchash.Current_Playing_Playlist_Source -eq 'Library'){
-        write-ezlogs ">>>> No more media was found in the custom playlist, looking for next item in the media library playlists" -showtime -LogLevel 2
+        write-ezlogs ">>>> No more media was found in the custom playlist, looking for next item in the media library: $($last_played.media.source)" -showtime -LogLevel 2
         #Next Media Library Item
         if($last_played.media.source -eq 'Spotify'){
           $current_Playing_Library = $synchash.All_Spotify_Media.where({$_.playlist_id -eq $last_played.media.playlist_id -and $_.playlist -eq $last_played.media.playlist})
           if(!$current_Playing_Library -and $Synchash.Current_Playing_Playlist){
-            write-ezlogs "Looking for library playlists matching current_playing_Playlist: $($Synchash.Current_Playing_Playlist)" -loglevel 2
+            write-ezlogs "| Looking for library playlists matching current_playing_Playlist: $($Synchash.Current_Playing_Playlist)" -loglevel 2
             $current_Playing_Library = $synchash.All_Spotify_Media.where({$_.playlist_id -eq $Synchash.Current_Playing_Playlist}) 
-          } 
+          }
+          if(!$current_Playing_Library -and $synchash.SpotifyTable.ItemsSource.records.View){    
+            try{
+              write-ezlogs "| Looking for next media in Spotify media library" -loglevel 2
+              $index = $synchash.SpotifyTable.ItemsSource.records.View.Data.id.IndexOf($last_played.media.id)
+            }catch{
+              $index = -1
+            }
+            if($index -ne -1 -and $index -ne $null){   
+              if($thisApp.config.Shuffle_Playback){
+                try{
+                  write-ezlogs "| Getting random item from Spotify media library" -showtime -LogLevel 2
+                  $next_item = $synchash.SpotifyTable.ItemsSource.records.View.Data | Where-Object {$_.id -ne $last_Track.id -and $thisApp.config.History_Playlist.values -notcontains $_.id} | Get-Random -Count 1
+                }catch{
+                  write-ezlogs "An exception occurred getting random item from Spotify media library" -showtime -catcherror $_
+                }
+              }else{        
+                $index++                                                    
+                write-ezlogs "| Getting next item with index $($index) from Spotify media library" -showtime -LogLevel 2
+                $next_item = $synchash.SpotifyTable.ItemsSource.records.View.Data[$index]                
+              }                
+            } 
+          }
         }elseif($last_played.media.source -eq 'Youtube'){         
           $current_Playing_Library = $synchash.All_Youtube_Media.where({$_.playlist_id -eq $last_played.media.playlist_id -and $_.playlist -eq $last_played.media.playlist})
           if(!$current_Playing_Library -and $Synchash.Current_Playing_Playlist){
-            write-ezlogs "Looking for library playlists matching current_playing_Playlist: $($Synchash.Current_Playing_Playlist)" -loglevel 2
+            write-ezlogs "| Looking for library playlists matching current_playing_Playlist: $($Synchash.Current_Playing_Playlist)" -loglevel 2
             $current_Playing_Library = $synchash.All_Youtube_Media.where({$_.playlist_id -eq $Synchash.Current_Playing_Playlist}) 
+          }
+          if(!$current_Playing_Library -and $synchash.YoutubeTable.ItemsSource.records.View){    
+            try{
+              write-ezlogs "| Looking for next media in Youtube media library" -loglevel 2
+              $index = $synchash.YoutubeTable.ItemsSource.records.View.Data.id.IndexOf($last_played.media.id)
+            }catch{
+              $index = -1
+            }
+            if($index -ne -1 -and $index -ne $null){   
+              if($thisApp.config.Shuffle_Playback){
+                try{
+                  write-ezlogs "| Getting random item from Youtube media library" -showtime -LogLevel 2
+                  $next_item = $synchash.YoutubeTable.ItemsSource.records.View.Data | Where-Object {$_.id -ne $last_Track.id -and $thisApp.config.History_Playlist.values -notcontains $_.id} | Get-Random -Count 1
+                }catch{
+                  write-ezlogs "An exception occurred getting random item from Youtube media library" -showtime -catcherror $_
+                }
+              }else{        
+                $index++                                                    
+                write-ezlogs "| Getting next item with index $($index) from Youtube media library" -showtime -LogLevel 2
+                $next_item = $synchash.YoutubeTable.ItemsSource.records.View.Data[$index]                
+              }                
+            }
+          }           
+        }elseif($last_played.media.source -eq 'Local' -and $synchash.MediaTable.ItemsSource.records.View){    
+          try{
+            write-ezlogs "| Looking for next media in Local media library" -loglevel 2
+            $index = $synchash.MediaTable.ItemsSource.records.View.Data.id.IndexOf($last_played.media.id)
+          }catch{
+            $index = -1
+          }          
+          if($index -ne -1 -and $index -ne $null){   
+            if($thisApp.config.Shuffle_Playback){
+              try{
+                write-ezlogs "| Getting random item from local media library" -showtime -LogLevel 2
+                $next_item = $synchash.MediaTable.ItemsSource.records.View.Data | Where-Object {$_.id -ne $last_Track.id -and $thisApp.config.History_Playlist.values -notcontains $_.id} | Get-Random -Count 1
+              }catch{
+                write-ezlogs "An exception occurred getting random item from local media library" -showtime -catcherror $_
+              }
+            }else{        
+              $index++                                                    
+              write-ezlogs "| Getting next item with index $($index) from local media library" -showtime -LogLevel 2
+              $next_item = $synchash.MediaTable.ItemsSource.records.View.Data[$index]                
+            }                
           } 
-        }      
+        }    
         if($current_Playing_Library){
-          $current_Playing_Library_Playlist = $current_Playing_Library.playlist | Select-Object -unique
-          if(@($current_Playing_Library_Playlist).count -gt 1){
-            write-ezlogs "Returned multiple playlists that contain media id $($last_played.mediaid) - Playlists: $($current_Playing_Library_Playlist | out-string)" -warning -showtime -LogLevel 2
-            #TODO: What to do about it then?           
-          }    
+          $current_Playing_Library_Playlist = $current_Playing_Library.playlist | Select-Object -unique    
           if(@($current_Playing_Library).count -ge 1){
             $last_Track = (($current_Playing_Library.GetEnumerator()) | where-Object {$_.id -eq $last_played.mediaid})
             if($last_Track){
@@ -247,13 +307,13 @@ function Skip-Media
             if(-not [string]::IsNullOrEmpty($last_track_index)){ 
               if($thisApp.config.Shuffle_Playback){
                 try{
-                  write-ezlogs " | Getting random item from Playlist $($current_Playing_Library_Playlist)" -showtime -LogLevel 2
+                  write-ezlogs "| Getting random item from Playlist $($current_Playing_Library_Playlist)" -showtime -LogLevel 2
                   $next_item = $current_Playing_Library | where {$_.id -ne $last_Track.id -and $thisApp.config.History_Playlist.values -notcontains $_.id} | Get-Random -Count 1
                 }catch{
                   write-ezlogs "An exception occurred getting random item from Playlist $($current_Playing_Library_Playlist)" -showtime -catcherror $_
                 }
               }else{                                                            
-                write-ezlogs " | Getting next playlist item with index $($last_track_index) from Playlist $($current_Playing_Library_Playlist)" -showtime -LogLevel 2
+                write-ezlogs "| Getting next playlist item with index $($last_track_index) from Playlist $($current_Playing_Library_Playlist)" -showtime -LogLevel 2
                 $next_item = $current_Playing_Library[$last_track_index]                     
               }
             }else{

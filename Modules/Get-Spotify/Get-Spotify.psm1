@@ -405,8 +405,8 @@ function Get-Spotify
                   $artist_id = $($Track.show.id -join ',')
                   $release_date = $($Track.release_date)
                 }
-                if(-not [string]::IsNullOrEmpty($thisApp.Config.YoutubeMedia_Display_Syntax)){
-                  $DisplayName = $thisApp.Config.YoutubeMedia_Display_Syntax -replace '%artist%',$artist -replace '%title%',$track.name -replace '%album%',$Album -replace '%track%',$($track.track_number) -replace '%playlist%',$playlist_name
+                if(-not [string]::IsNullOrEmpty($thisApp.Config.SpotifyMedia_Display_Syntax)){
+                  $DisplayName = $thisApp.Config.SpotifyMedia_Display_Syntax -replace '%artist%',$artist -replace '%title%',$track.name -replace '%album%',$Album -replace '%track%',$($track.track_number) -replace '%playlist%',$playlist_name
                 }else{
                   $DisplayName = $Null
                 }

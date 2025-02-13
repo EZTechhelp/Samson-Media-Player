@@ -1064,18 +1064,22 @@ function Start-Media{
         write-ezlogs "| Uknown media type -- Title: $title" -showtime
         if($synchashWeak.Target.MiniPlayer_Viewer.isLoaded){
           try{
-            Import-Module "$($thisApp.Config.Current_Folder)\Modules\BurntToast\BurntToast.psm1" -NoClobber -DisableNameChecking -Scope Local
-            $startapp = Get-AllStartApps "*$($thisApp.Config.App_name)*"
-            if($startapp){
-              $appid = $startapp.AppID | Select-Object -last 1
-            }elseif(Get-AllStartApps VLC*){
-              $startapp = Get-AllStartApps VLC*
-              $appid = $startapp.AppID | Select-Object -last 1
+            if($thisApp.Config.Installed_AppID){
+              $appid = $thisApp.Config.Installed_AppID
             }else{
-              $startapp = Get-AllStartApps '*Windows Media Player'
-              $appid = $startapp.AppID | Select-Object -last 1
+              $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
+              if($appid){
+                $thisapp.config.Installed_AppID = $appid
+              }else{
+                $appid = (Get-AllStartApps -Name 'Powershell').AppID
+              }
+            } 
+            $Toast = @{
+              AppID = $appid
+              Text = "Cannot load unknown media or path is not available!`nURL: $vlcurl`nTitle: $title"
+              AppLogo = "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"
             }
-            New-BurntToastNotification -AppID $appid -Text "Cannot load unknown media or path is not available!`nURL: $vlcurl`nTitle: $title" -AppLogo "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"
+            Update-MainWindow -synchash $synchash -thisApp $thisApp -Toast $Toast
           }catch{
             write-ezlogs "An exception occurred attempting to generate the notification balloon - appid: $($appid)" -showtime -catcherror $_
           }     
@@ -1099,116 +1103,121 @@ function Start-Media{
         }
         if(!$synchashWeak.Target.Youtube_WebPlayer_URL -or $media_link -eq "dshow://"){  
           try{
-            $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))')  
-            $vlcArgs = [System.Collections.Generic.List[String]]::new()
-            [void]($vlcArgs.add('--file-logging'))
-            [void]($vlcArgs.add("--logfile=$($thisapp.config.Vlc_Log_file)"))
-            [void]($vlcArgs.add("--mouse-events"))
-            [void]($vlcArgs.add("--log-verbose=$($thisapp.config.Vlc_Verbose_logging)"))
-            [void]($vlcArgs.add("--osd"))
-            #TODO: Add global gain to config
-            [double]$doubleref = [double]::NaN
-            if(-not [string]::IsNullOrEmpty($thisApp.Config.Libvlc_Global_Gain) -and [double]::TryParse($thisApp.Config.Libvlc_Global_Gain,[ref]$doubleref)){
-              write-ezlogs "| Applying custom global gain for libvlc: $($thisApp.Config.Libvlc_Global_Gain)" -logtype Libvlc -loglevel 2
-              [void]($vlcArgs.add("--gain=$($thisApp.Config.Libvlc_Global_Gain)"))
-            }else{
-              write-ezlogs "| Setting default global gain for libvlc: 4" -logtype Libvlc -loglevel 2
-              [void]($vlcArgs.add('--gain=4.0')) #Set gain to 4 which is default that VLC uses but for some reason libvlc does not
-            }
-            [void]($vlcArgs.add("--logmode=text"))
+            Update-LibVLC -thisApp $thisApp -synchash $synchashWeak.Target -force -media_link $media_link
+            <#if($thisApp.Config.Use_Visualizations -and $thisApp.Config.Use_Visualizations_Video){
+                $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mpeg|(?i)mpg4|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))') 
+                }else{
+                $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))') 
+                }
+                $vlcArgs = [System.Collections.Generic.List[String]]::new()
+                [void]($vlcArgs.add('--file-logging'))
+                [void]($vlcArgs.add("--logfile=$($thisapp.config.Vlc_Log_file)"))
+                [void]($vlcArgs.add("--mouse-events"))
+                [void]($vlcArgs.add("--log-verbose=$($thisapp.config.Vlc_Verbose_logging)"))
+                [void]($vlcArgs.add("--osd"))
+                #TODO: Add global gain to config
+                [double]$doubleref = [double]::NaN
+                if(-not [string]::IsNullOrEmpty($thisApp.Config.Libvlc_Global_Gain) -and [double]::TryParse($thisApp.Config.Libvlc_Global_Gain,[ref]$doubleref)){
+                write-ezlogs "| Applying custom global gain for libvlc: $($thisApp.Config.Libvlc_Global_Gain)" -logtype Libvlc -loglevel 2
+                [void]($vlcArgs.add("--gain=$($thisApp.Config.Libvlc_Global_Gain)"))
+                }else{
+                write-ezlogs "| Setting default global gain for libvlc: 4" -logtype Libvlc -loglevel 2
+                [void]($vlcArgs.add('--gain=4.0')) #Set gain to 4 which is default that VLC uses but for some reason libvlc does not
+                }
+                [void]($vlcArgs.add("--logmode=text"))
 
-            #TODO: Add Video Output Module to config
-            #Use opengl for windows with tone mapping set to 2 (Reinhard) to properly play HDR video on SDR displays         
-            #[void]($vlcArgs.add("--vout=glwin32"))
-            #[void]($vlcArgs.add('--tone-mapping=2'))
-
-            #[void]$vlcArgs.add("--volume-step=2.56")
-            #Sadly no audio filters work with libvlc, all are overridden by the built-in EQ - hopefully libvlc 4 will fix
-            if($Enable_normalizer){
-              [void]($vlcArgs.add("--audio-filter=normalizer"))
-            }
-            if($thisapp.config.Enable_EQ2Pass){
-              [void]($vlcArgs.add("--equalizer-2pass"))
-            }
-            if($thisApp.Config.Use_Visualizations -and ($media_link -match $audio_media_pattern -or $vlcurl -match $audio_media_pattern)){ 
-              #,"--no-video"
-              [void]($vlcArgs.add("--video-on-top"))
-              [void]($vlcArgs.add("--spect-show-original"))
-              if($thisApp.Config.Current_Visualization -eq 'Spectrum'){        
+                if($Enable_normalizer){
+                [void]($vlcArgs.add("--audio-filter=normalizer"))
+                }
+                if($thisapp.config.Enable_EQ2Pass){
+                [void]($vlcArgs.add("--equalizer-2pass"))
+                }
+                if($thisApp.Config.Use_Visualizations -and ($media_link -match $audio_media_pattern -or $vlcurl -match $audio_media_pattern)){ 
+                #,"--no-video"
+                [void]($vlcArgs.add("--video-on-top"))
+                [void]($vlcArgs.add("--spect-show-original"))
+                if([system.io.Directory]::Exists("$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop")){
+                [void]$vlcArgs.add("--audio-visual=projectm")
+                [void]$vlcArgs.add("--projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`"")
+                $Screen = [System.Windows.Forms.Screen]::PrimaryScreen
+                [void]$vlcArgs.add("--projectm-width=$($Screen.Bounds.Width)")
+                [void]$vlcArgs.add("--projectm-height=$($Screen.Bounds.Height)")
+                write-ezlogs "| Enabling ProjectM Visualizations: $($vlcArgs | out-string)"
+                }elseif($thisApp.Config.Current_Visualization -eq 'Spectrum'){        
                 [void]($vlcArgs.add("--audio-visual=Visual"))
                 [void]($vlcArgs.add("--effect-list=spectrum"))
-              }else{
+                }else{
                 [void]($vlcArgs.add("--audio-visual=$($thisApp.Config.Current_Visualization)"))
                 [void]($vlcArgs.add("--effect-list=spectrum"))
-              }             
-              write-ezlogs ">>>> Configuring libvlc instance, with visualization: $($thisApp.Config.Current_Visualization)" -showtime -loglevel 2 -logtype Libvlc                                                      
-            }else{  
-              [void]($vlcArgs.add("--file-caching=1000"))
-              write-ezlogs ">>>> Configuring libvlc instance, no visualization, file-caching=1000" -showtime -loglevel 2 -logtype Libvlc -linesbefore 1
-            }                 
-            if(-not [string]::IsNullOrEmpty($thisapp.config.vlc_Arguments)){
-              try{
+                }             
+                write-ezlogs ">>>> Configuring libvlc instance, with visualization: $($thisApp.Config.Current_Visualization)" -showtime -loglevel 2 -logtype Libvlc                                                      
+                }else{  
+                [void]($vlcArgs.add("--file-caching=1000"))
+                write-ezlogs ">>>> Configuring libvlc instance, no visualization, file-caching=1000" -showtime -loglevel 2 -logtype Libvlc -linesbefore 1
+                }                 
+                if(-not [string]::IsNullOrEmpty($thisapp.config.vlc_Arguments)){
+                try{
                 $thisapp.config.vlc_Arguments -split ',' | & { process {                 
-                    if([regex]::Escape($_) -match '--' -and $vlcArgs -notcontains $_){
-                      write-ezlogs "| Adding custom Libvlc option: $($_)" -loglevel 2 -logtype Libvlc
-                      [void]($vlcArgs.add("$($_)"))
-                    }else{
-                      write-ezlogs "Cannot add custom libvlc option $($_) - it does not meet the required format or is already added!" -warning -loglevel 2 -logtype Libvlc
-                    }
+                if([regex]::Escape($_) -match '--' -and $vlcArgs -notcontains $_){
+                write-ezlogs "| Adding custom Libvlc option: $($_)" -loglevel 2 -logtype Libvlc
+                [void]($vlcArgs.add("$($_)"))
+                }else{
+                write-ezlogs "Cannot add custom libvlc option $($_) - it does not meet the required format or is already added!" -warning -loglevel 2 -logtype Libvlc
+                }
                 }}
-              }catch{
+                }catch{
                 write-ezlogs "An exception occurred processing custom VLC arguments" -catcherror $_
-              }          
-            }
-            [String[]]$libvlc_arguments = $vlcArgs | & { process {
+                }          
+                }
+                [String[]]$libvlc_arguments = $vlcArgs | & { process {
                 if($thisApp.Config.Dev_mode){write-ezlogs "| Applying Libvlc option: $($_)" -loglevel 2 -logtype Libvlc -Dev_mode}
                 if([regex]::Escape($_) -match '--'){
-                  $_
+                $_
                 }else{
-                  write-ezlogs "Cannot apply libvlc option $($_) - it does not meet the required format!" -warning -loglevel 2 -logtype Libvlc
+                write-ezlogs "Cannot apply libvlc option $($_) - it does not meet the required format!" -warning -loglevel 2 -logtype Libvlc
                 }
-            }}
-            if($thisApp.Config.Libvlc_Version -eq '4'){
-              $synchashWeak.Target.libvlc = [LibVLCSharp.LibVLC]::new($libvlc_arguments)
-            }else{
-              $synchashWeak.Target.libvlc = [LibVLCSharp.Shared.LibVLC]::new($libvlc_arguments)
-            }
-            if($thisApp.Config.Enable_EQ -and $media_link -eq 'dshow://'){
-              $useragent = "$($thisApp.Config.App_Name) Media Player - WebPlayer EQ"
-            }else{
-              $useragent = "$($thisApp.Config.App_Name) Media Player"
-            }
-            $synchashWeak.Target.libvlc.SetUserAgent($useragent,"HTTP/User/Agent")
-            if($thisApp.Config.Installed_AppID){
-              $appid = $thisApp.Config.Installed_AppID
-            }else{
-              $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID 
-              $thisApp.Config.Installed_AppID = $appid
-            }
-            if($appid -and $synchashWeak.Target.libvlc){
-              $synchashWeak.Target.libvlc.SetAppId($appid,$thisApp.Config.App_Version,"$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico")
-            }
-            if($thisApp.Config.Enable_EQ -and $media_link -eq 'dshow://'){
-              write-ezlogs "| Enabling dshow capture of virtual audio cable for Youtube webplayer" -warning
-              $allDevices = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::EnumerateDevices([CSCore.CoreAudioAPI.DataFlow]::All)
-              $capture_device = $allDevices.where({$_.friendlyname -match 'CABLE Input \(VB-Audio Virtual Cable\)'})
-              if($capture_device){
+                }}
+                if($thisApp.Config.Libvlc_Version -eq '4'){
+                $synchashWeak.Target.libvlc = [LibVLCSharp.LibVLC]::new($libvlc_arguments)
+                }else{
+                $synchashWeak.Target.libvlc = [LibVLCSharp.Shared.LibVLC]::new($libvlc_arguments)
+                }
+                if($thisApp.Config.Enable_EQ -and $media_link -eq 'dshow://'){
+                $useragent = "$($thisApp.Config.App_Name) Media Player - WebPlayer EQ"
+                }else{
+                $useragent = "$($thisApp.Config.App_Name) Media Player"
+                }
+                $synchashWeak.Target.libvlc.SetUserAgent($useragent,"HTTP/User/Agent")
+                if($thisApp.Config.Installed_AppID){
+                $appid = $thisApp.Config.Installed_AppID
+                }else{
+                $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID 
+                $thisApp.Config.Installed_AppID = $appid
+                }
+                if($appid -and $synchashWeak.Target.libvlc){
+                $synchashWeak.Target.libvlc.SetAppId($appid,$thisApp.Config.App_Version,"$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico")
+                }
+                if($thisApp.Config.Enable_EQ -and $media_link -eq 'dshow://'){
+                write-ezlogs "| Enabling dshow capture of virtual audio cable for Youtube webplayer" -warning
+                $allDevices = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::EnumerateDevices([CSCore.CoreAudioAPI.DataFlow]::All)
+                $capture_device = $allDevices.where({$_.friendlyname -match 'CABLE Input \(VB-Audio Virtual Cable\)'})
+                if($capture_device){
                 Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchashWeak.Target -start -wait -Startlibvlc
-              }else{
+                }else{
                 write-ezlogs "Unable to find required 'CABLE Input (VB-Audio Virtual Cable)' audio device - cannot enable EQ for Webplayer!" -AlertUI -Warning -synchash $synchashWeak.Target
-              }
-            }                            
+                }
+            }#>                            
           }catch{
             write-ezlogs "An exception occurred disposing and creating a new libvlc instance" -showtime -catcherror $_
           }finally{
-            if($allDevices -is [System.IDisposable]){
-              $allDevices.dispose()
-              $allDevices = $Null
-            }
-            if($capture_device -is [System.IDisposable]){
-              $capture_device.Dispose()
-              $capture_device = $null
-            }
+            <#            if($allDevices -is [System.IDisposable]){
+                $allDevices.dispose()
+                $allDevices = $Null
+                }
+                if($capture_device -is [System.IDisposable]){
+                $capture_device.Dispose()
+                $capture_device = $null
+            }#>
           }
         }
         try{      
@@ -1279,8 +1288,8 @@ function Start-Media{
               Update-MainPlayer -synchash $synchashWeak.Target -thisApp $thisApp -Now_Playing_Label "PLAYING" -Now_Playing_Artist "$($Artist)" -Now_Playing_Title $title -Add_VideoView -New_MediaPlayer -video_url $video_url -vlcurl $vlcurl -media_link $media_link -audio_url $audio_url -Saved_Media_Progress $Saved_Media_Progress -start_Paused:$start_Paused -Live_stream:$Live_stream -EnableCasting:$EnableCasting -Subtitles_Path $Subtitles_Path   
             }                                       
           }catch{
-            write-ezlogs "An exception occurred starting vlc playback" -showtime -catcherror $_
-            Update-Notifications -Level 'ERROR' -Message "An exception occurred starting vlc playback: $_" -VerboseLog -thisApp $thisApp -synchash $synchashWeak.Target -Open_Flyout
+            write-ezlogs "An exception occurred starting vlc playback" -AlertUI -showtime -catcherror $_
+            #Update-Notifications -Level 'ERROR' -Message "An exception occurred starting vlc playback: $_" -VerboseLog -thisApp $thisApp -synchash $synchashWeak.Target -Open_Flyout
             return
           }         
           $play_timeout = 0
@@ -1768,23 +1777,27 @@ function Start-Media{
         }
         if($thisApp.config.Show_notifications){
           try{
-            Import-Module "$($thisApp.Config.Current_Folder)\Modules\BurntToast\BurntToast.psm1" -NoClobber -DisableNameChecking -Scope Local
-            $startapp = Get-AllStartApps "*$($thisApp.Config.App_name)*"
-            if($startapp){
-              $appid = $startapp.AppID | Select-Object -last 1          
-            }elseif(Get-AllStartApps VLC*){
-              $startapp = Get-AllStartApps VLC*
-              $appid = $startapp.AppID | Select-Object -last 1
-            }else{
-              $startapp = Get-AllStartApps '*Windows Media Player'
-              $appid = $startapp.AppID | Select-Object -last 1
-            }
             if($synchashWeak.Target.MediaPlayer_CurrentDuration){
               $Message = "Media : $($title)`nPlay Duration : $($synchashWeak.Target.MediaPlayer_CurrentDuration)`nSource : $source"
             }else{
               $Message = "Media : $($title)`nSource : $source"
             }
-            New-BurntToastNotification -AppID $appid -Text "$Message" -AppLogo $applogo
+            if($thisApp.Config.Installed_AppID){
+              $appid = $thisApp.Config.Installed_AppID
+            }else{
+              $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
+              if($appid){
+                $thisapp.config.Installed_AppID = $appid
+              }else{
+                $appid = (Get-AllStartApps -Name 'Powershell').AppID
+              }
+            }                        
+            $Toast = @{
+              AppID = $appid
+              Text = $Message
+              AppLogo = $applogo
+            }
+            Update-MainWindow -synchash $synchash -thisApp $thisApp -Toast $Toast
           }catch{
             write-ezlogs "An exception occurred attempting to generate the notification balloon - appid: $($appid) - applogo: $($applogo) - message: $($Message)" -showtime -catcherror $_
           }
@@ -1825,6 +1838,7 @@ function Start-Media{
     'Start-Runspace',
     'Update-ChatView',
     'Update-MainPlayer',
+    'Update-LibVLC',
     'Test-ValidPath'
     'verboselog' = $verboselog
     'ApartmentState' = 'STA'
@@ -2379,8 +2393,13 @@ function Start-NewMedia {
         } 
         #TODO: Refactor/consolidate into Initialize-VLC 
         if(!$synchash.libvlc){
-          try{
-            $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))')  
+          try{           
+            Update-LibVLC -thisApp $thisApp -synchash $synchash -force -media_link $Mediaurl
+<#            if($thisApp.Config.Use_Visualizations -and $thisApp.Config.Use_Visualizations_Video){
+              $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mpeg|(?i)mpg4|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))') 
+            }else{
+              $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))') 
+            }            
             $vlcArgs = [System.Collections.Generic.List[String]]::new()
             [void]($vlcArgs.add('--file-logging'))
             [void]($vlcArgs.add("--logfile=$($thisapp.config.Vlc_Log_file)"))
@@ -2401,7 +2420,18 @@ function Start-NewMedia {
             if($thisApp.Config.Use_Visualizations -and ($Mediaurl -match $audio_media_pattern)){ 
               [void]($vlcArgs.add("--video-on-top"))
               [void]($vlcArgs.add("--spect-show-original"))
-              if($thisApp.Config.Current_Visualization -eq 'Spectrum'){         
+              if([system.io.Directory]::Exists("$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop")){
+                [void]$vlcArgs.add("--audio-visual=projectm")
+                [void]$vlcArgs.add("--projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`"")          
+                $Screen = [System.Windows.Forms.Screen]::PrimaryScreen
+                [void]$vlcArgs.add("--projectm-width=$($Screen.Bounds.Width)")
+                [void]$vlcArgs.add("--projectm-height=$($Screen.Bounds.Height)")   
+                [void]$vlcArgs.add("--no-video")   
+                [void]$vlcArgs.add("--projectm-meshx=$($Screen.Bounds.Width)")
+                [void]$vlcArgs.add("--projectm-meshy=$($Screen.Bounds.Height)")
+                [void]$vlcArgs.add("--effect-list=spectrum")           
+                write-ezlogs "| Enabling ProjectM Visualizations: --projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`" --projectm-width=$($Screen.Bounds.Width) --projectm-height=$($Screen.Bounds.Height)" -Warning -logtype Libvlc
+              }elseif($thisApp.Config.Current_Visualization -eq 'Spectrum'){         
                 [void]($vlcArgs.add("--audio-visual=Visual"))
                 [void]($vlcArgs.add("--effect-list=spectrum"))
               }else{
@@ -2443,7 +2473,7 @@ function Start-NewMedia {
             $startapp = Get-AllStartApps "*$($thisApp.Config.App_name)*"
             if($startapp.AppID -and $synchash.libvlc){
               $synchash.libvlc.SetAppId($startapp.AppID,$thisApp.Config.App_Version,"$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico")
-            }                     
+            }#>                     
           }catch{
             write-ezlogs "An exception occurred disposing and creating a new videoview control" -showtime -catcherror $_
           }  
@@ -3070,7 +3100,7 @@ function Update-Subtitles {
                       $synchash.Current_playing_media.Subtitles_Path = $this.tag.Subtitles_Path
                     }          
                     write-ezlogs ">>>> Refreshing vlc media to load subtitle file: $($this.tag.Subtitles_Path)" -logtype Libvlc    
-                    Update-LibVLC -thisApp $thisApp -synchash $synchash -force
+                    Update-LibVLC -thisApp $thisApp -synchash $synchash -force -UpdateMainPlayer -UpdateStreamlink -UnRegisterEvents
                   }else{
                     if($synchash.MediaSubtitles_TextBox){
                       $synchash.MediaSubtitles_TextBox.Header = 'No Subtitles Found'

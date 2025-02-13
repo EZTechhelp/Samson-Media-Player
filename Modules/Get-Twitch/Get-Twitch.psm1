@@ -1164,7 +1164,8 @@ function Update-TwitchStatus
     [string]$Media_Profile_Directory,
     [switch]$Refresh_Follows,
     [switch]$Enable_liveAlert,
-    [switch]$Verboselog = $thisApp.Config.Dev_mode
+    [switch]$Verboselog = $thisApp.Config.Dev_mode,
+    [switch]$Force
   )
   try{
     Import-Module "$($thisApp.Config.Current_Folder)\Modules\PSSerializedXML\PSSerializedXML.psm1" -NoClobber -DisableNameChecking -Scope Local
@@ -1194,7 +1195,7 @@ function Update-TwitchStatus
           }catch{
             write-ezlogs "[Get-TwitchStatus] An exception occurred retrieving Twitch Follows with Get-TwitchFollows" -showtime -catcherror $_
           } 
-          if($Twitch_playlists -and $hashsetup){
+          if($Twitch_playlists){
             Import-Module "$($thisApp.Config.Current_Folder)\Modules\Show-SettingsWindow\Show-SettingsWindow.psm1" -NoClobber -DisableNameChecking -Scope Local
             foreach($playlist in $Twitch_playlists){
               $playlisturl = "https://www.twitch.tv/$($playlist.broadcaster_login)"
@@ -1208,26 +1209,29 @@ function Update-TwitchStatus
                 }catch{
                   write-ezlogs "[Get-TwitchStatus] An exception occurred parsing followed_at ($($playlist.followed_at)) for Twitch channel $($playlistName)" -showtime -catcherror $_
                 }
-              } 
-              if($hashsetup.window.IsInitialized -and $hashsetup.TwitchPlaylists_Grid){
-                if($hashsetup.TwitchPlaylists_items.path -notcontains $playlisturl){
-                  $newtwitchchannels++
-                  Update-TwitchPlaylists -thisApp $thisApp -hashsetup $hashsetup -Path $playlisturl -Name $playlistName -id $playlist.to_id -Followed $Followed -type 'TwitchChannel' -VerboseLog:$thisApp.Config.Verbose_logging -add_to_Twitch_Playlists -use_runspace
-                }
               }
+              if($playlist.to_id){
+                $Twitchid = $playlist.to_id
+              }elseif($playlist.broadcaster_id){
+                $Twitchid = $playlist.broadcaster_id
+              }
+              if(($hashSetup.TwitchPlaylists_items -and $hashsetup.TwitchPlaylists_items.path -notcontains $playlisturl) -or $thisApp.Config.Twitch_Playlists.path -notcontains $playlisturl){
+                $newtwitchchannels++
+                Update-TwitchPlaylists -thisApp $thisApp -hashsetup $hashsetup -Path $playlisturl -Name $playlistName -id $Twitchid -Followed $Followed -type 'TwitchChannel' -VerboseLog:$thisApp.Config.Verbose_logging -add_to_Twitch_Playlists #-use_runspace
+              }              
             }
-            if($hashsetup.window.IsInitialized -and $hashsetup.TwitchPlaylists_Grid){
+            if($hashsetup.window.IsInitialized -and $hashsetup.TwitchPlaylists_Grid -and $newtwitchchannels -gt 0){
               Update-TwitchPlaylists -thisApp $thisApp -hashsetup $hashsetup -VerboseLog:$thisApp.Config.Verbose_logging -SetItemsSource
             }  
-            write-ezlogs "[Get-TwitchStatus] | Found $newtwitchchannels new Twitch Channels" -showtime -logtype Twitch -LogLevel 2
-            if($synchash.TwitchTable){
-              write-ezlogs "[Get-TwitchStatus] | Updating Twitch Media Library" -showtime -logtype Twitch -LogLevel 2
+            write-ezlogs "[Get-TwitchStatus] | Found $newtwitchchannels new followed Twitch Channels" -showtime -logtype Twitch
+            if($synchash.TwitchTable -and $newtwitchchannels -gt 0){
+              write-ezlogs "[Get-TwitchStatus] | Updating Twitch Media Library" -showtime -logtype Twitch
               Import-Module "$($thisApp.Config.Current_Folder)\Modules\Import-Twitch\Import-Twitch.psm1" -NoClobber -DisableNameChecking -Scope Local
               Import-Twitch -Twitch_playlists $thisapp.Config.Twitch_Playlists -verboselog:$thisapp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisapp.config.Media_Profile_Directory -thisApp $thisapp -use_runspace -refresh 
             }
-          }elseif(!$hashsetup){
-            write-ezlogs "[Get-TwitchStatus] Get-TwitchStatus cannot refresh follows under Twitch settings as settings hashsetup is not initialized" -showtime -warning -logtype Twitch
-          }else{
+          }elseif(!$hashsetup -and $Verboselog){
+            write-ezlogs "[Get-TwitchStatus] Get-TwitchStatus cannot refresh follows under Twitch settings as settings hashsetup is not initialized" -showtime -warning -logtype Twitch -VerboseDebug:$Verboselog
+          }elseif(!$Twitch_playlists){
             write-ezlogs "[Get-TwitchStatus] Unable to import Followed channels from Twitch - no channels returned" -showtime -warning -logtype Twitch
           }         
         }catch{
@@ -1312,18 +1316,19 @@ function Update-TwitchStatus
                     }
                   }
                 }
+                #TODO: Cleanup - why the hell is this in 3 places??
                 if($twitchmedia.Enable_LiveAlert -or $playlist_track.Enable_LiveAlert -or $Config_Twitch.Enable_LiveAlert){
                   $Enable_LiveAlert = $true
                 }else{
                   $Enable_LiveAlert = $false
                 }
-                if($twitchmedia){
+                if($twitchmedia -and $twitchmedia.Enable_LiveAlert -ne $Enable_LiveAlert){
                   $twitchmedia.Enable_LiveAlert = $Enable_LiveAlert
                 }
                 if($Config_Twitch){
                   $Config_Twitch.Enable_LiveAlert = $Enable_LiveAlert
                 }                                  
-                if($playlist_track){
+                if($playlist_track -and $playlist_track.Enable_LiveAlert -ne $Enable_LiveAlert){
                   $playlist_track.Enable_LiveAlert = $Enable_LiveAlert
                 }
                 if($TwitchAPI.started_at){
@@ -1370,7 +1375,6 @@ function Update-TwitchStatus
                   }
                   if($UpdateAlert -and $thisApp.Config.Enable_Twitch_Notifications -and ($twitchmedia.Enable_LiveAlert -or $playlist_track.Enable_LiveAlert -or $Config_Twitch.Enable_LiveAlert)){
                     try{
-                      #Import-Module "$($thisApp.Config.Current_Folder)\Modules\BurntToast\BurntToast.psm1" -NoClobber -DisableNameChecking -Scope Local
                       $Message = "Twitch Channel '$twitch_channel' is now $twitch_status!`nPlaying: $($TwitchAPI.game_name)$TimeLive"
                       if($TwitchAPI.profile_image_url){
                         $applogo = $TwitchAPI.profile_image_url                           
@@ -1469,21 +1473,21 @@ function Update-TwitchStatus
                   $playlist_track.ToolTip = $ToolTip
                 }
                 if($changes -gt 0){
-                  $synchash.Twitch_status_changes = $changes 
+                  $synchash.Twitch_status_changes = $changes
                 }
               }catch{
                 write-ezlogs "[Get-TwitchStatus] An exception occurred in checktwitch_scriptblock loop" -showtime -catcherror $_
               }
           }}
-          if($synchash.Twitch_status_changes){
+          if($synchash.Twitch_status_changes -or $Force){
             try{
-              write-ezlogs "[Get-TwitchStatus] >>>> Updated $($synchash.Twitch_status_changes) Twitch streams with changes" -showtime -logtype Twitch -LogLevel 2
+              write-ezlogs "[Get-TwitchStatus] >>>> Updated ($($synchash.Twitch_status_changes)) Twitch streams with changes -- Force: ($Force)" -showtime -logtype Twitch -LogLevel 2
               if($Verboselog){write-ezlogs "[Get-TwitchStatus] >>>> Exporting to profile path: $AllTwitch_Media_Profile_File_Path" -showtime -logtype Twitch -VerboseDebug:$Verboselog}
               if($CheckAll){
                 Export-SerializedXML -InputObject $Available_Twitch_Media -Path $AllTwitch_Media_Profile_File_Path
               }else{
                 Export-SerializedXML -InputObject $synchash.All_Twitch_Media -Path $AllTwitch_Media_Profile_File_Path
-              }              
+              }
               Export-SerializedXML -InputObject $synchash.all_playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
               if($synchash.update_Queue_timer -and !$synchash.update_Queue_timer.isEnabled){
                 $synchash.update_Queue_timer.Tag = 'UpdateQueue'
@@ -1562,192 +1566,70 @@ function Get-TwitchStatus
     [string]$Media_Profile_Directory,
     [switch]$Refresh_Follows,
     [switch]$Enable_liveAlert,
-    [switch]$Verboselog = $thisApp.Config.Dev_Mode
+    [switch]$Verboselog = $thisApp.Config.Dev_Mode,
+    [switch]$Force
   )
-  if($CheckAll -or $media){
-    if($Verboselog){write-ezlogs ">>>> Getting Status of all known Twitch Streams" -showtime -logtype Twitch -VerboseDebug:$Verboselog}
-    try{      
-      if($synchash.All_Twitch_Media.count -gt 0){
-        if(!$synchash.checktwitch_scriptblock){
-          $synchash.checktwitch_scriptblock = {
-            Param(
-              [string]$StreamName,
-              $media,
-              [switch]$CheckAll,
-              [switch]$Test,
-              [switch]$Use_runspace,
-              $thisApp,
-              $synchash,
-              $hashsetup,
-              [switch]$Startup,
-              [switch]$Update_Twitch_Profile,
-              [switch]$Export_Profile,
-              [string]$Media_Profile_Directory,
-              [switch]$Refresh_Follows,
-              [switch]$Enable_liveAlert,
-              [switch]$Verboselog
-            )
-            try{
-              $checktwitch_stopwatch = [system.diagnostics.stopwatch]::StartNew() 
-              Update-TwitchStatus @PSBoundParameters
-            }catch{
-              write-ezlogs "An exception occurred in checktwitch_scriptblock" -catcherror $_
-            }finally{
-              if($checktwitch_stopwatch){
-                $checktwitch_stopwatch.stop()
-                write-ezlogs ">>>> Get-TwitchStatus Measure" -PerfTimer $checktwitch_stopwatch -Perf -logtype Twitch
-                $GetTwitch_stopwatch = $Null
-              }
-              if($thisApp.Config.Dev_mode){
-                [void][ScriptBlock].GetMethod('ClearScriptBlockCache', [System.Reflection.BindingFlags]'Static,NonPublic').Invoke($Null, $Null)
-                write-ezlogs ('Memory: {0:n1} MB' -f $([System.GC]::GetTotalMemory($true) / 1MB)) -logtype Twitch -Dev_mode
+  try{
+    if($CheckAll -or $media){
+      if($Verboselog){write-ezlogs ">>>> Getting Status of all known Twitch Streams" -showtime -logtype Twitch -VerboseDebug:$Verboselog}
+      try{      
+        if($synchash.All_Twitch_Media.count -gt 0 -or $media){
+          if(!$synchash.checktwitch_scriptblock){
+            $synchash.checktwitch_scriptblock = {
+              Param(
+                [string]$StreamName,
+                $media,
+                [switch]$CheckAll,
+                [switch]$Test,
+                [switch]$Use_runspace,
+                $thisApp,
+                $synchash,
+                $hashsetup,
+                [switch]$Startup,
+                [switch]$Update_Twitch_Profile,
+                [switch]$Export_Profile,
+                [string]$Media_Profile_Directory,
+                [switch]$Refresh_Follows,
+                [switch]$Enable_liveAlert,
+                [switch]$Verboselog,
+                [switch]$Force
+              )
+              try{
+                $checktwitch_stopwatch = [system.diagnostics.stopwatch]::StartNew() 
+                Update-TwitchStatus @PSBoundParameters
+              }catch{
+                write-ezlogs "An exception occurred in checktwitch_scriptblock" -catcherror $_
+              }finally{
+                if($checktwitch_stopwatch){
+                  $checktwitch_stopwatch.stop()
+                  write-ezlogs ">>>> Get-TwitchStatus Measure" -PerfTimer $checktwitch_stopwatch -Perf -logtype Twitch
+                  $GetTwitch_stopwatch = $Null
+                }
+                if($thisApp.Config.Dev_mode){
+                  [void][ScriptBlock].GetMethod('ClearScriptBlockCache', [System.Reflection.BindingFlags]'Static,NonPublic').Invoke($Null, $Null)
+                  write-ezlogs ('Memory: {0:n1} MB' -f $([System.GC]::GetTotalMemory($true) / 1MB)) -logtype Twitch -Dev_mode
+                }
               }
             }
           }
-        }
-        if($Use_runspace){
-          Start-Runspace -scriptblock $synchash.checktwitch_scriptblock -arguments $PSBoundParameters -StartRunspaceJobHandler -synchash $synchash -logfile $thisApp.Config.Log_file -runspace_name "checktwitch_runspace" -thisApp $thisApp -CheckforExisting -function_list 'Write-Ezlogs','Update-MainWindow','Update-TwitchStatus','Test-ValidPath' -RestrictedRunspace -Command_list 'Set-StrictMode','Get-Module' 
-        }else{
-          Invoke-Command -ScriptBlock $synchash.checktwitch_scriptblock
-        }
-      }else{
-        write-ezlogs "[Get-TwitchStatus] Unable to find any valid twitch media!" -showtime -warning -logtype Twitch -LogLevel 2
-      }
-    }catch{
-      write-ezlogs "[Get-TwitchStatus] An exception occurred getting status of Twitch streams!" -showtime -catcherror $_
-      Update-Notifications -Level 'ERROR' -Message "An exception occurred getting status of Twitch streams!" -VerboseLog -Message_color "Red" -thisApp $thisApp -synchash $synchash -Open_Flyout
-    }      
-    #$twitchStreams = $synchash.
-  }elseif($Update_Twitch_Profile){
-    if(!$synchash.update_twitch_Profile_scriptblock){
-      $synchash.update_twitch_Profile_scriptblock = {
-        Param(
-          [string]$StreamName,
-          $media,
-          [switch]$CheckAll,
-          [switch]$Use_runspace,
-          $thisApp,
-          $synchash,
-          $hashsetup,
-          [switch]$Startup,
-          [switch]$Update_Twitch_Profile,
-          [switch]$Export_Profile,
-          [string]$Media_Profile_Directory,
-          [switch]$Refresh_Follows,
-          [switch]$Enable_liveAlert,
-          [switch]$Verboselog
-        )
-        try{
-          try{
-            $internet_Connectivity = Test-ValidPath -path 'www.twitch.tv' -PingConnection -timeout_milsec 1000
-          }catch{
-            write-ezlogs "Ping test failed for: www.twitch.tv - trying 1.1.1.1" -Warning -logtype Twitch
-          }finally{
-            try{
-              if(!$internet_Connectivity){
-                $internet_Connectivity = Test-ValidPath -path '1.1.1.1' -PingConnection -timeout_milsec 2000
-              }
-            }catch{
-              write-ezlogs "Secondary ping test failed for: 1.1.1.1" -Warning -logtype Twitch
-              $internet_Connectivity = $null
-            }
-          }
-          if($internet_Connectivity){
-            $AllTwitch_Media_Profile_File_Path = [System.IO.Path]::Combine($thisapp.Config.Media_Profile_Directory,'All-Twitch_MediaProfile','All-Twitch_Media-Profile.xml') 
-            $libraryChanges = 0
-            $ConfigUpdateChanges = 0
-            $PlaylistChanges = 0
-            Import-Module "$($thisApp.Config.Current_Folder)\Modules\PSSerializedXML\PSSerializedXML.psm1" -NoClobber -DisableNameChecking -Scope Local
-            foreach($m in $media){
-              if($M.id -and $m.source -eq 'Twitch'){
-                if($m.Enable_liveAlert -ne $Enable_liveAlert){
-                  $libraryChanges++
-                  $m.Enable_liveAlert = $Enable_liveAlert
-                }
-                write-ezlogs "[Get-TwitchStatus-UpdateProfile] Updating Twitch profiles for ID: $($m.id)"-logtype Twitch
-                $Playlist_to_update = $synchash.all_playlists | & { process {if ($_.playlist_tracks.values.id -eq $m.id){$_}}}
-                foreach($playlist in  $Playlist_to_update){
-                  foreach($track in $playlist.playlist_tracks.values){
-                    if($track.id -eq $m.id -and $track.Enable_LiveAlert -ne $m.Enable_LiveAlert){
-                      $PlaylistChanges++
-                      write-ezlogs ">>>> Updating Twitch Live notifications to: $($m.Enable_LiveAlert) -- for channel: $($track.title) -- in playlist: $($playlist.Name)" -logtype Twitch
-                      $track.Enable_LiveAlert = $m.Enable_LiveAlert
-                    }
-                  }
-                }
-                if($thisapp.config.Twitch_Playlists.id){
-                  $Config_index = $thisapp.config.Twitch_Playlists.id.indexof($m.id)
-                  if($Config_index -ne -1){               
-                    $Config_Twitch = $thisapp.config.Twitch_Playlists[$Config_index]                      
-                  }elseif($thisapp.config.Twitch_Playlists.Name.indexof($m.Name) -ne -1){
-                    $Config_Twitch = $thisapp.config.Twitch_Playlists[$thisapp.config.Twitch_Playlists.Name.indexof($m.Name)]
-                  }
-                  if($Config_Twitch -and $Config_Twitch.Enable_LiveAlert -ne $m.Enable_LiveAlert){
-                    $ConfigUpdateChanges++
-                    $Config_Twitch.Enable_LiveAlert = $m.Enable_LiveAlert
-                  }
-                }
-                if($synchash.All_Twitch_Media.count -eq 0 -and [System.IO.File]::Exists($AllTwitch_Media_Profile_File_Path)){
-                  write-ezlogs "[Get-TwitchStatus-UpdateProfile] >>>> Unable to find twitch media, importing All Twitch Media Profile at $AllTwitch_Media_Profile_File_Path" -logtype Twitch
-                  $all_Twitch_profile = Import-SerializedXML -Path $AllTwitch_Media_Profile_File_Path
-                  if($all_Twitch_profile.id){
-                    $index = $all_Twitch_profile.id.IndexOf($m.id)
-                    if($index -ne -1){                 
-                      $Library_media_to_update = $all_Twitch_profile[$index]
-                    }elseif($all_Twitch_profile.name -and $all_Twitch_profile.name.IndexOf($m.Name) -ne -1){
-                      $Library_media_to_update = $all_Twitch_profile[$all_Twitch_profile.name.IndexOf($m.Name)]
-                    }
-                  }     
-                }else{
-                  $index = $synchash.All_Twitch_Media.id.IndexOf($m.id)
-                  if($index -ne -1){
-                    $Library_media_to_update = $synchash.All_Twitch_Media[$index]
-                  }elseif($synchash.All_Twitch_Media.name.IndexOf($m.Name) -ne -1){
-                    $Library_media_to_update = $synchash.All_Twitch_Media[$synchash.All_Twitch_Media.name.IndexOf($m.Name)]
-                  }
-                }
-                foreach($profile in $Library_media_to_update){
-                  if($profile.Enable_LiveAlert -ne $m.Enable_LiveAlert){
-                    $libraryChanges++
-                    $profile.Enable_LiveAlert = $m.Enable_LiveAlert
-                  }
-                }
-              }else{
-                write-ezlogs "[Get-TwitchStatus-UpdateProfile] No Twitch media ID was provided - unable to update profile!" -warning -logtype Twitch
-              }
-            }
-            if($ConfigUpdateChanges -gt 0){
-              write-ezlogs ">>>> Saving updated config file to $($thisApp.Config.Config_Path)" -logtype Twitch
-              Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
-            }
-            if($PlaylistChanges -gt 0){
-              write-ezlogs ">>>> Saving updated playlists profile to $($thisApp.Config.Playlists_Profile_Path)" -logtype Twitch
-              Export-SerializedXML -InputObject $synchash.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
-            }
-            if($libraryChanges -gt 0 -or $Export_Profile){
-              write-ezlogs ">>>> Saving updated Twitch_Media profile to $AllTwitch_Media_Profile_File_Path" -logtype Twitch
-              Export-SerializedXML -InputObject $synchash.All_Twitch_Media -path $AllTwitch_Media_Profile_File_Path
-              if($synchash.Refresh_TwitchMedia_timer){
-                $synchash.Refresh_TwitchMedia_timer.tag = 'QuickRefresh_TwitchMedia_Button'
-                $synchash.Refresh_TwitchMedia_timer.start()  
-              }
-            }
+          if($Use_runspace){
+            Start-Runspace -scriptblock $synchash.checktwitch_scriptblock -arguments $PSBoundParameters -StartRunspaceJobHandler -synchash $synchash -logfile $thisApp.Config.Log_file -runspace_name "checktwitch_runspace" -thisApp $thisApp -CheckforExisting -function_list 'Write-Ezlogs','Update-MainWindow','Update-TwitchStatus','Test-ValidPath' -RestrictedRunspace -Command_list 'Set-StrictMode','Get-Module' 
           }else{
-            write-ezlogs "Cannot check status of Twitch streams, unable to connect to 'www.twitch.tv'" -warning -AlertUI
+            Invoke-Command -ScriptBlock $synchash.checktwitch_scriptblock
           }
-        }catch{
-          write-ezlogs "An exception occurred in update_twitch_Profile_scriptblock" -catcherror $_
-        }   
+        }else{
+          write-ezlogs "[Get-TwitchStatus] Unable to find any valid twitch media!" -showtime -warning -logtype Twitch -LogLevel 2
+        }
+      }catch{
+        write-ezlogs "[Get-TwitchStatus] An exception occurred getting status of Twitch streams!" -showtime -catcherror $_
+        Update-Notifications -Level 'ERROR' -Message "An exception occurred getting status of Twitch streams!" -VerboseLog -Message_color "Red" -thisApp $thisApp -synchash $synchash -Open_Flyout
       }
-    }
-    Start-Runspace $synchash.update_twitch_Profile_scriptblock -arguments $PSBoundParameters -StartRunspaceJobHandler -synchash $synchash -logfile $thisApp.Config.Log_file -runspace_name "update_twitch_Profile_runspace" -thisApp $thisApp -RestrictedRunspace -CheckforExisting -function_list 'Write-Ezlogs','Test-ValidPath' -Command_list 'Set-StrictMode','Get-Module'
-  }else{
-    try{
-      write-ezlogs "Get-TwitchStatus currently work with refreshing just one provided stream name!! Needs to be completed! Maybe -  params: $($PSBoundParameters | out-string)" -warning
+    }else{
+      write-ezlogs "No media or proper parameters supplied to Get-TwitchStatus -- params: $($PSBoundParameters | out-string)" -warning
       return
-    }catch{
-      write-ezlogs "[Get-TwitchStatus] An exception occurred getting status of Twitch stream $($StreamName)" -showtime -catcherror $_
     }
+  }catch{
+    write-ezlogs "An exception occurred in Get-TwitchStatus -- params: $($PSBoundParameters | out-string)" -showtime -catcherror $_
   }
 }
 #---------------------------------------------- 
@@ -1788,7 +1670,7 @@ function Start-TwitchMonitor
               if($thisApp.config.Twitch_Update -and $thisApp.config.Twitch_Update_Interval -ne $null){
                 $checkupdate_timer = [system.diagnostics.stopwatch]::StartNew()
                 Write-ezlogs "[Start-TwitchMonitor] >>>> Refreshing status for all Twitch Streams" -showtime -logtype Twitch -LogLevel 2 -linesbefore 1
-                Get-TwitchStatus -thisApp $thisApp -synchash $Synchash -verboselog:$thisApp.Config.Verbose_logging -checkall -Use_runspace #:$false
+                Get-TwitchStatus -thisApp $thisApp -synchash $Synchash -verboselog:$thisApp.Config.Verbose_logging -checkall -Refresh_Follows -Use_runspace #:$false
                 $checkupdate_timer.stop()
                 Write-ezlogs "[Start-TwitchMonitor] Ran for: $($checkupdate_timer.Elapsed.TotalSeconds) seconds" -showtime -logtype Twitch -LogLevel 2
                 $checkupdate_timer = $Null
@@ -1807,7 +1689,7 @@ function Start-TwitchMonitor
       $synchash.TwitchMonitor_timer.Remove_Tick($synchash.TwitchMonitor_timer_ScriptBlock)
       $synchash.TwitchMonitor_timer.add_Tick($synchash.TwitchMonitor_timer_ScriptBlock)
       $synchash.TwitchMonitor_timer.start()
-      Get-TwitchStatus -thisApp $thisApp -synchash $Synchash -verboselog:$thisApp.Config.Verbose_logging -checkall -Use_runspace #:$false
+      Get-TwitchStatus -thisApp $thisApp -synchash $Synchash -verboselog:$thisApp.Config.Verbose_logging -checkall -Refresh_Follows -Use_runspace #:$false
     }else{
       write-ezlogs "[Start-TwitchMonitor] No interval value was provided or Twitch_Update config value is not enabled, cannot continue" -showtime -warning -logtype Twitch -LogLevel 2
     }
@@ -2132,7 +2014,7 @@ function Get-Twitch
                       if($track){
                         foreach ($property in $twitch_item.psobject.properties.name){
                           if($property -notin 'Enable_LiveAlert','Profile_Date_Added' -and [bool]$track.PSObject.Properties[$property] -and $track.$property -ne $twitch_item.$property){
-                            write-ezlogs " | Updating playlist track property: '$($property)' from value: '$($track.$property)' - to: '$($twitch_item.$property)'" -logtype Twitch
+                            if($Verboselog){write-ezlogs " | Updating playlist track property: '$($property)' from value: '$($track.$property)' - to: '$($twitch_item.$property)'" -logtype Twitch -VerboseDebug:$Verboselog}
                             $track.$property = $twitch_item.$property
                             $synchash.Temp_TwitchPlaylist_to_Save = $true
                           }elseif($property -notin 'Enable_LiveAlert','Profile_Date_Added' -and -not [bool]$track.PSObject.Properties[$property]){
@@ -2184,10 +2066,10 @@ function Get-Twitch
     }
   }
   if($export_profile -and $synchash.All_Twitch_Media.count -gt 1 -and $AllTwitch_Media_Profile_File_Path){
-    write-ezlogs "[Get-Twitch] >>>> Saving Available Twitch Media profile to $AllTwitch_Media_Profile_File_Path" -showtime -logtype Twitch -LogLevel 2
+    write-ezlogs "[Get-Twitch] >>>> Saving Available Twitch Media profile to $AllTwitch_Media_Profile_File_Path" -showtime -logtype Twitch
     Export-SerializedXML -InputObject $synchash.All_Twitch_Media -path $AllTwitch_Media_Profile_File_Path
   } 
-  write-ezlogs "[Get-Twitch] | Number of Twitch Channels found: $($synchash.All_Twitch_Media.Count)" -showtime -logtype Twitch -LogLevel 2
+  write-ezlogs "[Get-Twitch] | Number of Twitch Channels found: $($synchash.All_Twitch_Media.Count)" -showtime -logtype Twitch
   if($UpdatePlaylists -and $synchash.Temp_TwitchPlaylist_to_Save){ 
     if($synchash.Temp_all_Playlists){
       Export-SerializedXML -InputObject $synchash.Temp_all_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force

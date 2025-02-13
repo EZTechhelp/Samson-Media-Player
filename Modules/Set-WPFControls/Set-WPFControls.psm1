@@ -872,6 +872,32 @@ function Set-WPFButtons
     #---------------------------------------------- 
     #endregion Speaker_ToggleButtons
     #----------------------------------------------
+
+    #---------------------------------------------- 
+    #region Overlay_Button
+    #TODO: TEST
+    #----------------------------------------------
+    if($synchash.Overlay_Button -and $thisApp.Config.Dev_mode){
+      try{
+        [System.Windows.RoutedEventHandler]$Synchash.OpenOverlay_Command = {
+          param($sender)
+          try{
+            Open-MiniPlayer -thisApp $thisApp -synchash $synchash -Overlay             
+          }catch{
+            write-ezlogs 'An exception occurred in Overlay_Button click event' -showtime -catcherror $_
+          }
+        }
+        $null = $synchash.Overlay_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.OpenOverlay_Command)
+      }catch{
+        write-ezlogs "An exception occurred in OpenOverlay_Command" -catcherror $_
+      }
+    }elseif($synchash.Overlay_Button){
+      $synchash.Overlay_Button.isEnabled = $false
+      $synchash.Overlay_Button.visibility = 'Collapsed'
+    }
+    #---------------------------------------------- 
+    #endregion Overlay_Button
+    #----------------------------------------------
   }catch{
     write-ezlogs "An exception occurred in Set-WPFButtons" -CatchError $_ -showtime
   }
@@ -938,6 +964,7 @@ function Set-VideoPlayer
           $synchash.VLC_Grid.children.Add($synchash.videoView)
         }
         $synchash.videoView.IsEnabled = $true
+        $synchash.VideoView_Grid.MaxHeight = [Double]::PositiveInfinity
         $synchash.VLC_Grid_Row0.Height="300*"
         $synchash.MediaPlayer_Grid_Row2.Height = "300*"
         $synchash.Window.MaxHeight = $primarymonitor.WorkingArea.Height
@@ -994,9 +1021,10 @@ function Set-VideoPlayer
         if(!$synchash.VideoViewFloat.isVisible -and !$synchash.MediaViewAnchorable.isfloating){
           write-ezlogs "| Video Player is not floating, collapsing video view" -loglevel 2 -Dev_mode
           $synchash.videoView.IsEnabled = $false
+          $synchash.VideoView_Grid.MaxHeight = 0
           $synchash.VLC_Grid_Row0.Height="*"
           $synchash.MediaPlayer_Grid_Row2.Height = "*"
-        }            
+        }           
         $synchash.RootGrid_Row1.Height="0*"         
         $PrimaryMonitor = [System.Windows.Forms.Screen]::PrimaryScreen
         $newPosition = ($synchash.Window.Top + 432)    
@@ -1120,14 +1148,49 @@ function Open-MiniPlayer
     $thisApp,
     $synchash,
     [switch]$startup,
+    [switch]$Overlay,
     [switch]$Verboselog
   )
   try{
+    $synchash.TempParam_Overlay = $Overlay
+    if($Overlay){
+      #$AlwaysOnTop = $synchash.MiniPlayer_Viewer.GetValue([WindowExtensions]::AlwaysOnTopProperty)
+      if($synchash.MiniPlayer_Viewer.isVisible){
+        $CurrentMonitor = [System.Windows.Forms.Screen]::FromPoint([System.Windows.Forms.Cursor]::Position)
+        $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($synchash.MiniPlayer_Viewer)
+        if($synchash.MiniPlayer_Viewer.left -lt $CurrentMonitor.Bounds.x -or $synchash.MiniPlayer_Viewer.left -gt $CurrentMonitor.Bounds.Width){
+          write-ezlogs ">>>> Moving miniplayer window to current monitor"
+          $synchash.Miniplayer_PreviousLeft = $synchash.MiniPlayer_Viewer.left
+          $synchash.Miniplayer_PreviousTop = $synchash.MiniPlayer_Viewer.Top
+          Set-Window -WindowHandle $Window_Helper.Handle -X $($CurrentMonitor.Bounds.x + 10) -Y ($CurrentMonitor.WorkingArea.Top + 10)
+          Set-WindowTopMost -thisApp $thisApp -Window $synchash.MiniPlayer_Viewer -Force
+          $synchash.MiniPlayer_Viewer.Activate()
+        }else{
+          if($synchash.MiniPlayerButton_ToggleButton.isChecked){           
+            Set-WindowTopMost -thisApp $thisApp -Window $synchash.MiniPlayer_Viewer -Disable
+            if($synchash.Miniplayer_PreviousLeft -ne $Null -and $synchash.Miniplayer_PreviousTop -ne $null){
+              write-ezlogs ">>>> Moving miniplayer window back to previous monitor/location"
+              Set-Window -WindowHandle $Window_Helper.Handle -X $($synchash.Miniplayer_PreviousLeft) -Y ($synchash.Miniplayer_PreviousTop)
+            }
+          }else{
+            write-ezlogs ">>>> Closing Miniplayer"
+            $synchash.MiniPlayer_Viewer.close()
+          }
+          $synchash.Miniplayer_PreviousLeft = $Null
+          $synchash.Miniplayer_PreviousTop = $Null
+        }
+        return
+      }
+    }else{
+      if($synchash.MiniPlayerButton_ToggleButton){
+        $synchash.MiniPlayerButton_ToggleButton.isChecked = $true
+      }    
+    }
     if($synchash.TrayPlayerPopUpGrid.children -contains $synchash.TrayPlayerBorder){
       $null = $synchash.TrayPlayerPopUpGrid.children.remove($synchash.TrayPlayerBorder)
     }
     if(!$synchash.MiniPlayer_Viewer.isVisible){
-      write-ezlogs "[Caller: $((Get-PSCallStack)[1].Location):$((Get-PSCallStack)[1].ScriptLineNumber)] >>>> Attempting to open MiniPlayer view: Window.IsLoaded: $($synchash.Window.IsLoaded)" -showtime
+      write-ezlogs ">>>> Attempting to open MiniPlayer view: Window.IsLoaded: $($synchash.Window.IsLoaded)" -showtime
       $XamlMiniPlayer_window = [System.IO.File]::ReadAllText("$($thisApp.Config.Current_folder)\Views\MiniPlayerViewer.xaml").replace('Views/Styles.xaml',"$($thisApp.Config.Current_folder)`\Views`\Styles.xaml")   
       $MiniPlayer_windowXaml = [Windows.Markup.XAMLReader]::Parse($XamlMiniPlayer_window)
       $reader = [XML.XMLReader]::Create([IO.StringReader]$XamlMiniPlayer_window)
@@ -1148,7 +1211,7 @@ function Open-MiniPlayer
     if($synchash.MiniPlayer_DockPanel.children -notcontains $synchash.TrayPlayerBorder){
       $null = $synchash.MiniPlayer_DockPanel.children.add($synchash.TrayPlayerBorder)
     }
-    $synchash.MiniPlayer_Viewer.icon = "$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico"  
+    $synchash.MiniPlayer_Viewer.icon = "$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico"
     $synchash.MiniPlayer_Viewer.icon.Freeze()
     $synchash.MiniPlayer_Viewer.Title = "$($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version) - $($synchash.Now_Playing_Label.DataContext) - $($synchash.Now_Playing_Title_Label.DataContext)"  
     $synchash.MiniPlayer_Viewer.TaskbarItemInfo.Description = "$($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version) - $($synchash.Now_Playing_Label.DataContext) - $($synchash.Now_Playing_Title_Label.DataContext)"
@@ -1320,6 +1383,9 @@ function Open-MiniPlayer
             $synchash.Window.show()
             $synchash.Window.Activate()
           }
+          if($synchash.MiniPlayerButton_ToggleButton.isChecked){
+            $synchash.MiniPlayerButton_ToggleButton.isChecked = $false
+          }
           if($synchash.VideoViewAirControl.Visibility -in 'Hidden','Collapsed'){
             write-ezlogs "| Unhiding VideoViewAirControl"
             $synchash.VideoViewAirControl.Visibility = 'Visible'
@@ -1329,6 +1395,29 @@ function Open-MiniPlayer
         }
       }
     }
+    $Synchash.MiniPlayer_ContentRenderedScriptblock = {
+      param($sender)
+      try{
+        if($synchash.TempParam_Overlay){
+          $CurrentMonitor = [System.Windows.Forms.Screen]::FromPoint([System.Windows.Forms.Cursor]::Position)
+          $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($sender)
+          if($sender.left -lt $CurrentMonitor.Bounds.x -or $sender.left -gt $CurrentMonitor.Bounds.Width){
+            write-ezlogs ">>>> Moving miniplayer window to current monitor"
+            $synchash.Miniplayer_PreviousLeft = $sender.left
+            $synchash.Miniplayer_PreviousTop = $sender.Top
+            Set-Window -WindowHandle $Window_Helper.Handle -X $($CurrentMonitor.Bounds.x + 10) -Y ($CurrentMonitor.WorkingArea.Top + 10)
+          }
+        }
+        if($thisApp.Config.Mini_Always_On_Top -or $synchash.TempParam_Overlay){
+          Set-WindowTopMost -thisApp $thisApp -Window $sender
+          $Sender.Activate()
+        }
+      }catch{
+        write-ezlogs "An exception occurred in MiniPlayer_Viewer.add_closed" -showtime -catcherror $_
+      }finally{
+        $synchash.TempParam_Overlay = $null
+      }
+    }   
     if(!$Synchash.MiniPlayer_UnLoadedScriptblock){
       $Synchash.MiniPlayer_UnLoadedScriptblock = {
         param($sender)
@@ -1338,11 +1427,12 @@ function Open-MiniPlayer
           $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::SizeChangedEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)
           $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::PreviewGotKeyboardFocusEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)
           $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::loadedEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)
-          $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::UnloadedEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)        
+          $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::UnloadedEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)      
           [void][System.Windows.Data.BindingOperations]::ClearAllBindings($synchash.TaskbarItem_PlayButton)
           [void][System.Windows.Data.BindingOperations]::ClearAllBindings($synchash.Mini_TaskbarItem_StopButton)         
           $synchash.MiniPlayer_Viewer.Remove_closing($Synchash.MiniPlayer_ClosingScriptblock)
           $synchash.MiniPlayer_Viewer.Remove_closed($Synchash.MiniPlayer_ClosedScriptblock)
+          $synchash.MiniPlayer_Viewer.Remove_ContentRendered($Synchash.MiniPlayer_ContentRenderedScriptblock)
           $synchash.MiniPlayer_Viewer = $Null
           if($synchash.Window.isVisible -and $synchash.VideoView.Visibility -in 'Hidden','Collapsed' -and (!$synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio) -and $synchash.WebPlayer_State -eq 0 -and !$synchash.Youtube_WebPlayer_title){
             write-ezlogs ">>>> Video view is hidden, Youtube webplayer not playing, unhiding video view" -Warning
@@ -1350,6 +1440,8 @@ function Open-MiniPlayer
           } 
         }catch{
           write-ezlogs "An exception occurred in MiniPlayer_Viewer unloaded event" -showtime -catcherror $_
+        }finally{
+          $synchash.TempParam_Overlay = $null
         }  
       }
     }     
@@ -1357,6 +1449,7 @@ function Open-MiniPlayer
     $synchash.MiniPlayer_Viewer.add_UnLoaded($Synchash.MiniPlayer_UnLoadedScriptblock)
     $synchash.MiniPlayer_Viewer.add_closing($Synchash.MiniPlayer_ClosingScriptblock)
     $synchash.MiniPlayer_Viewer.add_closed($Synchash.MiniPlayer_ClosedScriptblock)    
+    $synchash.MiniPlayer_Viewer.add_ContentRendered($Synchash.MiniPlayer_ContentRenderedScriptblock)
     <#    $synchash.MiniPlayer_Viewer.add_Activated({
         try{
         write-ezlogs ">>>> Miniplayer Viewer activated"
@@ -1465,6 +1558,11 @@ function Update-MainPlayer {
                   $synchash.window.ShowActivated = $false #Prevent window from activating/taking focus while rendering
                   $synchash.window.Opacity = 0
                   $synchash.window.ShowInTaskbar = $false
+                  $synchash.Window.Show()
+                  #TODO: This is only needed if main window allowstransparency is set to false - maybe cause crashes in some cases?
+                  if(!$synchash.Window.AllowsTransparency){
+                    $synchash.Window.Hide()
+                  }
                 }else{
                   $synchash.Window.Hide()
                 }
@@ -1564,6 +1662,12 @@ function Update-MainPlayer {
                     $synchash.VLC = [LibVLCSharp.MediaPlayer]::new($synchash.libvlc)
                   }else{
                     $synchash.VLC = [LibVLCSharp.Shared.MediaPlayer]::new($synchash.libvlc)
+                  }
+                  #Prevent vlc from catching input events unless using visualizations
+                  if($thisApp.Config.Use_Visualizations){
+                    $synchash.VLC.EnableKeyInput = $true
+                  }else{
+                    $synchash.VLC.EnableKeyInput = $false
                   }
                   $synchash.VideoView.MediaPlayer = $synchash.VLC
                   Add-VLCRegisteredEvents -synchash $synchash -thisApp $thisApp
@@ -1808,6 +1912,53 @@ function Update-MainPlayer {
                   write-ezlogs "[UPDATE-MAINPLAYER] | Volume level unknown??: $($synchash.Volume_Slider.value)" -logtype Libvlc -Warning
                   $thisapp.Config.Media_Volume = 50
                 }
+
+                if($thisApp.Config.Enable_Marquee){
+                  if($synchash.streamlink.viewer_count){
+                    if($synchash.vlc_Marquee_viewcount_set -ne $synchash.streamlink.viewer_count){
+                      write-ezlogs "| Setting Margquee to Twitch Viewer count: $($synchash.streamlink.viewer_count)" -showtime -logtype Libvlc
+                      if($thisApp.Config.Libvlc_Version -eq '4'){
+                        $synchash.VLC.SetMarqueeInt([LibVLCSharp.VideoMarqueeOption]::Enable, 1) #enable marquee option
+                        $synchash.VLC.SetMarqueeInt([LibVLCSharp.VideoMarqueeOption]::Size, 24) #set the font size 
+                        $synchash.VLC.SetMarqueeInt([LibVLCSharp.VideoMarqueeOption]::Position, 8) #set the position of text
+                        $synchash.VLC.SetMarqueeString([LibVLCSharp.VideoMarqueeOption]::Text, "Viewers: $($synchash.streamlink.viewer_count)")
+                      }else{
+                        $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Enable, 1) #enable marquee option
+                        $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Size, 24) #set the font size 
+                        $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Position, 8) #set the position of text
+                        $synchash.VLC.SetMarqueeString([LibVLCSharp.Shared.VideoMarqueeOption]::Text, "Viewers: $($synchash.streamlink.viewer_count)")
+                      }
+                      $synchash.vlc_Marquee_viewcount_set = $synchash.streamlink.viewer_count
+                    }
+                  }else{
+                    if($synchash.VLC.Time){
+                      [int]$hrs = $($([timespan]::FromMilliseconds($synchash.VLC.Time)).Hours)
+                      [int]$mins = $($([timespan]::FromMilliseconds($synchash.VLC.Time)).Minutes)
+                      [int]$secs = $($([timespan]::FromMilliseconds($synchash.VLC.Time)).Seconds)     
+                      $total_time = $synchash.MediaPlayer_CurrentDuration
+                      if($hrs -lt 1){
+                        $hrs = '0'
+                      }
+                      $current_Length = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
+                    }
+                    if($synchash.vlc_Marquee_defaultset -ne "$($synchash.Now_Playing_Title_Label.DataContext) - $($current_Length + ' / ' +  "$($total_time)")"){
+                      write-ezlogs "| Setting Margquee to default label: $($synchash.Now_Playing_Title_Label.DataContext) - $($current_Length + ' / ' +  "$($total_time)")" -showtime -logtype Libvlc
+                      if($thisApp.Config.Libvlc_Version -eq '4'){
+                        $synchash.VLC.SetMarqueeInt([LibVLCSharp.VideoMarqueeOption]::Enable, 1) #enable marquee option
+                        $synchash.VLC.SetMarqueeInt([LibVLCSharp.VideoMarqueeOption]::Size, 24) #set the font size 
+                        $synchash.VLC.SetMarqueeInt([LibVLCSharp.VideoMarqueeOption]::Position, 8) #set the position of text
+                        $synchash.VLC.SetMarqueeString([LibVLCSharp.VideoMarqueeOption]::Text, "$($synchash.Now_Playing_Title_Label.DataContext) - $($current_Length + ' / ' +  "$($total_time)")")
+                      }else{
+                        $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Enable, 1) #enable marquee option
+                        $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Size, 24) #set the font size 
+                        $synchash.VLC.SetMarqueeInt([LibVLCSharp.Shared.VideoMarqueeOption]::Position, 8) #set the position of text
+                        $synchash.VLC.SetMarqueeString([LibVLCSharp.Shared.VideoMarqueeOption]::Text, "$($synchash.Now_Playing_Title_Label.DataContext) - $($current_Length + ' / ' +  "$($total_time)")")
+                      }
+                      $synchash.vlc_Marquee_defaultset = "$($synchash.Now_Playing_Title_Label.DataContext) - $($current_Length + ' / ' +  "$($total_time)")"
+                    }
+                  }      
+                  #to set subtitle or any other text                                          
+                }
                 if($thisapp.config.Enable_EQ -and $synchash.vlc -and !$synchash.EQ_Timer.isEnabled){
                   write-ezlogs "[UPDATE-MAINPLAYER] | Executing EQ_Timer" -showtime -loglevel 2 -logtype Libvlc
                   $synchash.EQ_Timer.Start()
@@ -2023,6 +2174,11 @@ function Update-MainWindow {
                   $synchash.window.ShowActivated = $false #Prevent window from activating/taking focus while rendering
                   $synchash.window.Opacity = 0
                   $synchash.window.ShowInTaskbar = $false
+                  $synchash.Window.Show()
+                  #TODO: This is only needed if main window allowstransparency is set to false - maybe cause crashes in some cases?
+                  if(!$synchash.Window.AllowsTransparency){
+                    $synchash.Window.Hide()
+                  }
                 }else{
                   $synchash.Window.Hide()
                 }
@@ -2108,6 +2264,7 @@ function Update-MainWindow {
               }
               if(-not [string]::IsNullOrEmpty($object.Toast)){ 
                 if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Creating new toast notification: $($object.Toast)" -loglevel 3 -Dev_mode}
+                Import-Module "$($thisApp.Config.Current_Folder)\Modules\BurntToast\BurntToast.psm1" -NoClobber -DisableNameChecking -Scope Local
                 $ToastSplat = $object.Toast
                 New-BurntToastNotification @ToastSplat -ErrorAction SilentlyContinue
               }
@@ -2238,17 +2395,21 @@ function Reset-MainPlayer {
               $synchash.YoutubeWebView2 = $Null
             }
             if($synchash.VideoView_Overlay_Grid.children -notcontains $synchash.VideoViewTransparentBackground){
-              $null = $synchash.VideoView_Overlay_Grid.AddChild($synchash.VideoViewTransparentBackground)
-              $synchash.VideoViewTransparentBackground.SetValue([System.Windows.Controls.Grid]::RowProperty,0)
-              #$synchash.VideoViewTransparentBackground.Margin = '0,0,0,35'
-              $synchash.TrayPlayerQueue_FlyoutControl.Margin = "0,0,0,35"
-              $synchash.OverlayFlyoutBackground.Margin = "0,0,0,35"
-              $synchash.VideoViewTransparentBackground.MaxWidth = [Double]::PositiveInfinity
-              $synchash.VideoViewTransparentBackground.HorizontalAlignment="Stretch"
-              $synchash.OverlayFlyoutBackground.Style = $synchash.Window.TryFindResource('ResetOverlayGridFade')
-              $synchash.VideoViewOverlayTopGrid.Visibility = [System.Windows.Visibility]::Collapsed
-              $synchash.TrayPlayerQueueFlyout.Remove_IsOpenChanged($synchash.TrayPlayerQueueFlyoutScriptBlock)
-              $synchash.VideoViewTransparentBackground.MaxHeight = [Double]::PositiveInfinity
+              try{
+                $null = $synchash.VideoView_Overlay_Grid.AddChild($synchash.VideoViewTransparentBackground)
+                $synchash.VideoViewTransparentBackground.SetValue([System.Windows.Controls.Grid]::RowProperty,0)
+                #$synchash.VideoViewTransparentBackground.Margin = '0,0,0,35'
+                $synchash.TrayPlayerQueue_FlyoutControl.Margin = "0,0,0,35"
+                $synchash.OverlayFlyoutBackground.Margin = "0,0,0,35"
+                $synchash.VideoViewTransparentBackground.MaxWidth = [Double]::PositiveInfinity
+                $synchash.VideoViewTransparentBackground.HorizontalAlignment="Stretch"
+                $synchash.OverlayFlyoutBackground.Style = $synchash.Window.TryFindResource('ResetOverlayGridFade')
+                $synchash.VideoViewOverlayTopGrid.Visibility = [System.Windows.Visibility]::Collapsed
+                $synchash.TrayPlayerQueueFlyout.Remove_IsOpenChanged($synchash.TrayPlayerQueueFlyoutScriptBlock)
+                $synchash.VideoViewTransparentBackground.MaxHeight = [Double]::PositiveInfinity
+              }catch{
+                write-ezlogs "An exception occurred adding VideoViewTransparentBackground to VideoView_Overlay_Grid" -CatchError $_
+              }
               #$synchash.VideoViewTransparentBackground.MaxWidth = [Double]::PositiveInfinity
               #$synchash.OverlayFlyoutBackground.Style = $null
               #[void][System.Windows.Data.BindingOperations]::ClearAllBindings($synchash.OverlayFlyoutBackground)
@@ -2274,10 +2435,15 @@ function Reset-MainPlayer {
             }
 
             #Reset VideoView Control
-            #TODO: Setting as nan is bad!
-            if($synchash.VideoView -and $synchash.VideoView.Height -ne [Double]::NaN){
-              #$synchash.VideoView.Height=[Double]::NaN
+            #TODO: Set VideoView_Grid to black to avoid white flickering when not playing
+            if($synchash.VideoView_Grid.Background -ne 'Black'){
+              write-ezlogs "[Reset-MainPlayer] Setting VideoView_Grid background to Black" -warning
+              $synchash.VideoView_Grid.Background = 'Black'
             }
+            #TODO: Setting as nan is bad!
+            #if($synchash.VideoView -and $synchash.VideoView.Height -ne [Double]::NaN){
+            #$synchash.VideoView.Height=[Double]::NaN
+            #}
             ######
             #TODO: Setting video view to visible here potentially contributes towards Layout measurement override crash if video view is currently collapsed
             #Mostly only occurs if miniplayer is open but can still occur even if not
@@ -2292,7 +2458,7 @@ function Reset-MainPlayer {
             }
             ######
             if($synchash.VLC_Grid.children.name -notcontains 'VideoView'){
-              Write-EZLogs '[Reset-MainPlayer] | Adding VideoView to VideoView_Grid'
+              Write-EZLogs '[Reset-MainPlayer] | Adding VideoView to VLC_Grid'
               $null = $synchash.VLC_Grid.AddChild($synchash.VideoView)
             } 
             if($synchash.VLC_Grid.Visibility -in 'Hidden','Collapsed'){
@@ -2515,13 +2681,13 @@ function Update-MediaState {
                 }
               }
               if(($synchash.vlc.VideoTrackCount -gt 0 -or $synchash.Current_playing_media.hasVideo) -or ($synchash.Current_playing_media -and $thisApp.Config.Use_Visualizations) -and (!$synchash.Youtube_WebPlayer_URL -and !$synchash.Spotify_WebPlayer_URL)){
-                if($synchash.MiniPlayer_Viewer.isVisible -and !$synchash.MediaViewAnchorable.isFloating){
-                  write-ezlogs "[Update-MediaState] >>>> Video view is not visible and MiniPlayer is visible, Youtube webplayer not playing, undocking video player" -Warning
+                if(($synchash.MiniPlayer_Viewer.isVisible -or ($thisApp.Config.Use_Visualizations -and $synchash.Window.AllowsTransparency)) -and !$synchash.MediaViewAnchorable.isFloating){
+                  write-ezlogs "[Update-MediaState] >>>> Video view is not visible and MiniPlayer is visible, Youtube webplayer not playing, undocking video player -- Use_Visualizations: $($thisApp.Config.Use_Visualizations) -- Window.AllowsTransparency: $($synchash.Window.AllowsTransparency)" -Warning
                   if($synchash.VideoViewFloat.Height){
                     $synchash.MediaViewAnchorable.FloatingHeight = $synchash.VideoViewFloat.Height
                   }else{
                     $synchash.MediaViewAnchorable.FloatingHeight = '400'
-                  }                  
+                  }    
                   $synchash.MediaViewAnchorable.float() 
                 }else{
                   write-ezlogs "[Update-MediaState] >>>> Media has video, showing videoview" -showtime
@@ -2567,6 +2733,10 @@ function Update-MediaState {
             }      
             if($thisApp.Config.Verbose_logging -and $thisApp.Config.dev_Mode){
               write-ezlogs "[Update-MediaState] >>>> Current VLC Media Player instance: $($synchash.Vlc | out-string)" -showtime -Debug -Dev_mode
+            }
+            if($synchash.VideoView_Grid.Background -ne '#01000000'){
+              write-ezlogs "[Update-MediaState] | Setting VideoView_Grid background to #01000000" -warning
+              $synchash.VideoView_Grid.Background = '#01000000'
             }
             <#            if($synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled){
                 $synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
@@ -2637,6 +2807,10 @@ function Add-WPFMenu {
         if(-not [string]::IsNullOrEmpty($ContextMenuClosing_Command)){
           $contextMenu.Add_ContextMenuOpening($ContextMenuClosing_Command)
         }           
+      }elseif($Control -is [MahApps.Metro.Controls.DropDownButton]){
+        write-ezlogs ">>>> Control is a dropdown button - clearing existing items"
+        $contextMenu = $Control
+        [void]$Control.items.clear()
       }
       foreach ($item in $items) {
         if($item.Separator){
@@ -2649,7 +2823,7 @@ function Add-WPFMenu {
           }
           if($addchild){
             $null = $control.AddChild($menu_separator)
-          }else{
+          }elseif($contextMenu){
             $null = $contextMenu.Items.Add($menu_separator)
           }
         }else{
@@ -2676,7 +2850,11 @@ function Add-WPFMenu {
             $menuItem.BackGround = $item.BackGround
           }
           $menuItem.IsEnabled = $item.enabled
-          $menuItem.Tag = $control.datacontext
+          if($item.enabled){
+            $menuItem.Opacity = 1
+          }else{
+            $menuItem.Opacity = 0.5
+          }
           if($Item.IsCheckable){
             $menuItem.IsCheckable = $Item.IsCheckable
             if($Item.IsChecked){
@@ -2722,7 +2900,9 @@ function Add-WPFMenu {
             $stream_image = $null
           }
           if(-not [string]::IsNullOrEmpty($item.tag)){
-            $menuItem.tag = $item.tag
+            $menuItem.Tag = $item.tag
+          }else{
+            $menuItem.Tag = $control.datacontext
           }
           if(-not [string]::IsNullOrEmpty($item.Command)){
             $menuItem.RemoveHandler([System.Windows.Controls.Menuitem]::PreviewMouseLeftButtonDownEvent,[System.Windows.RoutedEventHandler]$item.Command)
@@ -2738,7 +2918,7 @@ function Add-WPFMenu {
             }else{
               $BindingProperty = 'IsCheckedProperty'
             }
-            $null = [System.Windows.Data.BindingOperations]::SetBinding($menuItem,[System.Windows.Controls.MenuItem]::$BindingProperty, $Binding) 
+            $null = [System.Windows.Data.BindingOperations]::SetBinding($menuItem,[System.Windows.Controls.MenuItem]::$BindingProperty, $Binding)
           }
           if(-not [string]::IsNullOrEmpty($item.Sub_items)){
             foreach($subitem in $item.Sub_items){
@@ -2784,6 +2964,11 @@ function Add-WPFMenu {
                   $SubmenuItem.Style = $sourceWindow.Window.TryFindResource("DropDownMenuitemStyle")
                 }
                 $SubmenuItem.IsEnabled = $subitem.enabled
+                if($subitem.enabled){
+                  $SubmenuItem.Opacity = 1
+                }else{
+                  $SubmenuItem.Opacity = 0.5
+                }
                 if($SubItem.IsCheckable){
                   $SubmenuItem.IsCheckable = $SubItem.IsCheckable
                   if($SubItem.IsChecked){
@@ -2800,11 +2985,6 @@ function Add-WPFMenu {
                   $SubmenuItem_imagecontrol.Height = "16"
                   $SubmenuItem_imagecontrol.Kind = $Subitem.icon_kind
                   $SubmenuItem_imagecontrol.Foreground = $Subitem.icon_color
-                  if($trayMenu){
-                    #$SubmenuItem_imagecontrol.margin =  "0"
-                    #$SubmenuItem_imagecontrol.width = "15"
-                    #$SubmenuItem_imagecontrol.Height = "15"
-                  }
                   if($Subitem.icon_margin){
                     $SubmenuItem_imagecontrol.margin = $Subitem.icon_margin
                   }      
@@ -2853,9 +3033,6 @@ function Add-WPFMenu {
                     }else{
                       $SubmenuItem_lvl2 = [System.Windows.Controls.MenuItem]::new()
                       $SubmenuItem_lvl2.Header = $SubItem_lvl2.header
-                      if(-not [string]::IsNullOrEmpty($subitem_lvl2.Style)){
-                        $SubmenuItem_lvl2.Style = $sourceWindow.Window.TryFindResource($subitem_lvl2.Style)
-                      }
                       if(-not [string]::IsNullOrEmpty($subitem_lvl2.FontWeight)){
                         $SubmenuItem_lvl2.FontWeight = $subitem_lvl2.FontWeight
                       } 
@@ -2877,6 +3054,11 @@ function Add-WPFMenu {
                         $SubmenuItem_lvl2.BackGround = $subitem_lvl2.BackGround
                       }
                       $SubmenuItem_lvl2.IsEnabled = $subitem_lvl2.enabled
+                      if($subitem_lvl2.enabled){
+                        $SubmenuItem_lvl2.Opacity = 1
+                      }else{
+                        $SubmenuItem_lvl2.Opacity = 0.5
+                      }
                       if(-not [string]::IsNullOrEmpty($subitem_lvl2.Style)){
                         $SubmenuItem_lvl2.Style = $sourceWindow.Window.TryFindResource($subitem_lvl2.Style)
                       }elseif($trayMenu){                  
@@ -2886,6 +3068,7 @@ function Add-WPFMenu {
                       }
                       if($SubItem_lvl2.IsCheckable){
                         $SubmenuItem_lvl2.IsCheckable = $SubItem_lvl2.IsCheckable
+                        $SubmenuItem_lvl2.IsChecked = [bool]$SubItem_lvl2.IsChecked
                       }elseif(-not [string]::IsNullOrEmpty($Subitem_lvl2.icon_kind)){
                         if(-not [string]::IsNullOrEmpty($Subitem_lvl2.iconpack)){
                           $iconpack = "MahApps.Metro.IconPacks.$($Subitem_lvl2.iconpack)"
@@ -2899,12 +3082,7 @@ function Add-WPFMenu {
                         $SubmenuItem_lvl2_imagecontrol.Foreground = $Subitem_lvl2.icon_color
                         if($Subitem_lvl2.icon_margin){
                           $SubmenuItem_lvl2_imagecontrol.margin = $Subitem_lvl2.icon_margin
-                        } 
-                        if($trayMenu){
-                          #$SubmenuItem_lvl2_imagecontrol.width = "15"
-                          #$SubmenuItem_lvl2_imagecontrol.Height = "15" 
-                          #$SubmenuItem_lvl2_imagecontrol.margin = "0"                
-                        }     
+                        }
                         $SubmenuItem_lvl2.icon = $SubmenuItem_lvl2_imagecontrol
                       }elseif(-not [string]::IsNullOrEmpty($Subitem_lvl2.icon_image)){                                   
                         #$SubmenuItem_lvl2_imagecontrol = [System.Drawing.Image]::FromStream([System.IO.MemoryStream]::new([System.IO.File]::ReadAllBytes($Subitem_lvl2.icon_image)))
@@ -2914,16 +3092,16 @@ function Add-WPFMenu {
                         $image.CacheOption = "OnLoad"    
                         $image.StreamSource = $stream_image
                         $image.DecodePixelWidth = '18'
-                        $image.EndInit();        
+                        $image.EndInit()
                         $stream_image.Close()
                         $stream_image.Dispose()
                         $stream_image = $null
-                        $image.Freeze();
+                        $image.Freeze()
                         $SubmenuItem_lvl2_imagecontrol = [System.Windows.Controls.Image]::new()
                         $SubmenuItem_lvl2_imagecontrol.Source = $image
                         if($Subitem_lvl2.icon_margin){
                           $SubmenuItem_lvl2_imagecontrol.margin = $Subitem_lvl2.icon_margin
-                        }      
+                        }
                         $SubmenuItem_lvl2.icon = $SubmenuItem_lvl2_imagecontrol
                       }
                       if(-not [string]::IsNullOrEmpty($subitem_lvl2.binding)){
@@ -2937,6 +3115,104 @@ function Add-WPFMenu {
                         $SubmenuItem_lvl2.RemoveHandler([System.Windows.Controls.Menuitem]::PreviewMouseLeftButtonDownEvent,[System.Windows.RoutedEventHandler]$Subitem_lvl2.Command)
                         $SubmenuItem_lvl2.AddHandler([System.Windows.Controls.Menuitem]::PreviewMouseLeftButtonDownEvent,[System.Windows.RoutedEventHandler]$Subitem_lvl2.Command)               
                       }
+                      if(-not [string]::IsNullOrEmpty($Subitem_lvl2.Sub_items)){
+                        foreach($subitem_lvl3 in $Subitem_lvl2.Sub_items){
+                          if($subitem_lvl3.Separator){
+                            $menu_separator = [System.Windows.Controls.Separator]::new()          
+                            if($trayMenu){
+                              $menu_separator.OpacityMask = $sourceWindow.Window.TryFindResource('SeparatorGradient')
+                              #$menu_separator.BorderThickness = "0"
+                            }else{         
+                              $menu_separator.OpacityMask = $sourceWindow.Window.TryFindResource($subitem_lvl3.Style)
+                            }
+                            $null = $SubmenuItem_lvl2.Items.Add($menu_separator)
+                          }else{
+                            $SubmenuItem_lvl3 = [System.Windows.Controls.MenuItem]::new()
+                            $SubmenuItem_lvl3.Header = $SubItem_lvl3.header
+                            if(-not [string]::IsNullOrEmpty($subitem_lvl3.Style)){
+                              $SubmenuItem_lvl3.Style = $sourceWindow.Window.TryFindResource($subitem_lvl3.Style)
+                            }
+                            if(-not [string]::IsNullOrEmpty($subitem_lvl3.FontWeight)){
+                              $SubmenuItem_lvl3.FontWeight = $subitem_lvl3.FontWeight
+                            } 
+                            if(-not [string]::IsNullOrEmpty($subitem_lvl3.FontStyle)){
+                              $SubmenuItem_lvl3.FontStyle = $subitem_lvl3.FontStyle
+                            }                                   
+                            if(-not [string]::IsNullOrEmpty($subitem_lvl3.ToolTip)){
+                              $SubmenuItem_lvl3.ToolTip = $subitem_lvl3.ToolTip
+                            }
+                            if(-not [string]::IsNullOrEmpty($subitem_lvl3.ForegroundStyle)){
+                              $SubmenuItem_lvl3.Foreground = $sourceWindow.Window.TryFindResource($subitem_lvl3.ForegroundStyle)
+                            }else{
+                              $SubmenuItem_lvl3.Foreground = $subitem_lvl3.color
+                            }
+                            if(-not [string]::IsNullOrEmpty($subitem_lvl2.tag)){
+                              $SubmenuItem_lvl3.tag = $subitem_lvl3.tag
+                            }
+                            if(-not [string]::IsNullOrEmpty($subitem_lvl3.BackGround)){
+                              $SubmenuItem_lvl3.BackGround = $subitem_lvl3.BackGround
+                            }
+                            $SubmenuItem_lvl3.IsEnabled = $subitem_lvl3.enabled
+                            if($subitem_lvl3.enabled){
+                              $SubmenuItem_lvl3.Opacity = 1
+                            }else{
+                              $SubmenuItem_lvl3.Opacity = 0.5
+                            }
+                            if($trayMenu){
+                              $SubmenuItem_lvl3.Style = $sourceWindow.Window.TryFindResource("TrayDropDownMenuitemStyle")
+                            }
+                            if($SubItem_lvl3.IsCheckable){
+                              $SubmenuItem_lvl3.IsCheckable = $SubItem_lvl3.IsCheckable
+                              $SubmenuItem_lvl3.IsChecked = [bool]$SubItem_lvl3.IsChecked
+                            }elseif(-not [string]::IsNullOrEmpty($Subitem_lvl3.icon_kind)){
+                              if(-not [string]::IsNullOrEmpty($Subitem_lvl3.iconpack)){
+                                $iconpack = "MahApps.Metro.IconPacks.$($Subitem_lvl3.iconpack)"
+                              }else{
+                                $iconpack = "MahApps.Metro.IconPacks.PackIconMaterial"
+                              }          
+                              $SubmenuItem_lvl3_imagecontrol = ($iconpack -as [type])::new()
+                              $SubmenuItem_lvl3_imagecontrol.width = "16"
+                              $SubmenuItem_lvl3_imagecontrol.Height = "16"
+                              $SubmenuItem_lvl3_imagecontrol.Kind = $Subitem_lvl3.icon_kind
+                              $SubmenuItem_lvl3_imagecontrol.Foreground = $Subitem_lvl3.icon_color
+                              if($Subitem_lvl3.icon_margin){
+                                $SubmenuItem_lvl3_imagecontrol.margin = $Subitem_lvl3.icon_margin
+                              }      
+                              $SubmenuItem_lvl3.icon = $SubmenuItem_lvl3_imagecontrol
+                            }elseif(-not [string]::IsNullOrEmpty($Subitem_lvl3.icon_image)){                                   
+                              $stream_image = [System.IO.File]::OpenRead($Subitem_lvl3.icon_image) 
+                              $image = [System.Windows.Media.Imaging.BitmapImage]::new()
+                              $image.BeginInit()
+                              $image.CacheOption = "OnLoad"    
+                              $image.StreamSource = $stream_image
+                              $image.DecodePixelWidth = '18'
+                              $image.EndInit()      
+                              $stream_image.Close()
+                              $stream_image.Dispose()
+                              $stream_image = $null
+                              $image.Freeze()
+                              $SubmenuItem_lvl3_imagecontrol = [System.Windows.Controls.Image]::new()
+                              $SubmenuItem_lvl3_imagecontrol.Source = $image
+                              if($Subitem_lvl3.icon_margin){
+                                $SubmenuItem_lvl3_imagecontrol.margin = $Subitem_lvl3.icon_margin
+                              }      
+                              $SubmenuItem_lvl3.icon = $SubmenuItem_lvl3_imagecontrol
+                            }
+                            if(-not [string]::IsNullOrEmpty($subitem_lvl3.binding)){
+                              $Binding = [System.Windows.Data.Binding]::new()
+                              $Binding.Source = $subitem_lvl3.binding
+                              $Binding.Path = $subitem_lvl3.binding_property_path
+                              $Binding.Mode = $subitem_lvl3.binding_mode
+                              $null = [System.Windows.Data.BindingOperations]::SetBinding($SubmenuItem_lvl3,[System.Windows.Controls.MenuItem]::IsCheckedProperty, $Binding) 
+                            } 
+                            if(-not [string]::IsNullOrEmpty($Subitem_lvl3.Command)){
+                              $SubmenuItem_lvl3.RemoveHandler([System.Windows.Controls.Menuitem]::PreviewMouseLeftButtonDownEvent,[System.Windows.RoutedEventHandler]$Subitem_lvl3.Command)
+                              $SubmenuItem_lvl3.AddHandler([System.Windows.Controls.Menuitem]::PreviewMouseLeftButtonDownEvent,[System.Windows.RoutedEventHandler]$Subitem_lvl3.Command)               
+                            }
+                            $null = $SubmenuItem_lvl2.Items.Add($SubmenuItem_lvl3)
+                          }
+                        }
+                      }
                       $null = $SubmenuItem.Items.Add($SubmenuItem_lvl2)
                     }
                   }
@@ -2947,7 +3223,7 @@ function Add-WPFMenu {
           }
           if($addchild){
             $null = $control.AddChild($menuItem)
-          }else{
+          }elseif($contextMenu){
             $null = $contextMenu.Items.Add($menuItem)
           }        
         }

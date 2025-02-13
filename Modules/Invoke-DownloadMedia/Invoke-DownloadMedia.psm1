@@ -113,15 +113,15 @@ function Invoke-DownloadMedia{
     if($ffmpeg_Path -notin $envpaths2){
       write-ezlogs ">>>> Adding ffmpeg to user enviroment path $ffmpeg_Path"
       $env:path += ";$ffmpeg_Path"
-<#      if($ffmpeg_Path -notin $envpaths){
-        [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$ffmpeg_Path",[EnvironmentVariableTarget]::User)
+      <#      if($ffmpeg_Path -notin $envpaths){
+          [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$ffmpeg_Path",[EnvironmentVariableTarget]::User)
       }#>
     }
     if($youtubedl_path -notin $envpaths2){
       write-ezlogs ">>>> Adding ytdlp to user enviroment path $youtubedl_path"
       $env:path += ";$youtubedl_path"
-<#      if($youtubedl_path -notin $envpaths){
-        [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$youtubedl_path",[EnvironmentVariableTarget]::User)
+      <#      if($youtubedl_path -notin $envpaths){
+          [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$youtubedl_path",[EnvironmentVariableTarget]::User)
       }#>
     }
     $yt_dlp_tempfile = "$($thisApp.config.Temp_folder)\yt_dlp.log"     
@@ -160,14 +160,15 @@ function Invoke-DownloadMedia{
       write-ezlogs " | Getting best quality video and audio links from yt_dlp" -showtime 
       if($youtube_id){
         $sponserblock = "--sponsorblock-remove all"
-        $format = "bestvideo+bestaudio"
+        #$format = "bestvideo+bestaudio"
+        $format = "bv+ba/b"
         $media_Link = "https://www.youtube.com/watch/$youtube_id"
       }else{
         $sponserblock = $Null
         $format = "bestaudio"
       }
       if(-not [string]::IsNullOrEmpty($thisApp.config.Youtube_Browser)){
-        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f bestvideo+bestaudio $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --cookies-from-browser $($thisApp.config.Youtube_Browser) --audio-quality 0 --ffmpeg-location `"$ffmpeg_Path`" --extractor-args `"youtube:player_client=default,ios`" --embed-thumbnail --add-metadata --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
+        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f bv+ba/b $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --cookies-from-browser $($thisApp.config.Youtube_Browser) --audio-quality 0 --ffmpeg-location `"$ffmpeg_Path`" --extractor-args `"youtube:player_client=default,ios`" --embed-thumbnail --add-metadata --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
       }else{
         $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f $format $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --audio-quality 0 --embed-thumbnail --ffmpeg-location `"$ffmpeg_Path`" --add-metadata --extractor-args `"youtube:player_client=default,ios`" --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
       }  
@@ -685,16 +686,6 @@ function Invoke-DownloadMedia{
           }
         }
         Update-Notifications -id $notification_id -Level $level -Message $message -VerboseLog -thisApp $thisapp -synchash $synchash -Open_Flyout
-        $startapp = Get-AllStartApps "*$($thisApp.Config.App_name)*"
-        if($startapp){
-          $appid = $startapp.AppID | select -last 1
-        }elseif(Get-AllStartApps VLC*){
-          $startapp = Get-AllStartApps VLC*
-          $appid = $startapp.AppID | select -last 1
-        }else{
-          $startapp = Get-AllStartApps '*Windows Media Player'
-          $appid = $startapp.AppID | select -last 1
-        } 
         if($cached_image){
           $applogo = $image_Cache_path 
         }else{
@@ -709,7 +700,22 @@ function Invoke-DownloadMedia{
           $source = 'Local Media'
         } 
         $Message = "$message`nSource : $source"
-        New-BurntToastNotification -AppID $appid -Text $Message -AppLogo $applogo
+        if($thisApp.Config.Installed_AppID){
+          $appid = $thisApp.Config.Installed_AppID
+        }else{
+          $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
+          if($appid){
+            $thisapp.config.Installed_AppID = $appid
+          }else{
+            $appid = (Get-AllStartApps -Name 'Powershell').AppID
+          }
+        }   
+        $Toast = @{
+          AppID = $appid
+          Text = $Message
+          AppLogo = $applogo
+        }
+        Update-MainWindow -synchash $synchash -thisApp $thisApp -Toast $Toast
       }catch{
         write-ezlogs "An exception occurred attempting to generate the notification balloon - image: $uri" -showtime -catcherror $_
       }     

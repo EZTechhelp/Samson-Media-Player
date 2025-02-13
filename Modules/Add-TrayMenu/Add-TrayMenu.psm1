@@ -258,18 +258,20 @@ function Add-TrayMenu
             try{         
               if($Sender.isChecked){
                 if($synchash.MiniPlayer_Viewer.isVisible -and $synchash.StayOnTopButton_ToggleButton.ToolTip -eq 'Stay On Top'){
-                  write-ezlogs "StayOnTopButton_ToggleButton checked"
+                  write-ezlogs ">>>> Enabling TopMost for Miniplayer window"
                   $synchash.MiniPlayer_Viewer.Topmost = $true
-                  $thisApp.Config.Mini_Always_On_Top = $true 
+                  $thisApp.Config.Mini_Always_On_Top = $true
+                  Set-WindowTopMost -thisApp $thisApp -Window $synchash.MiniPlayer_Viewer -Force
                 }elseif($synchash.TrayPlayer.isVisible){
                   $synchash.TrayPlayer.CloseTrayPopup()
                   Open-MiniPlayer -thisApp $thisApp -synchash $synchash
                 } 
               }else{
                 if($synchash.MiniPlayer_Viewer.isVisible -and $synchash.StayOnTopButton_ToggleButton.ToolTip -eq 'Stay On Top'){
-                  write-ezlogs "StayOnTopButton_ToggleButton Unchecked"
+                  write-ezlogs ">>>> Disabling TopMost for Miniplayer window"
                   $synchash.MiniPlayer_Viewer.Topmost = $false
                   $thisApp.Config.Mini_Always_On_Top = $false
+                  Set-WindowTopMost -thisApp $thisApp -Window $synchash.MiniPlayer_Viewer -Disable
                 }elseif($synchash.Window.isVisible -and $synchash.TrayPlayer.isVisible){
                   $synchash.TrayPlayer.CloseTrayPopup()
                   Open-MiniPlayer -thisApp $thisApp -synchash $synchash
