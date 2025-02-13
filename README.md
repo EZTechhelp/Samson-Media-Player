@@ -4,7 +4,7 @@
 ![Platform Support](https://img.shields.io/badge/platform-Windows-blue)
 ![Architecture](https://img.shields.io/badge/architecture-x86%20%7C%20x64-yellow)
 ![License](https://img.shields.io/github/license/EZTechhelp/Samson-Media-Player)
-![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FEZTechhelp%2FSamson-Media-Player%2Feb9491b600a13969428e0ab3a483ce9798534f9e%2Fsrc%2FLauncher%2Fobj%2Fproject.assets.json&query=%24.project.version&label=Version)
+![Dynamic JSON Badge](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FEZTechhelp%2FSamson-Media-Player%2Frefs%2Fheads%2FSamson%2Fsrc%2FLauncher%2Fobj%2Fproject.assets.json&query=%24.project.version&label=Version)
 
 <p align="center">
   <img Height="200" src="/Images/Samson_Logo_Splash.png" />
