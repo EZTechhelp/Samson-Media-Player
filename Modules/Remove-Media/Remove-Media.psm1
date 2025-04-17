@@ -60,12 +60,11 @@ function Remove-Media {
       )
       try{
         foreach($Media in $media_toRemove){
-          #write-ezlogs "#### Removing Media $($Media.title) - $($Media.id) ####" -showtime -color cyan -linesbefore 1
           if($Media.Source -eq 'Local'){       
             $refreshLocal = $true        
             #$all_media_profile = $synchash.All_Local_Media
             if($synchash.All_Local_Media.IsFixedSize){
-              #write-ezlogs " | All_local_media is a fixed size, recasting to generic list" -warning
+              #write-ezlogs "| All_local_media is a fixed size, recasting to generic list" -warning
               $synchash.All_Local_Media = [System.Collections.Generic.List[object]]::new($synchash.All_Local_Media)
             }
             if($synchash.All_Local_Media){
@@ -73,7 +72,6 @@ function Remove-Media {
               if($index -ne -1){                 
                 $Collectionitem_toremove = $synchash.All_Local_Media[$index]                          
               }
-              #write-ezlogs ">>>> Getting local media from All_Local_Media - $($Collectionitem_toremove | out-string)"
             }                       
             foreach($collection in $Collectionitem_toremove){   
               if($synchash.All_Local_Media){
@@ -85,7 +83,7 @@ function Remove-Media {
           if($Media.url -match 'spotify\:' -or $Media.Source -eq 'Spotify'){
             $refreshSpotify = $true
             if($synchash.All_Spotify_Media.IsFixedSize){
-              write-ezlogs " | All_Spotify_Media is a fixed size, recasting to generic list" -warning
+              write-ezlogs "| All_Spotify_Media is a fixed size, recasting to generic list" -warning
               $synchash.All_Spotify_Media = [System.Collections.Generic.List[object]]::new($synchash.All_Spotify_Media)
             }
             if($synchash.All_Spotify_Media){
@@ -93,7 +91,6 @@ function Remove-Media {
               if($index -ne -1){                 
                 $Collectionitem_toremove = $synchash.All_Spotify_Media[$index]
               }
-              #write-ezlogs ">>>> Getting Spotify media from All_Spotify_Media - $($Collectionitem_toremove | out-string)"
             } 
             foreach($collection in $Collectionitem_toremove){
               if($synchash.All_Spotify_Media){
@@ -106,7 +103,7 @@ function Remove-Media {
           if($Media.Source -eq 'Youtube' -or $Media.Source -eq 'YoutubePlaylist' -or $media.url -match 'youtube\.com' -or $media.url -match 'youtu\.be'){         
             $refreshYoutube = $true
             if($synchash.All_Youtube_Media.IsFixedSize){
-              write-ezlogs " | All_Youtube_media is a fixed size, recasting to generic list" -warning
+              write-ezlogs "| All_Youtube_media is a fixed size, recasting to generic list" -warning
               $synchash.All_Youtube_Media = [System.Collections.Generic.List[object]]::new($synchash.All_Youtube_Media)
             }
             if($synchash.All_Youtube_Media){
@@ -127,7 +124,7 @@ function Remove-Media {
           if($Media.Source -eq 'Twitch'){       
             $refreshTwitch = $true
             if($synchash.All_Twitch_Media.IsFixedSize){
-              write-ezlogs " | All_Twitch_media is a fixed size, recasting to generic list" -warning
+              write-ezlogs "| All_Twitch_media is a fixed size, recasting to generic list" -warning
               $synchash.All_Twitch_Media = [System.Collections.Generic.List[object]]::new($synchash.All_Twitch_Media)
             }
             if($synchash.All_Twitch_Media){
@@ -146,7 +143,7 @@ function Remove-Media {
             $all_media_profile = $synchash.All_Twitch_Media               
           }
           if($thisapp.config.Current_Playlist.values -contains $Media.id){
-            write-ezlogs " | Removing $($Media.id) from Play Queue" -showtime
+            write-ezlogs "| Removing $($Media.id) from Play Queue" -showtime
             $index_toremove = $thisapp.config.Current_Playlist.GetEnumerator() | Where-Object {$_.value -eq $Media.id} | Select-Object * -ExpandProperty key
             $null = $thisapp.config.Current_Playlist.Remove($index_toremove)                  
           }
@@ -170,7 +167,7 @@ function Remove-Media {
               }
               if(-not [string]::IsNullOrEmpty($index_toRemove)){
                 foreach($index in $index_toRemove){
-                  write-ezlogs " | Removing track $($Media.id) - index $($index) from playlist $($Playlist.name)" -showtime
+                  write-ezlogs "| Removing track $($Media.id) - index $($index) from playlist $($Playlist.name)" -showtime
                   $null = $Playlist.Playlist_tracks.Remove($index)
                 }
               }
@@ -206,7 +203,7 @@ function Remove-Media {
         }  
         if($refreshLocal){
           try{ 
-            write-ezlogs " | ProfileManager_Queue.IsEmpty: $($synchash.ProfileManager_Queue.IsEmpty)"
+            write-ezlogs "| ProfileManager_Queue.IsEmpty: $($synchash.ProfileManager_Queue.IsEmpty)"
             if($synchash.All_Local_Media -and ($synchash.ProfileManager_Queue.IsEmpty -and $update_Library)){
               write-ezlogs ">>>> Exporting All Media Profile cache to file $($AllMedia_Profile_File_Path)" -showtime -color cyan -logtype LocalMedia 
               $synchash.All_local_Media = $synchash.All_Local_Media | Sort-Object -Property 'Artist','Track'

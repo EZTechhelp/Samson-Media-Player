@@ -312,7 +312,6 @@ function Start-SpotifyMedia{
             $synchash.Current_playing_media = $media
             $synchash.Last_Played_title = $Name
             Set-SpotifyWebPlayerTimer -synchash $synchash -thisApp $thisApp
-            #$synchash.Spotify_WebPlayer_timer.start()    
             Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'Now_Playing_Label' -Property 'Visibility' -value 'Visible'
             Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'Now_Playing_Label' -Property 'DataContext' -value "PLAYING"   
             Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'Now_Playing_Artist_Label' -Property 'DataContext' -value "$($Artist)"
@@ -323,82 +322,6 @@ function Start-SpotifyMedia{
                 $capture_device = $allDevices | Where-Object {$_.friendlyname -match 'CABLE Input \(VB-Audio Virtual Cable\)'}
                 if($capture_device){
                   Update-LibVLC -thisApp $thisApp -synchash $synchash -force -ForceVisualizations:$($thisApp.Config.Use_Visualizations)
-  <#                $vlcArgs = [System.Collections.Generic.List[String]]::new()
-                  [void]$vlcArgs.add('--file-logging')
-                  [void]$vlcArgs.add("--logfile=$($thisapp.config.Vlc_Log_file)")
-                  [void]$vlcArgs.add("--log-verbose=$($thisapp.config.Vlc_Verbose_logging)")
-                  [void]$vlcArgs.add("--osd")
-                  if($Enable_normalizer){
-                    #$vlc_options = "--audio-filter=normalizer"
-                    $null = $vlcArgs.add("--audio-filter=normalizer")
-                  }
-                  if($thisapp.config.Enable_EQ2Pass){
-                    $null = $vlcArgs.add("--equalizer-2pass")
-                  }else{
-                    $vlc_eq2pass = $null
-                  }
-                  if($thisApp.Config.Use_Visualizations){ 
-                    [void]$vlcArgs.add("--video-on-top")
-                    [void]$vlcArgs.add("--spect-show-original")
-                    if([system.io.Directory]::Exists("$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop")){
-                      [void]$vlcArgs.add("--audio-visual=projectm")
-                      [void]$vlcArgs.add("--projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`"")          
-                      $Screen = [System.Windows.Forms.Screen]::PrimaryScreen
-                      [void]$vlcArgs.add("--projectm-width=$($Screen.Bounds.Width)")
-                      [void]$vlcArgs.add("--projectm-height=$($Screen.Bounds.Height)")   
-                      [void]$vlcArgs.add("--no-video")   
-                      [void]$vlcArgs.add("--projectm-meshx=$($Screen.Bounds.Width)")
-                      [void]$vlcArgs.add("--projectm-meshy=$($Screen.Bounds.Height)")
-                      [void]$vlcArgs.add("--effect-list=spectrum")           
-                      write-ezlogs "| Enabling ProjectM Visualizations: --projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`" --projectm-width=$($Screen.Bounds.Width) --projectm-height=$($Screen.Bounds.Height)" -Warning -logtype Libvlc
-                    }elseif($thisApp.Config.Current_Visualization -eq 'Spectrum'){
-                      #$effect = "--effect-list=spectrum"             
-                      [void]$vlcArgs.add("--audio-visual=Visual")
-                      [void]$vlcArgs.add("--effect-list=spectrum")
-                    }else{
-                      #$effect = "--effect-list=spectrum"
-                      [void]$vlcArgs.add("--audio-visual=$($thisApp.Config.Current_Visualization)")
-                      [void]$vlcArgs.add("--effect-list=spectrum")
-                    }                                                                      
-                  }
-                  if(-not [string]::IsNullOrEmpty($thisapp.config.vlc_Arguments)){
-                    try{
-                      $thisapp.config.vlc_Arguments -split ',' | & { process {                 
-                          if([regex]::Escape($_) -match '--' -and $vlcArgs -notcontains $_){
-                            write-ezlogs "| Adding custom Libvlc option: $($_)" -loglevel 2 -logtype Libvlc
-                            [void]$vlcArgs.add("$($_)")
-                          }else{
-                            write-ezlogs "Cannot add custom libvlc option $($_) - it does not meet the required format or is already added!" -warning -loglevel 2 -logtype Libvlc
-                          }
-                      }}
-                    }catch{
-                      write-ezlogs "[Start-SpotifyMedia] An exception occurred processing custom VLC arguments" -catcherror $_
-                    }          
-                  }
-                  [String[]]$libvlc_arguments = $vlcArgs | & { process {
-                      if($thisApp.Config.Dev_mode){write-ezlogs "| Applying Libvlc option: $($_)" -loglevel 2 -logtype Libvlc -Dev_mode}
-                      if([regex]::Escape($_) -match '--'){
-                        $_
-                      }else{
-                        write-ezlogs "Cannot apply libvlc option $($_) - it does not meet the required format!" -warning -loglevel 2 -logtype Libvlc
-                      }
-                  }}
-                  if($thisApp.Config.Libvlc_Version -eq '4'){
-                    $synchash.libvlc = [LibVLCSharp.LibVLC]::new($libvlc_arguments) 
-                  }else{
-                    $synchash.libvlc = [LibVLCSharp.Shared.LibVLC]::new($libvlc_arguments) 
-                  }
-                  $synchash.libvlc.SetUserAgent("$($thisApp.Config.App_Name) Media Player - WebPlayer EQ","HTTP/User/Agent")
-                  if($thisApp.Config.Installed_AppID){
-                    $appid = $thisApp.Config.Installed_AppID
-                  }else{
-                    $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID 
-                    $thisApp.Config.Installed_AppID = $appid
-                  }
-                  if($appid -and $synchash.libvlc){
-                    $synchash.libvlc.SetAppId($appid,$thisApp.Config.App_Version,"$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico")
-                  }
-                  Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchash -start -wait -Startlibvlc#>
                 }else{
                   write-ezlogs "Unable to find required 'CABLE Input (VB-Audio Virtual Cable)' audio device - cannot enable EQ for Webplayer!" -AlertUI -Warning
                 }      
@@ -429,7 +352,6 @@ function Start-SpotifyMedia{
                   }
                 }             
                 $Spotify_app = (Get-appxpackage 'Spotify*')
-                #$Spotify_app = $installed_apps | where {$_.'Display Name' -eq 'Spotify' -or $_.'Display Name' -eq 'Spotify Music'} | select -Unique
                 if($Spotify_app){
                   $Spotify_Path = "$($Spotify_app.InstallLocation)\Spotify.exe"
                 }
@@ -941,14 +863,14 @@ function Start-SpotifyMedia{
               } 
               if($thisapp.config.Use_Spicetify -and $synchash.Spicetify.is_playing -and $netstat){
                 write-ezlogs ">>>> Spotify with Spicetify is now playing: $($synchash.Spicetify.title) - $($synchash.Spicetify.ARTIST)"
-                write-ezlogs " | Setting playback volume (http://127.0.0.1:8974/SETVOLUME?$($thisApp.Config.Media_Volume)) for Spotify to $($thisApp.Config.Media_Volume)"        
+                write-ezlogs "| Setting playback volume (http://127.0.0.1:8974/SETVOLUME?$($thisApp.Config.Media_Volume)) for Spotify to $($thisApp.Config.Media_Volume)"        
                 Invoke-RestMethod -Uri "http://127.0.0.1:8974/SETVOLUME?$($thisApp.Config.Media_Volume)" -UseBasicParsing 
                 if($synchash.Spicetify.is_paused){
                   write-ezlogs "Spotify is paused, Unpausing Spotify with command http://127.0.0.1:8974/PLAY" -showtime -warning
                   Invoke-RestMethod -Uri 'http://127.0.0.1:8974/PLAY' -UseBasicParsing  
                 }         
               }else{
-                write-ezlogs " | Setting playback volume for Spotify to $($thisApp.Config.Media_Volume)"
+                write-ezlogs "| Setting playback volume for Spotify to $($thisApp.Config.Media_Volume)"
                 Set-PlaybackVolume -VolumePercent $($thisApp.Config.Media_Volume) -ApplicationName $thisapp.config.App_Name
               }
             }catch{

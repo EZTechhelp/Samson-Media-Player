@@ -257,7 +257,7 @@ function Stop-Media
       $synchashWeak.Target.PlayButton_ToggleButton.Uid = $null
     }
     if($synchashWeak.Target.MiniPlayButton_ToggleButton){
-      $synchashWeak.Target.MiniPlayButton_ToggleButton.uid = $false
+      $synchashWeak.Target.MiniPlayButton_ToggleButton.uid = $null
     }
     if($synchashWeak.Target.MediaPlayer_Slider){
       $synchashWeak.Target.MediaPlayer_Slider.value = 0

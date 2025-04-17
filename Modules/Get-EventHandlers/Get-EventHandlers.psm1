@@ -52,7 +52,7 @@ function Get-EventHandlers {
         $RoutedEventHandlers = [System.Windows.RoutedEventHandlerInfo[]]$getRoutedEventHandlers.Invoke($eventHandlersStore, $RoutedEvent)
         if($RemoveHandlers){
           foreach ($RoutedEventHandlerInfo in $RoutedEventHandlers) {
-            if($VerboseLog){write-ezlogs ">>>> Removing routed event: $($RoutedEvent.name) - for element: $($Element) with name: $($Element.name)"}
+            if($VerboseLog){write-ezlogs ">>>> Removing routed event: $($RoutedEvent.name) - for element: $($Element) with name: $($Element.name)" -Dev_mode:$VerboseLog}
             $Element.RemoveHandler($RoutedEvent,$RoutedEventHandlerInfo.Handler)
           }
           $RoutedEventHandlers = $Null

@@ -104,11 +104,11 @@ function Get-GlobalHotKeys{
                   $thisApp.Config.Media_Volume = ($thisApp.Config.Media_Volume + 1)
                 }
                 if($synchash.Volume_Slider -and $synchash.Volume_Slider.value -ne $thisApp.Config.Media_Volume){
-                  write-ezlogs " | Increasing volume by 1: $($thisApp.Config.Media_Volume)" -showtime
+                  write-ezlogs "| Increasing volume by 1: $($thisApp.Config.Media_Volume)" -showtime
                   $synchash.Volume_Slider.value = $thisApp.Config.Media_Volume  
                 }       
               }else{
-                write-ezlogs " | Volume is already at max $($thisApp.Config.Media_Volume)" -showtime -warning
+                write-ezlogs "| Volume is already at max $($thisApp.Config.Media_Volume)" -showtime -warning
               }
             }elseif($args -eq $synchash.VolDownhotkey){
               write-ezlogs ">>>> Global VolDownhotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" -showtime    
@@ -119,11 +119,11 @@ function Get-GlobalHotKeys{
                   $thisApp.Config.Media_Volume = ($thisApp.Config.Media_Volume - 1)
                 }
                 if($synchash.Volume_Slider -and $synchash.Volume_Slider.value -ne $thisApp.Config.Media_Volume){
-                  write-ezlogs " | Decreasing volume by 1: $($thisApp.Config.Media_Volume)" -showtime
+                  write-ezlogs "| Decreasing volume by 1: $($thisApp.Config.Media_Volume)" -showtime
                   $synchash.Volume_Slider.value = $thisApp.Config.Media_Volume
                 }                            
               }else{
-                write-ezlogs " | Volume is already at lowest $($thisApp.Config.Media_Volume)" -showtime -warning
+                write-ezlogs "| Volume is already at lowest $($thisApp.Config.Media_Volume)" -showtime -warning
               }
             }elseif($args -eq $synchash.VolMutehotkey){
               write-ezlogs ">>>> Global VolMutehotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" -showtime  

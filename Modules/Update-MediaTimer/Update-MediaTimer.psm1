@@ -165,7 +165,6 @@ function Update-MediaTimer{
             $hrs = '0'
           }
           $current_Length = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
-          #$synchashWeak.Target.Media_Length_Label.text = $current_Length + ' / ' +  "$($total_time)"
           if($synchashWeak.Target.VideoView_Current_Length_TextBox){
             $synchashWeak.Target.VideoView_Current_Length_TextBox.text = $current_Length
           }
@@ -183,22 +182,21 @@ function Update-MediaTimer{
           }          
           if(-not [string]::IsNullOrEmpty($synchashWeak.Target.MediaPlayer_TotalDuration) -and $synchashWeak.Target.MediaPlayer_TotalDuration -ne "0:0:0"){
             if(!$synchashWeak.Target.MediaPlayer_Slider.isEnabled){
-              write-ezlogs " | Enabling MediaPlayer_slider" -showtime
+              write-ezlogs "| Enabling MediaPlayer_slider" -showtime
               $synchashWeak.Target.MediaPlayer_Slider.isEnabled = $true
             }
           }elseif($synchashWeak.Target.MediaPlayer_Slider.isEnabled){
-            write-ezlogs " | Disabling MediaPlayer_slider" -showtime -color cyan
+            write-ezlogs "| Disabling MediaPlayer_slider" -showtime -color cyan
             $synchashWeak.Target.MediaPlayer_Slider.isEnabled = $false
           }  
           if($synchashWeak.Target.MediaPlayer_TotalDuration -and $synchashWeak.Target.MediaPlayer_Slider.Maximum -ne $synchashWeak.Target.MediaPlayer_TotalDuration){
-            write-ezlogs " | Setting MediaPlayer_Slider max to $($synchashWeak.Target.MediaPlayer_TotalDuration)" -showtime
+            write-ezlogs "| Setting MediaPlayer_Slider max to $($synchashWeak.Target.MediaPlayer_TotalDuration)" -showtime
             $synchashWeak.Target.MediaPlayer_Slider.Maximum = $synchashWeak.Target.MediaPlayer_TotalDuration
           } 
           if($synchashWeak.Target.MediaPlayer_Slider.isEnabled){
             if($thisApp.Config.Remember_Playback_Progress){
               $synchashWeak.Target.Current_playing_media.Current_Progress_Secs = $synchashWeak.Target.VLC.Time
               $thisApp.Config.Current_Playing_Media = $synchashWeak.Target.Current_playing_media
-              #$thisApp.Config.Current_playing_media.Current_Progress_Secs = $synchashWeak.Target.VLC.Time
             }
             if(!$synchashWeak.Target.MediaPlayer_Slider.IsMouseOver -and !$synchashWeak.Target.VideoView_Progress_Slider.IsMouseOver -and !$synchashWeak.Target.Mini_Progress_Slider.IsMouseOver){
               $synchashWeak.Target.MediaPlayer_Slider.Value = $([timespan]::FromMilliseconds($synchashWeak.Target.VLC.Time)).TotalSeconds
@@ -207,7 +205,6 @@ function Update-MediaTimer{
               }       
             }else{
               if($synchashWeak.Target.MediaPlayer_Slider){
-                #$synchashWeak.Target.MediaPlayer_Slider.ToolTip = $synchashWeak.Target.Media_Length_Label.content
                 $synchashWeak.Target.MediaPlayer_Slider.ToolTip = $current_Length + ' / ' +  "$($total_time)"
               }
               if($synchashWeak.Target.VideoView_Progress_Slider){
@@ -228,6 +225,9 @@ function Update-MediaTimer{
           if(!$synchashWeak.Target.PlayButton_ToggleButton.isChecked){
             $synchashWeak.Target.PlayButton_ToggleButton.isChecked = $true
           } 
+          if($synchashWeak.Target.MiniPlayButton_ToggleButton.Uid -eq 'IsPaused'){
+            $synchashWeak.Target.MiniPlayButton_ToggleButton.uid = $null
+          }
           if($thisApp.Config.Libvlc_Version -eq '4'){
             $VideoMarque_Enabled = $synchashWeak.Target.VLC.MarqueeInt([LibVLCSharp.VideoMarqueeOption]::Enable)
           }else{
@@ -245,7 +245,6 @@ function Update-MediaTimer{
             $synchashWeak.Target.VideoView_ViewCount_Label.Visibility = 'Hidden'         
           }       
           if($thisApp.Config.Enable_Marquee){
-            #if($thisApp.Config.Verbose_logging){write-ezlogs " | Twitch Viewer count: $($synchashWeak.Target.streamlink.viewer_count)" -showtime -color cyan}
             if($synchashWeak.Target.streamlink.viewer_count){
               #TODO: Temp hack, need to refactor or remove
               if($synchashWeak.Target.vlc_Marquee_viewcount_set -ne $synchashWeak.Target.streamlink.viewer_count){
@@ -469,6 +468,9 @@ function Update-MediaTimer{
           if(!$synchashWeak.Target.PlayButton_ToggleButton.isChecked){
             $synchashWeak.Target.PlayButton_ToggleButton.isChecked = $true
           }  
+          if($synchashWeak.Target.MiniPlayButton_ToggleButton.Uid -eq 'IsPaused'){
+            $synchashWeak.Target.MiniPlayButton_ToggleButton.uid = $null
+          }
           if($Current_playlist_items){
             $queue_index = $Current_playlist_items.id.indexof($synchashWeak.Target.Current_playing_media.id)
             if($queue_index -ne -1){

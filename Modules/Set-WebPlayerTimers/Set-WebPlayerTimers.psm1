@@ -911,7 +911,9 @@ function Set-YoutubeWebPlayerTimer
           try{    
             $synchash = $synchash
             $thisApp = $thisApp
-            $synchash.MediaView_Image.Source = $Null  
+            if($synchash.MediaView_Image){
+              $synchash.MediaView_Image.Source = $Null  
+            }
             if($synchash.FullScreen_Player_Button){
               $synchash.FullScreen_Player_Button.isEnabled = $false
             }             
@@ -938,14 +940,14 @@ function Set-YoutubeWebPlayerTimer
                 $synchash.VideoViewAirControl = $null
               }
               if($synchash.VideoViewTransparentBackground -and !$synchash.VideoViewAirControl){
-                Write-EZLogs '>>>> Creating new Airhack control for VideoViewTransparentBackground (front) and YoutubeWebView2 (Back)' -showtime
+                Write-EZLogs '>>>> Creating new Airhack control for VideoViewTransparentBackground (front) and YoutubeWebView2 (Back)' -showtime -Dev_mode
                 $synchash.VideoViewAirControl = [airhack.aircontrol]::new()
                 $synchash.VideoViewAirControl.MinHeight = 1
                 $synchash.VideoViewAirControl.MinWidth = 1
                 #$synchash.VideoViewAirControl.SetValue([System.Windows.Controls.Grid]::RowProperty,0)
                 $synchash.VideoViewAirControl.SetValue([System.Windows.Controls.Grid]::RowSpanProperty,3)
                 if($synchash.VideoView_Overlay_Grid.Children -contains $synchash.VideoViewTransparentBackground){
-                  write-ezlogs "| Removing TrayPlayerQueue_FlyoutControl from VideoViewTransparentBackground"
+                  write-ezlogs "| Removing TrayPlayerQueue_FlyoutControl from VideoViewTransparentBackground" -Dev_mode
                   $synchash.VideoView_Overlay_Grid.Children.Remove($synchash.VideoViewTransparentBackground)
                 }
                 $synchash.VideoViewAirControl.Front = $synchash.VideoViewTransparentBackground
@@ -954,7 +956,7 @@ function Set-YoutubeWebPlayerTimer
                 $synchash.YoutubeWebView2.Visibility="Visible"
               }
               if($synchash.VideoViewAirControl -and $synchash.VLC_Grid.children -notcontains $synchash.VideoViewAirControl){
-                write-ezlogs "| Adding Youtube VideoViewAirControl to VLC_Grid" -showtime
+                write-ezlogs "| Adding Youtube VideoViewAirControl to VLC_Grid" -showtime -Dev_mode
                 #$synchash.VideoViewAirStackPanel = [System.Windows.Controls.VirtualizingStackPanel]::new()
                 #[void]$synchash.VideoViewAirStackPanel.AddChild($synchash.VideoViewAirControl)
                 [void]$synchash.VLC_Grid.AddChild($synchash.VideoViewAirControl)
@@ -969,10 +971,10 @@ function Set-YoutubeWebPlayerTimer
                 $synchash.TrayPlayerQueueFlyout.Remove_IsOpenChanged($synchash.TrayPlayerQueueFlyoutScriptBlock)
                 $synchash.TrayPlayerQueueFlyout.add_IsOpenChanged($synchash.TrayPlayerQueueFlyoutScriptBlock)
                 if($synchash.TrayPlayerQueueFlyout.isOpen){
-                  write-ezlogs "| TrayPlayerQueueFlyout is open, setting VideoViewTransparentBackground Maxheight and MaxWidth"
+                  write-ezlogs "| TrayPlayerQueueFlyout is open, setting VideoViewTransparentBackground Maxheight and MaxWidth" -Dev_mode
                   $synchash.VideoViewTransparentBackground.MaxHeight = [Double]::PositiveInfinity
                 }else{
-                  write-ezlogs "| TrayPlayerQueueFlyout is closed, setting VideoViewTransparentBackground Maxheight and MaxWidth to 100"
+                  write-ezlogs "| TrayPlayerQueueFlyout is closed, setting VideoViewTransparentBackground Maxheight and MaxWidth to 100" -Dev_mode
                   $synchash.VideoViewTransparentBackground.MaxHeight = 60
                   #$synchash.VideoViewTransparentBackground.MaxWidth = 400
                 }
@@ -980,16 +982,16 @@ function Set-YoutubeWebPlayerTimer
                   $synchash.VideoViewAirControl.front.parent.parent.MinHeight = 1
                   $synchash.VideoViewAirControl.front.parent.parent.MinWidth = 1
                   if($synchash.MediaViewAnchorable.isFloating -and $synchash.VideoViewFloat.isVisible){
-                    write-ezlogs "| Setting VideoViewAirControl window owner to VideoViewFloat" -showtime
+                    write-ezlogs "| Setting VideoViewAirControl window owner to VideoViewFloat" -showtime -Dev_mode
                     $synchash.VideoViewAirControl.front.parent.parent.Owner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($synchash.VideoViewFloat)
                   }elseif($synchash.VideoViewAirControl.front.parent.parent -is [System.Windows.Window] -and $synchash.Window.isLoaded){
-                    write-ezlogs "| Setting VideoViewAirControl window owner to main window" -showtime
+                    write-ezlogs "| Setting VideoViewAirControl window owner to main window" -showtime -Dev_mode
                     $synchash.VideoViewAirControl.front.parent.parent.Owner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($synchash.Window)
                   }
                 }
                 if($synchash.MiniPlayer_Viewer.isVisible -and $synchash.Window){
                   #Force show/render main window to update visual tree
-                  write-ezlogs "| Miniplayer is open, quickly showing/hiding main window to force visual tree update" -showtime
+                  write-ezlogs "| Miniplayer is open, quickly showing/hiding main window to force visual tree update" -showtime -Dev_mode
                   [void]$synchash.window.Hide()
                   $synchash.window.ShowActivated = $false #Prevent window from activating/taking focus while rendering
                   $synchash.window.Opacity = 0

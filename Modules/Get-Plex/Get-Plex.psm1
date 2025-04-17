@@ -62,12 +62,13 @@ function Get-PlexToken {
     }catch{
       write-ezlogs "An exception occurred getting Secret Amazonaccess_token" -showtime -catcherror $_
     }
-    if($access_token -and $expires -and (Get-date) -le (Get-date $expires)){
-      #VerifyToken
-      try{
-        $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine', 'Default')
-        $MachineGuid = $Registry.OpenSubKey("SOFTWARE\Microsoft\Cryptography").GetValue("MachineGuid")
-        $UniqueID = [System.Guid]::Parse($MachineGuid).ToString("N")
+
+    #VerifyToken
+    try{
+      $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine', 'Default')
+      $MachineGuid = $Registry.OpenSubKey("SOFTWARE\Microsoft\Cryptography").GetValue("MachineGuid")
+      $UniqueID = [System.Guid]::Parse($MachineGuid).ToString("N")
+      if($access_token -and $expires -and (Get-date) -le (Get-date $expires)){
         $req=[System.Net.HTTPWebRequest]::Create("https://plex.tv/api/v2/user")
         $req.Method='GET'
         $req.ContentType = 'application/json'
@@ -82,23 +83,23 @@ function Get-PlexToken {
         $sr=[System.IO.Streamreader]::new($strm)
         $output=$sr.ReadToEnd()
         $AuthResponse = [xml]$output
-      }catch{
-        write-ezlogs "An exception occured verifying Plex user token" -CatchError $_
-      }finally{
-        if($response){
-          $response.Dispose()
-        }
-        if($strm){
-          $strm.Dispose()
-        }  
-        if($sr){
-          $sr.Dispose()
-        }
-        if($Registry -is [System.IDisposable]){
-          $Registry.dispose()
-        }
-        $req = $Null
       }
+    }catch{
+      write-ezlogs "An exception occured verifying Plex user token" -CatchError $_
+    }finally{
+      if($response){
+        $response.Dispose()
+      }
+      if($strm){
+        $strm.Dispose()
+      }  
+      if($sr){
+        $sr.Dispose()
+      }
+      if($Registry -is [System.IDisposable]){
+        $Registry.dispose()
+      }
+      $req = $Null
     }
     if($AuthResponse.user.authToken){
       if($VerboseLog){write-ezlogs ">>>> Plex access token is still valid" -showtime -Dev_mode:$VerboseLog}

@@ -276,7 +276,7 @@ function Import-Media
           write-ezlogs "An exception occurred sorting all_local_Media" -catcherror $_
         }
       }  
-      if($thisApp.Config.Dev_mode){write-ezlogs " | Starting LocalMedia_TableStartup_timer" -showtime -color cyan -logtype LocalMedia -Dev_mode}
+      if($thisApp.Config.Dev_mode){write-ezlogs "| Starting LocalMedia_TableStartup_timer" -showtime -color cyan -logtype LocalMedia -Dev_mode}
       if($get_LocalMedia_Measure){
         $get_LocalMedia_Measure.stop()
         write-ezlogs "Get-LocalMedia Total Startup" -PerfTimer $Get_LocalMedia_Measure -GetMemoryUsage #-forceCollection

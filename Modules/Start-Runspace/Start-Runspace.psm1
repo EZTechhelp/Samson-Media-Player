@@ -465,6 +465,7 @@ function Start-Runspace
     [ValidateSet('STA','MTA')]
     $ApartmentState = 'STA',
     [switch]$Wait,
+    [switch]$ReturnOutput,
     [switch]$OutofProcess_Runspace,
     [switch]$JobHandlerUseTimer = $true,
     [switch]$verboselog
@@ -802,12 +803,31 @@ function Start-Runspace
     }
     #Add runspace to jobs monitor hashtable and execute
     write-ezlogs ">>>> Starting new runspace: $Runspace_Name" -loglevel 2 -logtype Threading
+    if($ReturnOutput){
+      $OutputObject = [System.Management.Automation.PSDataCollection[psobject]]::new()
+      $OutputObject.EnumeratorNeverBlocks = $true
+    }
     $psCmd.Runspace = $new_Runspace
-    [void]$thisApp.Jobs.Add([PSCustomObject]@{
-        PowerShell = $psCmd
-        Name = $Runspace_Name
-        Runspace = $psCmd.BeginInvoke()
-    })
+    $JobObject = [PSCustomObject]@{
+      PowerShell = $psCmd
+      Name = $Runspace_Name
+      #Runspace = $psCmd.BeginInvoke()
+      Runspace = $(if($ReturnOutput){$psCmd.BeginInvoke($OutputObject,$OutputObject)}else{$psCmd.BeginInvoke()})
+    }
+    [void]$thisApp.Jobs.Add($JobObject)
+    if($Wait){
+      while(-not [string]::IsNullOrEmpty($JobObject.Runspace.isCompleted) -and !$JobObject.Runspace.isCompleted){
+        Start-Sleep -Milliseconds 50
+      }
+    }
+    if($ReturnOutput){
+      #Specfiy the required flags to pull the output stream
+      #$Flags = 'nonpublic','instance','static'
+      #$Output = $psCmd.GetType().GetProperty('OutputBuffer',$Flags)
+      #$Object = $Output.GetValue($psCmd)
+      if($VerboseLog){write-ezlogs "| Waiting for $Runspace_Name to finish and return output" -logtype Threading}
+      $PSCmdlet.WriteObject($OutputObject,$false)
+    }
   }catch{
     write-ezlogs "An exception occurred attempting to create and start runspace: $Runspace_Name" -CatchError $_
   }

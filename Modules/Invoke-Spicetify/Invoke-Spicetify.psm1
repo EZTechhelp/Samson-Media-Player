@@ -53,7 +53,7 @@ function Enable-Spicetify
     }
     $Spicetify = @{}
     if([System.IO.File]::Exists("$($env:APPDATA)\Spotify\Spotify.exe")){
-      write-ezlogs " | Spotify is installed at $($env:APPDATA)\Spotify\Spotify.exe" -showtime
+      write-ezlogs "| Spotify is installed at $($env:APPDATA)\Spotify\Spotify.exe" -showtime
       $Spicetify.Spotify_install_status = 'Installed'
       $Spotify_Path = "$($env:APPDATA)\Spotify\Spotify.exe"
     }elseif((Get-appxpackage 'Spotify*')){
@@ -76,7 +76,7 @@ function Enable-Spicetify
       if(!$appinstalled){
         $appinstalled = "$($env:USERPROFILE)\spicetify-cli\spicetify.exe"
       }
-      write-ezlogs " | Found Spicetify install: $appinstalled"
+      write-ezlogs "| Found Spicetify install: $appinstalled"
     }elseif([System.IO.File]::Exists("$($env:LOCALAPPDATA)\spicetify\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){    
       $Spicetify_Install_Dir = "$($env:LOCALAPPDATA)\spicetify"
       $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"  
@@ -84,7 +84,7 @@ function Enable-Spicetify
       if(!$appinstalled){
         $appinstalled = "$($env:LOCALAPPDATA)\spicetify\spicetify.exe"
       }
-      write-ezlogs " | Found Spicetify install: $appinstalled"    
+      write-ezlogs "| Found Spicetify install: $appinstalled"    
     }
     if([string]::IsNullOrEmpty($appinstalled) -or [string]::IsNullOrEmpty($Spicetify_Install_Dir)){
       write-ezlogs ">>>> Spicetify not installed, starting download and install" -showtime -warning   
@@ -266,7 +266,7 @@ function Enable-Spicetify
       Get-Job | Remove-Job -Force 
       Write-EZLogs '---------------END Log Entries---------------' -enablelogs
       Write-EZLogs ">>>> Spicetify. Final loop count: $count" -showtime  -color Cyan              
-      write-ezlogs " | Spicetify result: $spicetifyexit_code" -showtime
+      write-ezlogs "| Spicetify result: $spicetifyexit_code" -showtime
        
       try{
         #spicetify restore backup apply
@@ -281,9 +281,9 @@ function Enable-Spicetify
         }
         
         if(Get-Process Spotify* -ErrorAction SilentlyContinue){
-          write-ezlogs ' | Waiting for Spotify to open and run...' -showtime
+          write-ezlogs '| Waiting for Spotify to open and run...' -showtime
           Start-Sleep 5
-          write-ezlogs ' | Closing and reopening Spotify' -showtime 
+          write-ezlogs '| Closing and reopening Spotify' -showtime 
           Get-Process Spotify* -ErrorAction SilentlyContinue | Stop-Process -Force
           Start-Sleep 1
           $spotifyprocess = Start-Process $Spotify_Path -ArgumentList '--allow-upgrades --minimized --update-immediately'
@@ -294,7 +294,7 @@ function Enable-Spicetify
       }
 
       #spicetify backup apply
-      write-ezlogs ' | Executing Spicetify backup apply' -showtime        
+      write-ezlogs '| Executing Spicetify backup apply' -showtime        
       $spicetifybackupapply_logfile = "$($thisApp.Config.Temp_Folder)\spicetify_backupapply.log"
       if([System.IO.FIle]::Exists($spicetifybackupapply_logfile)){$null = Remove-Item $spicetifybackupapply_logfile -Force}
       $command = "& `"spicetify`" backup apply *>$spicetifybackupapply_logfile"   
@@ -350,11 +350,11 @@ function Enable-Spicetify
       Get-Job | Remove-Job -Force 
       Write-EZLogs '---------------END Log Entries---------------' -enablelogs
       Write-EZLogs ">>>> Spicetify. Final loop count: $count" -showtime  -color Cyan
-      write-ezlogs " | Spicetify result: $spicetifyexit_code" -showtime
+      write-ezlogs "| Spicetify result: $spicetifyexit_code" -showtime
 
       try{      
         #Applying Spicetify customizations
-        write-ezlogs ' | Applying Spicetify customizations' -showtime
+        write-ezlogs '| Applying Spicetify customizations' -showtime
         spicetify.exe config inject_css 0 replace_colors 0
         spicetify.exe config extensions webnowplaying.js
 
@@ -372,10 +372,10 @@ function Enable-Spicetify
           $null = [system.io.file]::Move($adblock_file_destination,$adblock_file_backup)
         }        
         #Copy js file to directory
-        write-ezlogs " | Copying adblock.js to $adblock_file_destination" -Color cyan -showtime
+        write-ezlogs "| Copying adblock.js to $adblock_file_destination" -Color cyan -showtime
         $null = Copy-Item $adblock_file -Destination $adblock_file_destination -Force -ErrorAction stop -Verbose:$thisapp.Config.Verbose_logging
         #$null = Rename-Item -Path $webnowplaying_file -NewName 'webnowplaying.js.bak' -Force -ErrorAction Continue -Verbose:$thisapp.Config.Verbose_logging   
-        write-ezlogs " | Executing spicetify config extensions adblock.js"
+        write-ezlogs "| Executing spicetify config extensions adblock.js"
         spicetify.exe config extensions adblock.js *> "$($thisApp.Config.Temp_Folder)\spicetify_config_adblock.log"                  
       }catch{
         write-ezlogs "An error occurred while applying adblock.js at path $adblock_file_destination" -showtime -catcherror $_
@@ -438,7 +438,7 @@ function Enable-Spicetify
       Get-Job | Remove-Job -Force 
       Write-EZLogs '---------------END Log Entries---------------' -enablelogs
       Write-EZLogs ">>>> Spicetify. Final loop count: $count" -showtime  -color Cyan   
-      write-ezlogs " | Spicetify result: $spicetifyexit_code" -showtime
+      write-ezlogs "| Spicetify result: $spicetifyexit_code" -showtime
       $full_log = Get-Content -Path $spicetifyapply_logfile
       foreach($l in $full_log){
         if($l -match 'panic:' -or $l -match 'runtime error'){
@@ -519,7 +519,7 @@ function Disable-Spicetify
   }
   write-ezlogs ">>>> Verifying Spotify installation" -showtime
   if([System.IO.File]::Exists("$($env:APPDATA)\Spotify\Spotify.exe")){
-    write-ezlogs " | Spotify is installed at $($env:APPDATA)\Spotify\Spotify.exe" -showtime
+    write-ezlogs "| Spotify is installed at $($env:APPDATA)\Spotify\Spotify.exe" -showtime
     $synchash.Spotify_install_status = 'Installed'
     $Spotify_Path = "$($env:APPDATA)\Spotify\Spotify.exe"
   }elseif((Get-appxpackage 'Spotify*')){
@@ -589,7 +589,7 @@ function Disable-Spicetify
       Get-Job | Remove-Job -Force 
       Write-EZLogs '---------------END Log Entries---------------' -enablelogs
       Write-EZLogs ">>>> Spicetify. Final loop count: $count" -showtime           
-      write-ezlogs " | Spicetify result: $spicetifyexit_code" -showtime 
+      write-ezlogs "| Spicetify result: $spicetifyexit_code" -showtime 
       $full_log = Get-Content -Path $spicetifyrestorebackup_logfile
       foreach($l in $full_log){
         if($l -match 'panic:' -or $l -match 'runtime error'){

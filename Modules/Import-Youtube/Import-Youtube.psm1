@@ -96,7 +96,7 @@ function Import-Youtube
       try{
         if($Youtube_URL){        
           if($StartPlayback){
-            Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $Youtube_URL
+            Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $Youtube_URL -StartPlayback
           }
           Get-Youtube -Youtube_URL $Youtube_URL -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$thisApp.config.Verbose_logging -thisApp $thisApp -import_browser_auth $thisApp.config.Youtube_Browser -refresh:$refresh -synchash $synchash
         }else{  

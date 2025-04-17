@@ -216,6 +216,7 @@ function Write-EZLogs
     [string]$PriorityLevel = '0',
     [switch]$AlertAudio,
     [switch]$NoTypeHeader,
+    [switch]$Verboselog,
     $synchash = $synchash
   )
   begin {
@@ -259,14 +260,19 @@ function Write-EZLogs
       }elseif([string]::IsNullOrEmpty($GlobalLogLevel) -and -not [string]::IsNullOrEmpty($LogLevel)){
         $enablelogs = $true
       }
-      if($Dev_mode -and $thisApp.Config.Dev_mode){
+      if(($Dev_mode -and $thisApp.Config.Dev_mode)){
         $enablelogs = $true
         $logOnly = $true
         $VerboseDebug = $true
+      }elseif($Verboselog){
+        $enablelogs = $true
+        $logOnly = $true
       }elseif($Dev_mode -and !$thisApp.Dev){
         $enablelogs = $false
         $done = $true
         return
+      }elseif($Dev_mode){
+        $VerboseDebug = $true
       }
       if(!$thisApp.Dev -and [string]::IsNullOrEmpty($logfile)){
         switch ($logtype) {
@@ -409,7 +415,7 @@ function Write-EZLogs
       $color = $foregroundcolor
     }
     if($showtime){
-      $timestamp = "[$([datetime]::Now.ToString($DateTimeFormat))] "
+      $timestamp = "[$([datetime]::Now.ToString($DateTimeFormat))]"
     }else{
       $timestamp = $Null
     }
@@ -436,7 +442,7 @@ function Write-EZLogs
         $messagebox = 'Information'
       }
       try{
-        if($synchash.MiniPlayer_Viewer.isVisible -or !$synchash.Window.isVisible){
+        if($synchash.MiniPlayer_Viewer.isVisible -or (!$synchash.Window.isVisible -and !$thisApp.Dev)){
           try{
             Import-Module "$($thisApp.Config.Current_Folder)\Modules\BurntToast\BurntToast.psm1" -NoClobber -DisableNameChecking -Scope Local
             if($thisApp.Config.Installed_AppID){
@@ -462,7 +468,18 @@ function Write-EZLogs
             }else{
               $AppLogo = "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.png"
             }
-            New-BurntToastNotification -AppID $appid -Text "$AlertMessage" -AppLogo $AppLogo -Header $Header -HeroImage "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"
+            if($synchash.MainWindow_Update_Timer){
+              $Toast = @{
+                AppID = $appid
+                Text = "$AlertMessage"
+                AppLogo = $applogo
+                Header = $Header
+                HeroImage = "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"
+              }
+              Update-MainWindow -synchash $synchash -thisApp $thisApp -Toast $Toast
+            }else{
+              New-BurntToastNotification -AppID $appid -Text "$AlertMessage" -AppLogo $AppLogo -Header $Header -HeroImage "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"
+            }           
           }catch{
             $Exception_MSG = $_.Exception
             $PositionMessage = $_.InvocationInfo.PositionMessage | out-string
@@ -575,6 +592,7 @@ function Write-EZLogs
               'GlobalLogLevel' = $GlobalLogLevel
               'ProcessMessage' = $true
               'NoTypeHeader' = $NoTypeHeader
+              'Verboselog' = $Verboselog
         }))
       }catch{
         $Exception_MSG = $_.Exception
@@ -621,7 +639,7 @@ function Write-EZLogs
           $text = "[ERROR] $text at: $($CatchError | out-string)`n";$color = "red"
         }
         if($PrintErrors -and $ErrorsToPrint -is [array]){   
-          Write-Host -Object "$text$timestamp[PRINT ALL ERRORS]" -ForegroundColor Red
+          Write-Host -Object "$text$timestamp [PRINT ALL ERRORS]" -ForegroundColor Red
           $e_index = 0
           foreach ($e in $ErrorsToPrint)
           {
@@ -771,7 +789,7 @@ function Write-LogMessage {
           try{
             $default_output_Device = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::DefaultAudioEndpoint([CSCore.CoreAudioAPI.DataFlow]::Render,[CSCore.CoreAudioAPI.Role]::Multimedia)
           }catch{
-            [System.IO.File]::AppendAllText($message.logfile, "`n$($message.timestamp)[ERROR] [WRITE-EZLOGS-Logheader] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
+            [System.IO.File]::AppendAllText($message.logfile, "`n$($message.timestamp) [ERROR] [WRITE-EZLOGS-Logheader] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
           }
         }
         $text = @"
@@ -827,7 +845,7 @@ $(if(-not [string]::IsNullOrEmpty(($message.CatchError.InvocationInfo.UnboundArg
 "@
         }catch{
           start-sleep -Milliseconds 100
-          if($message.logfile){[System.IO.File]::AppendAllText($message.logfile, "`n$($message.timestamp)[ERROR] [WRITE-EZLOGS-CatchError] [$((Get-PSCallStack)[0].FunctionName) - $($message.callpath)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))}else{throw "[ERROR] [WRITE-EZLOGS-CatchError] $_"}
+          if($message.logfile){[System.IO.File]::AppendAllText($message.logfile, "`n$($message.timestamp) [ERROR] [WRITE-EZLOGS-CatchError] [$((Get-PSCallStack)[0].FunctionName) - $($message.callpath)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))}else{throw "[ERROR] [WRITE-EZLOGS-CatchError] $_"}
         }finally{
           if($message.ClearErrors){
             $error.clear()
@@ -861,96 +879,57 @@ $(if(-not [string]::IsNullOrEmpty(($message.CatchError.InvocationInfo.UnboundArg
         return
       }  
       if($message.enablelogs){
-        if($message.VerboseDebug -and $message.warning){
+        if(!$message.NoTypeHeader){
+          if($message.VerboseDebug){
+            $MessageHeader = "$MessageHeader [DEBUG]"
+          }elseif($message.Verboselog){
+            $MessageHeader = "$MessageHeader [VERBOSE]"
+          }
+          if($message.warning){
+            $MessageHeader = "$MessageHeader [WARNING]"
+          }
+          if($message.Success){
+            $MessageHeader = "$MessageHeader [SUCCESS]"
+          }
+          if($message.isError){
+            $MessageHeader = "$MessageHeader [ERROR]"
+          }
+          if($message.Perf){
+            $MessageHeader = "$MessageHeader [PERF]"
+          }
+        }
+        if($message.PERF){
           try{
-            [void]$sb.AppendLine("$($message.timestamp)[DEBUG] [WARNING] $text$($message.MemoryUsage)")
-          }catch{
-            start-sleep -Milliseconds 100
-            if($message.logfile){
-              [System.IO.File]::AppendAllText($message.logfile, "$($message.timestamp)[DEBUG] [WARNING] $text$($message.MemoryUsage)`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS-LOGONLY-WARNING-DEBUG] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
-            }else{
-              throw "[ERROR] [WRITE-EZLOGS-LOGONLY-WARNING-DEBUG] [$((Get-PSCallStack)[1].FunctionName)] $_"
-            }
-          }                    
-        }elseif($message.Warning){
-          try{
-            [void]$sb.AppendLine("$($message.timestamp)[WARNING] $text$($message.MemoryUsage)")
-          }catch{
-            start-sleep -Milliseconds 100
-            if($message.logfile){
-              [System.IO.File]::AppendAllText($message.logfile, "$($message.timestamp)[WARNING] $text$($message.MemoryUsage)`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS-LOGONLY-WARNING] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
-            }else{
-              throw "[ERROR] [WRITE-EZLOGS-LOGONLY-WARNING] [$((Get-PSCallStack)[1].FunctionName)] $_"
-            } 
-          }    
-        }elseif($message.Success){
-          try{
-            [void]$sb.AppendLine("$($message.timestamp)[SUCCESS] $text$($message.MemoryUsage)")
-          }catch{
-            start-sleep -Milliseconds 100
-            if($message.logfile){
-              [System.IO.File]::AppendAllText($message.logfile, "$($message.timestamp)[SUCCESS] $text$($message.MemoryUsage)`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS-LOGONLY-SUCCESS] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
-            }else{
-              throw "[ERROR] [WRITE-EZLOGS-LOGONLY-SUCCESS] [$((Get-PSCallStack)[1].FunctionName)] $_"
-            }  
-          }   
-        }elseif($message.isError){
-          try{
-            [void]$sb.AppendLine("$($message.timestamp)[ERROR] $text$($message.MemoryUsage)")
-          }catch{
-            start-sleep -Milliseconds 100
-            if($message.logfile){
-              [System.IO.File]::AppendAllText($message.logfile, "$($message.timestamp)[ERROR] $text$($message.MemoryUsage)`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS-LOGONLY-SUCCESS] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
-            }else{
-              throw "[ERROR] [WRITE-EZLOGS-LOGONLY-SUCCESS] [$((Get-PSCallStack)[1].FunctionName)] $_"
-            }
-          }      
-        }elseif($message.PERF){
-          try{
-            if($message.NoTypeHeader){
-              $TypeHeader = $Null
-            }else{
-              $TypeHeader = '[PERF] '
-            }
             if($message.Perftimer -is [system.diagnostics.stopwatch]){
-              if($message.Perftimer.Elapsed.Minutes -gt 0 -or $message.Perftimer.Elapsed.hours -gt 0){
-                $perfstate = '[+HIGHLOAD]: '
-              }elseif($message.Perftimer.Elapsed.Seconds -gt 0){
-                $perfstate = '[WARNING] '
-              }else{
-                $perfstate = ''
-              }    
-              [void]$sb.AppendLine("$($message.timestamp)$perfstate$TypeHeader$text | Time: $($message.Perftimer.Elapsed.hours):$($message.Perftimer.Elapsed.Minutes):$($message.Perftimer.Elapsed.Seconds):$(([string]$message.Perftimer.Elapsed.Milliseconds).PadLeft(3,'0'))$($message.MemoryUsage)")                 
+              $Time = $message.Perftimer.Elapsed                 
             }elseif($message.Perftimer -is [Timespan]){
-              if($message.Perftimer.Minutes -gt 0 -or $message.Perftimer.hours -gt 0){
-                $perfstate = '[+HIGHLOAD]: '
-              }elseif($message.Perftimer.Seconds -gt 0){
-                $perfstate = '[WARNING] '
-              }else{
-                $perfstate = ''
-              }
-              [void]$sb.AppendLine("$($message.timestamp)$perfstate$TypeHeader$text | Time: $($message.Perftimer.hours):$($message.Perftimer.Minutes):$($message.Perftimer.Seconds):$(([string]$message.Perftimer.Milliseconds).PadLeft(3,'0'))$($message.MemoryUsage)")
+              $Time = $message.Perftimer
             }else{
-              [void]$sb.AppendLine("$($message.timestamp)$TypeHeader$text$($message.MemoryUsage)")
+              $Time -eq $null
+            }
+            if($Time.Minutes -gt 0 -or $Time.hours -gt 0){
+              $perfstate = '[+HIGHLOAD]: '
+            }elseif($Time.Seconds -gt 0){
+              $perfstate = '[WARNING] '
+            }else{
+              $perfstate = ''
+            }
+            if($Time){
+              $TimeText = " | Time: $($Time.hours):$($Time.Minutes):$($Time.Seconds):$(([string]$Time.Milliseconds).PadLeft(3,'0'))"
+            }else{
+              $TimeText = ''
             }
           }catch{
             start-sleep -Milliseconds 100
-            [System.IO.File]::AppendAllText($message.logfile, "$($message.timestamp)$TypeHeader$text`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS-LOGONLY-PERF] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
+            [System.IO.File]::AppendAllText($message.logfile, "$($message.timestamp)$MessageHeader $text`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS-LOGONLY-PERF] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
           }     
-        }elseif($message.VerboseDebug){
-          try{
-            [void]$sb.AppendLine("$($message.timestamp)[DEBUG] $text$($message.MemoryUsage)")
-          }catch{
-            start-sleep -Milliseconds 100
-            [System.IO.File]::AppendAllText($message.logfile, "$($message.timestamp)[DEBUG] $text`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS-LOGONLY-DEBUG] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
-          } 
-        }else{
-          try{
-            [void]$sb.AppendLine("$($message.timestamp)$text$($message.MemoryUsage)")
-          }catch{ 
-            start-sleep -Milliseconds 100
-            [System.IO.File]::AppendAllText($message.logfile, "$($message.timestamp)$text$($message.MemoryUsage)`n[ERROR] [WRITE-EZLOGS] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
-          }        
+        }
+        #Append final built string
+        try{
+          [void]$sb.AppendLine("$($message.timestamp)$perfstate$MessageHeader $text$TimeText$($message.MemoryUsage)")
+        }catch{ 
+          start-sleep -Milliseconds 100
+          [System.IO.File]::AppendAllText($message.logfile, "$($message.timestamp)$MessageHeader $text$($message.MemoryUsage)`n[ERROR] [WRITE-EZLOGS] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
         }
         if($message.LinesAfter -ne 0){
           try{
@@ -962,19 +941,29 @@ $(if(-not [string]::IsNullOrEmpty(($message.CatchError.InvocationInfo.UnboundArg
             [System.IO.File]::AppendAllText($message.logfile, "`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS-LinesAfter] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string) -- Original String: $($sb.ToString())" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
           }            
         }
-        # Finally write built string to log file
+        #Finally write built string to log file
         try{
           [System.IO.File]::AppendAllText($message.logfile, "$($sb.ToString())",[System.Text.Encoding]::$($message.Encoding))
         }catch{ 
           start-sleep -Milliseconds 100
-          [System.IO.File]::AppendAllText($message.logfile, "`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS] [$((Get-PSCallStack).ToString())] `n $($_ | out-string) -- Original String: $($sb.ToString())" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
+          #Try small delay first
+          try{
+            [System.IO.File]::AppendAllText($message.logfile, "`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS +1] [$((Get-PSCallStack).ToString())] `n $($_ | out-string) -- Original String: $($sb.ToString())" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
+          }catch{ 
+            #Try falling back to global log file if available, else throw
+            if($thisApp.Log_File){
+              [System.IO.File]::AppendAllText($thisApp.Log_File, "`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS +2] [$((Get-PSCallStack).ToString())] `n $($_ | out-string) -- Original String: $($sb.ToString())" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
+            }else{
+              throw "[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS +2] [$((Get-PSCallStack).ToString())] `n $($_ | out-string) -- Original String: $($sb.ToString())"
+            }
+          }
         }
       }
     }
     Start-Sleep -Milliseconds 50
   }catch{
     Start-Sleep -Milliseconds 500
-    $While_loop_error_text = "[ERROR] An exception occurred in log_Writer_ScriptBlock while loop at: $($_ | out-string)`n"
+    $While_loop_error_text = "[ERROR] An exception occurred in Write-LogMessage at: $($_ | out-string)`n"
     if($sb){$originalString = $sb.ToString()}else{$originalString = $message | out-string}
     [System.IO.File]::AppendAllText($thisApp.Config.Error_Log_File, "$While_loop_error_text" + "Original string: $($originalString)" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
   }finally{

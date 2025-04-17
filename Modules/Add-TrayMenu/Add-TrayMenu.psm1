@@ -144,7 +144,20 @@ function Add-TrayMenu
       $synchash.TrayPlayer.Visibility = 'Visible'
       $synchash.TrayPlayer.PopupPlacement = 'AbsolutePoint'
       $synchash.TrayPlayer.LeftClickCommand = $OpenTrayPopup_Command
-
+      if($synchash.txtToolTipDetail){
+        $Binding = [System.Windows.Data.Binding]::new()
+        $Binding.Source = $synchash.TrayPlayer
+        $Binding.Path = "ToolTipText"
+        $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.txtToolTipDetail,[System.Windows.Controls.TextBlock]::TextProperty, $Binding)
+      }
+      if($synchash.TaskbarIconImage){
+        $Binding = [System.Windows.Data.Binding]::new()
+        $Binding.Source = $synchash.MediaView_Image
+        $Binding.Path = "Source"
+        $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.TaskbarIconImage,[System.Windows.Controls.Image]::SourceProperty, $Binding)
+      }
       if($synchash.TrayPlayer_Background_Left){
         try{
           $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\MiniPlayerSkin_Left.png") 
@@ -866,6 +879,16 @@ function Add-TrayMenu
             'IsCheckable' = $false
           }
           $null = $items.Add($Open_AudioSettings)
+          $DevCommand = @{
+            'Header' = "(Dev) Clear Memory"
+            'Color' = 'White'
+            'Icon_Color' = 'WhiteSmoke'
+            'Command' = $Synchash.ClearMemory_Command
+            'Icon_kind' = 'Memory'
+            'Enabled' = $true
+            'IsCheckable' = $false
+          }
+          $null = $items.Add($DevCommand)
           $separator = @{
             'Separator' = $true
             'Style' = 'SeparatorGradient'
@@ -977,7 +1000,7 @@ function Add-TrayMenu
       if($addJumplist){
         Add-JumpList -thisApp $thisApp -synchash $synchash -StartMini:$StartMini -Use_Runspace -Startup
       }
-    }   
+    }
     return
   }catch{
     write-ezlogs "An exception occurred in Add-TrayMenu" -catcherror $_
@@ -1002,13 +1025,15 @@ function Add-JumpList
   )
   try{
     if($Startup -or !$synchash.jumplist){
-      if($StartMini){
-        $Window = $synchash.MiniPlayer_Viewer
-      }else{
+      if($synchash.Window.isInitialized){
         $window = $synchash.Window
+      }elseif($synchash.MiniPlayer_Viewer.isInitialized){
+        $window = $synchash.Window
+        $Window = $synchash.MiniPlayer_Viewer
       }
-      if(!$synchash.current_Window_Helper -and $Window){
-        $synchash.current_Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($window)
+      if($Window){
+        $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($window)
+        $Handle = $Window_Helper.EnsureHandle()
       } 
       if($thisApp.Config.Installed_AppID){
         $appid = $thisApp.Config.Installed_AppID
@@ -1016,11 +1041,11 @@ function Add-JumpList
         $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID 
         $thisApp.Config.Installed_AppID = $appid
       } 
-      if($appid -and -not [string]::IsNullOrEmpty($synchash.current_Window_Helper.Handle) -and $synchash.current_Window_Helper.Handle -ne 0){
-        write-ezlogs ">>>> Creating new jumplist for window with handle: $($synchash.current_Window_Helper.Handle)"
-        $synchash.jumplist = [Microsoft.WindowsAPICodePack.Taskbar.JumpList]::CreateJumpListForIndividualWindow($appid,$synchash.current_Window_Helper.Handle)
-        $synchash.jumplist.KnownCategoryToDisplay = [Microsoft.WindowsAPICodePack.Taskbar.JumpListKnownCategoryType]::Frequent
-        $synchash.jumplist.KnownCategoryOrdinalPosition = 1
+      if($appid -and -not [string]::IsNullOrEmpty($Handle) -and $Handle -ne 0){
+        write-ezlogs ">>>> Creating new jumplist for window with handle: $($Handle)"
+        $synchash.jumplist = [Microsoft.WindowsAPICodePack.Taskbar.JumpList]::CreateJumpListForIndividualWindow($appid,$Handle)
+        #$synchash.jumplist.KnownCategoryToDisplay = [Microsoft.WindowsAPICodePack.Taskbar.JumpListKnownCategoryType]::Recent
+        #$synchash.jumplist.KnownCategoryOrdinalPosition = 1
         #ItemsRemoved Event
         $synchash.jumplist.Add_JumpListItemsRemoved({
             param($sender,[Microsoft.WindowsAPICodePack.Taskbar.UserRemovedJumpListItemsEventArgs]$e)
@@ -1035,13 +1060,14 @@ function Add-JumpList
         }catch{
           write-ezlogs "An exception occurred refreshing jumplist: $($synchash.jumplist)" -catcherror $_
         }
+      }else{
+        write-ezlogs "Could not create jumplist - Invalid Window Handle: $($Window_Helper | out-string)" -Warning
       }
     }
   }catch{
     write-ezlogs "An exeception occurred getting current window handle in Add-Jumplist" -CatchError $_
   }finally{
-    $synchash.current_Window_Helper = $null
-    $synchash.Remove('current_Window_Helper')
+    $Window_Helper = $null
   }
   $add_Jumplist_ScriptBlock = {
     Param (
@@ -1080,7 +1106,7 @@ function Add-JumpList
         $Track = $Null
         if($thisApp.config.History_Playlist.values){
           if($Startup -or !$synchash.jumplist_categoryRecent){
-            $synchash.jumplist_categoryRecent = [Microsoft.WindowsAPICodePack.Taskbar.JumpListCustomCategory]::new('Recent')
+            $synchash.jumplist_categoryRecent = [Microsoft.WindowsAPICodePack.Taskbar.JumpListCustomCategory]::new('Last Played')
           }
           $HistoryList = [SerializableDictionary[int,string]]::new($thisApp.config.History_Playlist)
           #$HistoryList = $thisApp.config.History_Playlist.psobject.Copy()
@@ -1172,7 +1198,7 @@ function Add-JumpList
             lock-object -InputObject $thisApp.config.History_Playlist.SyncRoot -ScriptBlock { 
               $History_items_toremove | & { process {
                   [void]$thisApp.config.History_Playlist.Remove([double]$_)
-                  write-ezlogs "Removing invalid or duplicate item index from history $($_)" -warning
+                  write-ezlogs "Removed invalid or duplicate item index from history $($_)" -warning
               }}
             }
           }catch{
@@ -1188,7 +1214,7 @@ function Add-JumpList
     }finally{
       if($add_Jumplist_Measure){
         $null = $add_Jumplist_Measure.stop()
-        write-ezlogs "Add-JumpList Startup" -PerfTimer $add_Jumplist_Measure
+        write-ezlogs "Add-JumpList Measure" -PerfTimer $add_Jumplist_Measure
         $add_Jumplist_Measure = $Null
       }
     }

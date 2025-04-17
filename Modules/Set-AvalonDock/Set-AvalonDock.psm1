@@ -590,7 +590,7 @@ function Set-AvalonDock {
             $webview2 = $($sender.Uid) -replace 'TabWindow','Webview2'
             if($sender.name -ne 'WebBrowserFloat' -and $synchash."$webview2" -and $synchash."$webview2".isVisible -eq $false){    
               if($synchash."$webview2".CoreWebview2 -and $synchash."$webview2" -is [System.IDisposable]){
-                write-ezlogs " | Disposing Webview2 instance $($webview2)" -loglevel 2
+                write-ezlogs "| Disposing Webview2 instance $($webview2)" -loglevel 2
                 $synchash."$webview2".dispose()
               }
             }
@@ -1513,7 +1513,7 @@ function Set-AvalonDock {
             write-ezlogs ">>>> $($sender.ContentId) has closed" -loglevel 2
             $webview2 = $($sender.ContentId) -replace 'TabWindow','Webview2'
             if($synchash."$webview2".CoreWebview2){
-              write-ezlogs " | Disposing Webview2 instance $($webview2)" -loglevel 2
+              write-ezlogs "| Disposing Webview2 instance $($webview2)" -loglevel 2
               $synchash."$webview2".dispose()
             }
           }catch{

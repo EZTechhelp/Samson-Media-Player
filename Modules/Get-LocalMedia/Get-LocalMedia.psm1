@@ -160,11 +160,11 @@ function Get-SongInfo {
               if(-not [string]::IsNullOrEmpty($ffprobe.format.duration)){
                 $duration = [timespan]::FromSeconds($ffprobe.format.duration)
                 if($thisApp.Config.Dev_mode -and $thisApp.config.Debug_mode){
-                  write-ezlogs " | Found duration -- FFProbe: $($ffprobe.format.duration) -- Timespan: $($duration)" -Dev_mode -LogLevel 3
+                  write-ezlogs "| Found duration -- FFProbe: $($ffprobe.format.duration) -- Timespan: $($duration)" -Dev_mode -LogLevel 3
                 }                
               }elseif($taginfo.properties.duration){
                 if($thisApp.Config.Dev_mode -and $thisApp.config.Debug_mode){
-                  write-ezlogs " | Found duration -- taginfo.properties: $($taginfo.properties.duration)" -Dev_mode -LogLevel 3
+                  write-ezlogs "| Found duration -- taginfo.properties: $($taginfo.properties.duration)" -Dev_mode -LogLevel 3
                 }                
                 $duration = $taginfo.properties.duration
               }
@@ -220,7 +220,7 @@ function Get-SongInfo {
       }
       if(-not [string]::IsNullOrEmpty($taginfo.properties.duration) -and [string]::IsNullOrEmpty($duration)){
         if($thisApp.Config.Dev_mode -and $thisApp.config.Debug_mode){
-          write-ezlogs " | Found duration -- taginfo.properties: $($taginfo.properties.duration)" -Dev_mode -LogLevel 3 -logOnly
+          write-ezlogs "| Found duration -- taginfo.properties: $($taginfo.properties.duration)" -Dev_mode -LogLevel 3 -logOnly
         }        
         $duration = $taginfo.properties.duration
       }  
@@ -351,7 +351,7 @@ function Set-SongInfo
           $taginfo.tag.TrackCount = $TrackCount
         }          
         if([System.IO.File]::Exists($Image)){
-          write-ezlogs " | Adding image to tag pictures: $Image" -logtype $logtype
+          write-ezlogs "| Adding image to tag pictures: $Image" -logtype $logtype
           try{
             $picture = [TagLib.Picture]::CreateFromPath($Image)
             $taginfo.Tag.Pictures = $picture
@@ -646,7 +646,7 @@ function Get-LocalMedia
       }
       $synchash.LocalMediaUpdate_timer.start()
     }
-    write-ezlogs " | Number of Local Media files found: $(@($synchash.All_local_Media).Count)" -showtime -logtype LocalMedia
+    write-ezlogs "| Number of Local Media files found: $(@($synchash.All_local_Media).Count)" -showtime -logtype LocalMedia
   }catch{
     write-ezlogs "An exception occurred scanning media files for directories: $($directories)" -catcherror $_
   }finally{
@@ -985,7 +985,7 @@ function Add-LocalMedia
           write-ezlogs "An exception occurred updating LocalMedia_Progress_Ring" -showtime -catcherror $_
         }
         if($update_Library){
-          write-ezlogs " | ProfileManager_Queue.IsEmpty: $($synchash.ProfileManager_Queue.IsEmpty)"
+          write-ezlogs "| ProfileManager_Queue.IsEmpty: $($synchash.ProfileManager_Queue.IsEmpty)"
           if($synchash.All_local_Media -and ($synchash.ProfileManager_Queue.IsEmpty)){
             write-ezlogs ">>>> Exporting All Media Profile cache to file $($AllMedia_Profile_File_Path)" -showtime -color cyan -logtype LocalMedia 
             Export-SerializedXML -Path $AllMedia_Profile_File_Path -InputObject $synchash.All_local_Media
@@ -1115,11 +1115,11 @@ function Update-Media
                 if($track){
                   foreach ($property in $InputObject.psobject.properties.name){
                     if([bool]$track.PSObject.Properties[$property] -and $track.$property -ne $InputObject.$property){
-                      if($thisApp.Config.Dev_mode){write-ezlogs " | Updating track property: '$($property)' from value: '$($track.$property)' - to: '$($InputObject.$property)'" -Dev_mode -logtype LocalMedia}
+                      if($thisApp.Config.Dev_mode){write-ezlogs "| Updating track property: '$($property)' from value: '$($track.$property)' - to: '$($InputObject.$property)'" -Dev_mode -logtype LocalMedia}
                       $track.$property = $InputObject.$property
                       $Changes = $true
                     }elseif(-not [bool]$track.PSObject.Properties[$property]){
-                      write-ezlogs " | Adding track property: '$($property)' with value: $($InputObject.$property)" -logtype LocalMedia
+                      write-ezlogs "| Adding track property: '$($property)' with value: $($InputObject.$property)" -logtype LocalMedia
                       $Changes = $true
                       $track.psobject.properties.add([System.Management.Automation.PSNoteProperty]::new($property,$InputObject.$property))
                     }
@@ -1274,7 +1274,7 @@ function Update-LocalMedia
             write-ezlogs "####################### Update-LocalMedia Processing Finished #######################" -PerfTimer $get_LocalMedia_Measure -Perf -GetMemoryUsage -forceCollection -PriorityLevel 3
             $GetLocalMedia_stopwatch = $null
           }
-          write-ezlogs " | Number of Local Media files updated: $($media_to_Update.Count)" -showtime -logtype LocalMedia -LogLevel 2
+          write-ezlogs "| Number of Local Media files updated: $($media_to_Update.Count)" -showtime -logtype LocalMedia -LogLevel 2
           #}
         }else{
           write-ezlogs "No Local Media was found to process!" -logtype LocalMedia -LogLevel 2 -warning

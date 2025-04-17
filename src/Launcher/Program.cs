@@ -1,16 +1,11 @@
 ﻿using Microsoft.Win32;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
-using static System.Net.Mime.MediaTypeNames;
 
 static String Get32BitSystemDirectory(Boolean placeInEnvironmentVariable = true)
 {
     String sysDir = "";
     sysDir = Environment.ExpandEnvironmentVariables("%windir%\\System32");
-    //sysDir = Environment.ExpandEnvironmentVariables("%windir%\\System32");
     if (placeInEnvironmentVariable) Environment.SetEnvironmentVariable("SYSDIR32", sysDir, EnvironmentVariableTarget.User);
     return sysDir;
 }
@@ -48,7 +43,7 @@ static void RunPowershell(string[] args)
     {
         Directory.CreateDirectory(logdirectory);
     }
-    sb.Append($"\n#### Starting Launcher for Samson Media Player ####");
+    sb.Append($"\n[{DateTime.Now}]#### Starting Launcher for Samson Media Player ####");
     
     RegistryKey key = Registry.LocalMachine.OpenSubKey("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{4C8E33BE-7E0A-4970-A7EC-B70180A6CD8E}_is1");
     if (key != null)
@@ -100,7 +95,6 @@ static void RunPowershell(string[] args)
         pro.StartInfo.WorkingDirectory = installfolder;
         pro.StartInfo.UseShellExecute = false;
         pro.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-        //Console.Write(arguments);
         pro.Start();
         if (args.Contains("-Uninstall"))
         {
@@ -117,5 +111,4 @@ static void RunPowershell(string[] args)
     sb.Clear();
     Environment.Exit(0);
 }
-
 RunPowershell(args);

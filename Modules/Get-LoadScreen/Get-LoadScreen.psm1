@@ -540,7 +540,7 @@ function Start-SplashScreen{
             }
         }}
         if($sender.Window.Content){
-          if($thisApp.Config.Dev_mode){write-ezlogs " | Clearing window content"} 
+          if($thisApp.Config.Dev_mode){write-ezlogs "| Clearing window content"} 
           $sender.Window.Content = $Null   
         }
         [void]$hash.Remove('Window')

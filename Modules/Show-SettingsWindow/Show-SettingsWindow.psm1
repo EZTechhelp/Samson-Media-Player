@@ -279,7 +279,7 @@ function Update-SpotifyPlaylists
       #[void]$SpotifyPlayliststable.datatable.Rows.Add($array)
     } 
   }
-  write-ezlogs " | Adding Spotify - Number: $Number -- URL: $path -- Name: $Name -- Type: $Type -- ID: $ID" -showtime -logtype Setup -loglevel 3
+  write-ezlogs "| Adding Spotify - Number: $Number -- URL: $path -- Name: $Name -- Type: $Type -- ID: $ID" -showtime -logtype Setup -loglevel 3
   try{    
     [void]$hashsetup.SpotifyPlaylists_Grid.Items.add([PSCustomObject]@{
         Number=$Number    
@@ -538,7 +538,7 @@ function Invoke-TwitchImport
         }
       }
       Update-TwitchPlaylists -hashsetup $hashsetup -VerboseLog:$thisApp.Config.Verbose_logging -SetItemsSource
-      write-ezlogs " | Found $newtwitchchannels new Twitch Channels" -showtime -logtype Setup -LogLevel 2
+      write-ezlogs "| Found $newtwitchchannels new Twitch Channels" -showtime -logtype Setup -LogLevel 2
       if($hashsetup.EditorHelpFlyout.Document.Blocks){
         $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
       }        
@@ -1813,7 +1813,7 @@ function Show-SettingsWindow{
         try{
           write-ezlogs ">>>> Clicked markdown link to open: $($link)" -logtype Setup
           if((Test-ValidPath $link -PathType Any)){
-            write-ezlogs " | Opening: $($link)" -logtype Setup
+            write-ezlogs "| Opening: $($link)" -logtype Setup
             start-process $link
           }elseif($link -match 'RestartAsUser'){
             $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
@@ -2551,7 +2551,7 @@ function Show-SettingsWindow{
                     Start-SplashScreen -SplashTitle "$($thisApp.Config.App_Name) Media Player" -SplashMessage 'Installing VB-Cable...' -Splash_More_Info 'Please Wait' -current_folder $thisapp.Config.Current_Folder -log_file $thisapp.Config.Log_file
                   }                  
                   if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe")){
-                    write-ezlogs " | Attempting to install from $($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -showtime -logtype setup
+                    write-ezlogs "| Attempting to install from $($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -showtime -logtype setup
                     try{
                       $default_output_Device = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::DefaultAudioEndpoint([CSCore.CoreAudioAPI.DataFlow]::Render,[CSCore.CoreAudioAPI.Role]::Multimedia)   
                     }catch{
@@ -2576,12 +2576,12 @@ function Show-SettingsWindow{
                     }
                     if($DeviceID){
                       try{
-                        write-ezlogs " | Current Default Audio Device: $($DeviceName) -- ID: $DeviceID" -logtype setup            
+                        write-ezlogs "| Current Default Audio Device: $($DeviceName) -- ID: $DeviceID" -logtype setup            
                         Start-Process "$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -ArgumentList '-i -h' -Wait -Verb RunAs
                         #Using where-object vs passing deviceid as param due to sometimes getting type cast error - unknown why may have been specific to test Win11 machine
                         $set_AudioDevice = Get-AudioDevice -list | where-Object {$_.id -eq "$DeviceID"}
                         if($set_AudioDevice -and !$set_AudioDevice.Default){
-                          write-ezlogs " | Resetting Default Audio Device to: $($set_AudioDevice.Name)" -logtype setup
+                          write-ezlogs "| Resetting Default Audio Device to: $($set_AudioDevice.Name)" -logtype setup
                           Set-AudioDevice -ID "$($set_AudioDevice.id)" -DefaultOnly
                         }
                       }catch{
@@ -2595,7 +2595,7 @@ function Show-SettingsWindow{
                         }
                       }                                     
                       if($set_AudioDevice){
-                        write-ezlogs " | New Default Audio Device (should be same as previous): $($set_AudioDevice | out-string)" -logtype setup
+                        write-ezlogs "| New Default Audio Device (should be same as previous): $($set_AudioDevice | out-string)" -logtype setup
                       }
                     }else{
                       $NoDefaultDevice = $true
@@ -2727,7 +2727,7 @@ function Show-SettingsWindow{
                       Start-SplashScreen -SplashTitle "$($thisApp.Config.App_Name) Media Player" -SplashMessage 'Uninstalling VB-Cable...' -Splash_More_Info 'Please Wait' -current_folder $thisapp.Config.Current_Folder -log_file $thisapp.Config.Log_file
                     }                
                     if([system.io.file]::Exists($vbcablesetup)){
-                      write-ezlogs " | Executing $vbcablesetup with arguments -u -h with verb Runas" -logtype Setup
+                      write-ezlogs "| Executing $vbcablesetup with arguments -u -h with verb Runas" -logtype Setup
                       Start-Process "$vbcablesetup" -ArgumentList '-u -h' -Wait -Verb Runas
                     }else{
                       if(!$(get-command choco*)){
@@ -4935,7 +4935,7 @@ function Show-SettingsWindow{
                   write-ezlogs ">>>> Closing Splash screen" -showtime -logtype Setup -loglevel 2
                   Update-SplashScreen -hash $hash -Close
                   if($hashsetup.MainWindow_Status){
-                    write-ezlogs " | Showing Main Window" -showtime -logtype Setup -loglevel 2
+                    write-ezlogs "| Showing Main Window" -showtime -logtype Setup -loglevel 2
                     $synchash.window.Dispatcher.Invoke("Normal",[action]{ $synchash.window.show() })
                     $hashsetup.MainWindow_Status = $false
                   }
@@ -4965,7 +4965,7 @@ function Show-SettingsWindow{
                   update-EditorHelp -content "Unable to verify if Spotify installed successfully! See logs for details" -color Orange -RichTextBoxControl $hashsetup.EditorHelpFlyout -use_runspace -Open
                 }
                 if(!$hashsetup.Window.isVisible){
-                  write-ezlogs " | Unhiding Setup Window" -showtime -logtype Setup -loglevel 2
+                  write-ezlogs "| Unhiding Setup Window" -showtime -logtype Setup -loglevel 2
                   $hashsetup.window.Dispatcher.Invoke("Normal",[action]{
                       $hashsetup.Window.Show()
                       $hashsetup.Window.Activate()
@@ -4975,7 +4975,7 @@ function Show-SettingsWindow{
               try{
                 if($First_Run){
                   if($hashSetup.Window.isVisible){
-                    write-ezlogs " | Hiding setup window" -showtime -logtype Setup -loglevel 2
+                    write-ezlogs "| Hiding setup window" -showtime -logtype Setup -loglevel 2
                     $hashSetup.Window.Hide()               
                   }
                   Invoke-Command -ScriptBlock $app_install_scriptblock
@@ -5530,7 +5530,7 @@ function Show-SettingsWindow{
                 $secret_info = Get-SecretInfo -Filter $secret -VaultName $thisApp.config.App_Name -ErrorAction SilentlyContinue       
                 if($secret_info.Name -eq $secret){
                   try{                  
-                    write-ezlogs " | Removing Secret $($secret_info.Name)" -showtime -warning -logtype Setup
+                    write-ezlogs "| Removing Secret $($secret_info.Name)" -showtime -warning -logtype Setup
                     Remove-secret -Name $($secret_info.Name) -Vault $thisApp.config.App_Name
                   }catch{
                     write-ezlogs "An exception occurred removing Secret $($secret) from vault $($thisApp.config.App_Name)" -catcherror $_
@@ -6178,7 +6178,7 @@ function Show-SettingsWindow{
           if($sender.isOn -eq $true){       
             write-ezlogs ">>>> Enabled Use_Twitch_TTVLOL" -LogLevel 2 -logtype Setup
             if($hashsetup.Twitch_luminous_Toggle.isOn){
-              write-ezlogs " | Disabling Twitch_luminous_Toggle" -LogLevel 2 -logtype Setup
+              write-ezlogs "| Disabling Twitch_luminous_Toggle" -LogLevel 2 -logtype Setup
               $hashsetup.Twitch_luminous_Toggle.isOn = $false
             }
             if($hashsetup.Twitch_Custom_Proxy_Toggle.isOn){
@@ -6192,14 +6192,14 @@ function Show-SettingsWindow{
             }
             try{
               if([system.io.file]::Exists($customTwitchPlugindst)){
-                write-ezlogs " | Custom Twitch streamlink plugin already exits at $customTwitchPlugindst - overwriting" -LogLevel 2 -logtype Setup
+                write-ezlogs "| Custom Twitch streamlink plugin already exits at $customTwitchPlugindst - overwriting" -LogLevel 2 -logtype Setup
                 [void][system.io.file]::Copy($customTwitchPluginsrc,$customTwitchPlugindst,$true)
               }elseif([system.io.file]::Exists($customTwitchPluginsrc)){
                 if(![system.io.directory]::Exists([system.io.directory]::GetParent($customTwitchPlugindst).fullname)){
-                  write-ezlogs " | Creating Streamlink plugins directory: $env:appdata\streamlink\plugins" -LogLevel 2 -logtype Setup
+                  write-ezlogs "| Creating Streamlink plugins directory: $env:appdata\streamlink\plugins" -LogLevel 2 -logtype Setup
                   [void][system.io.directory]::CreateDirectory("$env:appdata\streamlink\plugins")
                 }
-                write-ezlogs " | Copying custom Twitch streamlink plugin to $env:appdata\streamlink\plugins" -LogLevel 2 -logtype Setup
+                write-ezlogs "| Copying custom Twitch streamlink plugin to $env:appdata\streamlink\plugins" -LogLevel 2 -logtype Setup
                 [void][system.io.file]::Copy($customTwitchPluginsrc,$customTwitchPlugindst,$true)
               }
               $thisapp.configTemp.Use_Twitch_TTVLOL = $true
@@ -6216,7 +6216,7 @@ function Show-SettingsWindow{
               if([system.io.file]::Exists($customTwitchPlugindst)){ 
                 try{        
                   if((Get-Process streamlink -ErrorAction SilentlyContinue)){
-                    write-ezlogs " | Streamlink is currently running, it must be shutdown before disabling the TTVLOL Plugin" -warning -logtype Setup
+                    write-ezlogs "| Streamlink is currently running, it must be shutdown before disabling the TTVLOL Plugin" -warning -logtype Setup
                     $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
                     $Button_Settings.AffirmativeButtonText = 'Yes'
                     $Button_Settings.NegativeButtonText = 'No'  
@@ -6230,7 +6230,7 @@ function Show-SettingsWindow{
                       return
                     }
                   }else{
-                    write-ezlogs " | Removing custom Twitch streamlink plugin at $customTwitchPlugindst" -LogLevel 2 -logtype Setup
+                    write-ezlogs "| Removing custom Twitch streamlink plugin at $customTwitchPlugindst" -LogLevel 2 -logtype Setup
                     [void][system.io.file]::Delete($customTwitchPlugindst)
                   }                
                 }catch{
@@ -6298,7 +6298,7 @@ function Show-SettingsWindow{
           if($sender.isOn -eq $true){       
             write-ezlogs ">>>> Enabled Use_Twitch_luminous" -LogLevel 2 -logtype Setup
             if($hashsetup.Twitch_TTVLOL_Toggle.isOn){
-              write-ezlogs " | Disabling Twitch_TTVLOL_Toggle" -LogLevel 2 -logtype Setup
+              write-ezlogs "| Disabling Twitch_TTVLOL_Toggle" -LogLevel 2 -logtype Setup
               $hashsetup.Twitch_TTVLOL_Toggle.isOn = $false
               if($thisapp.configTemp.Use_Twitch_TTVLOL){
                 $thisapp.configTemp.Use_Twitch_TTVLOL  =$false
@@ -6312,14 +6312,14 @@ function Show-SettingsWindow{
             }
             try{
               if([system.io.file]::Exists($customTwitchPlugindst)){
-                write-ezlogs " | Custom Twitch streamlink plugin already exits at $customTwitchPlugindst - overwriting" -LogLevel 2 -logtype Setup
+                write-ezlogs "| Custom Twitch streamlink plugin already exits at $customTwitchPlugindst - overwriting" -LogLevel 2 -logtype Setup
                 [void][system.io.file]::Copy($customTwitchPluginsrc,$customTwitchPlugindst,$true)
               }elseif([system.io.file]::Exists($customTwitchPluginsrc)){
                 if(![system.io.directory]::Exists([system.io.directory]::GetParent($customTwitchPlugindst).fullname)){
-                  write-ezlogs " | Creating Streamlink plugins directory: $env:appdata\streamlink\plugins" -LogLevel 2 -logtype Setup
+                  write-ezlogs "| Creating Streamlink plugins directory: $env:appdata\streamlink\plugins" -LogLevel 2 -logtype Setup
                   [void][system.io.directory]::CreateDirectory("$env:appdata\streamlink\plugins")
                 }
-                write-ezlogs " | Copying custom Twitch streamlink plugin to $env:appdata\streamlink\plugins" -LogLevel 2 -logtype Setup
+                write-ezlogs "| Copying custom Twitch streamlink plugin to $env:appdata\streamlink\plugins" -LogLevel 2 -logtype Setup
                 [void][system.io.file]::Copy($customTwitchPluginsrc,$customTwitchPlugindst,$true)
               }
               $thisapp.configTemp.Use_Twitch_luminous = $true
@@ -6336,7 +6336,7 @@ function Show-SettingsWindow{
               if([system.io.file]::Exists($customTwitchPlugindst)){ 
                 try{        
                   if((Get-Process streamlink -ErrorAction SilentlyContinue)){
-                    write-ezlogs " | Streamlink is currently running, it must be shutdown before disabling the luminous Plugin" -warning -logtype Setup
+                    write-ezlogs "| Streamlink is currently running, it must be shutdown before disabling the luminous Plugin" -warning -logtype Setup
                     $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
                     $Button_Settings.AffirmativeButtonText = 'Yes'
                     $Button_Settings.NegativeButtonText = 'No'  
@@ -6350,7 +6350,7 @@ function Show-SettingsWindow{
                       return
                     }
                   }else{
-                    write-ezlogs " | Removing custom Twitch streamlink plugin at $customTwitchPlugindst" -LogLevel 2 -logtype Setup
+                    write-ezlogs "| Removing custom Twitch streamlink plugin at $customTwitchPlugindst" -LogLevel 2 -logtype Setup
                     [void][system.io.file]::Delete($customTwitchPlugindst)
                   }                
                 }catch{
@@ -6939,7 +6939,7 @@ function Show-SettingsWindow{
           if($First_Run -and ([System.IO.Directory]::Exists($thisApp.config.Playlist_Profile_Directory)) -and $PlaylistRebuild_Required){
             $existing_playlists = Find-FilesFast -Path $thisApp.config.Playlist_Profile_Directory -Recurse -Filter $playlist_pattern 
             if($existing_playlists){
-              write-ezlogs " | Prompting user to decide whether to delete existing playlists for first run as this version requires rebuilding them" -showtime -enablelogs -color cyan -logtype Setup -LogLevel 2
+              write-ezlogs "| Prompting user to decide whether to delete existing playlists for first run as this version requires rebuilding them" -showtime -enablelogs -color cyan -logtype Setup -LogLevel 2
               if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Playlists_Confirmation.txt")){
                 $PlaylistsConfirmation = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Playlists_Confirmation.txt")
               }   
@@ -6952,14 +6952,14 @@ function Show-SettingsWindow{
               if($result -eq 'Affirmative'){
                 write-ezlogs "User wished to keep existing playlist profiles" -showtime -warning -logtype Setup
               }else{
-                write-ezlogs " | Clearing playlist profile directory $($thisApp.config.Playlist_Profile_Directory)" -showtime -logtype Setup
+                write-ezlogs "| Clearing playlist profile directory $($thisApp.config.Playlist_Profile_Directory)" -showtime -logtype Setup
                 [void][System.IO.Directory]::Delete($thisApp.config.Playlist_Profile_Directory,$true)
               }
             }else{
               write-ezlogs "No existing playlists found, continuing" -showtime -logtype Setup
             }
           }elseif($First_Run){
-            write-ezlogs " | Prompting to confirm if user is sure they are finished" -logtype Setup
+            write-ezlogs "| Prompting to confirm if user is sure they are finished" -logtype Setup
             $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
             $Button_settings.AffirmativeButtonText = "Yes"
             $Button_settings.NegativeButtonText = "No"  
@@ -7285,7 +7285,7 @@ function Show-SettingsWindow{
             foreach($path in $hashsetup.MediaLocations_Grid.items){
               if([System.IO.Directory]::Exists($path.path)){
                 if($thisApp.Config.Media_Directories -notcontains $path.path){
-                  write-ezlogs " | Adding new Local Media Directory $($path.path)" -showtime -logtype Setup -LogLevel 2
+                  write-ezlogs "| Adding new Local Media Directory $($path.path)" -showtime -logtype Setup -LogLevel 2
                   [void]$thisApp.Config.Media_Directories.add($path.path)
                   $newLocalMediaCount++
                 }            
@@ -7407,7 +7407,7 @@ function Show-SettingsWindow{
               if(Test-URL $playlist.path){
                 if($thisApp.Config.Youtube_Playlists -notcontains $playlist.path){
                   try{
-                    write-ezlogs " | Adding new Youtube Playlist URL: $($playlist.path) - Name: $($playlist.Name)" -showtime -logtype Setup -LogLevel 3
+                    write-ezlogs "| Adding new Youtube Playlist URL: $($playlist.path) - Name: $($playlist.Name)" -showtime -logtype Setup -LogLevel 3
                     [void]$thisApp.Config.Youtube_Playlists.add($playlist.path)
                     if($Playlist_Profile -and $playlist.path -notmatch 'Twitch.tv'){  
                       if($playlist.Name){
@@ -7417,7 +7417,7 @@ function Show-SettingsWindow{
                       }    
                       #$playlistName_Cleaned = ([Regex]::Replace($playlist_Name, $pattern3, '')).trim()            
                       $Playlist_Profile_path = "$($thisapp.config.Playlist_Profile_Directory)\Youtube_Playlists\$($playlist.id).xml"
-                      write-ezlogs " | Saving new Youtube Playlist profile to $Playlist_Profile_path" -showtime -logtype Setup -LogLevel 2
+                      write-ezlogs "| Saving new Youtube Playlist profile to $Playlist_Profile_path" -showtime -logtype Setup -LogLevel 2
                       $Playlist_Profile.name = $playlist_Name
                       #$Playlist_Profile.NameCleaned = $playlistName_Cleaned
                       $Playlist_Profile.Playlist_ID = $playlist.id
@@ -7451,7 +7451,7 @@ function Show-SettingsWindow{
                 foreach($playlist in $playlists_toRemove){
                   $RemovedYoutubeMediaCount++
                   [void]$hashSetup.playlists_toRemove.add($playlist)
-                  write-ezlogs " | Removing Youtube Playlist $($playlist)" -showtime -logtype Setup -LogLevel 2
+                  write-ezlogs "| Removing Youtube Playlist $($playlist)" -showtime -logtype Setup -LogLevel 2
                   [void]$thisApp.Config.Youtube_Playlists.Remove($playlist)
                 }
               }
@@ -7555,7 +7555,7 @@ function Show-SettingsWindow{
             foreach($playlist in $hashsetup.TwitchPlaylists_Grid.items){
               if(Test-URL $playlist.path){
                 if($thisApp.Config.Twitch_Playlists.path -notcontains $playlist.path){
-                  write-ezlogs " | Adding new Twitch URL $($playlist.path)" -showtime -logtype Setup
+                  write-ezlogs "| Adding new Twitch URL $($playlist.path)" -showtime -logtype Setup
                   [void]$thisApp.Config.Twitch_Playlists.add($playlist)
                   $newTwitchMediaCount++
                 }elseif(!$synchash.All_Twitch_Media -or $synchash.All_Twitch_Media.url -notcontains $playlist.path){
@@ -7588,7 +7588,7 @@ function Show-SettingsWindow{
             foreach($proxy in $hashsetup.Twitch_Custom_Proxy_Grid.items){
               if(Test-URL $proxy.url){
                 if($thisApp.config.TwitchProxies -notcontains $proxy.url){
-                  write-ezlogs " | Adding new Twitch Playlist Proxy URL: $($proxy.url)" -showtime -logtype Setup
+                  write-ezlogs "| Adding new Twitch Playlist Proxy URL: $($proxy.url)" -showtime -logtype Setup
                   [void]$thisApp.config.TwitchProxies.add($proxy.url)
                 }else{
                   write-ezlogs "Twitch Playlist Proxy URL has already been added: $($proxy.url)" -warning -logtype Setup
@@ -7599,7 +7599,7 @@ function Show-SettingsWindow{
             }
             $Twitch_Proxy_toRemove = $thisApp.config.TwitchProxies | Where-Object {$hashsetup.Twitch_Custom_Proxy_Grid.items.url -notcontains $_}
             foreach($proxy in $Twitch_Proxy_toRemove){
-              write-ezlogs " | Removing Twitch Playlist Proxy URL: $($proxy)" -showtime -logtype Setup
+              write-ezlogs "| Removing Twitch Playlist Proxy URL: $($proxy)" -showtime -logtype Setup
               [void]$thisApp.config.TwitchProxies.Remove($proxy)
             }
           }else{
@@ -7736,7 +7736,7 @@ function Show-SettingsWindow{
                   return
                 }                
               }else{
-                write-ezlogs " | User wish to continue without providing Spotify credentials!" -showtime -logtype Setup -Warning
+                write-ezlogs "| User wish to continue without providing Spotify credentials!" -showtime -logtype Setup -Warning
                 $hashsetup.Spotify_Auth_Status = $false
               }
             }else{
@@ -7760,7 +7760,7 @@ function Show-SettingsWindow{
               if($playlist.path -match 'Spotify'){
                 if($thisApp.Config.Spotify_Playlists -notcontains $playlist.path){
                   try{
-                    write-ezlogs " | Adding new Spotify Playlist URL: $($playlist.path) - Name: $($playlist.Name)" -showtime -logtype Setup -LogLevel 3
+                    write-ezlogs "| Adding new Spotify Playlist URL: $($playlist.path) - Name: $($playlist.Name)" -showtime -logtype Setup -LogLevel 3
                     [void]$thisApp.Config.Spotify_Playlists.add($playlist.path)
                     if($Playlist_Profile -and $playlist.path){  
                       if($playlist.Name){
@@ -7770,7 +7770,7 @@ function Show-SettingsWindow{
                       }    
                       #$playlistName_Cleaned = ([Regex]::Replace($playlist_Name, $pattern3, '')).trim()            
                       $Playlist_Profile_path = "$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists\$($playlist.id).xml"
-                      write-ezlogs " | Saving new Spotify Playlist profile to $Playlist_Profile_path" -showtime -logtype Setup -LogLevel 3
+                      write-ezlogs "| Saving new Spotify Playlist profile to $Playlist_Profile_path" -showtime -logtype Setup -LogLevel 3
                       $Playlist_Profile.name = $playlist_Name
                       #$Playlist_Profile.NameCleaned = $playlistName_Cleaned
                       $Playlist_Profile.Playlist_ID = $playlist.id
@@ -7810,7 +7810,7 @@ function Show-SettingsWindow{
                 foreach($playlist in $Spotify_playlists_toRemove){
                   $RemovedSpotifyMediaCount++
                   [void]$hashSetup.Spotifyplaylists_toRemove.add($playlist)
-                  write-ezlogs " | Removing Spotify Playlist $($playlist)" -showtime -logtype Setup -LogLevel 2
+                  write-ezlogs "| Removing Spotify Playlist $($playlist)" -showtime -logtype Setup -LogLevel 2
                   [void]$thisApp.Config.Spotify_Playlists.Remove($playlist)
                 }
               }
@@ -7895,7 +7895,7 @@ function Show-SettingsWindow{
               $synchash.LocalMedia_ToRemove = [System.Collections.Generic.List[Object]]::new()
               write-ezlogs "Found $(@($hashSetup.paths_toRemove).count) removals from local media sources" -showtime -logtype Setup -LogLevel 2
               foreach($path in $hashSetup.paths_toRemove){
-                write-ezlogs " | Removing Local Media Directory $($path)" -showtime -logtype Setup -LogLevel 2
+                write-ezlogs "| Removing Local Media Directory $($path)" -showtime -logtype Setup -LogLevel 2
                 [void]$thisApp.Config.Media_Directories.Remove($path)
               } 
               if($synchash.All_local_Media.SyncRoot){
@@ -7944,7 +7944,7 @@ function Show-SettingsWindow{
               write-ezlogs "Found $RemovedYoutubeMediaCount removals from Youtube media sources" -showtime -logtype Setup -LogLevel 2        
               foreach($path in $hashSetup.playlists_toRemove){
                 if($thisApp.Config.Youtube_Playlists -contains $path){
-                  write-ezlogs " | Removing Youtube playlist $($path)" -showtime -logtype Setup -LogLevel 2
+                  write-ezlogs "| Removing Youtube playlist $($path)" -showtime -logtype Setup -LogLevel 2
                   [void]$thisApp.Config.Youtube_Playlists.remove($path)
                 }
               }
@@ -7954,7 +7954,7 @@ function Show-SettingsWindow{
                 $playlists_to_remove = $synchash.All_Youtube_Media | where {$hashSetup.playlists_toRemove -contains $_.Playlist_URL}
               }
               if($playlists_to_remove){
-                write-ezlogs " | Found $($playlists_to_remove.count) playlists to remove from All_Youtube_media" -showtime -logtype Setup -LogLevel 2
+                write-ezlogs "| Found $($playlists_to_remove.count) playlists to remove from All_Youtube_media" -showtime -logtype Setup -LogLevel 2
                 $hashsetup.Remove_YoutubeMedia_Sources = $true 
                 $hashSetup.playlists_toRemove = $playlists_to_remove
               }else{
@@ -8032,7 +8032,7 @@ function Show-SettingsWindow{
                   write-ezlogs "User wished to cancel" -showtime -warning -logtype Setup
                   $Stop_Runspace = Stop-Runspace -thisApp $thisApp -runspace_name 'enumerate_files_Scriptblock' -force
                 }else{
-                  write-ezlogs " | User did not wish to cancel" -showtime -logtype Setup 
+                  write-ezlogs "| User did not wish to cancel" -showtime -logtype Setup 
                   break
                 }
               }                    
@@ -8372,7 +8372,7 @@ function Show-SettingsWindow{
 
               }
               if($hashsetup.$_ -is [System.Collections.Concurrent.ConcurrentQueue`1[object]]){
-                write-ezlogs ">>>> Removing ConcurrentQueue: $($_)"
+                if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Removing ConcurrentQueue: $($_)" -Dev_mode}
                 $hashsetup.$_ = $Null
               }
           }}
@@ -9263,7 +9263,7 @@ function Update-Settings {
                     try{
                       $playlist_profile = Import-Clixml "$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists\$($id).xml"
                       write-ezlogs ">>>> Importing Spotify Playlist profile: $($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists\$($id).xml"  -logtype Setup -LogLevel 3
-                      write-ezlogs " | Spotify Playlist Name: $($playlist_Profile.Name)"  -logtype Setup -LogLevel 3
+                      write-ezlogs "| Spotify Playlist Name: $($playlist_Profile.Name)"  -logtype Setup -LogLevel 3
                       $Name = $playlist_Profile.Name
                       $type = $playlist_Profile.type
                       $playlist_Info = $playlist_Profile.Playlist_Info

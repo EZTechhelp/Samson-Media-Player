@@ -163,7 +163,7 @@ function Write-IDTags
             }                                      
           }
           if([System.IO.File]::Exists($cached_image)){
-            write-ezlogs " | Adding image to tag pictures: $cached_image" -enablelogs -showtime
+            write-ezlogs "| Adding image to tag pictures: $cached_image" -enablelogs -showtime
             $picture = [TagLib.Picture]::CreateFromPath($cached_image)
             $taginfo.Tag.Pictures = $picture
           }

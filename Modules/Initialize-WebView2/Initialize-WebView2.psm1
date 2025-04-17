@@ -212,7 +212,7 @@ Function Add-Webview2Extension{
                       Write-EZLogs "An exception occurred in add_checked for menuitem: $($this.Header)" -catcherror $_
                     }
                 })
-                Write-EZLogs " | Adding extension to WebExtensions_Button: $($EnabledExtension.Name)" -logtype Webview2
+                Write-EZLogs "| Adding extension to WebExtensions_Button: $($EnabledExtension.Name)" -logtype Webview2
                 $synchash.WebExtensions_Button.items.add($MenuItem)
               }elseif($synchash.WebExtensions_Button.items.Header -contains $EnabledExtension.Name){
                 write-ezlogs "Extension: $($Extension.Name) -- already added to WebExtensions_Button" -Warning -logtype Webview2 -Dev_mode
@@ -267,7 +267,7 @@ Function Initialize-YoutubeWebPlayer
       $synchash.YoutubeWebView2Options.AreBrowserExtensionsEnabled = $true
       $synchash.YoutubeWebView2.CreationProperties = [Microsoft.Web.WebView2.Wpf.CoreWebView2CreationProperties]::new()
       $synchash.YoutubeWebView2.CreationProperties.AreBrowserExtensionsEnabled = $true
-      Write-EZLogs " | YoutubeWebView2 CreationProperties -- AdditionalBrowserArgument: $($synchash.YoutubeWebView2.CreationProperties.AdditionalBrowserArguments) -- AreBrowserExtensionsEnabled: $($synchash.YoutubeWebView2.CreationProperties.AreBrowserExtensionsEnabled)" -logtype Webview2 -Dev_mode    
+      Write-EZLogs "| YoutubeWebView2 CreationProperties -- AdditionalBrowserArgument: $($synchash.YoutubeWebView2.CreationProperties.AdditionalBrowserArguments) -- AreBrowserExtensionsEnabled: $($synchash.YoutubeWebView2.CreationProperties.AreBrowserExtensionsEnabled)" -logtype Webview2 -Dev_mode    
     }
     $synchash.YoutubeWebView2Env = [Microsoft.Web.WebView2.Core.CoreWebView2Environment]::CreateAsync(
       [String]::Empty, [IO.Path]::Combine([String[]]($($thisApp.config.Temp_Folder), 'Webview2') ), $synchash.YoutubeWebView2Options
@@ -880,7 +880,7 @@ try {
             $synchash.YoutubeWebView2_Adblock_Script       
           )
         }  
-        Write-EZLogs ' | Executing YoutubeWebView2_Script' -showtime -logtype $logtype -Dev_mode
+        Write-EZLogs '| Executing YoutubeWebView2_Script' -showtime -logtype $logtype -Dev_mode
         $synchash.YoutubeWebView2.ExecuteScriptAsync(        
           $synchash.YoutubeWebView2_Script
         )
@@ -898,7 +898,7 @@ try {
               $thisApp.SponsorBlock = $null
             }
             try{
-              Write-EZLogs " | Executing Youtube dislike lookup: https://returnyoutubedislikeapi.com/votes?videoId=$($YoutubeID)" -showtime -logtype $logtype -Dev_mode
+              Write-EZLogs "| Executing Youtube dislike lookup: https://returnyoutubedislikeapi.com/votes?videoId=$($YoutubeID)" -showtime -logtype $logtype -Dev_mode
               $req = [System.Net.HTTPWebRequest]::Create("https://returnyoutubedislikeapi.com/votes?videoId=$($YoutubeID)")
               $req.Method = 'GET'         
               $req.Timeout = 5000
@@ -953,18 +953,18 @@ try {
 
 "@  
           if($DisLikes){
-            Write-EZLogs " | Youtube dislikes: $($DisLikes), Executing YoutubeDislikes_Script" -logtype $logtype
+            Write-EZLogs "| Youtube dislikes: $($DisLikes), Executing YoutubeDislikes_Script" -logtype $logtype
             $synchash.YoutubeWebView2.ExecuteScriptAsync(
               $synchash.YoutubeDislikes_Script
             )
           } 
           $synchash.YoutubeWebView2_Youtube_returnDislike_Script = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Youtube\Return Youtube Dislike.user.js")
-          Write-EZLogs ' | Executing Youtube_returnDislike_Script' -logtype $logtype
+          Write-EZLogs '| Executing Youtube_returnDislike_Script' -logtype $logtype
           $synchash.YoutubeWebView2.ExecuteScriptAsync(
             $synchash.YoutubeWebView2_Youtube_returnDislike_Script       
           )
         } 
-        Write-EZLogs " | Post navigation execution complete: BrowserProcessID: $($synchash.YoutubeWebView2.CoreWebview2.BrowserProcessId) - DocumentTitle: $($synchash.YoutubeWebView2.CoreWebview2.DocumentTitle) - ContainsFullScreenElement: $($synchash.YoutubeWebView2.CoreWebview2.ContainsFullScreenElement)" -logtype $logtype -loglevel 3
+        Write-EZLogs "| Post navigation execution complete: BrowserProcessID: $($synchash.YoutubeWebView2.CoreWebview2.BrowserProcessId) - DocumentTitle: $($synchash.YoutubeWebView2.CoreWebview2.DocumentTitle) - ContainsFullScreenElement: $($synchash.YoutubeWebView2.CoreWebview2.ContainsFullScreenElement)" -logtype $logtype -loglevel 3
       }else{
         Write-EZLogs "YoutubeWebView2 Navigation to source: '$($sender.source)' was not successful -- HttpStatusCode: $($e.HttpStatusCode) -- WebErrorStatus: $($e.WebErrorStatus)" -logtype Webview2 -warning
       }
@@ -1296,7 +1296,7 @@ try {
             $YoutubeWebview2_DevToolsProtocolEventReceivedLog = $synchash.YoutubeWebview2.CoreWebView2.GetDevToolsProtocolEventReceiver('Log.entryAdded')   
             $YoutubeWebview2_DevToolsProtocolEventReceivedRuntime = $synchash.YoutubeWebview2.CoreWebView2.GetDevToolsProtocolEventReceiver('Runtime.consoleAPICalled')
             if($YoutubeWebview2_DevToolsProtocolEventReceivedLog){         
-              Write-EZLogs ' | Registering DevTools Event Log' -Dev_mode
+              Write-EZLogs '| Registering DevTools Event Log' -Dev_mode
               $YoutubeWebview2_DevToolsProtocolEventReceivedLog.add_DevToolsProtocolEventReceived({
                   Param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2DevToolsProtocolEventReceivedEventArgs]$e)
                   $logtype = 'Webview2'
@@ -1402,8 +1402,8 @@ try {
             }             
             return
           }
-          Write-EZLogs " | Source $($e.Source)" -logtype Webview2 -Warning                
-          Write-EZLogs " | errorCode $($result.value.errorCode) - cpn: $($result.value.cpn)" -logtype Webview2 -Warning 
+          Write-EZLogs "| Source $($e.Source)" -logtype Webview2 -Warning                
+          Write-EZLogs "| errorCode $($result.value.errorCode) - cpn: $($result.value.cpn)" -logtype Webview2 -Warning 
         } 
         if($result.value.author){
           if($synchash.Youtube_webplayer_current_Media.author -ne $result.value.author){
@@ -1414,9 +1414,9 @@ try {
             Write-EZLogs "| Updating Youtube Author/Artist from webplayer videodata from value: $($synchash.Now_Playing_Artist_Label.DataContext) - to new value: $($result.value.author)" -showtime -logtype Webview2 -LogLevel 2
             $synchash.Now_Playing_Artist_Label.DataContext = "$($result.value.author)"
           }
-          if($synchash.Current_playing_media -and $synchash.Current_playing_media.Artist -ne "$($result.value.author)"){
+          if('Artist' -in $synchash.Current_playing_media.psobject.properties.name -ne "$($result.value.author)"){
             $synchash.Current_playing_media.Artist = "$($result.value.author)"
-          }elseif($synchash.Current_playing_media -and $synchash.Current_playing_media.Playlist -ne "$($result.value.author)"){
+          }elseif('Playlist' -in $synchash.Current_playing_media.psobject.properties.name -and $synchash.Current_playing_media.Playlist -ne "$($result.value.author)"){
             $synchash.Current_playing_media.Playlist = "$($result.value.author)"
           }
         }
@@ -1425,7 +1425,7 @@ try {
           if($synchash.Current_Playing_media.url -ne $updatedUrl){
             write-ezlogs "| Updating current media url from: $($synchash.Current_Playing_media.url) -- to: $updatedUrl" -logtype Webview2
             $synchash.Current_Playing_media.url = $updatedUrl
-          } 
+          }
         }
         $chatURL = "https://www.youtube.com/live_chat?v=$($result.value.video_id)"
         if($thisApp.Config.Enable_YoutubeComments -and $result.value.video_id -and $result.value.isLive -and $synchash.ChatView_URL -ne $chatURL -and $synchash.Current_Playing_media.url -notmatch 'tv\.youtube\.com'){
@@ -1507,6 +1507,84 @@ try {
             if($thisApp.Config.Enable_YoutubeComments -and !$result.value.isLive -and $youtube_ds){
               #TODO: Update comments on video change
               Update-ChatView -synchash $synchash -thisApp $thisApp -Navigate -Youtube_ID $($result.value.video_id) -show
+            }
+            #Update current video thumbnail/images
+            $Imageurl = "https://i.ytimg.com/vi/$($result.value.video_id)/mqdefault.jpg"
+            if($synchash.Current_Playing_media.thumbnail -ne $Imageurl){
+              write-ezlogs "| Updating current media thumbnail from: $($synchash.Current_Playing_media.thumbnail) -- to: $Imageurl" -logtype Webview2
+              $synchash.Current_Playing_media.thumbnail = $Imageurl
+              if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
+                if($thisApp.Config.dev_mode){write-ezlogs "Creating image cache directory: $($thisApp.config.image_Cache_path)" -Dev_mode}
+                [void][System.IO.Directory]::CreateDirectory($thisApp.config.image_Cache_path)
+              }                   
+              $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),'Youtube',"$($result.value.video_id).png")
+              if([System.IO.File]::Exists($image_Cache_path)){
+                $cached_image = $image_Cache_path
+              }elseif($Imageurl){         
+                if($thisApp.Config.dev_mode){write-ezlogs "| Destination path for cached image: $image_Cache_path" -Dev_mode}
+                if(!([System.IO.File]::Exists($image_Cache_path))){
+                  try{
+                    if([System.IO.File]::Exists($Imageurl)){
+                      if($thisApp.Config.dev_mode){write-ezlogs "| Cached Image not found, copying image $Imageurl to cache path $image_Cache_path" -Dev_mode}
+                      [void][system.io.file]::Copy($Imageurl, $image_Cache_path,$true)
+                    }else{
+                      try{
+                        $uri = [system.uri]::new($Imageurl)
+                        write-ezlogs "| Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -logtype Webview2
+                        $webclient = [System.Net.WebClient]::new()
+                        [void]($webclient.DownloadFile($uri,$image_Cache_path))
+                      }catch{
+                        write-ezlogs "An exception occurred downloading file $($uri) to path $($image_Cache_path)" -catcherror $_
+                      }finally{
+                        if($webclient){
+                          $webclient.Dispose()
+                          $webclient = $Null
+                        }
+                      }
+                    }             
+                    if([System.IO.File]::Exists($image_Cache_path)){
+                      $stream_image = [System.IO.File]::OpenRead($image_Cache_path)
+                      $image = [System.Windows.Media.Imaging.BitmapImage]::new()
+                      $image.BeginInit()
+                      $image.CacheOption = "OnLoad"
+                      $image.DecodePixelWidth = '300'
+                      $image.StreamSource = $stream_image
+                      $image.EndInit()
+                      $stream_image.Close()
+                      $stream_image.Dispose()
+                      $stream_image = $null
+                      $image.Freeze()
+                      if($thisApp.Config.Dev_mode){write-ezlogs "Saving decoded media image to path $image_Cache_path" -Dev_mode}
+                      $bmp = [System.Windows.Media.Imaging.BitmapImage]$image
+                      $encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new()
+                      $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
+                      $save_stream = [System.IO.FileStream]::new("$image_Cache_path",'Create')
+                      $encoder.Save($save_stream)
+                      $save_stream.Dispose()                      
+                    }
+                    $cached_image = $image_Cache_path            
+                  }catch{
+                    $cached_image = $Null
+                    write-ezlogs "An exception occurred attempting to download $image to path $image_Cache_path" -catcherror $_
+                  }
+                }           
+              }else{
+                write-ezlogs "Cannot Download image $image to cache path $image_Cache_path - URL is invalid" -warning
+                $cached_image = $Null        
+              }
+              $iconkind = 'Youtube'
+              $iconcolor = '#FFFF0000'
+              if([System.IO.File]::Exists($cached_image)){
+                $stamped_image = Merge-Images -synchash $synchash -thisApp $thisApp -LargeImage $cached_image -StampIcon $iconkind -StampIcon_Pack "PackIconMaterial" -StampIcon_Color $iconcolor -decode_Width '300'
+              }else{
+                $stamped_image = $null
+              }
+              if([System.IO.File]::Exists($stamped_image)){
+                if($synchash.MediaView_Image){             
+                  $synchash.MediaView_Image.Source = $stamped_image
+                }
+                Update-MediaTransportControls -synchash $synchash -thisApp $thisApp -Media $synchash.Current_playing_media -thumbnail $stamped_image
+              }
             }
           }
         }      
@@ -1694,7 +1772,7 @@ try {
               }
             }
             if($synchash.VideoView_Play_Icon.kind -and $synchash.VideoView_Play_Icon.kind -ne 'PlayCircleOutline'){
-              $synchash.VideoView_Play_Icon.kind = 'PlayCircleOutline'  
+              $synchash.VideoView_Play_Icon.kind = 'PlayCircleOutline'
             }
             if($synchash.PauseButton_ToggleButton -and !$synchash.PauseButton_ToggleButton.isChecked){
               $synchash.PauseButton_ToggleButton.isChecked = $true
@@ -1904,7 +1982,7 @@ try {
               if(!$synchash.start_media_timer.IsEnabled){
                 $synchash.Youtube_WebPlayer_retry = 'NoEmbed'
                 $synchash.Start_media = $synchash.Current_playing_media
-                Write-EZLogs ' | Will retry without using embed' -showtime -warning -logtype Webview2 -LogLevel 2
+                Write-EZLogs '| Will retry without using embed' -showtime -warning -logtype Webview2 -LogLevel 2
                 $synchash.start_media_timer.start()
               }
             }catch{
@@ -2265,7 +2343,7 @@ try {
             $SpotifyWebview2_DevToolsProtocolEventReceivedLog = $synchash.Webview2.CoreWebView2.GetDevToolsProtocolEventReceiver('Log.entryAdded')   
             $SpotifyWebview2_DevToolsProtocolEventReceivedRuntime = $synchash.Webview2.CoreWebView2.GetDevToolsProtocolEventReceiver('Runtime.consoleAPICalled')      
             if($SpotifyWebview2_DevToolsProtocolEventReceivedLog){         
-              Write-EZLogs ' | Registering Spotify DevTools Event Log' -Dev_mode -logtype Webview2
+              Write-EZLogs '| Registering Spotify DevTools Event Log' -Dev_mode -logtype Webview2
               $SpotifyWebview2_DevToolsProtocolEventReceivedLog.add_DevToolsProtocolEventReceived({
                   Param($sender)
                   [Microsoft.Web.WebView2.Core.CoreWebView2DevToolsProtocolEventReceivedEventArgs]$e = $args[1]
@@ -2274,23 +2352,23 @@ try {
                       $eventmessage = $args.ParameterObjectAsJson | ConvertFrom-Json
                       Write-EZLogs '>>>> SpotifyWebview2 Event Logs Received' -Dev_mode -logtype Webview2 -linesbefore 1
                       if($eventmessage.entry){
-                        Write-EZLogs " | [$(($eventmessage.entry.level).ToUpper()) - $(($eventmessage.entry.source).ToUpper())] $($eventmessage.entry.text | Out-String)" -Dev_mode -logtype Webview2
-                        Write-EZLogs " | [URL] $($eventmessage.entry.url)" -Dev_mode -logtype Webview2
+                        Write-EZLogs "| [$(($eventmessage.entry.level).ToUpper()) - $(($eventmessage.entry.source).ToUpper())] $($eventmessage.entry.text | Out-String)" -Dev_mode -logtype Webview2
+                        Write-EZLogs "| [URL] $($eventmessage.entry.url)" -Dev_mode -logtype Webview2
                       }elseif($eventmessage.args){
                         if(-not [string]::IsNullOrEmpty($eventmessage.args.className)){
-                          Write-EZLogs " | [$(($eventmessage.args.className))]: $($eventmessage.args.description)" -Dev_mode -logtype Webview2
+                          Write-EZLogs "| [$(($eventmessage.args.className))]: $($eventmessage.args.description)" -Dev_mode -logtype Webview2
                         }else{
                           if(-not [string]::IsNullOrEmpty($eventmessage.args.description)){                           
-                            Write-EZLogs " | $(($eventmessage.args.type)): $($eventmessage.args.value) -- Description: $($eventmessage.args.description)" -Dev_mode -logtype Webview2
+                            Write-EZLogs "| $(($eventmessage.args.type)): $($eventmessage.args.value) -- Description: $($eventmessage.args.description)" -Dev_mode -logtype Webview2
                           }else{
-                            Write-EZLogs " | [$(($eventmessage.args.type))]: $($eventmessage.args.value)" -Dev_mode -logtype Webview2
+                            Write-EZLogs "| [$(($eventmessage.args.type))]: $($eventmessage.args.value)" -Dev_mode -logtype Webview2
                           }                         
                         }                  
                       }else{
-                        Write-EZLogs " | JSON message: $($eventmessage | Out-String)" -Dev_mode -logtype Webview2
+                        Write-EZLogs "| JSON message: $($eventmessage | Out-String)" -Dev_mode -logtype Webview2
                       }                    
                     }else{
-                      Write-EZLogs " | Args: $($args | Out-String)" -Dev_mode -logtype Webview2
+                      Write-EZLogs "| Args: $($args | Out-String)" -Dev_mode -logtype Webview2
                     }                  
                   }catch{
                     Write-EZLogs 'An exception occurred in Logs.DevToolsProtocolEventReceived' -catcherror $_
@@ -2298,7 +2376,7 @@ try {
               })
             }
             if($SpotifyWebview2_DevToolsProtocolEventReceivedRuntime){         
-              Write-EZLogs ' | Registering Spotify DevTools Event Runtime' -Dev_mode -logtype Webview2
+              Write-EZLogs '| Registering Spotify DevTools Event Runtime' -Dev_mode -logtype Webview2
               $SpotifyWebview2_DevToolsProtocolEventReceivedRuntime.add_DevToolsProtocolEventReceived({
                   Param($sender)
                   [Microsoft.Web.WebView2.Core.CoreWebView2DevToolsProtocolEventReceivedEventArgs]$e = $args[1]
@@ -2307,22 +2385,22 @@ try {
                       $eventmessage = $args.ParameterObjectAsJson | ConvertFrom-Json
                       Write-EZLogs '>>>> SpotifyWebview2 Runtime Event Logs Received' -Dev_mode -logtype Webview2 -linesbefore 1
                       if($eventmessage.entry){
-                        Write-EZLogs " | JSON eventmessage.entry: $($eventmessage.entry | Out-String)" -Dev_mode -logtype Webview2
+                        Write-EZLogs "| JSON eventmessage.entry: $($eventmessage.entry | Out-String)" -Dev_mode -logtype Webview2
                       }elseif($eventmessage.args){
                         if(-not [string]::IsNullOrEmpty(($eventmessage.args.className | Out-String))){
-                          Write-EZLogs " | [$(($eventmessage.args.className))]: $($eventmessage.args.description)" -Dev_mode -logtype Webview2
+                          Write-EZLogs "| [$(($eventmessage.args.className))]: $($eventmessage.args.description)" -Dev_mode -logtype Webview2
                         }else{
                           if(-not [string]::IsNullOrEmpty(($eventmessage.args.description | Out-String))){                           
-                            Write-EZLogs " | $(($eventmessage.args.type)): $($eventmessage.args.value) -- Description: $($eventmessage.args.description)" -Dev_mode -logtype Webview2
+                            Write-EZLogs "| $(($eventmessage.args.type)): $($eventmessage.args.value) -- Description: $($eventmessage.args.description)" -Dev_mode -logtype Webview2
                           }else{
-                            Write-EZLogs " | [$(($eventmessage.args.type))]: $($eventmessage.args.value)" -Dev_mode -logtype Webview2
+                            Write-EZLogs "| [$(($eventmessage.args.type))]: $($eventmessage.args.value)" -Dev_mode -logtype Webview2
                           }                         
                         }                  
                       }else{
-                        Write-EZLogs " | JSON message: $($eventmessage | Out-String)" -Dev_mode -logtype Webview2
+                        Write-EZLogs "| JSON message: $($eventmessage | Out-String)" -Dev_mode -logtype Webview2
                       }                    
                     }else{
-                      Write-EZLogs " | Args: $($args | Out-String)" -Dev_mode -logtype Webview2
+                      Write-EZLogs "| Args: $($args | Out-String)" -Dev_mode -logtype Webview2
                     }                  
                   }catch{
                     Write-EZLogs 'An exception occurred in Runtime.add_DevToolsProtocolEventReceived' -catcherror $_
@@ -2531,7 +2609,7 @@ try {
             if($synchash.Spotify_WebPlayer_State.current_track.name -and $synchash.Now_Playing_Title_Label.DataContext -ne "$($synchash.Spotify_WebPlayer_State.current_track.name)"){
               Write-EZLogs ">>>> Updating Now Playing title (from: $($synchash.Now_Playing_Title_Label.DataContext)) with Spotify track name: $($synchash.Spotify_WebPlayer_State.current_track.name)" -showtime -logtype Webview2
               $synchash.Now_Playing_Title_Label.DataContext = "$($synchash.Spotify_WebPlayer_State.current_track.name)"
-              Write-EZLogs " | Spotify current track artists: $($synchash.Spotify_WebPlayer_State.current_track.artists)" -Dev_mode -logtype Webview2
+              Write-EZLogs "| Spotify current track artists: $($synchash.Spotify_WebPlayer_State.current_track.artists)" -Dev_mode -logtype Webview2
             }
             if($synchash.Spotify_WebPlayer_State.current_track.Artists.name -and $synchash.Now_Playing_Artist_Label.DataContext -ne "$($synchash.Spotify_WebPlayer_State.current_track.Artists.name)"){          
               Write-EZLogs ">>>> Updating Now Playing artist (from: $($synchash.Now_Playing_Artist_Label.DataContext)) with Spotify artist name: $($synchash.Spotify_WebPlayer_State.current_track.Artists.name)" -showtime -logtype Webview2
@@ -2807,7 +2885,7 @@ Function Initialize-WebBrowser
       $synchash.WebBrowser.Add_IsVisibleChanged($synchash.WebView2_VisibleChange_Command)
     }
     if($synchash.WebBrowserGrid.Children -contains $synchash.AirControl){
-      Write-EZLogs ' | Removing Aircontrol from WebBrowserGrid' -loglevel 2 -logtype Webview2
+      Write-EZLogs '| Removing Aircontrol from WebBrowserGrid' -loglevel 2 -logtype Webview2
       [void]$synchash.WebBrowserGrid.children.Remove($synchash.AirControl)
       $synchash.AirControl.Front = $null
       $synchash.AirControl.Back = $null
@@ -2840,7 +2918,7 @@ Function Initialize-WebBrowser
         $synchash.WebBrowserOptions.AreBrowserExtensionsEnabled = $true
         $synchash.WebBrowser.CreationProperties = [Microsoft.Web.WebView2.Wpf.CoreWebView2CreationProperties]::new()
         $synchash.WebBrowser.CreationProperties.AreBrowserExtensionsEnabled = $true
-        if($thisApp.Config.Dev_mode){Write-EZLogs " | WebBrowser CreationProperties: $($synchash.WebBrowser.CreationProperties | Out-String)" -logtype Webview2 -Dev_mode}
+        if($thisApp.Config.Dev_mode){Write-EZLogs "| WebBrowser CreationProperties: $($synchash.WebBrowser.CreationProperties | Out-String)" -logtype Webview2 -Dev_mode}
       }
       #--edge-webview-enable-builtin-background-extensions 
       $synchash.WebBrowserOptions.AdditionalBrowserArguments = '--autoplay-policy=no-user-gesture-required --Disable-features=HardwareMediaKeyHandling,OverscrollHistoryNavigation,msExperimentalScrolling'
@@ -2864,14 +2942,14 @@ Function Initialize-WebBrowser
       try{
         Write-EZLogs ">>>> WebBrowser Navigation completed -- Sender: $($sender.Name) -- Source: $($sender.source)" -showtime -logtype Webview2
         if($e.IsSuccess){
-          $url = $sender.source        
+          $url = $sender.source
           if($url -match 'youtube\.com|youtu\.be' -and $url -notmatch 'accounts\.google\.com'){
             $synchash.WebBrowser_Youtube_URL = $sender.source
             $Youtube = Get-YoutubeUrl -thisApp $thisApp -URL $url
-            Write-EZLogs " | Youtube page $($synchash.WebBrowser_Youtube_URL)" -loglevel 2 -logtype Webview2
+            Write-EZLogs "| Youtube page $($synchash.WebBrowser_Youtube_URL)" -loglevel 2 -logtype Webview2
           }
           if($Youtube.id -and $url -notmatch 'tv\.youtube\.com' -and $url -notmatch 'accounts\.google\.com'){
-            Write-EZLogs " | Youtube id: $($Youtube.id)" -loglevel 2 -logtype Webview2 
+            Write-EZLogs "| Youtube id: $($Youtube.id)" -loglevel 2 -logtype Webview2 
             if($thisApp.Config.Enable_Sponsorblock -and $thisApp.Config.Sponsorblock_ActionType){
               $thisApp.SponsorBlock = Get-SponsorBlock -videoId $Youtube.id -actionType $thisApp.Config.Sponsorblock_ActionType
             }else{
@@ -3195,7 +3273,7 @@ if(player){
             }
           }
           if($youtube_ds.dislikes){
-            Write-EZLogs " | Youtube dislikes: $($youtube_ds.dislikes)" -logtype Webview2
+            Write-EZLogs "| Youtube dislikes: $($youtube_ds.dislikes)" -logtype Webview2
             $sender.ExecuteScriptAsync(
               $WebBrowser_Script
             )
@@ -3322,10 +3400,10 @@ if(player){
                             if($thisApp.Config.Dev_mode){Write-EZLogs ">>>> $($sender.ContentId) args: $($args[1] | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode}
                             $WebView2 = $($sender.ContentId) -replace 'TabWindow', 'Webview2'
                             if($synchash."$WebView2".isVisible -eq $false){
-                              Write-EZLogs " | Disposing Webview2 instance $($WebView2)" -loglevel 2 -logtype Webview2
+                              Write-EZLogs "| Disposing Webview2 instance $($WebView2)" -loglevel 2 -logtype Webview2
                               $synchash."$WebView2".dispose()
                               $synchash."$WebView2" = $null
-                              Write-EZLogs ' | Webview2 instance disposed' -loglevel 2 -logtype Webview2 -GetMemoryUsage
+                              Write-EZLogs '| Webview2 instance disposed' -loglevel 2 -logtype Webview2 -GetMemoryUsage
                             }
                           }catch{
                             Write-EZLogs "An exception occurred in WebBrowser_TabWindow_$($synchash.WebBrowser_tabs) closed event" -catcherror $_
@@ -3579,7 +3657,7 @@ if(player){
               $Task.GetAwaiter().OnCompleted(
                 [Action]{
                   try{
-                    Write-EZLogs " | Installed WebBrowser extensions: $($Task.Result.name -join ', ')" -logtype Webview2
+                    Write-EZLogs "| Installed WebBrowser extensions: $($Task.Result.name -join ', ')" -logtype Webview2
                     $Extensions | & { process {
                         $InstallTask = $null
                         $Extension = $_
@@ -3604,13 +3682,13 @@ if(player){
                                             $ExtensionUpdate = $thisApp.Config.Webview2_Extensions[$ExtensionUpdateIndex]
                                           }
                                           if($ExtensionUpdate){
-                                            Write-EZLogs " | Updating installed extension from id '$($ExtensionUpdate.ID)' to new id '$($InstallTask.Result.ID)' for extension: $($InstallTask.Result.Name)" -logtype Webview2
+                                            Write-EZLogs "| Updating installed extension from id '$($ExtensionUpdate.ID)' to new id '$($InstallTask.Result.ID)' for extension: $($InstallTask.Result.Name)" -logtype Webview2
                                             $ExtensionUpdate.id = $InstallTask.Result.ID
                                           }else{
                                             Write-EZLogs "Unable to find extension with name '$($InstallTask.Result.Name)' in Config.Webview2_Extensions" -logtype Webview2 -warning
                                           }                                                                         
                                         }else{
-                                          Write-EZLogs " | Installed extension id: $($InstallTask.Result.ID)" -logtype Webview2
+                                          Write-EZLogs "| Installed extension id: $($InstallTask.Result.ID)" -logtype Webview2
                                         }
                                       }catch{
                                         Write-EZLogs "An exception occurred loading Webbrowser extension: $($Extension | Out-String)" -catcherror $_
@@ -3792,13 +3870,49 @@ if(player){
                         $LinkUri = $synchash.WebView2_ContextMenuLink
                         $linktext = $synchash.WebView2_ContextMenuText
                         try{  
-                          $result = Open-FolderDialog -Title 'Select the directory path where media will be downloaded to'
-                          if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and [System.IO.Directory]::Exists($result)){
-                            Write-EZLogs "[WebBrowser] >>>> Downloading $($linktext) to $result" -showtime
-                            Invoke-DownloadMedia -Download_URL $LinkUri -Title_name $linktext -Download_Path $result -synchash $synchash -thisapp $thisApp -Show_notification
+                          $Options = [System.Collections.Generic.List[PSCustomObject]]::new()
+                          $OptionPath = [PSCustomObject]@{
+                            'Name' = 'FolderPath'
+                            'Label' = 'Destination Folder'
+                            'Type' = 'textbox'
+                            'BrowseType' = 'SaveFolder'
+                            'Value' = $thisApp.Config.Youtube_Download_Path
+                            'Output' = ''
+                          }
+                          [void]$Options.add($OptionPath)
+                          $OptionAudioOnly = [PSCustomObject]@{
+                            'Name' = 'AudioOnly'
+                            'Label' = 'Audio Track Only'
+                            'Type' = 'CheckBox'
+                            'Value' = $false
+                            'Output' = ''
+                          }
+                          [void]$Options.add($OptionAudioOnly)
+                          $OptionSponserBlock = [PSCustomObject]@{
+                            'Name' = 'SponserBlock'
+                            'Label' = 'Apply SponserBlock'
+                            'Type' = 'ToggleSwitch'
+                            'Value' = $false
+                            'Output' = ''
+                          }
+                          [void]$Options.add($OptionSponserBlock) 
+                          $Result = Show-CustomWindow -thisApp $thisApp -WindowTitle 'Download Media' -HeaderText 'Download Media Options' -Message "Select the following options below to confirm download of media: $($LinkUri)" -Type Options -Options $Options -WaitforOutput -TopMost
+                          $Destination = $Result[0].Output
+                          $AudioOnly = $Result[1].Output
+                          $SponserBlock = $Result[2].Output
+                          if([System.IO.Directory]::Exists($Destination)){
+                            write-ezlogs -text ">>>> Downloading: $($linktext) - $LinkUri -- to: $Destination" -showtime
+                            Invoke-DownloadMedia -Download_URL $LinkUri -Title_name $linktext -Download_Path $Destination -synchash $synchash -thisapp $thisApp -Show_notification -AudioOnly:$([bool]$AudioOnly) -UseSponserblock:$([bool]$SponserBlock)
                           }else{
                             Write-EZLogs "[WebBrowser] The provided URL or path is not valid or was not provided! -- Link: $LinkUri - Directory: $result" -showtime -warning -logtype Youtube
-                          }                
+                          }
+                          <#                          $result = Open-FolderDialog -Title 'Select the directory path where media will be downloaded to'
+                              if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and [System.IO.Directory]::Exists($result)){
+                              Write-EZLogs "[WebBrowser] >>>> Downloading $($linktext) to $result" -showtime
+                              Invoke-DownloadMedia -Download_URL $LinkUri -Title_name $linktext -Download_Path $result -synchash $synchash -thisapp $thisApp -Show_notification
+                              }else{
+                              Write-EZLogs "[WebBrowser] The provided URL or path is not valid or was not provided! -- Link: $LinkUri - Directory: $result" -showtime -warning -logtype Youtube
+                          } #>               
                         }catch{
                           Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
                         }                                   
@@ -3840,7 +3954,7 @@ if(player){
                           try{  
                             if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri)){
                               if($thisApp.Config.PlayLink_OnDrop){
-                                Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext
+                                Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -StartPlayback
                               }
                               Write-EZLogs "[WebBrowser] >>>> Adding Youtube video $LinkUri - $($linktext)" -showtime -color cyan -logtype Youtube
                               Import-Youtube -Youtube_URL $LinkUri -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.config.Media_Profile_Directory  -thisApp $thisApp   
@@ -3871,7 +3985,7 @@ if(player){
                                 $LinkUri = ($($LinkUri) -split('&t='))[0].trim()
                               }          
                               Write-EZLogs "[WebBrowser] >>>> Playing Youtube link $LinkUri" -showtime -color cyan 
-                              Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -PlayOnly
+                              Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -PlayOnly -StartPlayback
                             }else{
                               Write-EZLogs "[WebBrowser] The provided URL is not valid or was not provided! -- $LinkUri" -showtime -warning -logtype Youtube
                             }                
@@ -4696,11 +4810,11 @@ Function Initialize-ChatView
             if(!$synchash.Chat_Twitch_Emotes_Script){
               $synchash.Chat_Twitch_Emotes_Script = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Twitch\twitch-bttv.js")
             }
-            Write-EZLogs ' | Executing Chat_Twitch_BTTV_Script' -showtime -logtype Webview2
+            Write-EZLogs '| Executing Chat_Twitch_BTTV_Script' -showtime -logtype Webview2
             $synchash.chat_WebView2.ExecuteScriptAsync(
               $synchash.Chat_Twitch_Emotes_Script
             )
-            Write-EZLogs " | Chat_WebView2.CoreWebView2.DocumentTitle: $($synchash.chat_WebView2.CoreWebView2.DocumentTitle)" -loglevel 2 -logtype Webview2 
+            Write-EZLogs "| Chat_WebView2.CoreWebView2.DocumentTitle: $($synchash.chat_WebView2.CoreWebView2.DocumentTitle)" -loglevel 2 -logtype Webview2 
             if($thisApp.Config.Dev_mode){
               Write-EZLogs "chat_WebView2.CoreWebView2: $($synchash.chat_WebView2.CoreWebView2 | Select-Object * | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode  
               Write-EZLogs "chat_WebView2.CoreWebView2.Environment: $($synchash.chat_WebView2.CoreWebView2.Environment | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode
@@ -4819,7 +4933,7 @@ Function Start-WebNavigation{
         [uri]$synchash.Spotify_WebPlayer_HTML = "$($thisApp.Config.Current_Folder)\Resources\Spotify\SpotifyWebPlayerTemplate.html"
       }
       if($uri -match 'youtube\.com' -or $uri -match 'youtu\.be' -and $WebView2.Name -ne 'WebBrowser'){
-        Write-EZLogs ' | URL is of type Youtube' -logtype Webview2
+        Write-EZLogs '| URL is of type Youtube' -logtype Webview2
         $Youtube = Get-YoutubeURL -thisApp $thisApp -URL $uri -APILookup
         if($Youtube.playlist_id){
           if($thisApp.Config.Use_invidious){            
@@ -4885,10 +4999,10 @@ Function Start-WebNavigation{
                 $device = $devices | Where-Object {$_.Name -match $thisApp.config.App_Name}
               }
               if($device.count -gt 1 -and $synchash.Spotify_WebPlayer.Deviceid){
-                Write-EZLogs " | Multiple Spotify Devices returned, checking for existing Spotify_WebPlayer deviceid ($($synchash.Spotify_WebPlayer.Deviceid))" -logtype Webview2 -loglevel 2 -warning
+                Write-EZLogs "| Multiple Spotify Devices returned, checking for existing Spotify_WebPlayer deviceid ($($synchash.Spotify_WebPlayer.Deviceid))" -logtype Webview2 -loglevel 2 -warning
                 $device = $devices.Where({$_.id -eq $synchash.Spotify_WebPlayer.Deviceid})
               }
-              Write-EZLogs " | Spotify Devices ($($device))" -logtype Webview2 -loglevel 2
+              Write-EZLogs "| Spotify Devices ($($device))" -logtype Webview2 -loglevel 2
               if($device.id -and $synchash.Spotify_WebPlayer){               
                 $synchash.Spotify_WebPlayer.Deviceid = $device.id
               }else{
@@ -4930,7 +5044,7 @@ Function Start-WebNavigation{
                 $device = $devices | Where-Object {$_.Name -match $thisApp.config.App_Name}
               }
               if($device.count -gt 1 -and $synchash.Spotify_WebPlayer.Deviceid){
-                Write-EZLogs " | Multiple Spotify Devices returned, checking for existing Spotify_WebPlayer deviceid ($($synchash.Spotify_WebPlayer.Deviceid))" -logtype Webview2 -loglevel 2 -warning
+                Write-EZLogs "| Multiple Spotify Devices returned, checking for existing Spotify_WebPlayer deviceid ($($synchash.Spotify_WebPlayer.Deviceid))" -logtype Webview2 -loglevel 2 -warning
                 $device = $devices | Where-Object {$_.id -eq $synchash.Spotify_WebPlayer.Deviceid}
               }
               if($device.id){
@@ -5014,14 +5128,14 @@ try {
           $synchash.WebBrowser_url = $uri
         }     
         if($urihtml){
-          Write-EZLogs " | Adding CoreWebView2InitializationCompleted with navigate to url: $($urihtml)" -logtype Webview2
+          Write-EZLogs "| Adding CoreWebView2InitializationCompleted with navigate to url: $($urihtml)" -logtype Webview2
           $synchash.Youtube_WebPlayer_URL = $urihtml
           $synchash.Spotify_WebPlayer_URL = $urihtml
         }elseif($WebView2.name -eq 'YoutubeWebview2'){
-          Write-EZLogs " | Setting URL variable for Youtubewebview2 to navigate to url: $($uri)" -logtype Webview2 
+          Write-EZLogs "| Setting URL variable for Youtubewebview2 to navigate to url: $($uri)" -logtype Webview2 
           $synchash.Youtube_WebPlayer_URL = $uri
         }else{
-          Write-EZLogs " | Setting URL variable for webview2 to navigate to url: $($uri)" -logtype Webview2
+          Write-EZLogs "| Setting URL variable for webview2 to navigate to url: $($uri)" -logtype Webview2
           $synchash.Youtube_WebPlayer_URL = $uri
           $synchash.Spotify_WebPlayer_URL = $uri
         }                      

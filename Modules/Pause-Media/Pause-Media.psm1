@@ -125,7 +125,7 @@ function Pause-Media
 
         #Set Volume
         if(-not [string]::IsNullOrEmpty($thisapp.Config.Media_Volume) -and $synchash.vlc -and $synchash.vlc.Volume -ne $thisapp.Config.Media_Volume){
-          write-ezlogs " | Setting vlc volume: $($thisapp.Config.Media_Volume)" -loglevel 2 -logtype Libvlc
+          write-ezlogs "| Setting vlc volume: $($thisapp.Config.Media_Volume)" -loglevel 2 -logtype Libvlc
           $synchash.Volume_Slider.value = $thisapp.Config.Media_Volume
           if($thisApp.Config.Libvlc_Version -eq '4'){
             $synchash.vlc.SetVolume($thisapp.Config.Media_Volume)
@@ -135,7 +135,7 @@ function Pause-Media
         }elseif(-not [string]::IsNullOrEmpty($synchash.Volume_Slider.value)){
           $thisapp.Config.Media_Volume = $synchash.Volume_Slider.value
           if($synchash.vlc -and $synchash.vlc.Volume -ne $synchash.Volume_Slider.value){
-            write-ezlogs " | Setting vlc volume: $($synchash.Volume_Slider.value)" -loglevel 2 -logtype Libvlc
+            write-ezlogs "| Setting vlc volume: $($synchash.Volume_Slider.value)" -loglevel 2 -logtype Libvlc
             if($thisApp.Config.Libvlc_Version -eq '4'){
               $synchash.vlc.SetVolume($synchash.Volume_Slider.value)
             }else{
@@ -143,7 +143,7 @@ function Pause-Media
             }
           }         
         }else{
-          write-ezlogs " | Volume level unknown??: $($synchash.Volume_Slider.value)" -loglevel 2 -Warning
+          write-ezlogs "| Volume level unknown??: $($synchash.Volume_Slider.value)" -loglevel 2 -Warning
           $thisapp.Config.Media_Volume = 100
         }
         if(-not [string]::IsNullOrEmpty($synchash.Current_playing_media.Current_Progress_Secs)){
@@ -203,17 +203,17 @@ function Pause-Media
         }  
         if(-not [string]::IsNullOrEmpty($synchash.MediaPlayer_TotalDuration) -and $synchash.MediaPlayer_TotalDuration -ne "0:0:0"){
           if(!$synchash.MediaPlayer_Slider.isEnabled){
-            if($thisApp.Config.Verbose_logging){write-ezlogs " | Enabling MediaPlayer_slider" -showtime -color cyan}
+            if($thisApp.Config.Verbose_logging){write-ezlogs "| Enabling MediaPlayer_slider" -showtime -color cyan}
             $synchash.MediaPlayer_Slider.isEnabled = $true
             #$synchash.VLC_Grid_Row3.Height="40"
           }
         }elseif($synchash.MediaPlayer_Slider.isEnabled){
-          if($thisApp.Config.Verbose_logging){write-ezlogs " | Disabling MediaPlayer_slider" -showtime -color cyan}
+          if($thisApp.Config.Verbose_logging){write-ezlogs "| Disabling MediaPlayer_slider" -showtime -color cyan}
           $synchash.MediaPlayer_Slider.isEnabled = $false
           #$synchash.VLC_Grid_Row3.Height="0"
         }  
         if($synchash.MediaPlayer_TotalDuration -and $synchash.MediaPlayer_Slider.Maximum -ne $synchash.MediaPlayer_TotalDuration){
-          if($thisApp.Config.Verbose_logging){write-ezlogs " | Setting MediaPlayer_Slider max to $($synchash.MediaPlayer_TotalDuration)" -showtime -color cyan}
+          if($thisApp.Config.Verbose_logging){write-ezlogs "| Setting MediaPlayer_Slider max to $($synchash.MediaPlayer_TotalDuration)" -showtime -color cyan}
           $synchash.MediaPlayer_Slider.Maximum = $synchash.MediaPlayer_TotalDuration
         } 
         if($synchash.MediaPlayer_Slider.isEnabled){
@@ -360,7 +360,7 @@ function Pause-Media
       }
       #Set Volume
       if(-not [string]::IsNullOrEmpty($thisapp.Config.Media_Volume) -and $synchash.vlc -and $synchash.vlc.Volume -ne $thisapp.Config.Media_Volume){
-        write-ezlogs " | Setting vlc volume: $($thisapp.Config.Media_Volume)" -loglevel 2 -logtype Libvlc
+        write-ezlogs "| Setting vlc volume: $($thisapp.Config.Media_Volume)" -loglevel 2 -logtype Libvlc
         $synchash.Volume_Slider.value = $thisapp.Config.Media_Volume
         if($thisApp.Config.Libvlc_Version -eq '4'){
           $synchash.vlc.SetVolume($thisapp.Config.Media_Volume)
@@ -370,7 +370,7 @@ function Pause-Media
       }elseif(-not [string]::IsNullOrEmpty($synchash.Volume_Slider.value)){
         $thisapp.Config.Media_Volume = $synchash.Volume_Slider.value
         if($synchash.vlc -and $synchash.vlc.Volume -ne $synchash.Volume_Slider.value){
-          write-ezlogs " | Setting vlc volume: $($synchash.Volume_Slider.value)" -loglevel 2 -logtype Libvlc
+          write-ezlogs "| Setting vlc volume: $($synchash.Volume_Slider.value)" -loglevel 2 -logtype Libvlc
           if($thisApp.Config.Libvlc_Version -eq '4'){
             $synchash.vlc.SetVolume($synchash.Volume_Slider.value)
           }else{
@@ -378,19 +378,9 @@ function Pause-Media
           }
         }         
       }else{
-        write-ezlogs " | Volume level unknown??: $($synchash.Volume_Slider.value)" -loglevel 2 -Warning
+        write-ezlogs "| Volume level unknown??: $($synchash.Volume_Slider.value)" -loglevel 2 -Warning
         $thisapp.Config.Media_Volume = 100
       }  
-             
-      <#      if($synchash.vlc -and $synchash.vlc.Volume -ne $synchash.Volume_Slider.value){
-          write-ezlogs " | Setting vlc volume: $($synchash.Volume_Slider.value)" -loglevel 2 -logtype Libvlc
-          if($thisApp.Config.Libvlc_Version -eq '4'){
-          $synchash.vlc.SetVolume($synchash.Volume_Slider.value)
-          }else{
-          $synchash.vlc.Volume = $synchash.Volume_Slider.value
-          }
-      }#>
-      #$thisapp.Config.Media_Volume = $synchash.vlc.Volume
       if($synchash.Volume_Slider.value -ge 75){
         $synchash.VideoView_Mute_Icon.kind = 'VolumeHigh'
       }elseif($synchash.Volume_Slider.value -gt 25 -and $synchash.Volume_Slider.value -lt 75){
@@ -399,11 +389,7 @@ function Pause-Media
         $synchash.VideoView_Mute_Icon.kind = 'VolumeLow'
       }elseif($synchash.Volume_Slider.value -le 0){
         $synchash.VideoView_Mute_Icon.kind = 'Volumeoff'
-      }        
-      #$stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\\Resources\\Material-PauseCircle.png")
-      #$image =  [System.Drawing.Image]::FromStream($stream_image)
-      #$Synchash.Menu_Pause.image = $image
-      #$Synchash.Menu_Pause.Text = 'Pause Playback'
+      }
       if($synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled -and $Update_MediaTransportControls){
         $synchash.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus = 'Playing'
         $synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()

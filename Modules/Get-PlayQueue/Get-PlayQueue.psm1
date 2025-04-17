@@ -188,7 +188,7 @@ function Update-PlayQueue
               }
             }
             if($thisApp.config.Current_Playlist.count -gt 0){
-              write-ezlogs " | Reordering play queue"
+              write-ezlogs "| Reordering play queue"
               [array]$existingitems = $thisapp.config.Current_Playlist.values
               [void]$thisApp.config.Current_Playlist.clear()
               $Count = 0
@@ -339,11 +339,14 @@ function Update-PlayQueue
               $historyindex++
               write-ezlogs "[Update-PlayQueue] | Adding $($i) to Play history" -showtime
               [void]$thisApp.config.History_Playlist.add($historyindex,$i)
-              [Media]$MediatoUpdate = Get-MediaProfile -synchash $synchash -thisApp $thisApp -Media_ID $i
-              if($MediatoUpdate){
-                $UpdateTimesPlayed = $MediatoUpdate.TimesPlayed + 1
-                write-ezlogs "Updating play count for $($MediatoUpdate.title) from $($MediatoUpdate.TimesPlayed) to $($UpdateTimesPlayed)"
+              $MediatoUpdate = Get-MediaProfile -synchash $synchash -thisApp $thisApp -Media_ID $i
+              #[Media]$MediatoUpdate = Get-MediaProfile -synchash $synchash -thisApp $thisApp -Media_ID $i
+              if($MediatoUpdate -is [Media]){
+                $UpdateTimesPlayed = [int]($MediatoUpdate.TimesPlayed) + 1
+                $LastPlayed = [DateTime]::now
+                write-ezlogs "Updating play count for $($MediatoUpdate.title) from $($MediatoUpdate.TimesPlayed) to $($UpdateTimesPlayed) and LastPlayed to $LastPlayed"
                 $MediatoUpdate.TimesPlayed = $UpdateTimesPlayed
+                $MediatoUpdate.LastPlayed = $LastPlayed
               }
             }
           }
@@ -468,8 +471,9 @@ function Get-PlayQueue
             }else{
               $WaitTimeout = 0
               write-ezlogs "[Get-PlayQueue] Get-Playlists is running, waiting briefly until it finishes..." -warning
-              while(![bool]($synchashWeak.Target.all_playlists -isnot [System.Collections.ObjectModel.ObservableCollection[playlist]]) -and $WaitTimeout -lt 100){
+              while(([bool]($synchashWeak.Target.all_playlists -isnot [System.Collections.ObjectModel.ObservableCollection[playlist]])) -and $WaitTimeout -lt 100){
                 $WaitTimeout++
+                #$existing_Runspace = Stop-Runspace -thisApp $thisApp -runspace_name 'Get_Playlists_RUNSPACE' -check -ErrorAction SilentlyContinue
                 [System.Threading.Thread]::Sleep(100)
               }
               write-ezlogs ">>>> Continuing execution of Get-PlayQueue - waittimeout: $WaitTimeout"

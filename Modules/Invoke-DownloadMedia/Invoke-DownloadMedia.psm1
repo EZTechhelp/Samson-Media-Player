@@ -23,9 +23,8 @@
     EZTechhelp - https://www.eztechhelp.com
 
     .NOTES
-
+    TODO: Yikes, this module needs ALOT of work, likely complete rebuild
 #>
-
 
 #---------------------------------------------- 
 #region Invoke-DownloadMedia Function
@@ -37,27 +36,23 @@ function Invoke-DownloadMedia{
     [string]$Download_URL,
     [string]$Title_name,
     $synchash,
-    $thisScript,
     $Download_Path,
     $Media_ContextMenu,
     $PlayMedia_Command,
     $PlaySpotify_Media_Command,
     $thisApp,
     [switch]$Show_notification,
+    [switch]$AudioOnly,
+    [switch]$UseSponserblock,
     [switch]$Verboselog
   )
-
-  if($Media.title){
+  if($Title_name){
+    $title = $Title_name
+  }elseif($Media.title){
     $title = $Media.title
   }elseif($Media.name){
     $title = $Media.name
-  }elseif($Title_name){
-    $title = $Title_name
   }
-
-  #$mediatitle = $($Media.title)
-  #$encodedtitle = $media.id
-  #$artist = $Media.Artist
   if($Download_URL){
     $media_link = $($Download_URL).trim()
   }else{
@@ -68,7 +63,6 @@ function Invoke-DownloadMedia{
     }
   }
   write-ezlogs ">>>> Selected Media to download $($title) -- $media_link" -showtime
-  #$length = $($Media.songinfo.length  | out-string)
   $synchash.Download_message = ''
   $vlc_scriptblock = {
     param (
@@ -81,6 +75,8 @@ function Invoke-DownloadMedia{
       $media_link = $media_link,
       $title = $title,
       [switch]$Show_notification = $Show_notification,
+      [switch]$AudioOnly = $AudioOnly,
+      [switch]$UseSponserblock = $UseSponserblock,
       [switch]$Verboselog = $Verboselog
     )
     $media_formats = @(
@@ -105,24 +101,21 @@ function Invoke-DownloadMedia{
       '*.m2ts'
       '*.aac'
     )  
+    #$illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
+    #$illegalpattern = "[™`?�:$illegal]"
+    #$DestinationFileName = [system.io.path]::Combine($Download_Path,"$title.mp4")
     $youtubedl_path = "$($thisApp.config.Current_folder)\Resources\youtube-dl"
     $ffmpeg_Path = "$($thisApp.config.Current_folder)\Resources\flac"
-    $envpaths = [Environment]::GetEnvironmentVariable('Path') -split ';'
+    #$envpaths = [Environment]::GetEnvironmentVariable('Path') -split ';'
     $envpaths2 = $env:path -split ';'
     $synchash.Download_Cancel = $false
     if($ffmpeg_Path -notin $envpaths2){
-      write-ezlogs ">>>> Adding ffmpeg to user enviroment path $ffmpeg_Path"
+      write-ezlogs "| Adding ffmpeg to user enviroment path $ffmpeg_Path" -Dev_mode
       $env:path += ";$ffmpeg_Path"
-      <#      if($ffmpeg_Path -notin $envpaths){
-          [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$ffmpeg_Path",[EnvironmentVariableTarget]::User)
-      }#>
     }
     if($youtubedl_path -notin $envpaths2){
-      write-ezlogs ">>>> Adding ytdlp to user enviroment path $youtubedl_path"
+      write-ezlogs "| Adding ytdlp to user enviroment path $youtubedl_path" -Dev_mode
       $env:path += ";$youtubedl_path"
-      <#      if($youtubedl_path -notin $envpaths){
-          [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$youtubedl_path",[EnvironmentVariableTarget]::User)
-      }#>
     }
     $yt_dlp_tempfile = "$($thisApp.config.Temp_folder)\yt_dlp.log"     
     $thisApp.config.Download_logfile = $yt_dlp_tempfile  
@@ -157,21 +150,31 @@ function Invoke-DownloadMedia{
       if($youtube_id -match '\&pp='){
         $youtube_id = ($youtube_id -split '\&pp=')[0]
       }           
-      write-ezlogs " | Getting best quality video and audio links from yt_dlp" -showtime 
+      write-ezlogs "| Getting best quality video and audio links from yt_dlp" -showtime 
       if($youtube_id){
-        $sponserblock = "--sponsorblock-remove all"
+        if($UseSponserblock){
+          $sponserblock = "--sponsorblock-remove all"
+        }else{
+          $sponserblock = $Null
+        }       
         #$format = "bestvideo+bestaudio"
-        $format = "bv+ba/b"
-        $media_Link = "https://www.youtube.com/watch/$youtube_id"
+        if($AudioOnly){
+          $format = "bestaudio"
+        }else{
+          $format = "bv+ba/b"
+        }       
+        $media_Link = "https://www.youtube.com/watch?v=$youtube_id"
       }else{
         $sponserblock = $Null
         $format = "bestaudio"
       }
+      $MetaDataReplace = "--windows-filenames --replace-in-metadata title `"[\U0000002A\U0000005C\U0000002F\U0000003A\U00000022\U0000003F\U0000007C\U00010000-\U0010FFFF]`" `" `" --replace-in-metadata title `"[\U00000027]`" `"`" --replace-in-metadata title `"’`" `"`""
+      #$OutputFormat = '`"%(uploader)s-%(title)s.%(ext)s`"'
       if(-not [string]::IsNullOrEmpty($thisApp.config.Youtube_Browser)){
-        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f bv+ba/b $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --cookies-from-browser $($thisApp.config.Youtube_Browser) --audio-quality 0 --ffmpeg-location `"$ffmpeg_Path`" --extractor-args `"youtube:player_client=default,ios`" --embed-thumbnail --add-metadata --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
+        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f $format $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --cookies-from-browser $($thisApp.config.Youtube_Browser) --audio-quality 0 --ffmpeg-location `"$ffmpeg_Path`" --extractor-args `"youtube:player_client=default,ios`" --embed-thumbnail --add-metadata $MetaDataReplace --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
       }else{
-        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f $format $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --audio-quality 0 --embed-thumbnail --ffmpeg-location `"$ffmpeg_Path`" --add-metadata --extractor-args `"youtube:player_client=default,ios`" --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
-      }  
+        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f $format $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --audio-quality 0 --embed-thumbnail --ffmpeg-location `"$ffmpeg_Path`" --add-metadata --extractor-args `"youtube:player_client=default,ios`" $MetaDataReplace --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
+      }
     }else{
       write-ezlogs "No valid youtube URL was provided!" -showtime -warning
       Update-Notifications  -Level 'WARNING' -Message "No valid youtube URL was provided or found ($media_link)" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout
@@ -187,7 +190,7 @@ function Invoke-DownloadMedia{
     }
     $downloaded_Files = [System.Collections.Generic.List[String]]::new()
     $Files_to_Import = [System.Collections.Generic.List[String]]::new()
-    write-ezlogs "[yt_dlp Download] >>>> Executing yt_dlp with command '$command'" -showtime -enablelogs -color Cyan
+    write-ezlogs ">>>> Executing yt_dlp with command '$command'" -showtime -enablelogs -color Cyan
     if([System.IO.File]::Exists($yt_dlp_tempfile)){
       $null = remove-item $yt_dlp_tempfile -Force
     }
@@ -231,7 +234,7 @@ function Invoke-DownloadMedia{
         else
         {        
           #Watch the log file and output all new lines. If the new line matches our exit trigger text, break out of wait         
-          Get-Content -Path $yt_dlp_tempfile -force -Tail 1 | ForEach {
+          Get-Content -Path $yt_dlp_tempfile -force -Tail 1 | ForEach-Object {
             $count++
             Write-EZLogs "$($_)" -showtime -Dev_mode
             $speedpattern = 'at (?<value>.*) ETA'
@@ -239,6 +242,7 @@ function Invoke-DownloadMedia{
             $progresspattern ='\[download\]  (?<value>.*)% of'
             $etapattern ='ETA (?<value>.*)'
             $embedthumbpattern = "\[EmbedThumbnail\] (?<value>.*): Adding thumbnail to `"(?<value>.*)`""
+            $errorpattern = "ERROR\: (?<value>.*)"
             $addmetadatapattern = "\[Metadata\](?<value>.*)Adding metadata to `"(?<value>.*)`""
             $downloaddestpattern = "\[download\] Destination: (?<value>.*)"
             $multiDownloadpattern = 'Downloading video (?<value>.*) of (?<value>.*)'
@@ -290,11 +294,12 @@ function Invoke-DownloadMedia{
               }            
               #if(!$(get-process yt_dlp -ErrorAction SilentlyContinue)){write-ezlogs "Ended due to yt_dlp process ending ending" -showtime;break }
             }
-            if($_ -match "ERROR\:"){                      
-              write-ezlogs "Media file $downloaded_File already exists in the specified directory!" -showtime -warning
+            if($_ -match $errorpattern){    
+              $errormsg = $([regex]::matches($_, $errorpattern) | %{$_.groups[1].value})                   
+              write-ezlogs "YT-DLP reports error: $errormsg" -showtime -warning
               $message = "$_"
               $level = 'ERROR'
-              $synchash.Download_message = $message           
+              $synchash.Download_message = $message
             }
             if($_ -match $embedthumbpattern -or $_ -match $downloaddestpattern -or $_ -match $addmetadatapattern){
               if($_ -match $addmetadatapattern){
@@ -323,22 +328,12 @@ function Invoke-DownloadMedia{
                 }
                 $synchash.Download_message = $message                           
               }
-              <#              if(!$(get-process yt_dlp -ErrorAction SilentlyContinue) -and (!($totalDownloads -and $currentdownload) -or ($totalDownloads -eq $currentdownload))){
-                  write-ezlogs "Ended due to job or process ending totalDownloads: $totalDownloads - currentdownload: $currentdownload";             
-                  $Synchash.downloadTimer.stop()           
-                  break
-              }#>
               if(!(Get-Process 'yt-dlp' -ErrorAction SilentlyContinue) -and !(Get-Process 'ffmpeg' -ErrorAction SilentlyContinue)){
                 write-ezlogs "Ended due to job or process ending totalDownloads: $totalDownloads - currentdownload: $currentdownload";             
                 $Synchash.downloadTimer.stop()           
                 break
               }               
-            }  
-            <#            if($(Get-Job -State Running).count -eq 0 -or !(Get-Process 'yt-dlp*' -ErrorAction SilentlyContinue) -and (!($totalDownloads -and $currentdownload) -or ($totalDownloads -eq $currentdownload))){
-                write-ezlogs "Ended due to job or process ending";
-                $Synchash.downloadTimer.stop()            
-                break
-            }#>
+            } 
             if($(Get-Job -State Running).count -eq 0 -or !(Get-Process 'yt-dlp*' -ErrorAction SilentlyContinue)){
               write-ezlogs "Ended due to job or process ending";
               $Synchash.downloadTimer.stop()            
@@ -441,39 +436,42 @@ function Invoke-DownloadMedia{
                     $null = Copy-item -LiteralPath $image -Destination $image_Cache_path -Force
                   }elseif((Test-URL $image)){
                     try{
-                      $uri = new-object system.uri($image)
+                      $uri = [system.uri]::new($image)
                       if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -enablelogs -showtime}
-                      (New-Object System.Net.WebClient).DownloadFile($uri,$image_Cache_path) 
+                      ([System.Net.WebClient]::new()).DownloadFile($uri,$image_Cache_path) 
                     }catch{
                       write-ezlogs "An exception occurred downloading image $uri to path $image_Cache_path" -showtime -catcherror $_
                     }
                   }             
                   if([System.IO.File]::Exists($image_Cache_path)){
                     $stream_image = [System.IO.File]::OpenRead($image_Cache_path) 
-                    $image = new-object System.Windows.Media.Imaging.BitmapImage
-                    $image.BeginInit();
+                    $image = [System.Windows.Media.Imaging.BitmapImage]::new()
+                    $image.BeginInit()
                     $image.CacheOption = "OnLoad"
-                    #$image.CreateOptions = "DelayCreation"
-                    #$image.DecodePixelHeight = 229;
-                    $image.DecodePixelWidth = 500;
+                    $image.DecodePixelWidth = 500
                     $image.StreamSource = $stream_image
-                    $image.EndInit();        
+                    $image.EndInit()      
                     $stream_image.Close()
-                    $stream_image.Dispose()
-                    $stream_image = $null
-                    $image.Freeze();
+                    $image.Freeze()
                     if($thisApp.Config.Verbose_logging){write-ezlogs "Saving decoded media image to path $image_Cache_path" -showtime -enablelogs}
                     $bmp = [System.Windows.Media.Imaging.BitmapImage]$image
                     $encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new()
                     $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
                     $save_stream = [System.IO.FileStream]::new("$image_Cache_path",'Create')
-                    $encoder.Save($save_stream)
-                    $save_stream.Dispose()       
+                    $encoder.Save($save_stream)        
                   }  
                   $cached_image = $image_Cache_path            
                 }catch{
                   $cached_image = $Null
                   write-ezlogs "An exception occurred attempting to download $image to path $image_Cache_path" -showtime -catcherror $_
+                }finally{
+                  if($stream_image -is [System.IDisposable]){
+                    $stream_image.Dispose()
+                    $stream_image = $null
+                  }
+                  if($save_stream -is [System.IDisposable]){
+                    $save_stream.Dispose()
+                  }
                 }
               }           
             }else{
@@ -493,19 +491,19 @@ function Invoke-DownloadMedia{
               $image_pattern = [regex]::new('$(?<=\.((?i)jpg|(?i)png|(?i)jpeg|(?i)bmp|(?i)webp|(?i)gif))')
               $images = [System.IO.Directory]::EnumerateFiles($directory,'*.*','TopDirectoryOnly') | where {$_ -match $image_pattern}
               if($images){
-                $cached_image = $images | where {$_ -match $filename}                  
+                $cached_image = $images | Where-Object {$_ -match $filename}                  
                 if(!$cached_image){
-                  $cached_image = $images | where {$_ -match 'cover'}
+                  $cached_image = $images | Where-Object {$_ -match 'cover'}
                 }                  
                 if(!$cached_image){
-                  $cached_image = $images | where {$_ -match 'album'}
+                  $cached_image = $images | Where-Object {$_ -match 'album'}
                 }                  
               }
             }
             $taginfo = [taglib.file]::create($downloaded_File)
             if($taginfo.Tag){
               if([System.IO.File]::Exists($cached_image)){
-                write-ezlogs " | Adding image to tag pictures: $cached_image" -enablelogs -showtime
+                write-ezlogs "| Adding image to tag pictures: $cached_image" -enablelogs -showtime
                 try{
                   $picture = [TagLib.Picture]::CreateFromPath($cached_image)
                   $taginfo.Tag.Pictures = $picture
@@ -515,10 +513,10 @@ function Invoke-DownloadMedia{
               }
               if([string]::IsNullOrEmpty($taginfo.tag.Description) -and $taginfo.tag.SimpleTags.DESCRIPTION){
                 $taginfo.tag.Description = $taginfo.tag.SimpleTags["DESCRIPTION"][0].ToString()
-                if($thisApp.Config.Verbose_logging){write-ezlogs " | Setting description from SimpleTags: $($taginfo.tag.Description)" -enablelogs -showtime}
+                if($thisApp.Config.Verbose_logging){write-ezlogs "| Setting description from SimpleTags: $($taginfo.tag.Description)" -enablelogs -showtime}
               }elseif($video_info.snippet.description){
                 $taginfo.tag.Description = $video_info.snippet.description
-                if($thisApp.Config.Verbose_logging){write-ezlogs " | Setting description from Youtube API: $($taginfo.tag.Description)" -enablelogs -showtime}
+                if($thisApp.Config.Verbose_logging){write-ezlogs "| Setting description from Youtube API: $($taginfo.tag.Description)" -enablelogs -showtime}
               }
               #Spotify Arist lookup
               if($taginfo.tag.Description -match $spotifyartist_pattern){
@@ -548,13 +546,13 @@ function Invoke-DownloadMedia{
                 $bandcampURL = ([regex]::matches($($taginfo.tag.Description), $bandcamp_pattern)| %{$_.groups[0].value} )
                 if(Test-URL $bandcampURL){
                   try{
-                    write-ezlogs " | Found Bandcamp URL $bandcampURL" -showtime
+                    write-ezlogs "| Found Bandcamp URL $bandcampURL" -showtime
                     $req=[System.Net.HTTPWebRequest]::Create($bandcampURL)
                     $req.Method='GET'         
                     $req.Timeout = 5000    
                     $response = $req.GetResponse()
-                    $strm=$response.GetResponseStream();
-                    $sr=New-Object System.IO.Streamreader($strm);
+                    $strm=$response.GetResponseStream()
+                    $sr=[System.IO.Streamreader]::new($strm)
                     $output=$sr.ReadToEnd()
                     $bandcampPage = $output   
                     $response.Dispose()
@@ -565,14 +563,14 @@ function Invoke-DownloadMedia{
                   }
                   if($bandcampPage -match $pagenamepattern){
                     $artist = ([regex]::matches($bandcampPage, "\<meta property=`"og\:site_name`" content=`"(?<value>.*)`"\>")| %{$_.groups[1].value} )
-                    write-ezlogs " | Found Page name for Artist: $artist" -showtime
+                    write-ezlogs "| Found Page name for Artist: $artist" -showtime
                     $taginfo.tag.Artists = $artist
                   }
                   if($taginfo.tag.Description -match $bandcampAlbum_pattern){
                     $album = ([regex]::matches($($taginfo.tag.Description), $bandcampAlbum_pattern)| %{$_.groups[1].value} )
                     if($album){
                       $album = $((Get-Culture).textinfo.totitlecase(($album).tolower())) 
-                      write-ezlogs " | Found Bandcamp Album name $album" -showtime
+                      write-ezlogs "| Found Bandcamp Album name $album" -showtime
                       $taginfo.tag.Album = $album
                     }
                   }
@@ -612,29 +610,29 @@ function Invoke-DownloadMedia{
               }
               if(!$taginfo.tag.Artists -and $taginfo.tag.SimpleTags.ARTIST){
                 $taginfo.tag.Artists = $taginfo.tag.SimpleTags["ARTIST"][0].ToString()
-                write-ezlogs " | Setting artist from SimpleTags: $($taginfo.tag.Artists)" -enablelogs -showtime
+                write-ezlogs "| Setting artist from SimpleTags: $($taginfo.tag.Artists)" -enablelogs -showtime
               }
               if($taginfo.tag.SimpleTags.PURL){
                 $url = " - $($taginfo.tag.SimpleTags["PURL"][0].ToString())"
               }
               if($video_info.snippet.title){
-                write-ezlogs " | Setting title from Youtube API: $($video_info.snippet.title)" -enablelogs -showtime
+                write-ezlogs "| Setting title from Youtube API: $($video_info.snippet.title)" -enablelogs -showtime
                 $taginfo.tag.Title = $video_info.snippet.title
               }elseif($media.title){
-                write-ezlogs " | Setting title from original provided media $($media.title)" -enablelogs -showtime
+                write-ezlogs "| Setting title from original provided media $($media.title)" -enablelogs -showtime
                 $taginfo.tag.Title = $media.title
               }elseif($Download_FileName){
-                write-ezlogs " | Setting title from downloaded file name title: $($Download_FileName)" -enablelogs -showtime
+                write-ezlogs "| Setting title from downloaded file name title: $($Download_FileName)" -enablelogs -showtime
                 $taginfo.tag.Title = $Download_FileName
               }
               if($taginfo.tag.Artists -and $taginfo.tag.Title -match "$($taginfo.tag.Artists) - (?<value>.*)"){
                 $cleaned_Title = ([regex]::matches($($taginfo.tag.Title), "$($taginfo.tag.Artists) - (?<value>.*)")| %{$_.groups[1].value})
                 if($cleaned_Title){
-                  write-ezlogs " | Removing Artist name from title: $($cleaned_Title)" -enablelogs -showtime
+                  write-ezlogs "| Removing Artist name from title: $($cleaned_Title)" -enablelogs -showtime
                   $taginfo.tag.Title = $("$cleaned_Title").trim()
                 }
               }elseif(!$taginfo.tag.Artists -and $media.artist){
-                write-ezlogs " | Setting artist from original provided media $($media.artist)" -enablelogs -showtime
+                write-ezlogs "| Setting artist from original provided media $($media.artist)" -enablelogs -showtime
                 $taginfo.tag.Artists = $media.artist
               }
               $taginfo.tag.Comment = "Created/Downloaded with YT-DLP via $($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version)$url"
@@ -666,7 +664,7 @@ function Invoke-DownloadMedia{
           if(!$thisApp.Config.Enable_LocalMedia_Monitor){
             write-ezlogs ">>>> Checking if file $downloaded_File was downloaded to existing local media directory $download_file_dir" -showtime
             if(($allLocal_media_profile.directory.fullname -contains $download_file_dir -or $thisApp.Config.Media_Directories -contains $download_file_rootdir) -and $Files_to_Import -notcontains $download_file_dir){
-              write-ezlogs " | File exists in existing local media library directory $($download_file_dir), adding to local media tables" -showtime     
+              write-ezlogs "| File exists in existing local media library directory $($download_file_dir), adding to local media tables" -showtime     
               $null = $Files_to_Import.add($download_file_dir)        
             }
           }
@@ -726,7 +724,6 @@ function Invoke-DownloadMedia{
   }
   $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}} 
   Start-Runspace $vlc_scriptblock -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -logfile $thisApp.Config.Log_file -runspace_name "Download Media" -thisApp $thisApp
-  Remove-Variable Variable_list
 }
 #---------------------------------------------- 
 #endregion Invoke-DownloadMedia Function

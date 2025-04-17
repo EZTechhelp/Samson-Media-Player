@@ -2577,6 +2577,7 @@ public class Media : INotifyPropertyChanged
             RaisedOnPropertyChanged("TimesPlayed");
         }
     }
+    public Nullable<System.DateTime> LastPlayed { get; set; }
 }
 
 public class EQ_Band

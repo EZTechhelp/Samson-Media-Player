@@ -273,7 +273,8 @@ function Update-Playlist
     [switch]$Refresh_All_Playlists,
     [switch]$VerboseLog,
     [switch]$Update_Playlist_Order,
-    [switch]$Import_Playlists_Cache
+    [switch]$Import_Playlists_Cache,
+    [switch]$SortItems
   )
   $synchashWeak = ([System.WeakReference]::new($synchash))
   if($Playlist_ID){    
@@ -296,6 +297,9 @@ function Update-Playlist
       Get-PlayQueue -verboselog:$false -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace
     }
   }
+  #List of media properties
+  $MediaPropertyNames = ([Media].GetProperties()).Name
+
   if($Remove -or $RemoveFromAll){
     $Remove_Playlist_Tracks_Scriptblock = {
       param (
@@ -316,7 +320,7 @@ function Update-Playlist
         if($Playlist -in 'Play Queue','Remove from Play Queue'){ 
           if($thisapp.config.Current_Playlist.values -contains $Media.id){
             write-ezlogs "[Update-Playlist] | Removing $($Media.id) from Play Queue" -showtime
-            $index_toremove = $thisapp.config.Current_Playlist.GetEnumerator() | where {$_.value -eq $Media.id} | select * -ExpandProperty key
+            $index_toremove = $thisapp.config.Current_Playlist.GetEnumerator() | Where-Object {$_.value -eq $Media.id} | Select-Object * -ExpandProperty key
             foreach($index in $index_toremove){$null = $thisapp.config.Current_Playlist.Remove($index)}                         
           }
           Get-PlayQueue -verboselog:$false -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace -Export_Config
@@ -336,13 +340,6 @@ function Update-Playlist
                 write-ezlogs "[Update-Playlist] | Removing index $($index_toremove) - Media: $($id) from Playlist $($Playlist)" -showtime
                 $null = $playlist_to_modify.Playlist_tracks.Remove($index)
               }  
-            } 
-            if($Update_Playlist_Order -and $removeCount -gt 0){
-              #write-ezlogs "[Update-Playlist] | Reordering media in playlist $($Playlist)" -showtime
-              #$synchashWeak.Target.all_playlists = $synchashWeak.Target.all_playlists | ConvertTo-Playlists -Force -List
-              #$Media_to_Reorder = $playlist_to_modify.PlayList_tracks.Values
-              #Add-Playlist -Media $Media_to_Reorder -Playlist $Playlist -thisApp $thisapp -synchash $synchashWeak.Target -verboselog:$thisapp.Config.Verbose_logging -Use_RunSpace -Export_PlaylistsCache -ClearPlaylist -Update_UI
-              #return
             }
           }catch{
             write-ezlogs "An exception occurred removing $($id) from Playlist $($Playlist)" -showtime -catcherror $_
@@ -382,7 +379,7 @@ function Update-Playlist
           }
         }
         if($clear_lastplayed){
-          write-ezlogs " | Clearing last played media" -showtime
+          write-ezlogs "| Clearing last played media" -showtime
           $synchashWeak.Target.Current_playing_media = $Null
         } 
         if(!$no_UIRefresh){
@@ -403,11 +400,31 @@ function Update-Playlist
   }elseif($update){
     if($playlist_to_modify){
       try{
-        $Track_To_Update = $playlist_to_modify.Playlist_tracks.values | Where-Object {$_.id -eq $Media.id}
-        if($Track_To_Update){        
-          write-ezlogs " | Updating $($Track_To_Update.id) in Playlist $($Playlist)" -showtime
-          $Track_To_Update = $media
+        write-ezlogs "| Updating single playlist: $($playlist_to_modify.title) - SortItems: $SortItems" -showtime
+        if($Media.id){
+          $Track_To_Update = $playlist_to_modify.Playlist_tracks.values | Where-Object {$_.id -eq $Media.id}
+          if($Track_To_Update){        
+            write-ezlogs "| Updating $($Track_To_Update.id) in Playlist $($Playlist)" -showtime
+            $Track_To_Update = $media
+          }
+        }
+        if($SortItems){
+          if($playlist_to_modify.SortItemsBy -and $playlist_to_modify.SortItemsBy -in $MediaPropertyNames){
+            write-ezlogs "| Sorting playlists ($($playlist_to_modify.title)) items by: $($playlist_to_modify.SortItemsBy)"
+            [array]$existingitems = ($playlist_to_modify.Playlist_tracks.values | Sort-Object -Property $playlist_to_modify.SortItemsBy -Descending:$([bool]$playlist_to_modify.SortItemsDirection -eq 'Descending'))
+            $Count = 0
+            [void]$playlist_to_modify.Playlist_Tracks.clear()
+            $existingitems | & { process {
+                [void]$playlist_to_modify.Playlist_Tracks.add($Count,$_)
+                $Count++
+            }}
+          }
+        }
+        if($SortItems -or $Track_To_Update){
           Export-SerializedXML -InputObject $synchashWeak.Target.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist 
+          if(!$no_UIRefresh){
+            Get-Playlists -verboselog:$thisapp.Config.Verbose_logging -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace -Full_Refresh
+          }
         }
       }catch{
         write-ezlogs "An exception occurred updating $($Media.id) for Playlist $($Playlist)" -showtime -catcherror $_
@@ -425,22 +442,36 @@ function Update-Playlist
         if($media -and $media -isnot [Media]){
           $media = Convertto-Media -InputObject $media
         }
-        if($synchashWeak.Target.all_playlists){
+        if($synchashWeak.Target.all_playlists -and $lookupid -ne $Null){
           $Playlists_to_update = $synchashWeak.Target.all_playlists.where({$_.Playlist_tracks.values.id -eq $lookupid})
+        }elseif($synchashWeak.Target.all_playlists){
+          $Playlists_to_update = $synchashWeak.Target.all_playlists
         }
         foreach($Playlist in $Playlists_to_update){
-          if($Playlist.Playlist_id){      
-            #$index_toupdate = Get-IndexesOf -Array $Playlist.PlayList_tracks.values.id -Value $lookupid
-            #$index_toupdate = $Playlist.PlayList_tracks.values.id.IndexOf($lookupid)
-            $index_toupdate = $Playlist.PlayList_tracks.GetEnumerator() | Where-Object {$_.value.id -eq $lookupid} | Select-Object * -ExpandProperty key
-            if(-not [string]::IsNullOrEmpty($index_toupdate)){
-              write-ezlogs " | Removing index $($index_toupdate) - Media: $($lookupid) from Playlist $($Playlist.name)" -showtime
-              $null = $Playlist.Playlist_tracks.Remove($index_toupdate)
+          if($Playlist.Playlist_id){
+            if($lookupid -ne $Null){
+              $index_toupdate = $Playlist.PlayList_tracks.GetEnumerator() | Where-Object {$_.value.id -eq $lookupid} | Select-Object * -ExpandProperty key
+              if(-not [string]::IsNullOrEmpty($index_toupdate)){
+                write-ezlogs "| Removing index $($index_toupdate) - Media: $($lookupid) from Playlist $($Playlist.name)" -showtime
+                $null = $Playlist.Playlist_tracks.Remove($index_toupdate)
+              }
+              if($Playlist.Playlist_tracks.values.id -notcontains $lookupid){
+                write-ezlogs "| Adding updated Track $($media.title)" -showtime
+                $null = $Playlist.PlayList_tracks.add($index_toupdate,$media) 
+              }
             }
-            if($Playlist.Playlist_tracks.values.id -notcontains $lookupid){
-              write-ezlogs "| Adding updated Track $($media.title)" -showtime
-              $null = $Playlist.PlayList_tracks.add($index_toupdate,$media) 
-            }                                                         
+            if($SortItems){
+              if($Playlist.SortItemsBy -and $Playlist.SortItemsBy -in $MediaPropertyNames){
+                write-ezlogs "| Sorting playlists ($($Playlist.title)) items by: $($Playlist.SortItemsBy)"
+                [array]$existingitems = ($Playlist.Playlist_tracks.values | Sort-Object -Property $Playlist.SortItemsBy -Descending:$([bool]$Playlist.SortItemsDirection -eq 'Descending'))
+                $Count = 0
+                [void]$Playlist.Playlist_Tracks.clear()
+                $existingitems | & { process {
+                    [void]$Playlist.Playlist_Tracks.add($Count,$_)
+                    $Count++
+                }}
+              }
+            }
           }                 
         }          
         write-ezlogs ">>>> Saving updated all playlists profile: $($thisApp.Config.Playlists_Profile_Path)" -showtime -color cyan
@@ -488,6 +519,7 @@ function Get-Playlists
     $Group,
     [string]$SortBy,
     [string]$SortDirection,
+    [switch]$SortItems,
     [switch]$VerboseLog,
     [switch]$Import_Playlists_Cache,
     [switch]$Test
@@ -522,15 +554,26 @@ function Get-Playlists
           $Group,
           [string]$SortBy,
           [string]$SortDirection,
+          [switch]$SortItems,
           [switch]$VerboseLog,
           [switch]$Import_Playlists_Cache,
           [switch]$Test
         )
         try{
           $Get_Playlists_Measure = [system.diagnostics.stopwatch]::StartNew()
+          #$SortItems = $true
           #Import-Module "$($thisApp.Config.Current_Folder)\Modules\PSSerializedXML\PSSerializedXML.psm1"
           if(!$Startup){
             Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'PlayLists_Progress_Ring' -Property 'IsActive' -value $true
+            if($synchashWeak.Target.Playlists_TreeView){
+              Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'Playlists_TreeView' -Property 'AllowDrop' -value $false
+            }
+            if($synchashWeak.Target.LocalMedia_TreeView){
+              Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'LocalMedia_TreeView' -Property 'AllowDrop' -value $false
+            }
+            if($synchashWeak.TargetTrayPlayer_TreeView){
+              Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'TrayPlayer_TreeView' -Property 'AllowDrop' -value $false
+            }
           }
           if(-not [System.IO.File]::Exists($thisApp.config.Playlists_Profile_Path) -and [System.IO.File]::Exists("$($thisApp.config.Playlist_Profile_Directory)\All-Playlists-Cache.xml")){
             try{
@@ -577,6 +620,23 @@ function Get-Playlists
                 [System.Collections.ObjectModel.ObservableCollection[playlist]]$synchashWeak.Target.all_playlists = ($synchashWeak.Target.all_playlists | Sort-Object -Property $SortBy)
               } 
             }
+<#            $MediaPropertyNames = ([Media].GetProperties()).Name
+            if($SortItems){
+              $synchashWeak.Target.All_Playlists | & { process {
+                  if($_.SortItemsBy -and $_.SortItemsBy -in $MediaPropertyNames){
+                    write-ezlogs "| Sorting playlists ($($_.title)) items by: $($_.SortItemsBy)"
+                    [array]$existingitems = ($_.Playlist_tracks.values | Sort-Object -Property $_.SortItemsBy -Descending:$([bool]$_.SortItemsDirection -eq 'Descending'))
+                    $Count = 0
+                    [void]$_.Playlist_Tracks.clear()
+                    $Playlist = $_
+                    $existingitems | & { process {
+                        [void]$Playlist.Playlist_Tracks.add($Count,$_)
+                        $Count++
+                    }}
+                    $_ = $Playlist
+                  }
+              }}
+            }#>
             $PlaylistIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\PlaylistMusic.png"
             $HardDiskIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\Material-Harddisk.png"
             $YoutubeIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\Material-Youtube.png"
@@ -653,7 +713,8 @@ function Get-Playlists
                     }#>                      
                     if($_.AllowDrop -ne $true){
                       $_.AllowDrop = $true
-                    } 
+                    }
+                    #$Playlist = $_                                
                     $count = 0
                     $PlaylistTracks = $_.Playlist_tracks
                     $_.Playlist_tracks.keys | & { process {
@@ -671,15 +732,15 @@ function Get-Playlists
                               }
                               $track_name = $Track.title
                               $Title = "$($artist) - $($track_name)"
-                              if($verboselog){write-ezlogs " | Found Spotify Track Title: $($Title) " -showtime -LogLevel 3 -logtype Spotify}
+                              if($verboselog){write-ezlogs "| Found Spotify Track Title: $($Title) " -showtime -LogLevel 3 -logtype Spotify}
                               $icon_Path = $SpotifyIcon
                             }elseif($Track.url -match 'twitch\.tv'){
                               $Title = "$($Track.Title)"
-                              if($verboselog){write-ezlogs " | Found Twitch Track Title: $($Title) " -showtime -LogLevel 3 -logtype Twitch}
+                              if($verboselog){write-ezlogs "| Found Twitch Track Title: $($Title) " -showtime -LogLevel 3 -logtype Twitch}
                               if($Track.profile_image_url){
-                                if($verboselog){write-ezlogs " | Media Image found: $($Track.profile_image_url)" -showtime -LogLevel 3 -logtype Twitch}      
+                                if($verboselog){write-ezlogs "| Media Image found: $($Track.profile_image_url)" -showtime -LogLevel 3 -logtype Twitch}      
                                 if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
-                                  if($verboselog){write-ezlogs " | Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime -LogLevel 3 -logtype Twitch}
+                                  if($verboselog){write-ezlogs "| Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime -LogLevel 3 -logtype Twitch}
                                   [void][System.IO.Directory]::CreateDirectory($thisApp.config.image_Cache_path)
                                 }           
                                 $encodeduri = $Null
@@ -694,7 +755,7 @@ function Get-Playlists
                                       del "\\?\$image_Cache_path" -Force -ErrorAction SilentlyContinue
                                       if((Test-URL $Track.profile_image_url)){
                                         $uri = [system.uri]::new($Track.profile_image_url)
-                                        if($verboselog){write-ezlogs " | Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -showtime -LogLevel 3 -logtype Twitch}
+                                        if($verboselog){write-ezlogs "| Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -showtime -LogLevel 3 -logtype Twitch}
                                         try{
                                           $webclient = [System.Net.WebClient]::new()
                                           [void]$webclient.DownloadFile($uri,$image_Cache_path)
@@ -717,7 +778,7 @@ function Get-Playlists
                                           }
                                           if((Test-URL $TwitchData.profile_image_url)){
                                             try{
-                                              write-ezlogs " | Trying again with newly retrieved profile_image url $($TwitchData.profile_image_url)" -showtime -LogLevel 2 -logtype Twitch
+                                              write-ezlogs "| Trying again with newly retrieved profile_image url $($TwitchData.profile_image_url)" -showtime -LogLevel 2 -logtype Twitch
                                               $webclient = [System.Net.WebClient]::new()
                                               [void]$webclient.DownloadFile($TwitchData.profile_image_url,$image_Cache_path)
                                             }catch{
@@ -740,15 +801,15 @@ function Get-Playlists
                                   }
                                 }elseif($Track.profile_image_url){
                                   $retry = $false
-                                  if($verboselog){write-ezlogs " | Destination path for cached image: $image_Cache_path" -showtime -LogLevel 3 -logtype Twitch}
+                                  if($verboselog){write-ezlogs "| Destination path for cached image: $image_Cache_path" -showtime -LogLevel 3 -logtype Twitch}
                                   if(!([System.IO.File]::Exists($image_Cache_path))){
                                     try{
                                       if([System.IO.File]::Exists($Track.profile_image_url)){
-                                        if($verboselog){write-ezlogs " | Cached Image not found, copying image $($Track.profile_image_url) to cache path $image_Cache_path"  -showtime -LogLevel 3 -logtype Twitch}
+                                        if($verboselog){write-ezlogs "| Cached Image not found, copying image $($Track.profile_image_url) to cache path $image_Cache_path"  -showtime -LogLevel 3 -logtype Twitch}
                                         [void][system.io.file]::Copy($Track.profile_image_url, $image_Cache_path,$true)
                                       }elseif((Test-URL $Track.profile_image_url)){
                                         $uri = [system.uri]::new($Track.profile_image_url)
-                                        if($verboselog){write-ezlogs " | Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -showtime -LogLevel 3 -logtype Twitch}
+                                        if($verboselog){write-ezlogs "| Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -showtime -LogLevel 3 -logtype Twitch}
                                         try{
                                           $webclient = [System.Net.WebClient]::new()
                                           [void]$webclient.DownloadFile($uri,$image_Cache_path)
@@ -772,7 +833,7 @@ function Get-Playlists
                                           }
                                           if((Test-URL $TwitchData.profile_image_url)){
                                             try{
-                                              write-ezlogs " | Trying again with newly retrieved profile_image url $($TwitchData.profile_image_url)" -showtime -LogLevel 2 -logtype Twitch
+                                              write-ezlogs "| Trying again with newly retrieved profile_image url $($TwitchData.profile_image_url)" -showtime -LogLevel 2 -logtype Twitch
                                               $webclient = [System.Net.WebClient]::new()
                                               [void]$webclient.DownloadFile($TwitchData.profile_image_url,$image_Cache_path)
                                             }catch{
@@ -829,11 +890,11 @@ function Get-Playlists
                               }
                             }elseif($Track.url -match 'soundcloud\.com'){
                               $Title = "$($Track.Title)"
-                              if($verboselog){write-ezlogs " | Found SoundCloud Track Title: $($Title) " -showtime -Dev_mode:$verboselog} 
+                              if($verboselog){write-ezlogs "| Found SoundCloud Track Title: $($Title) " -showtime -Dev_mode:$verboselog} 
                               $icon_path = $SoundcloudIcon
                             }elseif($Track.type -match 'Youtube' -or $Track.source -eq 'Youtube' -or $Track.url -match 'youtube\.com' -or $Track.url -match 'youtu\.be'){
                               $Title = "$($Track.Title)"
-                              if($verboselog){write-ezlogs " | Found Youtube Track Title: $($Title) " -showtime -LogLevel 3 -logtype Youtube} 
+                              if($verboselog){write-ezlogs "| Found Youtube Track Title: $($Title) " -showtime -LogLevel 3 -logtype Youtube} 
                               if($Track.url -match 'tv\.youtube'){
                                 $icon_path = $YoutubeTVIcon
                               }else{
@@ -841,14 +902,14 @@ function Get-Playlists
                               }                            
                             }elseif($Track.Artist -and $Track.Title){        
                               $Title = "$($Track.Artist) - $($Track.Title)"
-                              if($verboselog){write-ezlogs " | Found Track Artist and Title: $($Title) " -showtime -LogLevel 3}
+                              if($verboselog){write-ezlogs "| Found Track Artist and Title: $($Title) " -showtime -LogLevel 3}
                               $icon_path = $HardDiskIcon
                             }elseif($Track.Title){
-                              if($verboselog){write-ezlogs " | Found Track Title: $($Track.Title) " -showtime -LogLevel 3}
+                              if($verboselog){write-ezlogs "| Found Track Title: $($Track.Title) " -showtime -LogLevel 3}
                               $Title = "$($Track.Title)"
                               $icon_path = $HardDiskIcon
                             }elseif($Track.Name){
-                              if($verboselog){write-ezlogs " | Found Track Name: $($Track.Name) " -showtime -LogLevel 3}
+                              if($verboselog){write-ezlogs "| Found Track Name: $($Track.Name) " -showtime -LogLevel 3}
                               if(!$Track.Artist -and [System.IO.Directory]::Exists($Track.directory)){     
                                 try{
                                   $artist = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($Track.directory))).trim()
@@ -856,10 +917,10 @@ function Get-Playlists
                                   write-ezlogs "An exception occurred getting file name without extension for $($Track.directory)" -showtime -catcherror $_
                                   $artist = ''
                                 }                
-                                if($verboselog){write-ezlogs " | Using Directory name for artist: $($artist) " -showtime -LogLevel 3 -logtype LocalMedia}
+                                if($verboselog){write-ezlogs "| Using Directory name for artist: $($artist) " -showtime -LogLevel 3 -logtype LocalMedia}
                               }elseif($Track.Artist){
                                 $artist = $Track.Artist
-                                if($verboselog){write-ezlogs " | Found Track Name artist: $($artist) " -showtime -LogLevel 3}
+                                if($verboselog){write-ezlogs "| Found Track Name artist: $($artist) " -showtime -LogLevel 3}
                               }
                               if(-not [string]::IsNullOrEmpty($artist)){
                                 $Title = "$($artist) - $($Track.Name)"
@@ -1035,6 +1096,15 @@ function Get-Playlists
         }finally{
           if($synchashWeak.Target.PlayLists_Progress_Ring){
             Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'PlayLists_Progress_Ring' -Property 'IsActive' -value $false
+          }
+          if($synchashWeak.Target.Playlists_TreeView){
+            Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'Playlists_TreeView' -Property 'AllowDrop' -value $true
+          }
+          if($synchashWeak.Target.LocalMedia_TreeView){
+            Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'LocalMedia_TreeView' -Property 'AllowDrop' -value $true
+          }
+          if($synchashWeak.TargetTrayPlayer_TreeView){
+            Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'TrayPlayer_TreeView' -Property 'AllowDrop' -value $true
           }
           if($Get_Playlists_Measure){
             $Get_Playlists_Measure.stop()

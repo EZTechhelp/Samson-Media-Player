@@ -181,7 +181,7 @@ function Get-YoutubeComments
           $Get_Comments_Measure = $Null   
         }
         if($Process_comments_Measure){
-          write-ezlogs " | Process YoutubeComments Measure" -Perf -PerfTimer $Process_comments_Measure
+          write-ezlogs "| Process YoutubeComments Measure" -Perf -PerfTimer $Process_comments_Measure
           $Process_Comments_Measure = $Null
         } 
       }catch{

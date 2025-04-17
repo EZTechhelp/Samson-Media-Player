@@ -79,7 +79,7 @@ function Get-Youtube
   #$envpaths = [Environment]::GetEnvironmentVariable('Path') -split ';'
   $envpaths2 = $env:path -split ';'
   if($youtubedl_path -notin $envpaths2){
-    write-ezlogs "[Get-Youtube] >>>> Adding ytdlp to user enviroment path $youtubedl_path"
+    write-ezlogs "[Get-Youtube] >>>> Adding ytdlp to user enviroment path $youtubedl_path" -Dev_mode
     $env:path += ";$youtubedl_path"
     <#    if($youtubedl_path -notin $envpaths){
         [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$youtubedl_path",[EnvironmentVariableTarget]::User)
@@ -186,7 +186,7 @@ function Get-Youtube
           $youtube_id = ([uri]$playlist).segments | Select-Object -last 1
           $youtube_type = 'YoutubeVideo'
         }
-        write-ezlogs " | Youtube type: $youtube_type" -showtime -logtype Youtube -loglevel 3
+        write-ezlogs "| Youtube type: $youtube_type" -showtime -logtype Youtube -loglevel 3
         if($youtube_id){
           try{
             if($youtube_type -eq 'YoutubePlaylist'){
@@ -562,7 +562,7 @@ function Get-Youtube
     $synchash.processed_Youtube_tracks.clear()
     $synchash.processed_Youtube_tracks = $null
   }
-  if($Verboselog){write-ezlogs " | Number of Youtube Playlists found: $($synchash.All_Youtube_Media.Count)" -showtime -enablelogs -logtype Youtube}      
+  if($Verboselog){write-ezlogs "| Number of Youtube Playlists found: $($synchash.All_Youtube_Media.Count)" -showtime -enablelogs -logtype Youtube}      
   if($GetYoutube_stopwatch){
     $GetYoutube_stopwatch.stop()
     write-ezlogs "###### Get-Youtube Finished" -PerfTimer $GetYoutube_stopwatch -Perf -logtype Youtube -GetMemoryUsage -forceCollection
@@ -668,7 +668,7 @@ function Add-YoutubePlaylist
           write-ezlogs "Added video $($Media.title) to Youtube Playlist $($targetplaylist_Name)" -logtype Youtube -Success
           if($thisApp.Config.Youtube_Playlists -notcontains $target_Url){
             try{
-              write-ezlogs " | Adding new Youtube Playlist URL to config: $($target_Url) - Playlist Name: $($targetplaylist_Name)" -showtime -logtype Youtube -loglevel 3
+              write-ezlogs "| Adding new Youtube Playlist URL to config: $($target_Url) - Playlist Name: $($targetplaylist_Name)" -showtime -logtype Youtube -loglevel 3
               $null = $thisApp.Config.Youtube_Playlists.add($target_Url)
               if(![IO.Directory]::Exists("$($thisapp.config.Playlist_Profile_Directory)\Youtube_Playlists")){
                 try{
@@ -694,7 +694,7 @@ function Add-YoutubePlaylist
                 }                
                 #$playlistName_Cleaned = ([Regex]::Replace($targetplaylist_Name, $pattern, '')).trim()             
                 $Playlist_Profile_path = "$($thisapp.config.Playlist_Profile_Directory)\Youtube_Playlists\$($target_PlaylistID).xml"
-                write-ezlogs " | Saving new Youtube Playlist profile to $Playlist_Profile_path" -showtime -logtype Youtube -loglevel 3
+                write-ezlogs "| Saving new Youtube Playlist profile to $Playlist_Profile_path" -showtime -logtype Youtube -loglevel 3
                 $Playlist_Profile.name = $targetplaylist_Name
                 #$Playlist_Profile.NameCleaned = $playlistName_Cleaned
                 $Playlist_Profile.Playlist_ID = $target_PlaylistID
@@ -712,7 +712,7 @@ function Add-YoutubePlaylist
                       foreach($item in $custom_playlists){      
                         $customplaylist_Name = $Null       
                         if($item.id -eq $Media.id){
-                          write-ezlogs " | Updating media from custom playlist id: $($item.playlist_id) to new playlist id: $($target_PlaylistID) - playlist profile path: $($customplaylist)" -logtype Youtube
+                          write-ezlogs "| Updating media from custom playlist id: $($item.playlist_id) to new playlist id: $($target_PlaylistID) - playlist profile path: $($customplaylist)" -logtype Youtube
                           $PlaylistUpdate = $true
                           $item.playlist_id = $target_PlaylistID
                           $item.Playlist_url = $target_Url
@@ -763,7 +763,7 @@ function Add-YoutubePlaylist
                   foreach($item in $custom_playlists){      
                     $customplaylist_Name = $Null       
                     if($item.id -eq $track_to_add.id){
-                      write-ezlogs " | Updating media from custom playlist id: $($item.playlist_id) to new playlist id: $($target_PlaylistID) - playlist profile path: $($customplaylist)" -logtype Youtube
+                      write-ezlogs "| Updating media from custom playlist id: $($item.playlist_id) to new playlist id: $($target_PlaylistID) - playlist profile path: $($customplaylist)" -logtype Youtube
                       $PlaylistUpdate = $true
                       $item.playlist_id = $target_PlaylistID
                       $item.Playlist_url = $target_Url
@@ -784,7 +784,7 @@ function Add-YoutubePlaylist
               write-ezlogs "An exception occurred parsing or updating custom playlists in $($thisApp.config.Playlist_Profile_Directory)" -showtime -catcherror $_
             }
             if($track_to_add -and $target_playlistitems.id -notcontains $media.id){
-              write-ezlogs " | Changing media $($track_to_add.title) with ID $($track_to_add.id) from playlist: $($track_to_add.Playlist) to playlist: $Playlist" -logtype Youtube
+              write-ezlogs "| Changing media $($track_to_add.title) with ID $($track_to_add.id) from playlist: $($track_to_add.Playlist) to playlist: $Playlist" -logtype Youtube
               $track_to_add.playlist_id = $target_PlaylistID
               $track_to_add.Playlist_url = $target_Url
               $track_to_add.Playlist = $Playlist
@@ -793,7 +793,7 @@ function Add-YoutubePlaylist
               }                           
               #$null = $synchash.All_Youtube_Media.Remove($track_to_add)  
               if([IO.File]::Exists($AllYoutube_Profile_File_Path)){               
-                write-ezlogs " | Updating All Youtube profile cache at $AllYoutube_Profile_File_Path" -showtime -logtype Youtube    
+                write-ezlogs "| Updating All Youtube profile cache at $AllYoutube_Profile_File_Path" -showtime -logtype Youtube    
                 try{  
                   Export-SerializedXML -InputObject $synchash.All_Youtube_Media -path $AllYoutube_Profile_File_Path
                 }catch{
@@ -951,7 +951,7 @@ function Start-YoutubeMonitor
     $Youtube_Monitor_Timer = 0    
     try{      
       $Sleep_Value = [TimeSpan]::Parse($Interval).TotalSeconds
-      write-ezlogs " | Interval Seconds: $sleep_value" -showtime -logtype Youtube -LogLevel 2
+      write-ezlogs "| Interval Seconds: $sleep_value" -showtime -logtype Youtube -LogLevel 2
       $LastUpdate_Youtube_Monitor_Timer = [datetime]::Now
       if($thisApp.YoutubeMonitorEnabled){
         $thisApp.YoutubeMonitorEnabled = $false
@@ -1232,7 +1232,7 @@ function Get-YoutubeStatus
               if(Test-URL $playlist.path){
                 if($thisApp.Config.Youtube_Playlists -notcontains $playlist.path){
                   try{
-                    write-ezlogs " | Adding new Youtube Playlist URL: $($playlist.path) - Name: $($playlist.Name)" -showtime -logtype Youtube -LogLevel 2
+                    write-ezlogs "| Adding new Youtube Playlist URL: $($playlist.path) - Name: $($playlist.Name)" -showtime -logtype Youtube -LogLevel 2
                     $null = $thisApp.Config.Youtube_Playlists.add($playlist.path)
                     if($Playlist_Profile -and $playlist.path -notmatch 'Twitch.tv'){  
                       if($playlist.Name){
@@ -1242,7 +1242,7 @@ function Get-YoutubeStatus
                       }    
                       #$playlistName_Cleaned = ([Regex]::Replace($playlist_Name, $pattern3, '')).trim()            
                       $Playlist_Profile_path = "$($thisapp.config.Playlist_Profile_Directory)\Youtube_Playlists\$($playlist.id).xml"
-                      write-ezlogs " | Saving new Youtube Playlist profile to $Playlist_Profile_path" -showtime -logtype Youtube -LogLevel 2
+                      write-ezlogs "| Saving new Youtube Playlist profile to $Playlist_Profile_path" -showtime -logtype Youtube -LogLevel 2
                       $Playlist_Profile.name = $playlist_Name
                       #$Playlist_Profile.NameCleaned = $playlistName_Cleaned
                       $Playlist_Profile.Playlist_ID = $playlist.id
@@ -1271,11 +1271,11 @@ function Get-YoutubeStatus
             $AllYoutube_Media_Profile_File_Path = [IO.Path]::Combine($thisApp.config.Media_Profile_Directory,"All-Youtube_MediaProfile","All-Youtube_Media-Profile.xml")  
             if($playlists_toRemove){
               if([IO.File]::Exists($AllYoutube_Media_Profile_File_Path)){
-                write-ezlogs " | Importing All Youtube Media profile cache at $AllYoutube_Media_Profile_File_Path" -showtime -logtype Youtube
+                write-ezlogs "| Importing All Youtube Media profile cache at $AllYoutube_Media_Profile_File_Path" -showtime -logtype Youtube
                 $all_youtubemedia_profile = Import-SerializedXML -Path $AllYoutube_Media_Profile_File_Path
               }              
               foreach($playlist_path in $playlists_toRemove){
-                write-ezlogs " | Removing Youtube Playlist $($playlist_path)" -showtime -logtype Youtube -LogLevel 2
+                write-ezlogs "| Removing Youtube Playlist $($playlist_path)" -showtime -logtype Youtube -LogLevel 2
                 $null = $thisApp.Config.Youtube_Playlists.Remove($playlist_path)
               }
               try{
@@ -1588,11 +1588,11 @@ function Update-YoutubeMedia
                             if($track){
                               foreach ($property in $Media.psobject.properties.name){
                                 if([bool]$track.PSObject.Properties[$property] -and $track.$property -ne $Media.$property){
-                                  if($thisApp.Config.Dev_mode){write-ezlogs " | Updating track property: '$($property)' from value: '$($track.$property)' - to: '$($Media.$property)'"  -Dev_mode -logtype Youtube}
+                                  if($thisApp.Config.Dev_mode){write-ezlogs "| Updating track property: '$($property)' from value: '$($track.$property)' - to: '$($Media.$property)'"  -Dev_mode -logtype Youtube}
                                   $track.$property = $Media.$property
                                   $Changes = $true
                                 }elseif(-not [bool]$track.PSObject.Properties[$property]){
-                                  write-ezlogs " | Adding track property: '$($property)' with value: $($Media.$property)" -logtype Youtube
+                                  write-ezlogs "| Adding track property: '$($property)' with value: $($Media.$property)" -logtype Youtube
                                   $Changes = $true
                                   $track.psobject.properties.add([System.Management.Automation.PSNoteProperty]::new($property,$Media.$property))
                                 }

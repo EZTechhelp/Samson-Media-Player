@@ -2,6 +2,47 @@
 
 ## [Unreleased]
 
+## 1.0.1 - PUBLIC
+> - Branch: Samson
+
+### Added
++ Support for interprocess piping - allows passing commands to already open Samson processes
+  + Ex: Opening a media file in explorer with Samson will begin playing it in the open Samson process
++ New media profile property `LastPlayed` for tracking last played date time
++ New custom download options window appears when downloading Youtube videos
+  + Current options include: destination path, download audio only and Apply Sponserblock
++ New function `Get-YoutubePlaylistInfo` for Youtube module
++ Chat toggle button in video viewer overlay next to playlists/queue button
+
+### Changes
++ Can now drag/drop supported external files or links directly into Samson playlists
+  + Playback will start automatically if `Start Playback on Drop` setting is enabled
+  + Video overlay will also now appear automatically when dragging over the window
++ Start-Runspance can now return output (and optionally wait) of executed runspaces
++ App versioning will no longer increment using build numbers, using only version numbers
++ Updated `Hardcodet.NotifyIcon` assembly to latest available version
++ Implemented new custom tooltip control and formatting for NotifyIcon (system tray)
++ Removed `Frequent` category from Jumplist, and renamed `Recent` to `Last Played`
++ Images are now fetched and updated for any Youtube media on playback
++ Optimized startup of miniplayer UI to prevent loading before elements are rendered
++ Reduced default logging in various areas
++ General code refactors and cleanup
+
+### Fixed
++ Update-PlayQueue fails when processing temporary media due to invalid type casting
++ YT video downloads report as failed when titles contain certain characters
++ Miniplayer pause icon does not update when starting new playback from a paused state
++ Resolved additional instances of "server not connected" errors when using Burnttoast
++ Play Queue runspace not properly waiting for playlist initialization on startup
++ Live status notification sometimes doesn't trigger for registered Twitch media
++ Main Window doesn't open to saved position when using `Start as Miniplayer`
++ Media sometimes fails to play when from a UNC path
++ Fixed #399: White text bar never goes away
++ Fixed #398: Stay on Top - Mini mode doesn't work
+
+### Comments
++ Will NOT trigger first time setup when upgrading
+
 ## 1.0.0 - PUBLIC-001
 > - Branch: Samson
 

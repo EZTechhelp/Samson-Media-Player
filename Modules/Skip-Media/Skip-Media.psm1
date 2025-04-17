@@ -117,7 +117,7 @@ function Skip-Media
       Update-PlayQueue -Remove -ID $last_played.mediaid -thisApp $thisApp -synchash $synchash -UpdateHistory  
       if($thisApp.config.Shuffle_Playback -and $thisApp.config.Current_Playlist.values){
         try{
-          write-ezlogs " | Getting random item from queue" -showtime -LogLevel 2
+          write-ezlogs "| Getting random item from queue" -showtime -LogLevel 2
           $next_item = ($thisApp.config.Current_Playlist.values) | where-Object {-not ([string]::IsNullOrEmpty($_)) -and $thisApp.config.History_Playlist.values -notcontains $_} | Get-Random -Count 1
         }catch{
           write-ezlogs "An exception occurred getting random item from queue" -showtime -catcherror $_
@@ -125,17 +125,17 @@ function Skip-Media
       }else{
         if(-not [string]::IsNullOrEmpty($last_played_index)){
           if($last_played_index.count -gt 1){
-            write-ezlogs " | Multiple values returned for last played index $($last_played_index) - Selecting last 1" -warning
+            write-ezlogs "| Multiple values returned for last played index $($last_played_index) - Selecting last 1" -warning
             $last_played_index = $last_played_index | Select-Object -last 1
           }
-          write-ezlogs " | Getting next item after last index $($last_played_index)" -showtime -LogLevel 2
+          write-ezlogs "| Getting next item after last index $($last_played_index)" -showtime -LogLevel 2
           $index_toget = ($thisApp.config.Current_Playlist.keys | Sort-Object) | Where-Object {$_ -gt $last_played_index} | select-Object -first 1 
           $next_item = (($thisApp.config.Current_Playlist.GetEnumerator()) | Where-Object {$_.name -eq $index_toget}).value   
         }else{
-          write-ezlogs " | Getting next item from lowest current index" -showtime -LogLevel 2
+          write-ezlogs "| Getting next item from lowest current index" -showtime -LogLevel 2
           $index_toget = ($thisApp.config.Current_Playlist.keys | Measure-Object -Minimum).Minimum 
         }
-        write-ezlogs " | Next item to get with index $($index_toget)" -showtime -LogLevel 2  
+        write-ezlogs "| Next item to get with index $($index_toget)" -showtime -LogLevel 2  
         $next_item = (($thisApp.config.Current_Playlist.GetEnumerator()) | Where-Object {$_.name -eq $index_toget}).value          
       }  
       if(!$next_item){
@@ -335,17 +335,17 @@ function Skip-Media
         if(!$next_selected.media){
           write-ezlogs "Unable to find media $($next_item) in libraries, checking playlist profiles" -showtime -warning -LogLevel 2
           if(!$synchash.all_playlists -and [System.IO.File]::Exists($thisApp.Config.Playlists_Profile_Path)){
-            if($thisApp.Config.Verbose_logging){write-ezlogs " | Importing All Playlist Cache: $($thisApp.Config.Playlists_Profile_Path)" -showtime -enablelogs}
+            if($thisApp.Config.Verbose_logging){write-ezlogs "| Importing All Playlist Cache: $($thisApp.Config.Playlists_Profile_Path)" -showtime -enablelogs}
             $Available_Playlists = Import-SerializedXML -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
           }elseif($synchash.all_playlists){
             $Available_Playlists = [System.Collections.Generic.List[Playlist]]::new($synchash.all_playlists)
           }
           if($Available_Playlists.PlayList_tracks.values | where {$_.id -eq $next_item}){                     
             $next_selected.media = $Available_Playlists.PlayList_tracks.values.where({$_.id -eq $next_item}) | Select-Object -First 1
-            write-ezlogs " | Found next media in Playlist cache ($($next_selected.media.playlist)) - meaning its missing from primary media profiles!" -showtime -warning -LogLevel 2
+            write-ezlogs "| Found next media in Playlist cache ($($next_selected.media.playlist)) - meaning its missing from primary media profiles!" -showtime -warning -LogLevel 2
             if($next_selected.media.Source -match 'Youtube'){
               try{  
-                write-ezlogs " | Adding next media to Youtube media profiles" -showtime -LogLevel 2 -logtype Youtube
+                write-ezlogs "| Adding next media to Youtube media profiles" -showtime -LogLevel 2 -logtype Youtube
                 $Link = $next_selected.media.url 
                 if(-not [string]::IsNullOrEmpty($Link) -and (Test-url $Link)){
                   if($Link -match 'twitch.tv'){
@@ -365,7 +365,7 @@ function Skip-Media
             } 
           }elseif($next_selected.media.Source -eq 'Twitch'){
             try{  
-              write-ezlogs " | Adding next media to Twitch media profiles" -showtime -LogLevel 2 -logtype Twitch
+              write-ezlogs "| Adding next media to Twitch media profiles" -showtime -LogLevel 2 -logtype Twitch
               $Link = $next_selected.media.url 
               if(-not [string]::IsNullOrEmpty($Link) -and (Test-url $Link)){
                 if($next_selected.media.Channel_Name){
@@ -384,7 +384,7 @@ function Skip-Media
           }            
         }                                        
       }else{
-        write-ezlogs " | No other media is queued to play" -showtime -LogLevel 2
+        write-ezlogs "| No other media is queued to play" -showtime -LogLevel 2
         $synchash.Spotify_Status = 'Stopped'
         if($synchash.MiniPlayer_Media_Length_Label){
           $synchash.MiniPlayer_Media_Length_Label.Content = "00:00:00"
@@ -415,7 +415,7 @@ function Skip-Media
       }else{
         $Media = $next_selected.media
       }
-      write-ezlogs " | Next to play is $($Media.title) - ID $($Media.id)" -showtime -LogLevel 2
+      write-ezlogs "| Next to play is $($Media.title) - ID $($Media.id)" -showtime -LogLevel 2
       Add-Member -InputObject $thisApp.config -Name 'Last_Played' -Value ($Media.id) -MemberType NoteProperty -Force
       $synchash.Current_playing_media = $Media
       if($Media.source -eq 'Spotify' -or $Media.url -match 'spotify\:'){

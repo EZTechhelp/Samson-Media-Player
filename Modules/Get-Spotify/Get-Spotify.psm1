@@ -99,7 +99,7 @@ function Get-Spotify
     }    
   }
   if([System.IO.File]::Exists($Spotify_Launch_Path)){
-    write-ezlogs " | Spotify is installed at $Spotify_Launch_Path" -showtime -logtype Spotify 
+    write-ezlogs "| Spotify is installed at $Spotify_Launch_Path" -showtime -logtype Spotify 
   }elseif(!$thisApp.Config.Spotify_WebPlayer){
     write-ezlogs "Unable to find Spotify installed at path $Spotify_Launch_Path" -showtime -Warning -logtype Spotify
     if($thisApp.Config.Install_Spotify){
@@ -223,7 +223,7 @@ function Get-Spotify
       #$chocoappmatch = choco list Spotify
       if($chocoappmatch){
         $appinstalled = $("$($chocoappmatch | Select-String Spotify)").trim()
-        write-ezlogs " | Choco found: $appinstalled" -showtime -logtype Spotify
+        write-ezlogs "| Choco found: $appinstalled" -showtime -logtype Spotify
       }  
       if([System.IO.File]::Exists("$($env:APPDATA)\Spotify\Spotify.exe")){
         #$appinstalled = (Get-ItemProperty "$($env:APPDATA)\Spotify\Spotify.exe" -ErrorAction SilentlyContinue).VersionInfo.ProductVersion
@@ -515,7 +515,7 @@ function Get-Spotify
     if($export_profile -and $AllSpotify_Media_Profile_File_Path -and $synchash.All_Spotify_Media){
       Export-SerializedXML -InputObject $synchash.All_Spotify_Media -Path $AllSpotify_Media_Profile_File_Path  
     }
-    if($Verboselog){write-ezlogs " | Number of Spotify Playlists found: $($synchash.All_Spotify_Media.Count)" -showtime -enablelogs -logtype Spotify}
+    if($Verboselog){write-ezlogs "| Number of Spotify Playlists found: $($synchash.All_Spotify_Media.Count)" -showtime -enablelogs -logtype Spotify}
     if($GetSpotify_stopwatch){
       $GetSpotify_stopwatch.stop()
       write-ezlogs "###### Get-Spotify Finished" -PerfTimer $GetSpotify_stopwatch -Perf -logtype Spotify -GetMemoryUsage
@@ -621,7 +621,7 @@ function Add-SpotifyPlaylist
           write-ezlogs "Added track $($Media.title) to Spotify Playlist $($target_playlist.name)" -logtype Spotify -Success
           if($thisApp.Config.Spotify_Playlists -notcontains $target_Url){
             try{
-              write-ezlogs " | Adding new Spotify Playlist URL to config: $($target_Url) - Playlist Name: $($target_playlist.Name)" -showtime -logtype Spotify -loglevel 3
+              write-ezlogs "| Adding new Spotify Playlist URL to config: $($target_Url) - Playlist Name: $($target_playlist.Name)" -showtime -logtype Spotify -loglevel 3
               $null = $thisApp.Config.Spotify_Playlists.add($target_Url)
               if(![System.IO.Directory]::Exists("$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists")){
                 try{
@@ -647,7 +647,7 @@ function Add-SpotifyPlaylist
                 }                
                 #$playlistName_Cleaned = ([Regex]::Replace($target_playlist.name, $pattern, '')).trim()             
                 $Playlist_Profile_path = "$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists\$($target_playlist.Playlist_ID).xml"
-                write-ezlogs " | Saving new Spotify Playlist profile to $Playlist_Profile_path" -showtime -logtype Spotify -loglevel 3
+                write-ezlogs "| Saving new Spotify Playlist profile to $Playlist_Profile_path" -showtime -logtype Spotify -loglevel 3
                 $Playlist_Profile.name = $target_playlist.name
                 #$Playlist_Profile.NameCleaned = $playlistName_Cleaned
                 $Playlist_Profile.Playlist_ID = $target_playlist.id
@@ -1000,7 +1000,7 @@ function Get-SpotifyStatus
               if($playlist.path){
                 if($thisApp.Config.Spotify_Playlists -notcontains $playlist.path){
                   try{
-                    write-ezlogs " | Adding new Spotify Playlist URL: $($playlist.path) - Name: $($playlist.Name)" -showtime -logtype Spotify -LogLevel 2
+                    write-ezlogs "| Adding new Spotify Playlist URL: $($playlist.path) - Name: $($playlist.Name)" -showtime -logtype Spotify -LogLevel 2
                     $null = $thisApp.Config.Spotify_Playlists.add($playlist.path)
                     if($Playlist_Profile -and $playlist.path){  
                       if($playlist.Name){
@@ -1010,7 +1010,7 @@ function Get-SpotifyStatus
                       }    
                       #$playlistName_Cleaned = ([Regex]::Replace($playlist_Name, $pattern3, '')).trim()            
                       $Playlist_Profile_path = "$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists\$($playlist.id).xml"
-                      write-ezlogs " | Saving new Spotify Playlist profile to $Playlist_Profile_path" -showtime -logtype Spotify -LogLevel 2
+                      write-ezlogs "| Saving new Spotify Playlist profile to $Playlist_Profile_path" -showtime -logtype Spotify -LogLevel 2
                       $Playlist_Profile.name = $playlist_Name
                       #$Playlist_Profile.NameCleaned = $playlistName_Cleaned
                       $Playlist_Profile.Playlist_ID = $playlist.id
@@ -1039,12 +1039,11 @@ function Get-SpotifyStatus
             $AllSpotify_Media_Profile_File_Path = [System.IO.Path]::Combine($thisApp.config.Media_Profile_Directory,"All-Spotify_MediaProfile","All-Spotify_Media-Profile.xml")  
             if($playlists_toRemove){
               if([System.IO.File]::Exists($AllSpotify_Media_Profile_File_Path)){
-                write-ezlogs " | Importing All Spotify Media profile cache at $AllSpotify_Media_Profile_File_Path" -showtime -logtype Spotify
+                write-ezlogs "| Importing All Spotify Media profile cache at $AllSpotify_Media_Profile_File_Path" -showtime -logtype Spotify
                 $all_Spotifymedia_profile = Import-SerializedXML -Path $AllSpotify_Media_Profile_File_Path
-                #[System.Collections.Generic.List[Object]]$all_Spotifymedia_profile = [Management.Automation.PSSerializer]::Deserialize([System.IO.File]::ReadAllText($AllSpotify_Media_Profile_File_Path))
               }              
               foreach($playlist_path in $playlists_toRemove){
-                write-ezlogs " | Removing Spotify Playlist $($playlist_path)" -showtime -logtype Spotify -LogLevel 2
+                write-ezlogs "| Removing Spotify Playlist $($playlist_path)" -showtime -logtype Spotify -LogLevel 2
                 $null = $thisApp.Config.Spotify_Playlists.Remove($playlist_path)
               }
               try{
@@ -1133,7 +1132,7 @@ function Start-SpotifyMonitor
     $Spotify_Monitor_Timer = 0
     try{      
       $Sleep_Value = [TimeSpan]::Parse($Interval).TotalSeconds
-      write-ezlogs " | Interval Seconds: $sleep_value" -showtime -logtype Spotify -LogLevel 2
+      write-ezlogs "| Interval Seconds: $sleep_value" -showtime -logtype Spotify -LogLevel 2
       $LastUpdate_Spotify_Monitor_Timer = [datetime]::Now
       if($thisApp.SpotifyMonitorEnabled){
         $thisApp.SpotifyMonitorEnabled = $false
@@ -1261,11 +1260,11 @@ function Update-SpotifyMedia
                             if($track){
                               foreach ($property in $Media.psobject.properties.name){
                                 if([bool]$track.PSObject.Properties[$property] -and $track.$property -ne $Media.$property){
-                                  if($thisApp.Config.Dev_mode){write-ezlogs " | Updating track property: '$($property)' from value: '$($track.$property)' - to: '$($Media.$property)'"  -Dev_mode -logtype Spotify}
+                                  if($thisApp.Config.Dev_mode){write-ezlogs "| Updating track property: '$($property)' from value: '$($track.$property)' - to: '$($Media.$property)'"  -Dev_mode -logtype Spotify}
                                   $track.$property = $Media.$property
                                   $Changes = $true
                                 }elseif(-not [bool]$track.PSObject.Properties[$property]){
-                                  write-ezlogs " | Adding track property: '$($property)' with value: $($Media.$property)" -logtype Spotify
+                                  write-ezlogs "| Adding track property: '$($property)' with value: $($Media.$property)" -logtype Spotify
                                   $Changes = $true
                                   $track.psobject.properties.add([System.Management.Automation.PSNoteProperty]::new($property,$Media.$property))
                                 }

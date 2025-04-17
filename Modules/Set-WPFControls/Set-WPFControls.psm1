@@ -1081,11 +1081,11 @@ function Set-VideoPlayer
         $synchash.VideoView_isFullScreen = $false         
         $synchash.VideoView_LargePlayer_Button.ToolTip = 'Maximize/Fullscreen Video Player'
         if($synchash.Window.Top -ge 0){
-          write-ezlogs " | Setting Video Player window top to main window top: $($synchash.Window.Top)" -loglevel 2
+          write-ezlogs "| Setting Video Player window top to main window top: $($synchash.Window.Top)" -loglevel 2
           $synchash.VideoViewFloat.Top = $synchash.Window.Top
         }else{
           $synchash.VideoViewFloat.Top = 0
-          write-ezlogs " | Setting Video Player window top to 0" -loglevel 2
+          write-ezlogs "| Setting Video Player window top to 0" -loglevel 2
         }
       }
       'Maximized' {
@@ -1192,7 +1192,7 @@ function Open-MiniPlayer
     if(!$synchash.MiniPlayer_Viewer.isVisible){
       write-ezlogs ">>>> Attempting to open MiniPlayer view: Window.IsLoaded: $($synchash.Window.IsLoaded)" -showtime
       $XamlMiniPlayer_window = [System.IO.File]::ReadAllText("$($thisApp.Config.Current_folder)\Views\MiniPlayerViewer.xaml").replace('Views/Styles.xaml',"$($thisApp.Config.Current_folder)`\Views`\Styles.xaml")   
-      $MiniPlayer_windowXaml = [Windows.Markup.XAMLReader]::Parse($XamlMiniPlayer_window)
+      $synchash.MiniPlayer_Viewer = [Windows.Markup.XAMLReader]::Parse($XamlMiniPlayer_window)
       $reader = [XML.XMLReader]::Create([IO.StringReader]$XamlMiniPlayer_window)
       while ($reader.Read())
       {
@@ -1200,8 +1200,8 @@ function Open-MiniPlayer
         if(!$name){ 
           $name=$reader.GetAttribute('x:Name')
         }
-        if($name -and $synchash.Window){
-          $synchash."$($name)" = $MiniPlayer_windowXaml.FindName($name)
+        if($name -and $synchash.MiniPlayer_Viewer){
+          $synchash."$($name)" = $synchash.MiniPlayer_Viewer.FindName($name)
         }
       }
       $reader.Dispose()
@@ -1217,8 +1217,7 @@ function Open-MiniPlayer
     $synchash.MiniPlayer_Viewer.TaskbarItemInfo.Description = "$($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version) - $($synchash.Now_Playing_Label.DataContext) - $($synchash.Now_Playing_Title_Label.DataContext)"
     $synchash.MiniPlayer_Viewer.IsWindowDraggable = $true
     $synchash.MiniPlayer_Viewer.WindowStyle = [System.Windows.WindowStyle]::None
-
-           
+     
     if($synchash.Mini_TaskbarItem_PlayButton){
       $TaskbarItem_PlayButton_relaycommand = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.PauseMedia_Command -target $synchash.Mini_TaskbarItem_PlayButton 
       $synchash.Mini_TaskbarItem_PlayButton.Command = $TaskbarItem_PlayButton_relaycommand
@@ -1251,7 +1250,6 @@ function Open-MiniPlayer
           write-ezlogs "An exception occurred in Window MouseLeftButtonDown event" -showtime -catcherror $_
         }
     })
-    #$synchash.MiniPlayer_DockPanel.Remove_MouseLeftButtonDown({})
     $synchash.MiniPlayer_DockPanel.add_MouseLeftButtonDown({
         Param($Sender,[System.Windows.Input.MouseButtonEventArgs]$e)
         try{
@@ -1303,40 +1301,13 @@ function Open-MiniPlayer
         }  
     })
 
-    
-    #$synchash.MiniPlayer_Viewer.Remove_Loaded({})
     if(!$Synchash.MiniPlayer_LoadedScriptblock){
       $Synchash.MiniPlayer_LoadedScriptblock = {
         Param($Sender)
         try{
           write-ezlogs ">>>> Miniplayer has loaded - topmost: $($thisApp.Config.Mini_Always_On_Top)"
-          if($thisApp.Config.Mini_Always_On_Top){
-            $synchash.MiniPlayer_Viewer.TopMost = $true
-            $synchash.StayOnTopButton_ToggleButton.isChecked = $true
-          }else{            
-            $synchash.MiniPlayer_Viewer.TopMost = $false
-            $synchash.StayOnTopButton_ToggleButton.isChecked = $false
-          }       
-          #Register window to installed application ID 
-          $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($Sender)
-          if($thisApp.Config.Installed_AppID){
-            $appid = $thisApp.Config.Installed_AppID
-          }else{
-            $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
-            $thisapp.config.Installed_AppID = $appid
-          }
-          if($Window_Helper.Handle -and $appid){
-            $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
-            if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Registering Miniplayer window handle: $($Window_Helper.Handle) -- to appid: $appid" -Dev_mode}
-            $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)   
-          }
-          if($thisApp.Config.Remember_Window_Positions){
-            $synchash.MiniPlayer_Viewer.SaveWindowPosition = $true
-            if(-not [string]::IsNullOrEmpty($thisApp.Config.MiniWindow_Top) -and $thisApp.Config.MiniWindow_Top -ge 0 -and -not [string]::IsNullOrEmpty($thisApp.Config.MiniWindow_Left)){
-              $synchash.MiniPlayer_Viewer.Top = $thisApp.Config.MiniWindow_Top
-              $synchash.MiniPlayer_Viewer.Left = $thisApp.Config.MiniWindow_Left
-            }
-          }
+      
+
           <#          if((!$synchash.MediaViewAnchorable.isFloating -and !$synchash.Window.isVisible)  -and $synchash.VideoView -and !$synchash.MainWindow_IsClosing){
               write-ezlogs "| Hiding video view as video player is not floating and main player is not visible due to miniplayer being open"
               $synchash.VideoView.Visibility = 'Hidden'
@@ -1350,12 +1321,12 @@ function Open-MiniPlayer
       $Synchash.MiniPlayer_ClosingScriptblock = {
         param($sender)
         try{
-          [void][System.Windows.Input.FocusManager]::SetFocusedElement([System.Windows.Input.FocusManager]::GetFocusScope($synchash.MiniPlayer_Viewer),$Null)
+          [void][System.Windows.Input.FocusManager]::SetFocusedElement([System.Windows.Input.FocusManager]::GetFocusScope($sender),$Null)
           [void][System.Windows.Input.Keyboard]::ClearFocus()
           if($thisApp.Config.Remember_Window_Positions){
-            write-ezlogs ">>>> Miniplayer is closing, saving top: $($synchash.MiniPlayer_Viewer.Top) -- Left: $($synchash.MiniPlayer_Viewer.Left)"
-            $thisapp.config.MiniWindow_Top = $synchash.MiniPlayer_Viewer.Top
-            $thisapp.config.MiniWindow_Left = $synchash.MiniPlayer_Viewer.Left
+            write-ezlogs ">>>> Miniplayer is closing, saving top: $($sender.Top) -- Left: $($sender.Left)"
+            $thisapp.config.MiniWindow_Top = $sender.Top
+            $thisapp.config.MiniWindow_Left = $sender.Left
           }
           if($synchash.MiniPlayer_DockPanel.children -contains $synchash.TrayPlayerBorder){
             $null = $synchash.MiniPlayer_DockPanel.children.Remove($synchash.TrayPlayerBorder)
@@ -1377,7 +1348,7 @@ function Open-MiniPlayer
         try{
           write-ezlogs ">>>> Miniplayer window has closed"
           if($synchash.Window.isInitialized){
-            $synchash.window.Opacity = 1            
+            $synchash.window.Opacity = 1
             $synchash.window.ShowActivated = $true
             $synchash.Window.ShowInTaskbar = $true
             $synchash.Window.show()
@@ -1411,6 +1382,11 @@ function Open-MiniPlayer
         if($thisApp.Config.Mini_Always_On_Top -or $synchash.TempParam_Overlay){
           Set-WindowTopMost -thisApp $thisApp -Window $sender
           $Sender.Activate()
+        }
+        if($synchash.MiniPlayer_Render_Measure){
+          $synchash.MiniPlayer_Render_Measure.stop()
+          write-ezlogs -text 'MiniPlayer Render Measure' -PerfTimer $synchash.MiniPlayer_Render_Measure
+          $synchash.Remove('MiniPlayer_Render_Measure')
         }
       }catch{
         write-ezlogs "An exception occurred in MiniPlayer_Viewer.add_closed" -showtime -catcherror $_
@@ -1450,18 +1426,7 @@ function Open-MiniPlayer
     $synchash.MiniPlayer_Viewer.add_closing($Synchash.MiniPlayer_ClosingScriptblock)
     $synchash.MiniPlayer_Viewer.add_closed($Synchash.MiniPlayer_ClosedScriptblock)    
     $synchash.MiniPlayer_Viewer.add_ContentRendered($Synchash.MiniPlayer_ContentRenderedScriptblock)
-    <#    $synchash.MiniPlayer_Viewer.add_Activated({
-        try{
-        write-ezlogs ">>>> Miniplayer Viewer activated"
-        if($synchash.VideoView_Grid.Parent.Parent.isActive){
-        write-ezlogs "Video View content window is active $($synchash.VideoView_Grid.Parent.Parent | out-string)" -warning
-        }
-        }catch{
-        write-ezlogs "An exception occurred in MiniPlayer_Viewer.add_closed" -showtime -catcherror $_
-        }
-    })#>
 
-    
     if($synchash.TrayPlayerFlyout){
       $synchash.TrayPlayerFlyout.isOpen = $true
     } 
@@ -1477,7 +1442,37 @@ function Open-MiniPlayer
       write-ezlogs "| hiding VideoViewAirControl"
       $synchash.VideoViewAirControl.Visibility = 'Collapsed'
     }
+    #Register window to installed application ID - set position
+    $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($synchash.MiniPlayer_Viewer)
+    $WindowHandle = $Window_Helper.EnsureHandle()
+    if($thisApp.Config.Mini_Always_On_Top){
+      $synchash.MiniPlayer_Viewer.TopMost = $true      
+    }else{            
+      $synchash.MiniPlayer_Viewer.TopMost = $false
+    } 
+    if($synchash.StayOnTopButton_ToggleButton){
+      $synchash.StayOnTopButton_ToggleButton.isChecked = $synchash.MiniPlayer_Viewer.TopMost
+    }
+    if($thisApp.Config.Installed_AppID){
+      $appid = $thisApp.Config.Installed_AppID
+    }else{
+      $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
+      $thisapp.config.Installed_AppID = $appid
+    }
+    if($WindowHandle -and $appid){
+      $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
+      if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Registering Miniplayer window handle: $($WindowHandle) -- to appid: $appid" -Dev_mode}
+      $taskbarinstance.SetApplicationIdForSpecificWindow($WindowHandle,$appid)   
+    }
+    if($thisApp.Config.Remember_Window_Positions){
+      $synchash.MiniPlayer_Viewer.SaveWindowPosition = $true
+      if(-not [string]::IsNullOrEmpty($thisApp.Config.MiniWindow_Top) -and $thisApp.Config.MiniWindow_Top -ge 0 -and -not [string]::IsNullOrEmpty($thisApp.Config.MiniWindow_Left)){
+        $synchash.MiniPlayer_Viewer.Top = $thisApp.Config.MiniWindow_Top
+        $synchash.MiniPlayer_Viewer.Left = $thisApp.Config.MiniWindow_Left
+      }
+    }
     Update-MainWindow -synchash $synchash -thisApp $thisApp -Hide
+    $synchash.MiniPlayer_Render_Measure = [system.diagnostics.stopwatch]::StartNew()
     $synchash.MiniPlayer_Viewer.Show()
     $synchash.MiniPlayer_Viewer.Activate()
   }catch{
@@ -1628,6 +1623,7 @@ function Update-MainPlayer {
                   $synchash.vlc.media = $Null
                 }
                 if($synchash.VideoView.MediaPlayer.media -is [System.IDisposable]){
+                  write-ezlogs "[UPDATE-MAINPLAYER] | Disposing existing VideoView.MediaPlayer.media" -warning -logtype Libvlc
                   $synchash.VideoView.MediaPlayer.media.dispose()
                   $synchash.VideoView.MediaPlayer.media = $Null
                 }
@@ -1653,6 +1649,7 @@ function Update-MainPlayer {
                   $synchash.vlc.media = $Null
                 }
                 if($synchash.VideoView.MediaPlayer.media -is [System.IDisposable]){
+                  write-ezlogs "[UPDATE-MAINPLAYER] | Disposing existing VideoView.MediaPlayer.media" -logtype Libvlc
                   $synchash.VideoView.MediaPlayer.media.dispose()
                   $synchash.VideoView.MediaPlayer.media = $Null
                 }
@@ -2171,9 +2168,15 @@ function Update-MainWindow {
               }
               if($object.Hide){
                 if($synchash.MiniPlayer_Viewer){
+                  write-ezlogs ">>>> Miniplayer is open - hiding main window by setting opacity to 0"
                   $synchash.window.ShowActivated = $false #Prevent window from activating/taking focus while rendering
-                  $synchash.window.Opacity = 0
                   $synchash.window.ShowInTaskbar = $false
+                  $synchash.window.Opacity = 0
+                  $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($synchash.Window) 
+                  [void]$Window_Helper.EnsureHandle()                  
+                  #$ApplyTemplate = $synchash.Window.ApplyTemplate()
+                  #$synchash.Window.Measure([system.windows.size]::new([double]::PositiveInfinity,[double]::PositiveInfinity))
+                  #$synchash.Window.Arrange([System.Windows.Rect]::new($synchash.Window.DesiredSize))
                   $synchash.Window.Show()
                   #TODO: This is only needed if main window allowstransparency is set to false - maybe cause crashes in some cases?
                   if(!$synchash.Window.AllowsTransparency){
@@ -2437,7 +2440,7 @@ function Reset-MainPlayer {
             #Reset VideoView Control
             #TODO: Set VideoView_Grid to black to avoid white flickering when not playing
             if($synchash.VideoView_Grid.Background -ne 'Black'){
-              write-ezlogs "[Reset-MainPlayer] Setting VideoView_Grid background to Black" -warning
+              write-ezlogs "[Reset-MainPlayer] Setting VideoView_Grid background to Black" -warning -Dev_mode
               $synchash.VideoView_Grid.Background = 'Black'
             }
             #TODO: Setting as nan is bad!
@@ -2598,6 +2601,11 @@ function Update-MediaState {
             if($synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled){
               Update-MediaTransportControls -synchash $synchash -thisApp $thisApp -Media $synchash.Current_playing_media -thumbnail $Thumbnail
             }
+            if($synchash.MediaView_Image -and $Thumbnail){             
+              $synchash.MediaView_Image.Source = $Thumbnail
+            }elseif($synchash.MediaView_Image){
+              $synchash.MediaView_Image.Source = $null
+            }
             if($synchash.streamlink.title){
               $synchash.Now_Playing_Label.Visibility = 'Visible'
               $synchash.Now_Playing_Label.DataContext = "PLAYING"
@@ -2667,10 +2675,10 @@ function Update-MediaState {
               if($Background_cached_image){
                 $synchash.VLC_Grid_Row1.Height="100*" 
                 $synchash.VLC_Grid.Visibility="Visible"   
-                $synchash.MediaView_Image.Source = $Background_cached_image
+                #$synchash.MediaView_Image.Source = $Background_cached_image
               }else{
-                write-ezlogs "[Update-MediaState] | No image, resetting MediaView_image to null" -showtime
-                $synchash.MediaView_Image.Source = $null
+                #write-ezlogs "[Update-MediaState] | No image, resetting MediaView_image to null" -showtime
+                #$synchash.MediaView_Image.Source = $null
               }        
             }else{  
               if(!$synchash.Youtube_WebPlayer_URL -or $synchash.Current_playing_media.hasvideo){
@@ -2725,7 +2733,7 @@ function Update-MediaState {
                 $synchash.VLC_Grid_Row0.Height="100*"
                 $synchash.VLC_Grid_Row2.Height="*"
                 $synchash.VLC_Grid_Row1.Height="*"
-                $synchash.MediaView_Image.Source = $null                          
+                #$synchash.MediaView_Image.Source = $null
               }               
             }
             if($thisApp.Config.Discord_Integration){
@@ -2735,12 +2743,9 @@ function Update-MediaState {
               write-ezlogs "[Update-MediaState] >>>> Current VLC Media Player instance: $($synchash.Vlc | out-string)" -showtime -Debug -Dev_mode
             }
             if($synchash.VideoView_Grid.Background -ne '#01000000'){
-              write-ezlogs "[Update-MediaState] | Setting VideoView_Grid background to #01000000" -warning
+              write-ezlogs "[Update-MediaState] | Setting VideoView_Grid background to #01000000" -warning -Dev_mode
               $synchash.VideoView_Grid.Background = '#01000000'
             }
-            <#            if($synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled){
-                $synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
-            }#>
             $this.Stop()
           }catch{
             write-ezlogs "[Update-MediaState] An exception occurred in Update_MediaState_timer.add_tick" -showtime -catcherror $_

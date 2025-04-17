@@ -35,6 +35,7 @@ function Add-YoutubePlayback
     $thisApp,
     $synchash,
     [switch]$PlayOnly,
+    [switch]$StartPlayback,
     [switch]$AddtoQueue,
     [string]$youtube_id,
     [string]$AddtoPlaylist,
@@ -150,7 +151,8 @@ function Add-YoutubePlayback
       Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -media @($media) -Use_RunSpace -RefreshQueue
     }elseif($AddtoPlaylist -and $media){
       Add-Playlist -Media $media -Playlist $AddtoPlaylist -thisApp $thisapp -synchash $synchash -verboselog:$thisapp.Config.Verbose_logging -Use_RunSpace -Update_UI
-    }elseif($media){
+    }
+    if($media -and $StartPlayback){
       $synchash.Temporary_Playback_Media = $media
       Start-Media -Media $media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification -use_WebPlayer:$thisapp.config.Youtube_WebPlayer  
     }               

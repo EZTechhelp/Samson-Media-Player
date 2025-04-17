@@ -253,15 +253,15 @@ function Set-WPFTheme
           $thememanager.RegisterLibraryThemeProvider($newtheme.LibraryThemeProvider)
           $thememanager.ChangeTheme($synchash.Window,$newtheme.Name,$false)              
           if($synchash.PlayQueue_Flyout_Grid){
-            write-ezlogs " | Changing theme for PlayQueue_Flyout_Grid" -showtime -Dev_mode
+            write-ezlogs "| Changing theme for PlayQueue_Flyout_Grid" -showtime -Dev_mode
             $thememanager.ChangeTheme($synchash.PlayQueue_Flyout_Grid,$newtheme.Name,$false)
           }
           if($synchash.AudioOptions_Viewer){
-            write-ezlogs " | Setting theme for AudioOptions_Viewer" -showtime -Dev_mode
+            write-ezlogs "| Setting theme for AudioOptions_Viewer" -showtime -Dev_mode
             $thememanager.ChangeTheme($synchash.AudioOptions_Viewer,$newtheme.Name,$false)
           }
           if($synchash.Audio_Flyout_Control){
-            write-ezlogs " | Setting theme for Audio_Flyout_Control" -showtime -Dev_mode
+            write-ezlogs "| Setting theme for Audio_Flyout_Control" -showtime -Dev_mode
             $thememanager.ChangeTheme($synchash.Audio_Flyout_Control,$newtheme.Name,$false)
             if($synchash.Enable_EQ_Toggle.isChecked){
               if($newTheme.PrimaryAccentColor){
@@ -274,11 +274,11 @@ function Set-WPFTheme
             }                                     
           }    
           if($synchash.MainGrid_Top_TabControl){
-            write-ezlogs " | Setting theme for MainGrid_Top_TabControl" -showtime -Dev_mode
+            write-ezlogs "| Setting theme for MainGrid_Top_TabControl" -showtime -Dev_mode
             $thememanager.ChangeTheme($synchash.MainGrid_Top_TabControl,$newtheme.Name,$false)
           } 
           if($synchash.DockingManager){
-            write-ezlogs " | Setting theme for DockingManager" -showtime -Dev_mode
+            write-ezlogs "| Setting theme for DockingManager" -showtime -Dev_mode
             $thememanager.ChangeTheme($synchash.DockingManager,$newtheme.Name,$false)
           }
           if($synchash.MediaTable){
@@ -294,11 +294,11 @@ function Set-WPFTheme
             $synchash.Twitchtable.RowSelectionBrush = $synchash.Window.TryFindResource('MahApps.Brushes.AccentBase')
           }                                                                                   
           if($synchash.MainGrid_Bottom_TabControl){
-            write-ezlogs " | Setting theme for MainGrid_Bottom_TabControl" -showtime -Dev_mode
+            write-ezlogs "| Setting theme for MainGrid_Bottom_TabControl" -showtime -Dev_mode
             $thememanager.ChangeTheme($synchash.MainGrid_Bottom_TabControl,$newtheme.Name,$false)
           } 
           if($synchash.Playlist_TabControl){
-            write-ezlogs " | Setting theme for Playlist_TabControl" -showtime -Dev_mode
+            write-ezlogs "| Setting theme for Playlist_TabControl" -showtime -Dev_mode
             $thememanager.ChangeTheme($synchash.Playlist_TabControl,$newtheme.Name,$false) 
           } 
           if($synchash.TrayPlayer_TreeView){
@@ -314,15 +314,15 @@ function Set-WPFTheme
             $synchash.Playlists_TreeView.LineStroke = $synchash.Window.TryFindResource('MahApps.Brushes.AccentBase') 
           }                                            
           if($synchash.PlayQueue_TreeView){
-            write-ezlogs " | Setting theme for PlayQueue_TreeView" -showtime -Dev_mode
+            write-ezlogs "| Setting theme for PlayQueue_TreeView" -showtime -Dev_mode
             $thememanager.ChangeTheme($synchash.PlayQueue_TreeView,$newtheme.Name,$false) 
           }       
           if($synchash.EQ_Slider_StackPanel){
-            write-ezlogs " | Setting theme for EQ_Slider_StackPanel" -showtime -Dev_mode
+            write-ezlogs "| Setting theme for EQ_Slider_StackPanel" -showtime -Dev_mode
             $thememanager.ChangeTheme($synchash.EQ_Slider_StackPanel,$newtheme.Name,$false)                   
           }
           if($synchash.EQ_Preset_Grid){
-            write-ezlogs " | Setting theme for EQ_Preset_Grid" -showtime -Dev_mode
+            write-ezlogs "| Setting theme for EQ_Preset_Grid" -showtime -Dev_mode
             $thememanager.ChangeTheme($synchash.EQ_Preset_Grid,$newtheme.Name,$false)                   
           }                                                                                                                                                            
           if($synchash.BrewWindow.isVisible){

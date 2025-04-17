@@ -90,21 +90,18 @@ function Get-YouTubePlaylistItems {
     if($PSCmdlet.ParameterSetName -eq 'PlaylistById' -and !$PlaylistInfo){
       try{
         $Playlistparts = 'contentDetails,id,localizations,player,snippet,status'
-        $playlistURL = 'https://youtube.googleapis.com/youtube/v3/playlists?part={0}&maxResults=50&id={1}' -f $Playlistparts,(($ID | out-string).trim())
-        $req=[System.Net.HTTPWebRequest]::Create($playlistURL);
+        $playlistURL = 'https://youtube.googleapis.com/youtube/v3/playlists?part={0}&maxResults=50&id={1}' -f $Playlistparts,(("$ID").trim())
+        $req=[System.Net.HTTPWebRequest]::Create($playlistURL)
         $req.Method='GET'
         $headers = [System.Net.WebHeaderCollection]::new()
         $headers.add('Authorization',$access_Token.Authorization)
         $req.Headers = $headers              
         $response = $req.GetResponse()
-        $strm=$response.GetResponseStream();
-        $sr=New-Object System.IO.Streamreader($strm);
+        $strm=$response.GetResponseStream()
+        $sr=[System.IO.Streamreader]::new($strm)
         $output=$sr.ReadToEnd()
-        $playlistlookup = $output | convertfrom-json   
+        $playlistlookup = $output | convertfrom-json -ErrorAction SilentlyContinue
         $headers.Clear()
-        $response.Dispose()
-        $strm.Dispose()
-        $sr.Dispose()
         $PlaylistInfo = $playlistlookup.items
       }catch{
         write-ezlogs "An exception occurred getting playlist info with url $playlistURL" -showtime -catcherror $_

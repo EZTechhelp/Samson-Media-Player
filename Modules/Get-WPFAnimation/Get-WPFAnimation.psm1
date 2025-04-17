@@ -172,13 +172,13 @@ function Get-SpectrumAnalyzer
                     $synchash.AudioSpectrum.DataContext.StopCapture()   
                     $synchash.AudioSpectrum.DataContext = $Null                  
                   }else{
-                    write-ezlogs " | Spectrum Analyzer is not capturing" -showtime
+                    write-ezlogs "| Spectrum Analyzer is not capturing" -showtime
                   } 
                   if($synchash.AudioSpectrum2.DataContext.IsCapturing){
                     write-ezlogs ">>>> Disabling Spectrum Reflection" -showtime -color cyan
                     $synchash.AudioSpectrum2.DataContext.StopCapture()
                   }else{
-                    write-ezlogs " | Spectrum Analyzer Reflection is not capturing" -showtime
+                    write-ezlogs "| Spectrum Analyzer Reflection is not capturing" -showtime
                   }
                   if($synchash.DisplaySpectrum.children -contains $synchash.AudioSpectrum){
                     $synchash.DisplaySpectrum.children.Remove($synchash.AudioSpectrum)

@@ -1099,15 +1099,15 @@ function confirm-requirements
                     try{
                       write-ezlogs "$app is not installed or out of date! Attempting to install from $Vbsetup_path" -showtime -warning  
                       $default_output_Device = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::DefaultAudioEndpoint([CSCore.CoreAudioAPI.DataFlow]::Render,[CSCore.CoreAudioAPI.Role]::Multimedia)   
-                      write-ezlogs " | Current Default Audio Device: $($default_output_Device | out-string)"            
+                      write-ezlogs "| Current Default Audio Device: $($default_output_Device | out-string)"            
                       #Start-Process "$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -ArgumentList '-i -h' -Wait
                       Start-Process "$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -ArgumentList '-i -h' -Wait -Verb RunAs
-                      write-ezlogs " | Resetting Default Audio Device to: $($default_output_Device.FriendlyName)"
+                      write-ezlogs "| Resetting Default Audio Device to: $($default_output_Device.FriendlyName)"
                       $set_AudioDevice = Get-AudioDevice -ID "$($default_output_Device.DeviceID)" -ErrorAction SilentlyContinue | Set-AudioDevice -DefaultOnly -ErrorAction SilentlyContinue
                       if($set_AudioDevice){
-                        write-ezlogs " | New Default Audio Device (should be same as previous): $($set_AudioDevice | out-string)" -logtype setup
+                        write-ezlogs "| New Default Audio Device (should be same as previous): $($set_AudioDevice | out-string)" -logtype setup
                       }
-                      write-ezlogs " | New Default Audio Device (should be same as previous): $($default_output_Device.FriendlyName)"
+                      write-ezlogs "| New Default Audio Device (should be same as previous): $($default_output_Device.FriendlyName)"
                       if([System.IO.File]::Exists("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_ControlPanel.exe")){
                         $appinstalled = [System.IO.FileInfo]::new("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_Setup.exe").versioninfo.fileversion -replace ', ','.'
                       }elseif([System.IO.File]::Exists("$env:ProgramW6432\VB\CABLE\VBCABLE_ControlPanel.exe")){
@@ -1344,7 +1344,7 @@ function Optimize-Assemblies {
           {
             if($a -notmatch 'WebView2' -and $a -notmatch 'XInputInterface'){
               try{
-                write-ezlogs " | Installing $a into the GAC" -showtime
+                write-ezlogs "| Installing $a into the GAC" -showtime
                 $objPublish = [System.EnterpriseServices.Internal.Publish]::new()
                 $null = $objPublish.GacInstall($a)
               }catch{
@@ -1856,9 +1856,9 @@ Function Set-Window {
       If ($Return) {
         $Height = $Rectangle.Bottom - $Rectangle.Top
         $Width = $Rectangle.Right - $Rectangle.Left
-        $Size = New-Object System.Management.Automation.Host.Size -ArgumentList $Width, $Height
-        $TopLeft = New-Object System.Management.Automation.Host.Coordinates -ArgumentList $Rectangle.Left, $Rectangle.Top
-        $BottomRight = New-Object System.Management.Automation.Host.Coordinates -ArgumentList $Rectangle.Right, $Rectangle.Bottom
+        $Size = [System.Management.Automation.Host.Size]::new($Width, $Height)
+        $TopLeft = [System.Management.Automation.Host.Coordinates]::new($Rectangle.Left, $Rectangle.Top)
+        $BottomRight = [System.Management.Automation.Host.Coordinates]::new($Rectangle.Right, $Rectangle.Bottom)
         If ($Rectangle.Top -lt 0 -AND $Rectangle.LEft -lt 0) {
           Write-warning "Window is minimized! Coordinates will not be accurate."
         }
@@ -2096,9 +2096,9 @@ function ConvertFrom-Roman {
         ${<}, ${>} = "$($a[$i])", "$($a[$i + 1])"
         $dec += [Int64]"$('+-'[$i + 1 -lt $a.Length -and $map[${<}] -lt $map[${>}]])$($map[${<}])"
       }
-      if($verboselog){write-ezlogs " | Converted Roman Numeral $number to $dec" -showtime -enablelogs}
+      if($verboselog){write-ezlogs "| Converted Roman Numeral $number to $dec" -showtime -enablelogs}
       $Coverted_String_With_Number = if($String_With_Number -match '\b(?=[MDCLXVI]+\b)M{0,4}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})\b'){$String_With_Number -replace $matches[0],$dec}
-      if($verboselog){write-ezlogs " | Converted string $String_With_Number to $Coverted_String_With_Number" -showtime -enablelogs}
+      if($verboselog){write-ezlogs "| Converted string $String_With_Number to $Coverted_String_With_Number" -showtime -enablelogs}
       return $Coverted_String_With_Number
     }
     else{

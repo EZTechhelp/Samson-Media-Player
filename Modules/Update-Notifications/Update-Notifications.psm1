@@ -930,7 +930,7 @@ function Show-ChildWindow{
         param($Sender)    
         if($sender -eq $hashChildWindow.Window){        
           try{
-            write-ezlogs " | Disposing ChildWindow application thread" -showtime
+            write-ezlogs "| Disposing ChildWindow application thread" -showtime
             if($hashChildWindow.appContext){
               $hashChildWindow.appContext.ExitThread()
               $hashChildWindow.appContext.dispose()

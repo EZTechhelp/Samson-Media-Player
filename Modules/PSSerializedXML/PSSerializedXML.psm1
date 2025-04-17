@@ -471,6 +471,7 @@ public class Media : INotifyPropertyChanged
             RaisedOnPropertyChanged("TimesPlayed");
         }
     }
+    public Nullable<System.DateTime> LastPlayed { get; set; }
 }
 
 public class EQ_Band
@@ -1065,6 +1066,14 @@ function ConvertTo-Media {
     try{
       foreach($object in $InputObject){
         if($Force -or $object -isnot [Media]){
+          $parseddate = [DateTime]::Now
+          if($object.LastPlayed -and $object.LastPlayed -isnot [DateTime] -and [datetime]::TryParseExact($object.LastPlayed,'MM-dd-yyyy hh:mm:ss:tt',[System.Globalization.CultureInfo]::InvariantCulture,[System.Globalization.DateTimeStyles]::None,[ref]$parseddate)){
+            $LastPlayed = $parseddate
+          }elseif($object.LastPlayed -is [DateTime]){
+            $LastPlayed = $object.LastPlayed
+          }else{
+            $LastPlayed = $null
+          }
           switch ($object.Source) {
             'Local'{
               $mediaObject = [Media]@{
@@ -1088,6 +1097,7 @@ function ConvertTo-Media {
                 'Subtitles_Path' = $object.Subtitles_Path
                 'Display_Name' = $object.Display_Name
                 'TimesPlayed' = $object.TimesPlayed
+                'LastPlayed' = $LastPlayed
               }
             } 'Spotify' {
               $mediaObject = [Media]@{
@@ -1111,6 +1121,7 @@ function ConvertTo-Media {
                 'Duration' = $object.Duration
                 'Display_Name' = $object.Display_Name
                 'TimesPlayed' = $object.TimesPlayed
+                'LastPlayed' = $LastPlayed
               }
             } {@('Youtube','YoutubeChannel') -contains $_} {
               $mediaObject = [Media]@{
@@ -1133,6 +1144,7 @@ function ConvertTo-Media {
                 'Duration' = $object.Duration
                 'Display_Name' = $object.Display_Name
                 'TimesPlayed' = $object.TimesPlayed
+                'LastPlayed' = $LastPlayed
               }                 
             } 'Twitch' {
               $mediaObject = [Media]@{
@@ -1166,6 +1178,7 @@ function ConvertTo-Media {
                 'Enable_LiveAlert' = $object.Enable_LiveAlert
                 'Display_Name' = $object.Display_Name
                 'TimesPlayed' = $object.TimesPlayed
+                'LastPlayed' = $LastPlayed
               }
             }
           } 

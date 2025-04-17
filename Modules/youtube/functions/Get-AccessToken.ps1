@@ -49,7 +49,7 @@ function Get-AccessToken {
           if($NoHeader){
             return $access_token
           }else{
-            write-ezlogs " | Found YoutubeAccessToken and Youtuberefresh_token - building and returning Authorization header" -showtime -LogLevel 3 -logtype Youtube
+            write-ezlogs "| Found YoutubeAccessToken and Youtuberefresh_token - building and returning Authorization header" -showtime -LogLevel 3 -logtype Youtube
             return @{
               Authorization = 'Bearer {0}' -f $access_token
             }
@@ -72,7 +72,7 @@ function Get-AccessToken {
               if($NoHeader){
                 return $access_token
               }else{
-                write-ezlogs " | Found YoutubeAccessToken and Youtuberefresh_token - building and returning Authorization header" -showtime -LogLevel 3 -logtype Youtube
+                write-ezlogs "| Found YoutubeAccessToken and Youtuberefresh_token - building and returning Authorization header" -showtime -LogLevel 3 -logtype Youtube
                 return @{
                   Authorization = 'Bearer {0}' -f $access_token
                 }

@@ -67,7 +67,7 @@ function Add-VLCRegisteredEvents
   #VLC Playing Event
   try{
     if('Playing' -in $Registered_Events.EventName){
-      $playing = $Registered_Events | where {$_.EventName -eq 'Playing'}
+      $playing = $Registered_Events | Where-Object {$_.EventName -eq 'Playing'}
     }   
     if($playing){
       if($thisApp.Config.Dev_mode){write-ezlogs "Unregistering existing event: $($playing.EventName)" -LogLevel 2 -logtype Libvlc -Dev_mode}
@@ -84,17 +84,17 @@ function Add-VLCRegisteredEvents
           write-ezlogs "An exception occurred in Update-Subtitles -clear" -catcherror $_
         } 
         if($synchash.VideoView_Grid.Background -ne '#01000000'){
-          write-ezlogs "[VLC_Playing_EVENT] Setting VideoView_Grid background to #01000000" -warning
+          if($thisApp.Config.Dev_mode){write-ezlogs "[VLC_Playing_EVENT] Setting VideoView_Grid background to #01000000" -warning -Dev_mode}
           Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'VideoView_Grid' -Property 'Background' -value '#01000000'
         }
-        if($thisApp.Config.Debug_Logging){
-          $existingjob_check = $(Get-Runspace) | where {$_.id -eq $Event.RunspaceId -or $_.InstanceId.Guid -eq $Event.RunspaceId} 
-          write-ezlogs "[VLC_Playing_EVENT] VLC Playing Event: $($Event | select * | out-string)" -showtime -LogLevel 3 -logtype Libvlc
-          write-ezlogs "[VLC_Playing_EVENT] All Runspaces: $($(Get-Runspace) | select * | out-string)" -showtime -LogLevel 3 -logtype Libvlc
+        if($thisApp.Config.Debug_mode){
+          $existingjob_check = $(Get-Runspace) | Where-Object {$_.id -eq $Event.RunspaceId -or $_.InstanceId.Guid -eq $Event.RunspaceId} 
+          write-ezlogs "[VLC_Playing_EVENT] VLC Playing Event: $($Event | Select-Object * | out-string)" -showtime -logtype Libvlc -Dev_mode
+          write-ezlogs "[VLC_Playing_EVENT] All Runspaces: $($(Get-Runspace) | Select-Object * | out-string)" -showtime -logtype Libvlc -Dev_mode
           if($existingjob_check){
-            write-ezlogs "[VLC_Playing_EVENT] >>>> Found playback Runspace: $($existingjob_check | select * | out-string)" -showtime -LogLevel 3 -logtype Libvlc
-            write-ezlogs "[VLC_Playing_EVENT] | InitialSessionState Variables: $($existingjob_check.InitialSessionState.Variables | out-string)" -showtime -LogLevel 3 -logtype Libvlc
-            write-ezlogs "[VLC_Playing_EVENT] | GetCallStack: $($existingjob_check.Debugger.GetCallStack() | out-string)" -showtime -LogLevel 3 -logtype Libvlc
+            write-ezlogs "[VLC_Playing_EVENT] >>>> Found playback Runspace: $($existingjob_check | Select-Object * | out-string)" -showtime -logtype Libvlc -Dev_mode
+            write-ezlogs "[VLC_Playing_EVENT] | InitialSessionState Variables: $($existingjob_check.InitialSessionState.Variables | out-string)" -showtime -logtype Libvlc -Dev_mode
+            write-ezlogs "[VLC_Playing_EVENT] | GetCallStack: $($existingjob_check.Debugger.GetCallStack() | out-string)" -showtime -logtype Libvlc -Dev_mode
           }
         }    
         write-ezlogs "[VLC_Playing_EVENT] >>>> Received VLC Playing Event -- Current Volume $($synchash.vlc.Volume) -- Mute: $($synchash.vlc.mute)" -LogLevel 2 -logtype Libvlc
@@ -123,7 +123,7 @@ function Add-VLCRegisteredEvents
           $thisapp.Config.Media_Volume = 100
         }
         if($synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled -and $synchash.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus -ne 'Playing'){
-          write-ezlogs " | [VLC_Playing_EVENT] Setting SystemMediaPlayer status from '$($synchash.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus)' to 'Playing'" -showtime -LogLevel 2 -logtype Libvlc   
+          write-ezlogs "[VLC_Playing_EVENT] | Setting SystemMediaPlayer status from '$($synchash.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus)' to 'Playing'" -showtime -LogLevel 2 -logtype Libvlc   
           $synchash.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus = 'Playing'
           $synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
         }
@@ -134,7 +134,7 @@ function Add-VLCRegisteredEvents
           $synchash.PauseButton_ToggleButton.isChecked = $false
         }
         if($synchash.MiniPlayButton_ToggleButton){
-          $synchash.MiniPlayButton_ToggleButton.uid = $false
+          $synchash.MiniPlayButton_ToggleButton.uid = $null
         }
         if($synchash.PlayButton_ToggleButton.Uid -eq 'IsPaused'){
           $synchash.PlayButton_ToggleButton.Uid = $null
@@ -154,9 +154,9 @@ function Add-VLCRegisteredEvents
           Set-AudioSessions -thisApp $thisApp -synchash $synchash
         }
         if($thisApp.Config.Dev_mode){
-          $synchash.Vlc_Current_audiotrack = $synchash.vlc.media.tracks | where {$_.TrackType -eq 'Audio'}
-          write-ezlogs " | [VLC_Playing_EVENT] Vlc_Current_audiotrack: $($synchash.vlc.media.tracks | out-string)" -loglevel 2 -logtype Libvlc -Dev_mode
-        }             
+          $synchash.Vlc_Current_audiotrack = $synchash.vlc.media.tracks | Where-Object {$_.TrackType -eq 'Audio'}
+          write-ezlogs "[VLC_Playing_EVENT] | Vlc_Current_audiotrack: $($synchash.vlc.media.tracks | out-string)" -loglevel 2 -logtype Libvlc -Dev_mode
+        }
       }catch{
         write-ezlogs "An exception occurred in vlc Playing event" -showtime -catcherror $_ 
       }   
@@ -168,7 +168,7 @@ function Add-VLCRegisteredEvents
 
   #VLC Opening Event
   try{
-    $Opening = $Registered_Events | where {$_.EventName -eq 'Opening'}
+    $Opening = $Registered_Events | Where-Object {$_.EventName -eq 'Opening'}
     if($Opening){
       write-ezlogs "Unregistering existing event: $($Opening.EventName)" -LogLevel 2 -logtype Libvlc
       Unregister-Event -SourceIdentifier $Opening.SourceIdentifier -Force
@@ -204,7 +204,7 @@ function Add-VLCRegisteredEvents
       write-ezlogs "An exception occurred Registering an event" -showtime -catcherror $_
   }#>
   try{
-    $EncounteredError = $Registered_Events | where {$_.EventName -eq 'EncounteredError'}
+    $EncounteredError = $Registered_Events | Where-Object {$_.EventName -eq 'EncounteredError'}
     if($EncounteredError){
       write-ezlogs "Unregistering existing event: $($EncounteredError.EventName)" -LogLevel 2 -logtype Libvlc
       Unregister-Event -SourceIdentifier $EncounteredError.SourceIdentifier -Force
@@ -249,7 +249,7 @@ function Add-VLCRegisteredEvents
     #No endreached event in libvlc 4?
   }else{
     try{
-      $EndReached = $Registered_Events | where {$_.EventName -eq 'EndReached'}
+      $EndReached = $Registered_Events | Where-Object {$_.EventName -eq 'EndReached'}
       if($EndReached){
         write-ezlogs "Unregistering existing event: $($EndReached.EventName)" -LogLevel 2 -logtype Libvlc
         Unregister-Event -SourceIdentifier $EndReached.SourceIdentifier -Force
@@ -261,7 +261,7 @@ function Add-VLCRegisteredEvents
           if($thisapp.config.Auto_Playback -or $thisapp.config.Auto_Repeat){
             write-ezlogs ">>>> Media playback ended, Auto_Playback enabled: $($thisapp.config.Auto_Playback) - Auto_Repeat enabled: $($thisapp.config.Auto_Repeat), stopping vlc playback" -logtype Libvlc
             if($synchash.vlc.media){
-              write-ezlogs " | Disposing Libvlc_media" -logtype Libvlc
+              write-ezlogs "| Disposing Libvlc_media" -logtype Libvlc
               $synchash.vlc.media = $Null
             }
             $null = $synchash.VLC.stop()
@@ -284,7 +284,7 @@ function Add-VLCRegisteredEvents
 
   #Muted
   try{
-    $Muted = $Registered_Events | where {$_.EventName -eq 'Muted'}
+    $Muted = $Registered_Events | Where-Object {$_.EventName -eq 'Muted'}
     if($Muted){
       write-ezlogs "Unregistering existing event: $($Muted.EventName)" -LogLevel 2 -logtype Libvlc
       Unregister-Event -SourceIdentifier $Muted.SourceIdentifier -Force
@@ -311,7 +311,7 @@ function Add-VLCRegisteredEvents
 
   #UnMuted
   try{
-    $UnMuted = $Registered_Events | where {$_.EventName -eq 'UnMuted'}
+    $UnMuted = $Registered_Events | Where-Object {$_.EventName -eq 'UnMuted'}
     if($UnMuted){
       write-ezlogs "Unregistering existing event: $($UnMuted.EventName)" -LogLevel 2 -logtype Libvlc
       Unregister-Event -SourceIdentifier $UnMuted.SourceIdentifier -Force
@@ -337,7 +337,7 @@ function Add-VLCRegisteredEvents
 
   #Paused
   try{
-    $Paused = $Registered_Events | where {$_.EventName -eq 'Paused'}
+    $Paused = $Registered_Events | Where-Object {$_.EventName -eq 'Paused'}
     if($Paused){
       write-ezlogs "Unregistering existing event: $($Paused.EventName)" -LogLevel 2 -logtype Libvlc
       Unregister-Event -SourceIdentifier $Paused.SourceIdentifier -Force

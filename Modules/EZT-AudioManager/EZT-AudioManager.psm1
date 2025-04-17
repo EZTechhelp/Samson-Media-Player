@@ -64,15 +64,15 @@ function Get-AudioSessions
             try{
               $session2 = $session.QueryInterface([CSCore.CoreAudioAPI.AudioSessionControl2])
               $audionsessioncontrol = [CSCore.CoreAudioAPI.AudioSessionControl2]::new($session2)
-              if($thisApp.Config.Dev_mode){write-ezlogs " | Checking Audio Session: ProcessID: $($audionsessioncontrol.ProcessID) - Process Name: $($audionsessioncontrol.Process.ProcessName)" -loglevel 2 -logtype Libvlc -Dev_mode}
+              if($thisApp.Config.Dev_mode){write-ezlogs "| Checking Audio Session: ProcessID: $($audionsessioncontrol.ProcessID) - Process Name: $($audionsessioncontrol.Process.ProcessName)" -loglevel 2 -logtype Libvlc -Dev_mode}
               if($audionsessioncontrol.Process.ProcessName -like "p*w*s*" -and $audionsessioncontrol.ProcessID -eq $PID){
                 $audionsessioncontrol.DisplayName = "$($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_version)"
                 $audionsessioncontrol.IconPath = "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"            
                 $synchash.Current_Audio_Session = $audionsessioncontrol              
-                write-ezlogs " | Found current Audio Session: $($synchash.Current_Audio_Session.Process)" -loglevel 2 -logtype Libvlc
+                write-ezlogs "| Found current Audio Session: $($synchash.Current_Audio_Session.Process)" -loglevel 2 -logtype Libvlc
                 #lock-object -InputObject $synchash.Managed_AudioSession_Processes.SyncRoot -ScriptBlock {
                 if($synchash.Managed_AudioSession_Processes -notcontains $audionsessioncontrol.ProcessID){
-                  write-ezlogs " | Registering Audio Session Notifications for $($audionsessioncontrol.ProcessID)" -loglevel 2 -logtype Libvlc
+                  write-ezlogs "| Registering Audio Session Notifications for $($audionsessioncontrol.ProcessID)" -loglevel 2 -logtype Libvlc
                   $null = $synchash.Managed_AudioSession_Processes.add($audionsessioncontrol.ProcessID)
                 }                 
                 #}
@@ -210,7 +210,7 @@ function Set-AudioSessions
                     write-ezlogs "[Set-AudioSessions] | Audio session is from a Web Player $($webplayer_process.ProcessId)" -loglevel 2 -logtype Libvlc
                     #lock-object -InputObject $synchash.Managed_AudioSession_Processes.SyncRoot -ScriptBlock {
                     if($synchash.Managed_AudioSession_Processes -notcontains $webplayer_process.ProcessId){
-                      write-ezlogs " | Registering Audio Session for WebPlayer process id: $($webplayer_process.ProcessId)" -loglevel 2 -logtype Libvlc
+                      write-ezlogs "| Registering Audio Session for WebPlayer process id: $($webplayer_process.ProcessId)" -loglevel 2 -logtype Libvlc
                       $null = $synchash.Managed_AudioSession_Processes.add($webplayer_process.ProcessId)
                     }                 
                     #}
@@ -225,7 +225,7 @@ function Set-AudioSessions
                   $audionsessioncontrol.IconPath = "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"
                   #lock-object -InputObject $synchash.Managed_AudioSession_Processes.SyncRoot -ScriptBlock {
                   if($synchash.Managed_AudioSession_Processes -notcontains $audionsessioncontrol.ProcessID){
-                    write-ezlogs " | Registering Audio Session for PID: $($audionsessioncontrol.ProcessID)" -loglevel 2 -logtype Libvlc
+                    write-ezlogs "| Registering Audio Session for PID: $($audionsessioncontrol.ProcessID)" -loglevel 2 -logtype Libvlc
                     $null = $synchash.Managed_AudioSession_Processes.add($audionsessioncontrol.ProcessID)
                   }                 
                   #}              
@@ -377,7 +377,7 @@ function Set-ApplicationAudioDevice
                 }
               }
             }else{
-              write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking for all webview2 processes"
+              write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking for all webview2 processes" -Dev_mode
               $query = [System.Management.ObjectQuery]::new("SELECT * FROM Win32_Process WHERE Name = 'msedgewebview2.exe' AND CommandLine LIKE '%AudioService%' AND CommandLine LIKE '%$([regex]::Escape("$($thisApp.Config.Temp_Folder)"))%'")
               $searcher = [System.Management.ManagementObjectSearcher]::new($query)
               $AudioProcess = $searcher.get() 
@@ -659,7 +659,7 @@ function Set-ApplicationAudioDevice
               $Process = $ProcessName
             }
           }else{
-            write-ezlogs "[Set-ApplicationAudioDevice] >>> Looking for all webview2 processes"
+            write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking for all webview2 processes" -Dev_mode
             $query = [System.Management.ObjectQuery]::new("SELECT * FROM Win32_Process WHERE Name = 'msedgewebview2.exe' AND CommandLine LIKE '%AudioService%' AND CommandLine LIKE '%$([regex]::Escape("$($thisApp.Config.Temp_Folder)"))%'")
             $searcher = [System.Management.ManagementObjectSearcher]::new($query)
             $AudioProcess = $searcher.get() 

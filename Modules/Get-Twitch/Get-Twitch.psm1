@@ -1359,6 +1359,7 @@ function Update-TwitchStatus
                     $changes++
                   }elseif($playlist_track -and "$twitch_status" -ne "$($playlist_track.Live_Status)"){
                     write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed status from '$($playlist_track.Live_Status)' to '$($twitch_status)'" -showtime -logtype Twitch -LogLevel 2
+                    $UpdateAlert = $true
                     $changes++
                   }elseif($playlist_track -and "$($TwitchAPI.game_name)" -ne "$($playlist_track.Status_msg)"){
                     write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed game/category from '$($playlist_track.Status_msg)' to '$($TwitchAPI.game_name)'" -showtime -logtype Twitch -LogLevel 2
@@ -1396,11 +1397,27 @@ function Update-TwitchStatus
                       }else{
                         $heroimage = "$($thisApp.Config.Current_folder)\Resources\Samson_Icon1.png"
                       }
+                      if($twitchmedia){
+                        $synchash.Start_media = $twitchmedia
+                      }elseif($playlist_track){
+                        $synchash.Start_media = $playlist_track
+                      }
+                      $ActivatedAction = {  
+                        try{
+                          write-ezlogs "[Toast-Activation] >>>> Starting playback for Twitch Stream: $twitch_channel - $($synchash.Start_media.Artist)"
+                          if($synchash.Start_media.User_id -and $synchash.Start_media.User_id -ne $synchash.Start_media.User_id){                                                     
+                            $synchash.start_media_timer.start()
+                          } 
+                        }catch{
+                          write-ezlogs "An exception occurred in Toast Notification Balloon_click_Command" -CatchError $_
+                        }
+                      }
                       $Toast = @{
                         AppID = $appid
                         Text = $Message
                         AppLogo = $applogo
                         HeroImage = $heroimage
+                        ActivatedAction = $ActivatedAction
                       }
                       Update-MainWindow -synchash $synchash -thisApp $thisApp -Toast $Toast
                     }catch{
@@ -1659,7 +1676,7 @@ function Start-TwitchMonitor
       $interval = [TimeSpan]::FromHours((Convert-TimespanToInt -Timespan $Interval))
     }
     $Sleep_Value = [TimeSpan]::Parse($Interval)
-    write-ezlogs " | Interval: $sleep_value" -showtime -logtype Twitch -LogLevel 2
+    write-ezlogs "| Interval: $sleep_value" -showtime -logtype Twitch -LogLevel 2
     if($thisApp.config.Twitch_Update -and $Sleep_Value -ne $null){
       if(!$synchash.TwitchMonitor_timer){
         $synchash.TwitchMonitor_timer = [System.Windows.Threading.DispatcherTimer]::new()
@@ -2014,11 +2031,11 @@ function Get-Twitch
                       if($track){
                         foreach ($property in $twitch_item.psobject.properties.name){
                           if($property -notin 'Enable_LiveAlert','Profile_Date_Added' -and [bool]$track.PSObject.Properties[$property] -and $track.$property -ne $twitch_item.$property){
-                            if($Verboselog){write-ezlogs " | Updating playlist track property: '$($property)' from value: '$($track.$property)' - to: '$($twitch_item.$property)'" -logtype Twitch -VerboseDebug:$Verboselog}
+                            if($Verboselog){write-ezlogs "| Updating playlist track property: '$($property)' from value: '$($track.$property)' - to: '$($twitch_item.$property)'" -logtype Twitch -VerboseDebug:$Verboselog}
                             $track.$property = $twitch_item.$property
                             $synchash.Temp_TwitchPlaylist_to_Save = $true
                           }elseif($property -notin 'Enable_LiveAlert','Profile_Date_Added' -and -not [bool]$track.PSObject.Properties[$property]){
-                            write-ezlogs " | Adding playlist track property: '$($property)' with value: $($twitch_item.$property)" -logtype Twitch
+                            write-ezlogs "| Adding playlist track property: '$($property)' with value: $($twitch_item.$property)" -logtype Twitch
                             $synchash.Temp_TwitchPlaylist_to_Save = $true
                             $track.psobject.properties.add([System.Management.Automation.PSNoteProperty]::new($property,$twitch_item.$property))
                           }

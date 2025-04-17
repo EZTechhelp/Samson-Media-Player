@@ -722,7 +722,7 @@ function Show-ProfileEditor{
                 }
               }else{
                 $hashedit."Media_$($property.name)_textbox" = [System.Windows.Controls.Textbox]::new()                            
-                $hashedit."Media_$($property.name)_textbox".BorderThickness="0,0,0,0"    
+                $hashedit."Media_$($property.name)_textbox".BorderThickness="0,0,0,0"
                 $hashedit."Media_$($property.name)_textbox".Margin="3,0,0,5"
                 $hashedit."Media_$($property.name)_textbox".isReadOnly = $true                     
                 $hashedit."Media_$($property.name)_textbox".text = $value 
@@ -806,7 +806,7 @@ function Show-ProfileEditor{
             if($VerboseLog){write-ezlogs ">>>> Creating new object sub-properties for ($($property.name)) -- sub-properties for ($($sub_properties.Name))" -showtime -VerboseDebug:$VerboseLog}
             foreach($sub_property in $sub_properties){             
               $sub_property_name = "$($property.name)_$($sub_property.name)"
-              if($VerboseLog){write-ezlogs " | Sub_Property Name: $sub_property_name" -showtime -VerboseDebug:$VerboseLog}
+              if($VerboseLog){write-ezlogs "| Sub_Property Name: $sub_property_name" -showtime -VerboseDebug:$VerboseLog}
               if(!$hashedit."Media_$($sub_property_name)_Label"){
                 if($VerboseLog){write-ezlogs "| Creating new field: $sub_property_name" -showtime -VerboseDebug:$VerboseLog}
                 $grid = [System.Windows.Controls.Grid]::new()
@@ -1147,6 +1147,7 @@ function Show-ProfileEditor{
       'Deserialized.System.String[]'
       'Deserialized.TagLib.MediaTypes'
       'System.TimeSpan'
+      'System.DateTime'
       'System.Uri'
     )
     if($Media_to_edit.Source -eq 'Local'){
@@ -1234,7 +1235,7 @@ function Show-ProfileEditor{
         }elseif($profile.PictureData){
           try{
             $taginfo = [taglib.file]::create($url) 
-            if($thisApp.Config.Verbose_logging){write-ezlogs " | Tag Picture: $($taginfo.tag.pictures | out-string)" -showtime}
+            if($thisApp.Config.Verbose_logging){write-ezlogs "| Tag Picture: $($taginfo.tag.pictures | out-string)" -showtime}
           }catch{
             write-ezlogs "An exception occurred getting taginfo for $($url)" -showtime -catcherror $_
           }
@@ -1485,7 +1486,7 @@ function Show-ProfileEditor{
         }
         #Media Type
         $type = 'Twitch'
-        write-ezlogs "| Loading Youtube profile for $($title) - $($profile.id) into editor" -showtime                       
+        write-ezlogs "| Loading Twitch profile for $($title) - $($profile.id) into editor" -showtime                       
       }    
   
       #---------------------------------------------- 
@@ -1685,7 +1686,7 @@ function Show-ProfileEditor{
                 write-ezlogs "Exception Saving profile to $($profile_Path)" -showtime -catcherror $_
               }          
               if($LibraryMediaProfile){
-                write-ezlogs " | Updated Library Media Profile: $($LibraryMediaProfile | out-string)" -showtime
+                write-ezlogs "| Updated Library Media Profile: $($LibraryMediaProfile | out-string)" -showtime
               }else{
                 write-ezlogs "Could not find Library Media Profile to update!" -showtime -warning
               }                                                           
@@ -1789,10 +1790,10 @@ function Show-ProfileEditor{
                 if($taginfo.tag.pictures){
                   $tagimage = ($taginfo.tag.pictures | Select-Object -first 1).data.data
                   if($tagimage){
-                    write-ezlogs " | Getting Cached image from taginfo type $($tagimage.gettype())" -showtime -loglevel 2
+                    write-ezlogs "| Getting Cached image from taginfo type $($tagimage.gettype())" -showtime -loglevel 2
                     $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),"$($profile.id).png")
                     if(([System.IO.File]::Exists($image_Cache_path))){
-                      write-ezlogs " | Removing existing cached image $image_Cache_path" -loglevel 2
+                      write-ezlogs "| Removing existing cached image $image_Cache_path" -loglevel 2
                       try{
                         $null = Remove-item -Path $image_Cache_path -Force
                       }catch{
@@ -1800,7 +1801,7 @@ function Show-ProfileEditor{
                       }
                     }
                     try{
-                      write-ezlogs " | Saving new cached image $($image_Cache_path)" -showtime -loglevel 2
+                      write-ezlogs "| Saving new cached image $($image_Cache_path)" -showtime -loglevel 2
                       $BinaryWriter = [System.IO.BinaryWriter]::new([System.IO.File]::create($image_Cache_path))
                       $BinaryWriter.Write($tagimage)
                       $BinaryWriter.Close()
@@ -2180,20 +2181,20 @@ function Show-ProfileEditor{
                 }
               } 
             }elseif($filename){
-              write-ezlogs " | FileName/URL is the same" -showtime
+              write-ezlogs "| FileName/URL is the same" -showtime
               if(-not [string]::IsNullOrEmpty($hashedit.Media_url_textbox.text)){
                 if($profile.url -ne $hashedit.Media_url_textbox.text){
-                  write-ezlogs " | Changing profile.url from $($profile.url) to $($hashedit.Media_url_textbox.text)" -showtime
+                  write-ezlogs "| Changing profile.url from $($profile.url) to $($hashedit.Media_url_textbox.text)" -showtime
                   Add-Member -InputObject $profile -Name "url" -Value $hashedit.Media_url_textbox.text -MemberType NoteProperty -Force
                 }
                 if($Media_to_edit.url -ne $hashedit.Media_url_textbox.text){
-                  write-ezlogs " | Changing Media_to_edit.url from $($Media_to_edit.url) to $($hashedit.Media_url_textbox.text)" -showtime
+                  write-ezlogs "| Changing Media_to_edit.url from $($Media_to_edit.url) to $($hashedit.Media_url_textbox.text)" -showtime
                   Add-Member -InputObject $Media_to_edit -Name "url" -Value $hashedit.Media_url_textbox.text -MemberType NoteProperty -Force
                 }
                 if($LibraryMediaProfile.id){
                   foreach($media in $LibraryMediaProfile){
                     if($media.url -ne $hashedit.Media_url_textbox.text){
-                      write-ezlogs " | Changing LibraryMediaProfile from $($media.url) to $($hashedit.Media_url_textbox.text)" -showtime
+                      write-ezlogs "| Changing LibraryMediaProfile from $($media.url) to $($hashedit.Media_url_textbox.text)" -showtime
                       Add-Member -InputObject $media -Name "url" -Value $hashedit.Media_url_textbox.text -MemberType NoteProperty -Force
                     }
                   }
@@ -2284,7 +2285,7 @@ function Show-ProfileEditor{
                   }elseif($urlValue -match "v="){
                   $youtube_id = ($($urlValue) -split('v='))[1].trim()  
                   $youtube_type = 'Video' 
-                  write-ezlogs " | Youtube type: Video" -showtime -logtype Youtube -loglevel 3        
+                  write-ezlogs "| Youtube type: Video" -showtime -logtype Youtube -loglevel 3        
                   }elseif($urlValue -match 'list='){
                   $youtube_id = ($($urlValue) -split('list='))[1].trim()    
                   $youtube_type = 'Playlist'                      
@@ -2399,7 +2400,7 @@ function Show-ProfileEditor{
             write-ezlogs "Exception Saving profile to $($profile_Path)" -showtime -catcherror $_
           }          
           if($LibraryMediaProfile){
-            write-ezlogs " | Updated Library Media Profile: $($LibraryMediaProfile | out-string)" -showtime -loglevel 3
+            write-ezlogs "| Updated Library Media Profile: $($LibraryMediaProfile | out-string)" -showtime -loglevel 3
           }else{
             write-ezlogs "Could not find Library Media Profile to update!" -showtime -warning
           }                                                           

@@ -114,7 +114,10 @@
 <Style x:Key="OverlayGridFade" TargetType="{x:Type Grid}">
 	<Setter Property="Cursor" Value="Arrow"/>
 	<Setter Property="Opacity" Value="0"/>
-	<Style.Triggers>
+<Style.Triggers>
+		<EventTrigger RoutedEvent="Grid.PreviewDragOver">
+			<BeginStoryboard Name="VideoView_Overlay_Storyboard_Enter3" Storyboard="{StaticResource VideoView_Overlay_Storyboard_Enter}"/>
+		</EventTrigger>		
 		<MultiDataTrigger>
 			<MultiDataTrigger.Conditions>
 				<Condition Binding="{Binding RelativeSource={x:Static RelativeSource.Self}, Path=IsMouseOver,Mode=OneWay}" Value="True"/>

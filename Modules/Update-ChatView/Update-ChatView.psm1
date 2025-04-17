@@ -53,6 +53,35 @@ function Update-ChatView
       if($synchash.Chat_Icon){
         $synchash.Chat_Icon.Kind = 'Chat'
       }
+      if($synchash.Overlay_Chat_Icon){
+        $Binding = [System.Windows.Data.Binding]::new()
+        $Binding.Source = $synchash.Chat_Icon
+        $Binding.Path = "Kind"
+        $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Overlay_Chat_Icon,[MahApps.Metro.IconPacks.PackIconMaterial]::KindProperty,$Binding)
+      }
+      if($synchash.Overlay_Chat_Button){
+        $Binding = [System.Windows.Data.Binding]::new()
+        $Binding.Source = $synchash.Chat_View_Button
+        $Binding.Path = "IsEnabled"
+        $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Overlay_Chat_Button,[Windows.Controls.Primitives.ToggleButton]::IsEnabledProperty,$Binding)
+        $Binding = [System.Windows.Data.Binding]::new()
+        $Binding.Source = $synchash.Chat_View_Button
+        $Binding.Path = "ToolTip"
+        $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Overlay_Chat_Button,[Windows.Controls.Primitives.ToggleButton]::ToolTipProperty,$Binding)
+        $Binding = [System.Windows.Data.Binding]::new()
+        $Binding.Source = $synchash.Chat_View_Button
+        $Binding.Path = "Opacity"
+        $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Overlay_Chat_Button,[Windows.Controls.Primitives.ToggleButton]::OpacityProperty,$Binding)
+        $Binding = [System.Windows.Data.Binding]::new()
+        $Binding.Source = $synchash.Chat_View_Button
+        $Binding.Path = "IsChecked"
+        $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Overlay_Chat_Button,[Windows.Controls.Primitives.ToggleButton]::IsCheckedProperty,$Binding)
+      }
       $synchash.ChatView_ShowStoryboard = [System.Windows.Media.Animation.Storyboard]::new()
       $synchash.ChatView_ShowAnimation = [WpfExtensions.GridLengthAnimation]::new()
       $null = $synchash.ChatView_ShowStoryboard.addChild($synchash.ChatView_ShowAnimation)
@@ -101,7 +130,7 @@ function Update-ChatView
             $Process = $synchash.ChatView_UpdateQueue.TryDequeue([ref]$object)
             if($Process -and $object){
               if($object.Navigate -and $object.Youtube_ID -and $thisApp.Config.Enable_YoutubeComments){
-                $synchash.Chat_View_Button.ToolTip="Comments View" 
+                $synchash.Chat_View_Button.ToolTip="Comments View"
                 $synchash.Chat_Icon.Kind="Chat"
                 $synchash.Chat_View_Button.Opacity='1'           
                 $synchash.Chat_View_Button.IsEnabled = $true
@@ -110,7 +139,7 @@ function Update-ChatView
                 $synchash.Chat_View_Button.ToolTip="Chat View" 
                 $synchash.Chat_Icon.Kind="Chat"
                 $synchash.Chat_View_Button.Opacity='1'
-                $synchash.Chat_View_Button.IsEnabled = $true   
+                $synchash.Chat_View_Button.IsEnabled = $true
                 if($syncHash.chat_WebView2 -ne $null -and $syncHash.chat_WebView2.CoreWebView2 -ne $null){
                   write-ezlogs "[ChatView_Timer] Navigating with CoreWebView2.Navigate: $($synchash.ChatView_URL)" -enablelogs -Color cyan -showtime
                   $syncHash.chat_WebView2.CoreWebView2.Navigate($synchash.ChatView_URL)
@@ -133,6 +162,9 @@ function Update-ChatView
                 $synchash.ChatView_ShowStoryboard.Add_Completed([EventHandler]$synchash.ChatView_ShowStoryboard_Completed)
                 $synchash.ChatView_ShowStoryboard.Begin($synchash.chat_column,[Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace,$true)
                 $synchash.Chat_View_Button.isChecked = $true
+                if($Object.Sender -is [Windows.Controls.Primitives.ToggleButton]){
+                  $Object.Sender.isChecked = $true
+                }
                 if($object.sender.Header){
                   $object.sender.Header = 'Close Chat View'
                   if($object.sender.icon.kind){
@@ -173,6 +205,9 @@ function Update-ChatView
                 $synchash.ChatView_ShowStoryboard.Remove_Completed([EventHandler]$synchash.ChatView_HideStoryboard_Completed)
                 $synchash.ChatView_ShowStoryboard.Add_Completed([EventHandler]$synchash.ChatView_HideStoryboard_Completed)
                 $synchash.ChatView_ShowStoryboard.Begin($synchash.chat_column,[Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace,$true)
+                if($Object.Sender -is [Windows.Controls.Primitives.ToggleButton]){
+                  $Object.Sender.isChecked = $false
+                }
                 if($object.sender.Header){
                   $object.sender.Header = 'Open Chat View'
                   if($object.sender.icon.kind){
@@ -195,6 +230,9 @@ function Update-ChatView
                   write-ezlogs "[ChatView_Timer] >>>> Disabling Chat View" -loglevel 2
                   $synchash.Chat_View_Button.IsEnabled = $false
                   $synchash.Chat_View_Button.isChecked = $false
+                  if($Object.Sender -is [Windows.Controls.Primitives.ToggleButton]){
+                    $Object.Sender.isChecked = $false
+                  }
                   $synchash.Chat_Icon.Kind="Chat"
                   $synchash.Chat_View_Button.Opacity='0.7'
                   $synchash.Chat_View_Button.ToolTip="Chat View Not Available"
