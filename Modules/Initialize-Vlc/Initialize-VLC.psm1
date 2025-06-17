@@ -174,9 +174,9 @@ Function Initialize-VLC
           if($sender.Visibility -in 'Hidden','Collapsed'){
             write-ezlogs ">>>> Video View visibility changed: $($sender.Visibility)" -showtime -warning
             if($synchash.VideoView_Grid -and $synchash.VideoView_Grid.Visibility -eq 'Visible'){
-              write-ezlogs "| hiding VideoView_Grid and setting MaxHeight to 0" -showtime -warning -Dev_mode
-              $synchash.VideoView_Grid.Visibility = 'Collapsed'
-              $synchash.VideoView_Grid.MaxHeight = 0
+              #write-ezlogs "| hiding VideoView_Grid and setting MaxHeight to 0" -showtime -warning -Dev_mode
+              #$synchash.VideoView_Grid.Visibility = 'Collapsed'
+              #$synchash.VideoView_Grid.MaxHeight = 0
             }
             if($sender.IsEnabled){
               write-ezlogs "| Disabling VideoView control" -showtime -warning -Dev_mode
@@ -184,9 +184,9 @@ Function Initialize-VLC
             }                         
           }elseif($sender.Visibility -eq 'Visible'){            
             if($synchash.VideoView_Grid.Visibility -in 'Hidden','Collapsed'){
-              write-ezlogs ">>>> Video View is Visible and VideoView_Grid is not, setting VideoView_Grid to Visible and MaxHeight to infinity" -showtime -warning
-              $synchash.VideoView_Grid.Visibility = 'Visible'
-              $synchash.VideoView_Grid.MaxHeight = [Double]::PositiveInfinity
+              #write-ezlogs ">>>> Video View is Visible and VideoView_Grid is not, setting VideoView_Grid to Visible and MaxHeight to infinity" -showtime -warning
+              #$synchash.VideoView_Grid.Visibility = 'Visible'
+              #$synchash.VideoView_Grid.MaxHeight = [Double]::PositiveInfinity
             }
             if(!$sender.IsEnabled){
               write-ezlogs "| Enabling VideoView control" -showtime -warning -Dev_mode
@@ -199,10 +199,11 @@ Function Initialize-VLC
             if(!$synchash.vlc.IsPlaying -and !$synchash.VideoView_Grid.Parent.Parent.AllowsTransparency -and $thisApp.Config.Enable_YoutubeComments -and $synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
               #TODO: Fixes the issue where libvlc video player window background sometimes becomes solid white or flashes white if AllowsTransparency  is false on floating window
               #https://code.videolan.org/videolan/LibVLCSharp/-/issues/555
-              write-ezlogs "| Calling Hide() then Show() on VideoView floating window to prevent background from becoming solid white" -showtime -warning
+              #UPDATE: This no longer seems to work after updating libvlcsharp to 3.9.3, but that version fixes a crash so it overrides this issue
+              #write-ezlogs "| Calling Hide() then Show() on VideoView floating window to prevent background from becoming solid white" -showtime -warning
               #$synchash.VideoView_Grid.Parent.Parent.hide()
               #$synchash.VideoView_Grid.Parent.Parent.Show()
-              $synchash.VideoView_Grid.Parent.Parent.Activate()
+              #$synchash.VideoView_Grid.Parent.Parent.Activate()
             }
           }
         }catch{
@@ -211,6 +212,14 @@ Function Initialize-VLC
       }
       [void]$synchash.VideoView.Remove_IsVisibleChanged($synchash.VideoView_IsVisibleChanged_Command)
       [void]$synchash.VideoView.add_IsVisibleChanged($synchash.VideoView_IsVisibleChanged_Command)
+
+      if($synchash.VideoView_Grid){
+        $Binding = [System.Windows.Data.Binding]::new()
+        $Binding.Source = $synchash.VideoView
+        $Binding.Path = "Visibility"
+        $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Grid,[System.Windows.Controls.Grid]::VisibilityProperty, $Binding)
+      }
     }
   }catch{
     write-ezlogs 'An exception occurred An exception occurred initializing libvlc' -showtime -catcherror $_
@@ -491,7 +500,7 @@ Function Initialize-EQ
                   write-ezlogs "| Setting Preamp to default: 12" -loglevel 2 -logtype Libvlc
                   [void]$synchash.Equalizer.SetPreamp(12)
                 }              
-                [void]$synchash.vlc.SetEqualizer($synchash.Equalizer)              
+                [void]$synchash.vlc.SetEqualizer($synchash.Equalizer)
               }else{
                 write-ezlogs "Libvlc is not initialized!" -showtime -warning -logtype Libvlc
               }                      
@@ -1341,7 +1350,7 @@ Function Update-LibVLC
         #[void]$vlcArgs.add("--spect-show-original")
         if($thisApp.Config.Current_Visualization -eq 'ProjectM' -and [system.io.Directory]::Exists("$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop")){
           if($synchash.VideoViewFloat.IsInitialized){
-            write-ezlogs "| Using VideoViewFloat window for ProjectM dimensions"
+            write-ezlogs "| Using VideoViewFloat window for ProjectM dimensions" -logtype Libvlc
             $ProjectMWidth = $synchash.VideoViewFloat.ActualWidth
             $ProjectMHeight = $synchash.VideoViewFloat.ActualHeight            
           }else{

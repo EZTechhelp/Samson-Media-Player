@@ -52,7 +52,9 @@ function Update-DSRichPresence {
     [Parameter(ValueFromPipeline)]
     [DiscordRPC.Party]$Party,
     [Parameter(ValueFromPipeline)]
-    [DiscordRPC.Secrets]$Secrets
+    [DiscordRPC.Secrets]$Secrets,
+    [Parameter(ValueFromPipeline)]
+    [DiscordRPC.ActivityType]$ActivityType
   )
   process {
     if (-not $script:rpcclient) {
@@ -81,6 +83,9 @@ function Update-DSRichPresence {
     if (-not $Secrets) {
       $Secrets = $prescence.Secrets
     }
+    if (-not $ActivityType) {
+      $ActivityType = $prescence.Type
+    }
     if($State){
       $Chars = ($State | measure-object -Character).Characters
       if($Chars -ge 128){
@@ -103,6 +108,7 @@ function Update-DSRichPresence {
       Assets     = $Assets
       Party      = $Party
       Secrets    = $Secrets
+      ActivityType = $ActivityType
     }
 
     $newprescence = New-DSRichPresence @params

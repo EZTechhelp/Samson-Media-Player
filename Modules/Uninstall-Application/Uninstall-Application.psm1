@@ -61,6 +61,7 @@ function Uninstall-Application
   Param (
     $thisApp,
     $synchash,
+    [string]$UninstallLogFile,
     [system.diagnostics.stopwatch]$globalstopwatch = $globalstopwatch,
     [switch]$Verboselog
   )
@@ -361,7 +362,14 @@ function Uninstall-Application
       write-ezlogs "Uninstall Execution Time" -logtype Uninstall -PerfTimer $setup_startup_stopwatch -Perf
     }
     write-ezlogs "######## Exiting Uninstaller And Application ########" -logtype Uninstall
-    Stop-EZlogs -stoptimer -logfile $thisApp.Config.Uninstall_Log_File -logOnly -enablelogs -thisApp $thisApp -ShutdownWait -globalstopwatch $globalstopwatch
+    if($UninstallLogFile){
+      $uninstallLog = $UninstallLogFile
+    }elseif($thisApp.Config.Uninstall_Log_File){
+      $uninstallLog = $thisApp.Config.Uninstall_Log_File
+    }elseif($thisApp.Config.Log_file){
+      $uninstallLog = $thisApp.Config.Log_file
+    }
+    Stop-EZlogs -stoptimer -logfile $uninstallLog -logOnly -enablelogs -thisApp $thisApp -ShutdownWait -globalstopwatch $globalstopwatch
     Stop-Process $pid -Force
   }
 }

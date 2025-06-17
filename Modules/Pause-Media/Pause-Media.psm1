@@ -340,7 +340,7 @@ function Pause-Media
         }
       }        
       return  
-    }elseif(($synchash.VLC.state -match 'Paused' -or $synchash.VLC.state -match 'NothingSpecial' -or (($synchash.vlc.Media.State -eq 'Stopped' -or $synchash.VLC.state -eq 'Stopped') -and ($synchash.vlc.Media.IsParsed -or $synchash.vlc.Media.ParsedStatus -eq 'Done') -and -not [string]::IsNullOrEmpty($synchash.Current_playing_media.id) -and $synchash.Current_playing_media.Source -eq 'Local' -and $thisApp.Config.Remember_Playback_Progress)) -and ($libvlc_mediastate) -and !$([string]$synchash.vlc.media.Mrl).StartsWith("dshow://")){
+    }elseif(($synchash.VLC.state -match 'Paused' -or $synchash.VLC.state -match 'NothingSpecial' -or (($synchash.vlc.Media.State -eq 'Stopped' -or $synchash.VLC.state -eq 'Stopped') -and ($synchash.vlc.Media.IsParsed -or $synchash.vlc.Media.ParsedStatus -eq 'Done') -and -not [string]::IsNullOrEmpty($synchash.Current_playing_media.id) -and $synchash.Current_playing_media.Source -in 'Local','Youtube' -and $thisApp.Config.Remember_Playback_Progress)) -and ($libvlc_mediastate) -and !$([string]$synchash.vlc.media.Mrl).StartsWith("dshow://")){
       #$current_track = (Get-CurrentTrack -ApplicationName $thisapp.config.App_Name) 
       write-ezlogs 'Resuming Vlc playback' -showtime -color cyan 
       $synchash.Now_Playing_Label.Visibility = 'Visible'
@@ -512,6 +512,9 @@ if (state == 2) {
 } else if (state == 1) {
    console.log('Pausing');
    player.pauseVideo();
+} else if (state == 5) {
+   console.log('Starting CUED Video');
+   player.playVideo();
 }
 } catch (error) {
   console.error('An exception occurred toggling player', error);

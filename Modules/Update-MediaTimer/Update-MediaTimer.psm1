@@ -194,7 +194,7 @@ function Update-MediaTimer{
             $synchashWeak.Target.MediaPlayer_Slider.Maximum = $synchashWeak.Target.MediaPlayer_TotalDuration
           } 
           if($synchashWeak.Target.MediaPlayer_Slider.isEnabled){
-            if($thisApp.Config.Remember_Playback_Progress){
+            if($thisApp.Config.Remember_Playback_Progress -and 'Current_Progress_Secs' -in $synchashWeak.Target.Current_playing_media.psobject.properties.name){
               $synchashWeak.Target.Current_playing_media.Current_Progress_Secs = $synchashWeak.Target.VLC.Time
               $thisApp.Config.Current_Playing_Media = $synchashWeak.Target.Current_playing_media
             }
@@ -433,7 +433,7 @@ function Update-MediaTimer{
             if($synchashWeak.Target.Main_TaskbarItemInfo.ProgressState -ne 'Normal'){
               $synchashWeak.Target.Main_TaskbarItemInfo.ProgressState = 'Normal'
             }
-            if($thisApp.Config.Remember_Playback_Progress){
+            if($thisApp.Config.Remember_Playback_Progress -and 'Current_Progress_Secs' -in $synchashWeak.Target.Current_playing_media.psobject.properties.name){
               $synchashWeak.Target.Current_playing_media.Current_Progress_Secs = $progress
               $thisApp.Config.Current_Playing_Media = $synchashWeak.Target.Current_playing_media
             }

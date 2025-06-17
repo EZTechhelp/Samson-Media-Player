@@ -476,6 +476,10 @@ var state = getStatePosition();
                   if($synchash.Main_TaskbarItemInfo.ProgressState -ne 'Normal'){
                     $synchash.Main_TaskbarItemInfo.ProgressState = 'Normal'
                   }
+                  if($thisApp.Config.Remember_Playback_Progress -and 'Current_Progress_Secs' -in $synchash.Current_playing_media.psobject.properties.name){
+                    $synchash.Current_playing_media.Current_Progress_Secs = $a
+                    $thisApp.Config.Current_Playing_Media = $synchash.Current_playing_media
+                  }
                 }else{
                   #$synchash.MediaPlayer_Slider.ToolTip = $synchash.Media_Length_Label.content
                   $synchash.MediaPlayer_Slider.ToolTip = "$current_Progress" + " / " + "$total_time"
@@ -500,8 +504,7 @@ var state = getStatePosition();
                 }                      
               }catch{
                 write-ezlogs "An exception occurred parsing current play duration for web player" -showtime -catcherror $_
-              }                                       
-
+              }
               if(!$Current_playing){    
                 try{
                   write-ezlogs "| Couldnt get current playing item with id $($Current_Playing_Id) from queue! Executing Get-PlayQueue" -showtime -warning    
@@ -681,6 +684,7 @@ function Set-SpotifyWebPlayerTimer
     $synchash,
     [switch]$Startup,
     [switch]$Start,
+    [switch]$Start_Paused,
     [switch]$Stop,
     [switch]$LogLevel
   )
@@ -696,8 +700,9 @@ function Set-SpotifyWebPlayerTimer
             }           
             if($thisapp.config.Spotify_WebPlayer -and $synchash.Spotify_WebPlayer_URL -and $synchash.Spotify_WebPlayer_title){
               if($syncHash.YoutubeWebView2 -ne $null -and $syncHash.YoutubeWebView2.CoreWebView2 -ne $null){
-                write-ezlogs "[Set-SpotifyWebPlayerTimer] >>>> Disposing youtube webplayer Webview2 instance" -showtime
-                $synchash.YoutubeWebView2.dispose()
+                #write-ezlogs "[Set-SpotifyWebPlayerTimer] >>>> Disposing youtube webplayer Webview2 instance" -showtime
+                Remove-YoutubeWebPlayer -synchash $syncHash
+                #$synchash.YoutubeWebView2.dispose()
               }              
               if($synchash.Webview2_Grid.children -contains $synchash.Webview2){
                 write-ezlogs "[Set-SpotifyWebPlayerTimer] >>>> Removing Spotify Webview2 from Webview2_Grid" -showtime
@@ -806,10 +811,10 @@ function Set-SpotifyWebPlayerTimer
               if($synchash.MiniPlayer_Media_Length_Label){
                 $synchash.MiniPlayer_Media_Length_Label.Content = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
               }                                
-              Start-WebNavigation -uri $synchash.Spotify_WebPlayer_URL -synchash $synchash -WebView2 $synchash.Webview2 -thisScript $thisScript -thisApp $thisApp                     
+              Start-WebNavigation -uri $synchash.Spotify_WebPlayer_URL -synchash $synchash -WebView2 $synchash.Webview2 -thisScript $thisScript -thisApp $thisApp -Start_Paused:$this.tag.Start_Paused                    
             }elseif($synchash.VLC_Grid.Children.Name -contains 'Webview2'){
               Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop
-              Start-WebNavigation -uri "$($thisApp.Config.Current_Folder)\Resources\Spotify\SpotifyWebPlayerTemplate.html" -synchash $synchash -WebView2 $synchash.Webview2 -thisScript $thisScript -thisApp $thisApp     
+              Start-WebNavigation -uri "$($thisApp.Config.Current_Folder)\Resources\Spotify\SpotifyWebPlayerTemplate.html" -synchash $synchash -WebView2 $synchash.Webview2 -thisScript $thisScript -thisApp $thisApp -Start_Paused:$this.tag.Start_Paused    
               if($synchash.TitleMenuGrid.Children.Name -contains 'Webview2'){
                 $synchash.TitleMenuGrid.children.Remove($synchash.Webview2)  
               }                       
@@ -848,6 +853,7 @@ function Set-SpotifyWebPlayerTimer
         $synchash.Spotify_WebPlayer_timer.tag = [PSCustomObject]::new(@{
             'Startup' = $Startup
             'Start' = $Start
+            'Start_Paused' = $Start_Paused
             'Stop' = $Stop
             'LogLevel' = $LogLevel
         }) 
@@ -874,6 +880,7 @@ function Set-YoutubeWebPlayerTimer
     $synchash,
     [switch]$Startup,
     [switch]$Start,
+    [switch]$Start_Paused,
     [switch]$Stop,
     [switch]$No_YT_Embed,
     [switch]$LogLevel
@@ -1023,10 +1030,11 @@ function Set-YoutubeWebPlayerTimer
                 write-ezlogs "[Set-YoutubeWebPlayerTimer] >>>> Collapsing Vlc VideoView to display Youtube WebPlayer for youtube playback of url: $($synchash.Youtube_WebPlayer_URL)" -showtime 
                 $synchash.VideoView.Visibility = 'Collapsed'
               }
-              if($synchash.VideoView.Visibility -in 'Hidden','Collapsed' -and $synchash.VideoView_Grid -and $synchash.VideoView_Grid.Visibility -eq 'Visible'){
+              #TODO: Not needed as visibilities are now bound
+<#              if($synchash.VideoView.Visibility -in 'Hidden','Collapsed' -and $synchash.VideoView_Grid -and $synchash.VideoView_Grid.Visibility -eq 'Visible'){
                 write-ezlogs "[Set-YoutubeWebPlayerTimer] | Collapsing VideoView_Grid" -showtime -warning
                 $synchash.VideoView_Grid.Visibility = 'Collapsed'           
-              }
+              }#>
               $Beforeindex = $synchash.MediaLibraryAnchorable.isSelected
               $synchash.MediaViewAnchorable.isSelected = $true
               $synchash.MediaLibraryAnchorable.isSelected = $Beforeindex
@@ -1123,7 +1131,7 @@ function Set-YoutubeWebPlayerTimer
               }else{
                 $no_YT_Embed = $false
               }               
-              Start-WebNavigation -uri $synchash.Youtube_WebPlayer_URL -synchash $synchash -WebView2 $synchash.YoutubeWebView2 -thisApp $thisApp -No_YT_Embed:$this.tag.No_YT_Embed
+              Start-WebNavigation -uri $synchash.Youtube_WebPlayer_URL -synchash $synchash -WebView2 $synchash.YoutubeWebView2 -thisApp $thisApp -No_YT_Embed:$this.tag.No_YT_Embed -Start_Paused:$this.tag.Start_Paused
               if($synchash.MiniPlayer_Viewer.isVisible -and !$synchash.MediaViewAnchorable.isFloating){
                 write-ezlogs ">>>> Video view is not visible and MiniPlayer is visible, Youtube webplayer not playing, undocking video player" -Warning
                 if($synchash.VideoViewFloat.Height){
@@ -1152,9 +1160,9 @@ function Set-YoutubeWebPlayerTimer
                   $synchash.VLC_Grid.children.Remove($synchash.YoutubeWebView2)
               }#>
               if($syncHash.YoutubeWebView2 -ne $null -and $syncHash.YoutubeWebView2.CoreWebView2 -ne $null){
-                write-ezlogs "| Disposing youtube webplayer Webview2 instance" -showtime
-                $synchash.YoutubeWebView2.dispose()
-                $synchash.YoutubeWebView2 = $Null
+                Remove-YoutubeWebPlayer -synchash $syncHash
+                #$synchash.YoutubeWebView2.dispose()
+                #$synchash.YoutubeWebView2 = $Null
               }
               if($synchash.VLC_Grid.children -contains $synchash.Webview2){
                 $synchash.VLC_Grid.children.Remove($synchash.Webview2)
@@ -1224,6 +1232,7 @@ function Set-YoutubeWebPlayerTimer
         $synchash.Youtube_WebPlayer_timer.tag = [PSCustomObject]::new(@{
             'Startup' = $Startup
             'Start' = $Start
+            'Start_Paused' = $Start_Paused
             'Stop' = $Stop
             'No_YT_Embed' = $No_YT_Embed
             'LogLevel' = $LogLevel

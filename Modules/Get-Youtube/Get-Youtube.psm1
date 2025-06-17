@@ -1064,6 +1064,8 @@ function Get-YoutubeStatus
                   $playlistcount = $null             
                   $playlisturl = "https://www.youtube.com/playlist?list=$($playlist.id)"
                   $playlistName = $playlist.snippet.title
+                  #TODO: Needs refactor - this count value not always accurate as hidden,removed or blocked videos on youtube side still count towards item count, but will never be imported, thus always forcing reimport
+                  #Need to review if a way to parse valid videos, hopefully by not having to actually pull all the videos each playlist as was hoping to avoid that extra overhead
                   $playlistcount = $playlist.contentdetails.itemCount
                   try{
                     $existingplaylistcount = ($synchash.All_Youtube_Media.where({$_.Playlist_id -eq $playlist.id})).count
@@ -1369,6 +1371,10 @@ function Get-YoutubeURL
       if($URL -match '%3D%3D'){
         $URL = $URL -replace '%3D%3D'
       }
+      if($URL -match '\&ab_channel='){
+        $Channel = [regex]::matches($URL, "\&ab_channel=(?<value>.*)") | & { process { $_.groups[1].value}}
+        $URL = ($($URL) -split('&ab_channel='))[0].trim()
+      }
       if($URL -match '\&t='){
         $TimeIndex = [regex]::matches($URL, "\&t=(?<value>.*)") | & { process { $_.groups[1].value}}
         $URL = ($($URL) -split('&t='))[0].trim()
@@ -1492,6 +1498,7 @@ function Get-YoutubeURL
       'url' = $url
       'YTVUrl' = $YTVUrl
       'Type' = $youtube_type
+      'Channel' = $Channel
       'InvidiousUrl' = $InvidiousUrl
       'PlaylistUrl' = $PlaylistUrl
       'PlaylistEmbedUrl' = $PlaylistEmbedUrl

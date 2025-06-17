@@ -98,9 +98,10 @@ function Start-Media{
     if($thisapp.config.Youtube_WebPlayer -and $IsValidYoutube_Media){
       $CanUse_WebPlayer = $true
       if($synchashWeak.Target.YoutubeWebView2 -ne $null -and $synchashWeak.Target.YoutubeWebView2.CoreWebView2 -ne $null -and !$synchashWeak.Target.Initialize_YoutubeWebPlayer_timer.isEnabled){
-        write-ezlogs ">>>> Disposing youtube webplayer Webview2 instance" -showtime -Warning
-        $synchashWeak.Target.YoutubeWebView2.dispose()
-        $synchashWeak.Target.YoutubeWebView2 = $Null
+        #write-ezlogs ">>>> Disposing youtube webplayer Webview2 instance" -showtime -Warning
+        Remove-YoutubeWebPlayer -synchash $synchashWeak.Target
+        #$synchashWeak.Target.YoutubeWebView2.dispose()
+        #$synchashWeak.Target.YoutubeWebView2 = $Null
       }
     }else{
       $CanUse_WebPlayer = $false
@@ -116,7 +117,7 @@ function Start-Media{
     $synchashWeak.Target.Spotify_WebPlayer_title = $null  
     $synchashWeak.Target.Spotify_WebPlayer = $null
     $synchashWeak.Target.Media_Current_Title = ''
-    if($thisApp.Config.Current_Playing_Media.id -eq $media.id -and -not [string]::IsNullOrEmpty($thisApp.Config.Current_Playing_Media.Current_Progress_Secs) -and !$Restart){
+    if($thisApp.Config.Remember_Playback_Progress -and $thisApp.Config.Current_Playing_Media.id -eq $media.id -and -not [string]::IsNullOrEmpty($thisApp.Config.Current_Playing_Media.Current_Progress_Secs) -and !$Restart){
       $Saved_Media_Progress = $thisApp.Config.Current_Playing_Media.Current_Progress_Secs
     }
     $thisApp.Config.Current_Playing_Media = $null
@@ -479,8 +480,11 @@ function Start-Media{
           $pp = [regex]::matches($media_link, "\&pp=(?<value>.*)") | & { process {$_.groups[1].value}}
           [Uri]$vlcurl = "$vlcurl" + "&pp=$pp"
         }
-        if($youtube.TimeIndex){
-          [Uri]$vlcurl = "$vlcurl" + $youtube.TimeIndex
+        if($Saved_Media_Progress){
+          write-ezlogs "| Applying saved media progress time: $Saved_Media_Progress"
+          [Uri]$vlcurl = "$vlcurl" + "&t=$($Saved_Media_Progress)s"
+        }elseif($youtube.TimeIndex){
+          [Uri]$vlcurl = "$vlcurl" + "&t=$($youtube.TimeIndex)"
         }
         if($vlcurl){
           $synchashWeak.Target.Youtube_WebPlayer_URL = [Uri]$vlcurl
@@ -488,7 +492,7 @@ function Start-Media{
             $media_link = "dshow://"
           }
           write-ezlogs ">>>> Starting YoutubeWebPlayerTimer - URL: $($synchashWeak.Target.Youtube_WebPlayer_URL)"
-          Set-YoutubeWebPlayerTimer -synchash $synchashWeak.Target -thisApp $thisApp -No_YT_Embed:$No_YT_Embed
+          Set-YoutubeWebPlayerTimer -synchash $synchashWeak.Target -thisApp $thisApp -No_YT_Embed:$No_YT_Embed -Start_Paused:$start_Paused
         }else{
           Update-Notifications -Level 'WARNING' -Message "Playback failed! Unable to parse a valid Youtube ID or URL from: $($media_link)" -VerboseLog -thisApp $thisApp -synchash $synchashWeak.Target -Open_Flyout -Message_color 'Orange' -MessageFontWeight bold -LevelFontWeight Bold  
           $synchashWeak.Target.Stop_media_timer.start()
@@ -1097,7 +1101,7 @@ function Start-Media{
         }
         if(!$synchashWeak.Target.Youtube_WebPlayer_URL -or $media_link -eq "dshow://"){  
           try{
-            Update-LibVLC -thisApp $thisApp -synchash $synchashWeak.Target -force -media_link $media_link                           
+            Update-LibVLC -thisApp $thisApp -synchash $synchashWeak.Target -force -media_link $media_link
           }catch{
             write-ezlogs "An exception occurred disposing and creating a new libvlc instance" -showtime -catcherror $_
           }

@@ -118,11 +118,15 @@ function Set-AvalonDock {
             write-ezlogs ">>>> $($sender.Uid) floating window has closed, Miniplayer is loaded, not showing main player"
             $null = $synchash.MiniPlayer_Viewer.Activate()
             if((!$synchash.MediaViewAnchorable.isFloating -and !$synchash.Window.isVisible)  -and $synchash.VideoView -and !$synchash.MainWindow_IsClosing){
-              write-ezlogs "| Hiding video view as video player is not floating and main player is not visible due to miniplayer being open"
-              $synchash.VideoView.Visibility = 'Hidden'
+              write-ezlogs "| Collapsing video view as video player is not floating and main player is not visible due to miniplayer being open"
+              $synchash.VideoView.Visibility = 'Collapsed'
               if($synchash.VideoViewAirControl){
                 $synchash.VideoViewAirControl.Visibility = 'Collapsed'
               }             
+            }
+            if($sender.Uid -eq 'WebBrowser' -and !$synchash.WebBrowserAnchorable.isFloating -and $synchash.WebBrowser -ne $null -and $synchash.WebBrowser.CoreWebView2 -ne $null){
+              write-ezlogs "| WebBrowser closed and not visible due to mini-player being open - disposing Webbrowser instance"
+              Remove-WebBrowser -synchash $synchash
             }
           }
         }catch{
@@ -521,9 +525,10 @@ function Set-AvalonDock {
             #If set to collapsed then set back to visible, various layout measurement events trigger but if the height and width is 0 (due to being collapsed) we get the crash
             #See related code/comments in Stop-Media and/or Set-WPFControls - Reset-MainPlayer
             #This likely needs a thorough refactor or rethinking to avoid this situation
-            if(!$synchash.MainWindow_IsClosing -and $synchash.MiniPlayer_Viewer.isVisible -and $synchash.VideoView.Visibility -ne 'Hidden'){
-              write-ezlogs ">>>> Videoview floating window is closing, miniplayer is open, videoview visibility is: $($synchash.VideoView.Visibility) -- hiding VideoView" -showtime -loglevel 2
-              $synchash.VideoView.Visibility = 'Hidden'
+            if(!$synchash.MainWindow_IsClosing -and $synchash.MiniPlayer_Viewer.isVisible -and $synchash.VideoView -and $synchash.VideoView.Visibility -ne 'Collapsed'){
+              write-ezlogs ">>>> Videoview floating window is closing, miniplayer is open, videoview isVisible: $($synchash.VideoView.isVisible) -- Collapsing VideoView" -showtime -loglevel 2
+              write-ezlogs "| VideoView.Visibility: $($synchash.VideoView.Visibility) -- VideoView.Height: $($synchash.VideoView.Height) -- VideoView.Width: $($synchash.VideoView.Width) -- VideoView_Grid.Parent.Parent.Visibility: $($synchash.VideoView_Grid.Parent.Parent.Visibility)" -showtime -Dev_mode
+              $synchash.VideoView.Visibility = 'Collapsed'
             }
             ######
             if($synchash.VideoViewAirControl.front.parent.parent -is [System.Windows.Window] -and $synchash.Window.IsLoaded){
@@ -573,7 +578,7 @@ function Set-AvalonDock {
                 $synchash.VideoView_Grid.Background = '#01000000'
               }
             }
-            if(!$synchash.MainWindow_IsClosing -and $synchash.MiniPlayer_Viewer.isVisible -and $synchash.VideoView.Visibility -notin 'Hidden','Collapsed'){
+            if(!$synchash.MainWindow_IsClosing -and ($synchash.MiniPlayer_Viewer.isVisible -or (!$synchash.VideoButton_ToggleButton.isChecked -and $synchash.Window.isVisible)) -and $synchash.VideoView.Visibility -notin 'Hidden','Collapsed'){
               write-ezlogs ">>>> Miniplayer is visible, hiding VideoView and VideoViewAirControl" -showtime -loglevel 2
               $synchash.VideoView.Visibility = 'Collapsed'
               if($synchash.VideoViewAirControl){
@@ -1470,6 +1475,9 @@ function Set-AvalonDock {
                   $FloatingWindowControl.Top = $thisApp.Config.BrowserWindow_Top
                   $FloatingWindowControl.Left = $thisApp.Config.BrowserWindow_Left
                 }
+              }
+              if(!$synchash.WebBrowser){
+                Initialize-WebBrowser -synchash $synchash -thisApp $thisApp
               }
             }elseif($FloatingAnchorable.ContentId -eq 'MediaLibrary'){
               if($thisApp.Config.Remember_Window_Positions){

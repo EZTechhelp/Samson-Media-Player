@@ -1080,12 +1080,16 @@ function Stop-EZLogs
     }else{
       $days = $null
     }
-    [System.IO.File]::AppendAllText($logfile, "`n======== Total Script Execution Time ========" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
-    [System.IO.File]::AppendAllText($logfile, "$days`Hours        : $($globalstopwatch.elapsed.hours)`nMinutes      : $($globalstopwatch.elapsed.Minutes)`nSeconds      : $($globalstopwatch.elapsed.Seconds)`nMilliseconds : $($globalstopwatch.elapsed.Milliseconds)" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
+    if($logfile){
+      [System.IO.File]::AppendAllText($logfile, "`n======== Total Script Execution Time ========" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
+      [System.IO.File]::AppendAllText($logfile, "$days`Hours        : $($globalstopwatch.elapsed.hours)`nMinutes      : $($globalstopwatch.elapsed.Minutes)`nSeconds      : $($globalstopwatch.elapsed.Seconds)`nMilliseconds : $($globalstopwatch.elapsed.Milliseconds)" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
+    }
     $($globalstopwatch.stop())
     $($globalstopwatch.reset()) 
   }
-  [System.IO.File]::AppendAllText($logfile, "###################### Logging Finished - [$([datetime]::Now)] ######################`n" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)  
+  if($logfile){
+    [System.IO.File]::AppendAllText($logfile, "###################### Logging Finished - [$([datetime]::Now)] ######################`n" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)  
+  }
 }  
 #---------------------------------------------- 
 #endregion Stop EZLogs

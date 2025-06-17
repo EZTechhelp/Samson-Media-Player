@@ -76,8 +76,9 @@ function Set-DiscordPresense {
               {$_.source -match 'Spotify' -or $_.url -match 'spotify:'} {
                 $SmallImageKey = 'spotify'
                 $SmallImageText = 'Spotify'
+                $ActivityType = 'Listening'
                 if($media.title){
-                  $details = "Listening to: $($media.title)"
+                  $details = "$($media.title)"
                 } 
                 if($media.Artist){
                   $dsState = "by $($media.Artist)"
@@ -100,6 +101,7 @@ function Set-DiscordPresense {
               {$_.url -match 'twitch\.tv'} {
                 $SmallImageKey = 'twitch'
                 $SmallImageText = 'Twitch'
+                $ActivityType = 'Watching'
                 $details = "Watching: $($media.artist)"
                 if($media.Stream_title){
                   [String]$dsState = "$($($media.Stream_title).trim())"
@@ -130,15 +132,16 @@ function Set-DiscordPresense {
                   $SmallImageText = 'Youtube'
                   $Label = "Watch on Youtube"
                 }
+                $ActivityType = 'Watching'
                 if($synchash.Youtube_WebPlayer_title){
-                  $details = "Watching: $($synchash.Youtube_WebPlayer_title)"
+                  $details = "$($synchash.Youtube_WebPlayer_title)"
                 }elseif($media.title){
-                  $details = "Watching: $($media.title)"
+                  $details = "$($media.title)"
                 }
                 if($media.artist){
-                  $dsState = "on Channel: $($media.Artist)"
+                  $dsState = "Channel: $($media.Artist)"
                 }elseif($media.Playlist){
-                  $dsState = "on Channel: $($media.Playlist)"
+                  $dsState = "Channel: $($media.Playlist)"
                 }else{
                   $dsState = "on $SmallImageText"
                 }
@@ -146,7 +149,7 @@ function Set-DiscordPresense {
                   $SmallImageKey = 'soundcloud'
                   $SmallImageText = 'SoundCloud'
                   $Label = "Listen on SoundCloud"
-                  $details = "Listening to: $($media.title)"
+                  $details = "$($media.title)"
                   $dsState = "by $($media.Artist)"
                 }
                 if($Media.url){
@@ -159,11 +162,12 @@ function Set-DiscordPresense {
               {$_.source -eq 'Local'} {
                 $SmallImageKey = 'local'
                 $SmallImageText = 'Local Media'
+                $ActivityType = 'Listening'
                 if($media.hasVideo -or $synchash.vlc.VideoTrackCount -gt 0){
-                  $details = "Watching: $($media.Title)"
+                  $details = "$($media.Title)"
                   $dsState = "by $($media.Artist)"
                 }else{
-                  $details = "Listening to: $($media.Title)"
+                  $details = "$($media.Title)"
                   $dsState = "by $($media.Artist)"
                 }         
                 $label = $null               
@@ -208,6 +212,7 @@ function Set-DiscordPresense {
                 LoggerLevel    = "Info"
                 TimerRefresh   = 1
                 Start          = "Now"
+                ActivityType = $ActivityType
                 <#                  UpdateScript   = { 
                     try{
 
@@ -234,6 +239,7 @@ function Set-DiscordPresense {
                 LoggerLevel    = "Info"
                 TimerRefresh   = 1
                 Start          = "Now"
+                ActivityType = $ActivityType
                 <#                  UpdateScript   = { 
                     try{
                     }catch{

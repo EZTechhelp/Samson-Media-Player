@@ -109,7 +109,7 @@ function Get-YoutubeComments
                     'likeCount' = "$($_.snippet.topLevelComment.snippet.likeCount)"
                     'videoId' = $_.snippet.topLevelComment.snippet.videoId
                     'Id' = $_.id
-                    'MaxWidth' = '400'
+                    #'MaxWidth' = $Width
                     'repliesCount' = $_.snippet.totalReplyCount
                     'updatedAt' = $RelativeTime
                   }
@@ -133,21 +133,22 @@ function Get-YoutubeComments
                         }else{
                           $RelativeTime = $Null
                         }
-                        <#                        $cached_image = $_.authorProfileImageUrl
-                            if($cached_image){
-                            $profileImage = $cached_image
-                            }elseif($synchash.YoutubeMedia_PackIcon){
-                            $profileImage = $synchash.YoutubeMedia_PackIcon
-                            }else{
-                            $profileImage = $Null
+<#                        $cached_image = $_.authorProfileImageUrl
+                        if($cached_image){
+                          $profileImage = $cached_image
+                        }elseif($synchash.YoutubeMedia_PackIcon){
+                          $profileImage = $synchash.YoutubeMedia_PackIcon
+                        }else{
+                          $profileImage = $Null
                         }#>
                         $childNOde = [Syncfusion.UI.Xaml.TreeView.Engine.TreeViewNode]::new()
                         $childNOde.Content = [PSCustomObject]@{
                           'textDisplay' = [string]$_.textOriginal
-                          'authorProfileImage' = ''
+                          #'authorProfileImage' = $cached_image
                           'authorDisplayName' = $_.authorDisplayName
                           'likeCount' = "$($_.likeCount)"
                           'videoId' = $_.videoId
+                          #'MaxWidth' = $Width
                           'Id' = $_.id
                           'updatedAt' = $RelativeTime
                         }

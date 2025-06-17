@@ -969,8 +969,8 @@ function Set-VideoPlayer
         $synchash.MediaPlayer_Grid_Row2.Height = "300*"
         $synchash.Window.MaxHeight = $primarymonitor.WorkingArea.Height
         $synchash.RootGrid_Row1.Height="115*"
-        if($synchash.vlc.isPlaying -and ($synchash.videoView)){
-          if(!$synchash.MiniPlayer_Viewer.isVisible -and $synchash.Window.isVisible -and $synchash.VideoView.Visibility -in 'Hidden','Collapsed' -and (!$synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio) -and $synchash.WebPlayer_State -eq 0 -and !$synchash.Youtube_WebPlayer_title){
+        if($synchash.videoView){
+          if(!$synchash.MiniPlayer_Viewer.isVisible -and $synchash.Window.isVisible -and $synchash.VideoView.Visibility -in 'Hidden','Collapsed' -and (!$synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio) -and $synchash.WebPlayer_State -eq 0 -and !$synchash.Youtube_WebPlayer_title -and ($synchash.VideoButton_ToggleButton.isChecked -or $synchash.MediaViewAnchorable.isFloating)){
             write-ezlogs ">>>> Video view is hidden and Main window is not hidden, MiniPlayer_Viewer not visible, Youtube webplayer not playing, unhiding video view" -Warning
             $synchash.VideoView.Visibility = 'Visible'
           } 
@@ -1410,10 +1410,10 @@ function Open-MiniPlayer
           $synchash.MiniPlayer_Viewer.Remove_closed($Synchash.MiniPlayer_ClosedScriptblock)
           $synchash.MiniPlayer_Viewer.Remove_ContentRendered($Synchash.MiniPlayer_ContentRenderedScriptblock)
           $synchash.MiniPlayer_Viewer = $Null
-          if($synchash.Window.isVisible -and $synchash.VideoView.Visibility -in 'Hidden','Collapsed' -and (!$synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio) -and $synchash.WebPlayer_State -eq 0 -and !$synchash.Youtube_WebPlayer_title){
+          if($synchash.Window.isVisible -and $synchash.VideoView.Visibility -in 'Hidden','Collapsed' -and (!$synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio) -and $synchash.WebPlayer_State -eq 0 -and !$synchash.Youtube_WebPlayer_title -and ($synchash.VideoButton_ToggleButton.isChecked -or $synchash.MediaViewAnchorable.isFloating)){
             write-ezlogs ">>>> Video view is hidden, Youtube webplayer not playing, unhiding video view" -Warning
             $synchash.VideoView.Visibility = 'Visible'
-          } 
+          }
         }catch{
           write-ezlogs "An exception occurred in MiniPlayer_Viewer unloaded event" -showtime -catcherror $_
         }finally{
@@ -1432,7 +1432,7 @@ function Open-MiniPlayer
     } 
     if(!$synchash.MediaViewAnchorable.isfloating -and $synchash.VideoView.Visibility -eq 'Visible'){
       write-ezlogs "Video Player is not floating, collapsing Video View while Miniplayer visible" -warning
-      $synchash.VideoView.Visibility = 'Hidden'
+      $synchash.VideoView.Visibility = 'Collapsed'
       if($synchash.chat_WebView2.isVisible -or $synchash.Comments_Grid.Visibility -ne 'Collapsed'){
         write-ezlogs "| Hiding chat view" -warning
         Update-ChatView -synchash $synchash -thisApp $thisApp -hide
@@ -2393,9 +2393,9 @@ function Reset-MainPlayer {
               $synchash.VideoViewAirControl = $null
             }
             if($syncHash.YoutubeWebView2 -ne $null -and $syncHash.YoutubeWebView2.CoreWebView2 -ne $null){
-              write-ezlogs "[Reset-MainPlayer] >>>> Disposing youtube webplayer Webview2 instance" -showtime
-              $synchash.YoutubeWebView2.dispose()
-              $synchash.YoutubeWebView2 = $Null
+              Remove-YoutubeWebPlayer -synchash $syncHash
+              #$synchash.YoutubeWebView2.dispose()
+              #$synchash.YoutubeWebView2 = $Null
             }
             if($synchash.VideoView_Overlay_Grid.children -notcontains $synchash.VideoViewTransparentBackground){
               try{
@@ -2689,7 +2689,7 @@ function Update-MediaState {
                 }
               }
               if(($synchash.vlc.VideoTrackCount -gt 0 -or $synchash.Current_playing_media.hasVideo) -or ($synchash.Current_playing_media -and $thisApp.Config.Use_Visualizations) -and (!$synchash.Youtube_WebPlayer_URL -and !$synchash.Spotify_WebPlayer_URL)){
-                if(($synchash.MiniPlayer_Viewer.isVisible -or ($thisApp.Config.Use_Visualizations -and $synchash.Window.AllowsTransparency)) -and !$synchash.MediaViewAnchorable.isFloating){
+                if(($synchash.MiniPlayer_Viewer.isVisible -or ($thisApp.Config.Use_Visualizations -and $synchash.Window.AllowsTransparency)) -and !$synchash.MediaViewAnchorable.isFloating -and $thisApp.Config.Open_VideoPlayer){
                   write-ezlogs "[Update-MediaState] >>>> Video view is not visible and MiniPlayer is visible, Youtube webplayer not playing, undocking video player -- Use_Visualizations: $($thisApp.Config.Use_Visualizations) -- Window.AllowsTransparency: $($synchash.Window.AllowsTransparency)" -Warning
                   if($synchash.VideoViewFloat.Height){
                     $synchash.MediaViewAnchorable.FloatingHeight = $synchash.VideoViewFloat.Height

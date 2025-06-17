@@ -392,7 +392,7 @@ function Set-ApplicationAudioDevice
                   $AudioProcess = $Null
                 }
                 write-ezlogs "[Set-ApplicationAudioDevice] | Waiting until webview2 with audio becomes available"
-                while(!$AudioProcess.ProcessId -and $timeout -lt 600){
+                while(!$AudioProcess.ProcessId -and ($timeout -lt 600 -or $synchash.Youtube_WebPlayer_URL)){
                   $timeout++
                   $query = [System.Management.ObjectQuery]::new("SELECT * FROM Win32_Process WHERE Name = 'msedgewebview2.exe' AND CommandLine LIKE '%AudioService%' AND CommandLine LIKE '%$([regex]::Escape("$($thisApp.Config.Temp_Folder)"))%'")
                   $searcher = [System.Management.ManagementObjectSearcher]::new($query)
@@ -400,7 +400,7 @@ function Set-ApplicationAudioDevice
                   $searcher.Dispose()  
                   start-sleep -Milliseconds 5
                 }
-                if($timeout -eq 600){
+                if($timeout -eq 600 -and !$AudioProcess.ProcessID){
                   write-ezlogs "Timed out waiting for a webview2 process playing audio - using process name" -warning
                   $query = [System.Management.ObjectQuery]::new("SELECT * FROM Win32_Process WHERE Name = 'msedgewebview2.exe'")
                   $searcher = [System.Management.ManagementObjectSearcher]::new($query)

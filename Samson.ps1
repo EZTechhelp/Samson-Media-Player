@@ -3,7 +3,7 @@
     Samson
 
     .Version
-    1.0.1
+    1.0.2
 
     .Build 
     PUBLIC
@@ -526,8 +526,8 @@ try{
 
   #Uninstall
   if($Uninstall){
-    Import-Module -Name "$Current_folder\Modules\Uninstall-Application\Uninstall-Application.psm1" -NoClobber -DisableNameChecking -Scope Local
-    Uninstall-Application -thisApp $thisApp -globalstopwatch $startup_stopwatch
+    Import-Module -Name "$Current_folder\Modules\Uninstall-Application\Uninstall-Application.psm1" -NoClobber -DisableNameChecking -Scope Local  
+    Uninstall-Application -thisApp $thisApp -globalstopwatch $startup_stopwatch -UninstallLogFile "$logfile_directory\$($thisScript.Name)-$($thisScript.Version)-Uninstall.log"
   }
 
   #Verify app not already running - pass messages to existing if running
@@ -707,9 +707,9 @@ try{
     $synchash.Window.icon = "$($Current_folder)\Resources\Samson_Icon_NoText1.ico"
   }
 }catch{
-  write-ezlogs -text 'An exception occured during XAML initialization' -showtime -CatchError $_
+  write-ezlogs -text 'An exception occurred during XAML initialization' -showtime -CatchError $_
   [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
-  [void][System.Windows.Forms.MessageBox]::Show("An exception occured during XAML initialization for ($($thisScript.name) Media Player - $($thisScript.Version) - PID: $($Process.id))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
+  [void][System.Windows.Forms.MessageBox]::Show("An exception occurred during XAML initialization for ($($thisScript.name) Media Player - $($thisScript.Version) - PID: $($Process.id))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
   Stop-Process $pid -Force
 }finally{
   Remove-Module -Name Initialize-Xaml -Force -ErrorAction SilentlyContinue
@@ -720,7 +720,10 @@ try{
   }
   if(!$synchash -or !$synchash.Window){
     [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
-    [void][System.Windows.Forms.MessageBox]::Show("An issue occured during XAML initialization for ($($thisScript.name) Media Player - $($thisScript.Version) - PID: $($Process.id))`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
+    [void][System.Windows.Forms.MessageBox]::Show("An issue occurred during XAML initialization for ($($thisScript.name) Media Player - $($thisScript.Version) - PID: $($Process.id)) - No Window from XAML was found.`nStackTrace: $(Get-PSCallStack | out-string)`nERRORS: $($error | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
+    if($error.count -gt 0 -and $Logfile){
+      [System.IO.File]::AppendAllText($Logfile, "`n[$([datetime]::Now)] [ERROR] [STARTUP] [$((Get-PSCallStack)[0].FunctionName)] `n $($error | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
+    }
     Stop-Process $pid -Force
   }
 }
@@ -1093,7 +1096,7 @@ $synchash.Initialize_Vlc_timer = [System.Windows.Threading.DispatcherTimer]::new
 $Initialize_Vlc_timer_Event = {
   try{
     $Initialize_VLC_Measure = [system.diagnostics.stopwatch]::StartNew()
-    $Startup_Playback = [bool]($thisApp.Config.Current_playing_media.id -and $thisApp.Config.Current_playing_media.Source -eq 'Local' -and $thisApp.Config.Remember_Playback_Progress) -or $PlayMedia -or $MediaFile
+    $Startup_Playback = [bool]($thisApp.Config.Current_playing_media.id -and $thisApp.Config.Current_playing_media.Source -in 'Local' -and $thisApp.Config.Remember_Playback_Progress) -or $PlayMedia -or $MediaFile
     Initialize-VLC -synchash $synchash -thisApp $thisApp -Initalize_EQ -VideoView $synchash.VideoView -Startup -Startup_Playback:$Startup_Playback
     if($PlayMedia -or $MediaFile){
       try{
@@ -2040,38 +2043,76 @@ $synchash.EditCell_Scriptblock = {
     return
   }
   if(($media.Source -eq 'Spotify') -or $media.url -match 'spotify\:'){
-    $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
-    $Button_Settings.AffirmativeButtonText = 'Yes'
-    $Button_Settings.NegativeButtonText = 'No'  
-    $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
-    $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Record Media',"Do you wish to start recording media $($media.title)`?`n`nYou will be prompted for a location to save the recording",$okandCancel,$Button_Settings)
-    if($result -eq 'Affirmative'){
-      write-ezlogs -text ">>>> User wished to record $($media.title)" -showtime
-    }else{
-      write-ezlogs -text "User did not wish to record $($media.title)" -showtime -Warning
-      $synchash.RecordButton_ToggleButton.isChecked = $false
-      return
+    $Options = [System.Collections.Generic.List[PSCustomObject]]::new()
+    $OptionPath = [PSCustomObject]@{
+      'Name' = 'FolderPath'
+      'Label' = 'Destination Folder'
+      'Type' = 'textbox'
+      'BrowseType' = 'SaveFolder'
+      'Value' = $thisApp.Config.Youtube_Download_Path
+      'Output' = ''
     }
-    $result = Open-FolderDialog -Title 'Select the directory path where media recording will be saved to'
-    if([System.IO.Directory]::Exists($result)){
+    [void]$Options.add($OptionPath)  
+    $Option = [PSCustomObject]@{
+      'Name' = 'SaveFormatOptions'
+      'Label' = 'Audio Format'
+      'Type' = 'Combobox'
+      'Value' = 'Default','FLAC','WAV'
+      'Output' = ''
+    }
+    [void]$Options.add($Option) 
+    $OptionMutePlayback = [PSCustomObject]@{
+      'Name' = 'MutePlayback'
+      'Label' = 'Mute Playback While Recording (WIP)'
+      'Type' = 'ToggleSwitch'
+      'Value' = $false
+      'Output' = ''
+    }
+    [void]$Options.add($OptionMutePlayback)
+    $Result = Show-CustomWindow -thisApp $thisApp -WindowTitle 'Record Media' -HeaderText 'Record Media Options' -Message "Select the following options below to confirm recording of media: $($media.Artist) - $($media.Title)" -Type Options -Options $Options -WaitforOutput -TopMost  
+    if($Result){
+      $SaveFolder = $Result[0].Output
+      $Format = $Result[1].Output
+      $MutePlayback = $Result[2].Output
+    }
+    <#    $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+        $Button_Settings.AffirmativeButtonText = 'Yes'
+        $Button_Settings.NegativeButtonText = 'No'  
+        $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+        $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Record Media',"Do you wish to start recording media $($media.title)`?`n`nYou will be prompted for a location to save the recording",$okandCancel,$Button_Settings)
+        if($result -eq 'Affirmative'){
+        write-ezlogs -text ">>>> User wished to record $($media.title)" -showtime
+        }else{
+        write-ezlogs -text "User did not wish to record $($media.title)" -showtime -Warning
+        $synchash.RecordButton_ToggleButton.isChecked = $false
+        return
+        }
+    $result = Open-FolderDialog -Title 'Select the directory path where media recording will be saved to'#>
+
+    if([System.IO.Directory]::Exists($SaveFolder) -and $Format -in 'wav','mp3','wma','aac','flac','Default'){
       write-ezlogs -text ">>>> Recording $($media.title) and saving to $result" -showtime
       if($media.duration){
         $record_duration = [timespan]::Parse($media.duration)
+      }
+      if($Format -eq 'Default'){
+        $Format = 'flac'
       }
       Start-SpotifyMedia -Media $media -thisApp $thisApp -synchash $synchash -use_WebPlayer:$thisApp.config.Spotify_WebPlayer -Show_notifications:$thisApp.config.Show_notifications -RestrictedRunspace:$thisApp.config.Spotify_WebPlayer
       $record_media_scriptblock = {
         param
         (
-          [string]$result = $result,
+          [string]$SaveFolder = $SaveFolder,
           $media = $media,
-          [timespan]$record_duration = $record_duration
+          [timespan]$record_duration = $record_duration,
+          $Format = $Format,
+          [bool]$MutePlayback = $MutePlayback
         )
-        Start-AudioRecorder -Savepath $result -Output_Type flac -filename $($media.title) -media $media -duration $record_duration -Overwrite -synchash $synchash -thisApp $thisApp -write_tags $media  
+        Start-AudioRecorder -Savepath $SaveFolder -Output_Type $Format -filename "$($media.Artist) - $($media.title)" -media $media -duration $record_duration -Overwrite -synchash $synchash -thisApp $thisApp -write_tags $media -MutePlayback:$MutePlayback
       }
       $Variable_list = (Get-Variable) | & { process {if ($_.Options -notmatch 'ReadOnly|Constant'){$_}}}
       Start-Runspace -scriptblock $record_media_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'record_media_scriptblock'
     }else{
-      write-ezlogs -text 'The provided directory path is invalid! Cannot continue' -showtime -Warning -AlertUI
+      write-ezlogs -text 'The provided directory path or format is invalid! Cannot continue' -showtime -Warning -AlertUI
     }
   }else{
     write-ezlogs -text "Provided media is not valid to use with the recorder -- Media: $($media.url)" -Warning -AlertUI
@@ -3367,7 +3408,6 @@ if($synchash.SpotifyFilterTextBox){
       try{
         $SpotifyFilter_measure = [system.diagnostics.stopwatch]::StartNew()
         if($synchash.SpotifyTable.Itemssource -and !$synchash.SpotifyTable.Itemssource.IsInDeferRefresh){
-          #$synchash.SpotifyTable.View.BeginInit()
           $synchash.SpotifyTable.View.Filter = {
             param ($item) 
             if(-not [string]::IsNullOrEmpty($synchash.SpotifyFilterTextBox.Text)){
@@ -3376,7 +3416,6 @@ if($synchash.SpotifyFilterTextBox){
             $SearchPattern = "$([regex]::Escape($text))"
             $($item.Title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.Artist) -match $SearchPattern -or $($item.Album) -match $SearchPattern -or $($item.Playlist) -match $SearchPattern       
           }
-          #$synchash.SpotifyTable.View.EndInit()
           if($synchash.SpotifyTable.View){
             $synchash.SpotifyTable.View.RefreshFilter()
           }
@@ -3486,15 +3525,19 @@ $synchash.Refresh_SpotifyMedia_timer.add_Tick({
       }elseif($this.tag -eq 'QuickRefresh_SpotifyMedia_Button'){
         if($synchash.Spotifytable.itemssource){
           write-ezlogs -text '>>>> Manually refreshing Spotifytable itemssource'
-          $synchash.SpotifyTable.View.BeginInit()
+          if($synchash.SpotifyTable.View){
+            $synchash.SpotifyTable.View.BeginInit()
+          }
           $synchash.SpotifyTable.ClearFilters()
           $synchash.SpotifyTable.Itemssource = [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView]::new($synchash.All_Spotify_Media)
           if($synchash.SpotifyTable.Itemssource.SourceCollection.Capacity){
             $synchash.SpotifyTable.Itemssource.SourceCollection.Capacity = $synchash.All_Spotify_Media.count
           }
           $synchash.SpotifyTable.Itemssource.UsePLINQ = $true
-          $synchash.SpotifyTable.Itemssource.Refresh() 
-          $synchash.SpotifyTable.View.EndInit() 
+          $synchash.SpotifyTable.Itemssource.Refresh()
+          if($synchash.SpotifyTable.View){
+            $synchash.SpotifyTable.View.EndInit()
+          }      
           if($thisApp.Config.Import_Spotify_Media){
             Get-SpotifyStatus -thisApp $thisApp -synchash $synchash -Use_runspace
           }                  
@@ -3842,7 +3885,6 @@ if($synchash.YoutubeFilterTextBox){
       try{
         $YoutubeFilter_measure = [system.diagnostics.stopwatch]::StartNew()
         if($synchash.YoutubeTable.Itemssource -and !$synchash.YoutubeTable.Itemssource.IsInDeferRefresh){
-          #$synchash.YoutubeTable.View.BeginInit()
           $synchash.YoutubeTable.View.Filter = {
             param ($item) 
             if(-not [string]::IsNullOrEmpty($synchash.YoutubeFilterTextBox.Text)){
@@ -3851,7 +3893,6 @@ if($synchash.YoutubeFilterTextBox){
             $SearchPattern = "$([regex]::Escape($text))"
             $($item.title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.Artist) -match $SearchPattern -or $($item.Album) -match $SearchPattern -or $($item.Playlist) -match $SearchPattern                               
           }
-          #$synchash.YoutubeTable.View.EndInit()
           if($synchash.YoutubeTable.View){
             $synchash.YoutubeTable.View.RefreshFilter()
           }
@@ -4021,7 +4062,9 @@ $synchash.Refresh_youtubeMedia_timer.add_Tick({
     try{  
       if($this.tag -eq 'QuickRefresh_youtubeMedia_Button'){
         if($synchash.YoutubeTable.Itemssource){
-          $synchash.YoutubeTable.View.BeginInit()
+          if($synchash.YoutubeTable.View){
+            $synchash.YoutubeTable.View.BeginInit()
+          }        
           $synchash.YoutubeTable.ClearFilters()
           if($synchash.All_Youtube_Media){
             $synchash.YoutubeMedia_View = [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView]::new($synchash.All_Youtube_Media)
@@ -4030,8 +4073,10 @@ $synchash.Refresh_youtubeMedia_timer.add_Tick({
           }          
           $synchash.YoutubeMedia_View.UsePLINQ = $true
           $synchash.YoutubeTable.Itemssource = $synchash.YoutubeMedia_View
-          $synchash.YoutubeTable.Itemssource.Refresh()       
-          $synchash.YoutubeTable.View.EndInit()
+          $synchash.YoutubeTable.Itemssource.Refresh()
+          if($synchash.YoutubeTable.View){
+            $synchash.YoutubeTable.View.EndInit()
+          }
         }
         if($thisApp.Config.Import_Youtube_Media){
           Get-YoutubeStatus -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -checkall -Use_runspace
@@ -4379,7 +4424,6 @@ $synchash.TwitchFilter_timer.add_Tick({
     try{
       $TwitchFilter_measure = [system.diagnostics.stopwatch]::StartNew()
       if($synchash.TwitchTable.itemssource -and !$synchash.TwitchTable.Itemssource.isInDeferRefresh){
-        #$synchash.TwitchTable.View.BeginInit()
         $synchash.TwitchTable.View.Filter = {
           param ($item) 
           if(-not [string]::IsNullOrEmpty($synchash.TwitchFilterTextBox.Text)){
@@ -4388,7 +4432,6 @@ $synchash.TwitchFilter_timer.add_Tick({
           $SearchPattern = "$([regex]::Escape($text))"
           $($item.Title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.Channel_Name) -match $SearchPattern -or $($item.Live_Status) -match $SearchPattern -or $($item.Status_Msg) -match $SearchPattern        
         }
-        #$synchash.TwitchTable.View.EndInit()
         if($synchash.TwitchTable.View){
           $synchash.TwitchTable.View.RefreshFilter()
         }
@@ -9840,7 +9883,7 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
 [System.Windows.RoutedEventHandler]$synchash.FetchSubtitles_Command = {
   param($sender)
   try{   
-    if($thisApp.Config.Enable_Subtitles -and $synchash.Current_playing_media.source -eq 'Local' -and $synchash.vlc.media.state -in 'Playing','Paused'){
+    if($thisApp.Config.Enable_Subtitles -and $synchash.Current_playing_media.source -in 'Local','TOR' -and $synchash.vlc.media.state -in 'Playing','Paused'){
       if($synchash.MediaSubtitles_TextBox){
         $synchash.MediaSubtitles_TextBox.Header = 'Fetching..........'
       }
@@ -9869,7 +9912,7 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
 [System.Windows.RoutedEventHandler]$synchash.DelaySubtitles_Command = {
   param($sender)
   try{   
-    if($thisApp.Config.Enable_Subtitles -and $synchash.Current_playing_media.source -eq 'Local' -and $synchash.vlc.media.state -in 'Playing','Paused'){
+    if($thisApp.Config.Enable_Subtitles -and $synchash.Current_playing_media.source -in 'Local','TOR' -and $synchash.vlc.media.state -in 'Playing','Paused'){
       $existing = $synchash.vlc.SpuDelay
       if(-not [string]::IsNullOrEmpty($existing)){      
         if($this.Header -eq 'Increase Delay'){
@@ -9919,7 +9962,7 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
 [System.Windows.RoutedEventHandler]$synchash.EnableSubtitles_Command = {
   param($sender)
   try{   
-    if($thisApp.Config.Enable_Subtitles -and $synchash.Current_playing_media.source -eq 'Local' -and $synchash.vlc.media.state -in 'Playing','Paused'){
+    if($thisApp.Config.Enable_Subtitles -and $synchash.Current_playing_media.source -in 'Local','TOR' -and $synchash.vlc.media.state -in 'Playing','Paused'){
       $subtitleID = $this.Tag
       $isEnabled = $this.isChecked
       if($synchash.vlc.SpuDescription.id -contains $subtitleID){
@@ -11265,6 +11308,7 @@ if($thisApp.Config.startup_perf_timer){
   $TorBrowser_Measure = [system.diagnostics.stopwatch]::StartNew()
 }
 if($synchash.TorBrowserAnchorable -and $synchash.TorTable -and $synchash.Tor_Search_Go_Button -and [System.IO.Directory]::Exists("$($thisApp.Config.Current_Folder)\Resources\winpython") -and $Enable_Tor_Features){
+  write-ezlogs ">>>> TOR Features are ENABLED" -Warning
   [System.Windows.RoutedEventHandler]$synchash.StopTorrent_Command = {
     param($sender)
     $media = $_.OriginalSource.DataContext
@@ -11581,8 +11625,9 @@ if($synchash.Window){
         }
         if($synchash.YoutubeWebview2.coreWebview2){
           try{
-            write-ezlogs -text '| Disposing YoutubeWebview2 Session' -LogLevel 2
-            [Void]$synchash.YoutubeWebview2.dispose()
+            #write-ezlogs -text '| Disposing YoutubeWebview2 Session' -LogLevel 2
+            Remove-YoutubeWebPlayer -synchash $syncHash
+            #[Void]$synchash.YoutubeWebview2.dispose()
           }catch{
             write-ezlogs -text 'An exception occurred disposing YoutubeWebview2' -CatchError $_
           }
@@ -11597,8 +11642,9 @@ if($synchash.Window){
         }
         if($synchash.WebBrowser.coreWebview2){
           try{
-            write-ezlogs -text '| Disposing WebBrowser Webview2 Session' -LogLevel 2
-            [Void]$synchash.WebBrowser.dispose()
+            Remove-WebBrowser -synchash $synchash
+            #write-ezlogs -text '| Disposing WebBrowser Webview2 Session' -LogLevel 2
+            #[Void]$synchash.WebBrowser.dispose()
           }catch{
             write-ezlogs -text 'An exception occurred disposing WebBrowser Webview2' -CatchError $_
           }             
@@ -11646,9 +11692,13 @@ if($synchash.Window){
           $synchash.VideoViewAirControl = $null
         }
         #close podeserver
-        if((NETSTAT.EXE -an) | Where-Object -FilterScript {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'}){
-          write-ezlogs -text "| Closing PODE Server with 'http://127.0.0.1:8974/CLOSEPODE'" -LogLevel 2
-          Invoke-RestMethod -Uri 'http://127.0.0.1:8974/CLOSEPODE' -UseBasicParsing -ErrorAction SilentlyContinue
+        try{
+          if((NETSTAT.EXE -an) | Where-Object -FilterScript {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'}){
+            write-ezlogs -text "| Closing PODE Server with 'http://127.0.0.1:8974/CLOSEPODE'" -LogLevel 2
+            Invoke-RestMethod -Uri 'http://127.0.0.1:8974/CLOSEPODE' -UseBasicParsing -ErrorAction SilentlyContinue
+          }
+        }catch{
+          write-ezlogs -text 'An exception occurred closing PODE Server' -CatchError $_
         }
         Get-GlobalHotKeys -thisApp $thisApp -synchash $synchash -UnRegister -Shutdown
         if($thisApp.Config.Remember_Window_Positions){
@@ -11767,7 +11817,7 @@ try{
             write-ezlogs -text '>>>> Miniplayer window is visible, mediaviewanchorable is not floating and main window is not visible, hiding video view' -Warning
             $synchash.VideoView.Visibility = 'Collapsed'
           }else{
-            if(!$synchash.MiniPlayer_Viewer.isVisible -and $synchash.VideoView.Visibility -in 'Hidden','Collapsed' -and (!$synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio) -and $synchash.WebPlayer_State -eq 0 -and !$synchash.Youtube_WebPlayer_title){
+            if(!$synchash.MiniPlayer_Viewer.isVisible -and $synchash.VideoView.Visibility -in 'Hidden','Collapsed' -and (!$synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio) -and $synchash.WebPlayer_State -eq 0 -and !$synchash.Youtube_WebPlayer_title -and ($synchash.VideoButton_ToggleButton.isChecked -or $synchash.MediaViewAnchorable.isFloating)){
               write-ezlogs -text '>>>> Video view is visible and Main window is not hidden, Youtube webplayer not playing, unhiding video view' -Warning
               $synchash.VideoView.Visibility = 'Visible'
             }      

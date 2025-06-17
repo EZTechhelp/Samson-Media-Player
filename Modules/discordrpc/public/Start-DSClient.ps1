@@ -136,7 +136,8 @@ function Start-DSClient {
     [Int]$TimerRefresh = 5,
     [DiscordRPC.Timestamps]$Timestamp,
     [Alias("UpdateScript")]
-    [ScriptBlock]$ScriptBlock
+    [ScriptBlock]$ScriptBlock,
+    [DiscordRPC.ActivityType]$ActivityType = 'Playing'
   )
   process {
     $TimerRefresh = $TimerRefresh * 1000
@@ -229,12 +230,17 @@ function Start-DSClient {
       }
     }
 
+    if(!$ActivityType){
+      $ActivityType = 'Playing'
+    }
+
     $parms = @{
       Assets     = $assets
       State      = $State
       Details    = $Details
       Timestamps = $timestamp
       Buttons    = $button
+      ActivityType = $ActivityType
     }
     $presence = New-DSRichPresence @parms
 

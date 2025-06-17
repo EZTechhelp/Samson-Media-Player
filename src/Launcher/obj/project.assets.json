@@ -1876,7 +1876,7 @@
     "C:\\Program Files (x86)\\Syncfusion\\Essential Studio\\WPF\\26.2.4\\ToolboxNuGetPackages": {}
   },
   "project": {
-    "version": "1.0.1",
+    "version": "1.0.2",
     "restore": {
       "projectUniqueName": "C:\\Users\\DopaDodge\\OneDrive - EZTechhelp Company\\Development\\Repositories\\EZT-MediaPlayer-Samson\\src\\Launcher\\Samson.csproj",
       "projectName": "Samson",
@@ -1976,7 +1976,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.201\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.204\\RuntimeIdentifierGraph.json"
       }
     },
     "runtimes": {

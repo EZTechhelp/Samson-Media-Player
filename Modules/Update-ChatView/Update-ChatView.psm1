@@ -99,7 +99,7 @@ function Update-ChatView
           $synchash.chat_column.MinWidth="380"
           if($synchash.chat_column.ActualWidth -gt 0){
             $synchash.Comments_TreeView.Tag = $synchash.chat_column.ActualWidth - 50
-          }                  
+          }                
         }catch{
           write-ezlogs "An exception occurred in VideoViewstoryboard" -catcherror $_
         }finally{

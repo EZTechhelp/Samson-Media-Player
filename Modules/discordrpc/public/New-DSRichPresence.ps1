@@ -50,7 +50,8 @@ function New-DSRichPresence {
     [DiscordRPC.Timestamps]$Timestamps,
     [DiscordRPC.Assets]$Assets,
     [DiscordRPC.Party]$Party,
-    [DiscordRPC.Secrets]$Secrets
+    [DiscordRPC.Secrets]$Secrets,
+    [DiscordRPC.ActivityType]$ActivityType
   )
   process {
     $object = New-Object -TypeName DiscordRPC.RichPresence   
@@ -64,9 +65,10 @@ function New-DSRichPresence {
     if($State){ 
       try{
         $Chars = ($State | measure-object -Character).Characters
-        if($Chars -ge 124){
-          $State = "$([string]$State.subString(0, [System.Math]::Min(120, $State.Length)).trim())..." 
-          write-ezlogs "[New-DSRichPresence] Provided state string is $($Chars) characters long (123 max allowed) - trimming to: $State" -warning -logtype Discord
+        if($Chars -ge 123){
+          write-ezlogs "[New-DSRichPresence] Provided state string is $($Chars) characters long (123 max allowed) - Original: $State" -warning -logtype Discord
+          $State = "$([string]$State.subString(0, [System.Math]::Min(119, $State.Length)).trim())..."         
+          write-ezlogs "| Trimmed to: $State"
         }
         $object.State = "$State"
       }catch{
@@ -81,9 +83,9 @@ function New-DSRichPresence {
     if($Details){
       try{
         $DetailsChars = ($Details | measure-object -Character).Characters
-        if($DetailsChars -ge 126){
-          $Details = "$([string]$Details.subString(0, [System.Math]::Min(123, $Details.Length)).trim())..." 
-          write-ezlogs "[New-DSRichPresence] Provided Details string is $($DetailsChars) characters long (128 max allowed) - trimming to: $Details" -warning -logtype Discord
+        if($DetailsChars -ge 123){
+          $Details = "$([string]$Details.subString(0, [System.Math]::Min(120, $Details.Length)).trim())..."
+          write-ezlogs "[New-DSRichPresence] Provided Details string is $($DetailsChars) characters long (128 max allowed - cutting to 123) - trimming to: $Details" -warning -logtype Discord
         }
         $object.Details = $Details
       }catch{
@@ -114,6 +116,13 @@ function New-DSRichPresence {
     if($Secrets){
       try{
         $object.Secrets = $Secrets
+      }catch{
+        write-ezlogs "An exception occurred setting Discord RichPresense Secrets - $($($Secrets | out-string)) - Params: $($PSBoundParameters | out-string)" -showtime -catcherror $_
+      } 
+    }
+    if($ActivityType){
+      try{
+        $object.Type = $ActivityType
       }catch{
         write-ezlogs "An exception occurred setting Discord RichPresense Secrets - $($($Secrets | out-string)) - Params: $($PSBoundParameters | out-string)" -showtime -catcherror $_
       } 

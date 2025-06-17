@@ -1741,7 +1741,7 @@
 										</syncfusion:SfTreeView.Resources>											
 										<syncfusion:SfTreeView.ItemTemplate>
 											<DataTemplate>											
-													<Grid Name="Comments_TemplateGrid" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" MaxWidth="{Binding ElementName=Comments_TreeView, Path=Tag}" Background="Transparent" >
+													<Grid Name="Comments_TemplateGrid" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Left" MaxWidth="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type syncfusion:SfTreeView}}, Path=Tag}" Background="Transparent" >
 														<Grid.RowDefinitions>
 															<RowDefinition Height="auto"/>
 															<RowDefinition Height="auto"/>
@@ -3064,7 +3064,7 @@
 						  EndPoint="0.5,1"
 						  StartPoint="0.5,0">
 						  <GradientStop
-							Color="{StaticResource MahApps.Brushes.Accent}"
+							Color="{StaticResource MahApps.Colors.AccentBase}"
 							Offset="0" />
 						  <GradientStop
 							Color="#FFFFFFFF"

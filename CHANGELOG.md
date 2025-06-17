@@ -2,6 +2,44 @@
 
 ## [Unreleased]
 
+## 1.0.2 - PUBLIC
+> - Branch: Samson
+
+### Added
++ (WIP) New custom dialog window for audio recorder
+  + Currently only destination folder field works, others WIP
+
+### Changes
++ Discord presense now supports custom Activity Types
+  + Updated `DiscordRPC` to 1.3.0 and related modules
+  + Videos will now show as Watching, Music as Listening..etc
++ Improved reliability of Web EQ when waiting for valid audio process to redirect audio
++ Youtube URLS are now parsed for channel names if included
++ Improved formatting and alignment of Youtube commments treeview
++ Refactored the removal and disposing of Youtube webplayer webview2 instances
++ Webbrowser webview2 instances are now removed/disposed when closing floating window
+  + Only applies if using miniplayer when webbrowser window is closed
++ Youtube webplayer now identifies and starts playback of videos in the `CUED` state
++ Option `Remember Playback Progress` now also applies to Youtube videos (webplayer)
+  + Currently, playback doesnt start automatically on startup, its only added to queue
+  + When starting saved/queued video, the video will begin at the last played timestamp
++ Audio Recording now automatically disables EQ if enabled and reenables on completion
++ Updated `LibvlcSharp` assemblies to 3.9.3
+  + Contributes to fix long fought against crashing issue when videoview window height is 0
+  + However this version seems to have brought back the "flashbang" video player white background
++ Updated core `Libvlc` assemblies to 3.0.21 
++ Improved logging and error messages if a critical error occurs on startup
++ Various code cleanup and refactoring
+
+### Fixed
++ Potential crash when docking video player in miniplayer mode after playback has stopped
++ Uninstall may fail or cause errors due to incorrect log file processing
++ Refreshing Spotify or Youtube media libraries may fail if library UI has not loaded yet
++ Crash on startup after updating from older version where no theme color was ever set
+
+### Comments
++ Will NOT trigger first time setup when upgrading
+
 ## 1.0.1 - PUBLIC
 > - Branch: Samson
 

@@ -45,6 +45,7 @@ function Start-AudioRecorder
     [string]$filename,
     [timespan]$duration,
     [switch]$Overwrite,
+    [switch]$MutePlayback,
     [switch]$Startup,
     [switch]$Verboselog
   )
@@ -56,12 +57,12 @@ function Start-AudioRecorder
     if($ffmpeg_Path -notin $envpaths2){
       write-ezlogs ">>>> Adding ffmpeg to user enviroment path $ffmpeg_Path"
       $env:path += ";$ffmpeg_Path"
-<#      if($ffmpeg_Path -notin $envpaths){
-        [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$ffmpeg_Path",[EnvironmentVariableTarget]::User)
+      <#      if($ffmpeg_Path -notin $envpaths){
+          [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$ffmpeg_Path",[EnvironmentVariableTarget]::User)
       }#>
     }
     if(![System.IO.Directory]::Exists($Savepath)){
-      write-ezlogs " | Creating new output directory $Savepath" -showtime -warning
+      write-ezlogs "| Creating new output directory $Savepath" -showtime -warning
       $null = New-item -Path $Savepath -ItemType Directory -Force
     }
     if($output_type -eq 'flac'){
@@ -79,7 +80,7 @@ function Start-AudioRecorder
       $filename = ([Regex]::Replace($filename, $pattern, '')).trim() 
       $file_output = [system.io.path]::Combine($Savepath,"$filename.$file_ext")
       $temp_file_output = [system.io.path]::Combine($thisApp.Config.Temp_Folder,"$filename.$file_ext")
-      write-ezlogs " | Audio file output name: $file_output" -showtime
+      write-ezlogs "| Audio file output name: $file_output" -showtime
     }else{
       $file_output = [system.io.path]::Combine($Savepath,"$($thisApp.Config.App_Name)_$(Get-date -Format 'MM-dd-yyyy_hh-mm-ss_tt').$file_ext")
       $temp_file_output = [system.io.path]::Combine($thisApp.Config.Temp_Folder,"$($thisApp.Config.App_Name)_$(Get-date -Format 'MM-dd-yyyy_hh-mm-ss_tt').$file_ext")
@@ -95,9 +96,15 @@ function Start-AudioRecorder
       }
     }
     if($Output_Type -ne "wav" -and $Output_Type -ne "flac"){
-      write-ezlogs " | Output bitrate for $Output_Type`: $bitrate" -showtime
+      write-ezlogs "| Output bitrate for $Output_Type`: $bitrate" -showtime
     }else{
       $bitrate = $null
+    }
+    if($synchash.Enable_EQ_Toggle.isChecked -or $thisApp.Config.Enable_EQ){
+      write-ezlogs ">>>> Temporarily disabling EQ while recording"
+      $ReenableEQ = $true
+      $thisApp.Config.Enable_EQ = $false
+      Update-MainWindow -thisApp $thisApp -synchash $synchash -Control 'Enable_EQ_Toggle' -Property 'isChecked' -value $false
     }
     $start_playback_timeout = 0
     if($type -eq 'Spotify'){
@@ -115,14 +122,14 @@ function Start-AudioRecorder
         }
       }
     }elseif($type -eq 'Youtube'){
-      write-ezlogs "To record Youtube videos, simply select 'Download' from the Right-Click menu on any Youtube video " -showtime -Warning -AlertUI
+      write-ezlogs "To record Youtube videos, simply select 'Download' from the Right-Click menu on any Youtube video " -showtime -Warning -AlertUI -CallBack:$false
       return
     }else{
-      write-ezlogs "The Recorder only supports recording Spotify Media for now. Support for other types may be added in later versions." -showtime -Warning -AlertUI
+      write-ezlogs "The Recorder only supports recording Spotify Media for now. Support for other types may be added in later versions." -showtime -Warning -AlertUI -CallBack:$false
       return
     }
     if($start_playback_timeout -ge 600){
-      write-ezlogs "Timed out waiting for media playback to begin, canceling recording" -showtime -Warning -AlertUI
+      write-ezlogs "Timed out waiting for media playback to begin, canceling recording" -showtime -Warning -AlertUI -CallBack:$false
       #Update-Notifications -Level 'WARNING' -Message "Timed out waiting for media playback to begin, canceling recording" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout -Message_color 'Orange' -MessageFontWeight bold -LevelFontWeight Bold
       return
     }
@@ -134,18 +141,14 @@ function Start-AudioRecorder
     $synchash.AudioRecorder.isRecording = $true
     $synchash.AudioRecorder.RecordingMedia = $write_tags
     if($synchash.RecordButton_ToggleButton){
-      $synchash.Window.Dispatcher.invoke([action]{
-          $synchash.RecordButton_ToggleButton.isChecked = $true
-      },'Normal')
+      Update-MainWindow -thisApp $thisApp -synchash $synchash -Control 'RecordButton_ToggleButton' -Property 'isChecked' -value $true
     }
-    Update-Notifications -Level 'INFO' -Message "Recording output started for $temp_file_output" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout -LevelFontWeight Bold -EnableAudio:$false
+    write-ezlogs "Recording output started for $temp_file_output" -showtime -AlertUI -CallBack:$false
     while(($recording_stopwatch.Elapsed -le $duration -or $synchash.Webview2.CoreWebView2.IsDocumentPlayingAudio) -and $synchash.AudioRecorder.isRecording){
       start-sleep 1
     }
     if($synchash.RecordButton_ToggleButton){
-      $synchash.Window.Dispatcher.invoke([action]{
-          $synchash.RecordButton_ToggleButton.isChecked = $false
-      },'Normal')
+      Update-MainWindow -thisApp $thisApp -synchash $synchash -Control 'RecordButton_ToggleButton' -Property 'isChecked' -value $false
     }
     $Recording::StopRecording()
     $recording_stopwatch.stop()
@@ -167,16 +170,16 @@ function Start-AudioRecorder
           $flac_output = [System.IO.path]::ChangeExtension($temp_file_output,'flac')
           write-ezlogs ">>>> Converting wav to raw wv with wavpack" -showtime
           try{
-            wavpack $temp_file_output -y
+            $null = wavpack $temp_file_output -y
           }catch{
             write-ezlogs "An exception occurred converting $temp_file_output to raw wv with wavpack" -showtime -catcherror $_
           }
           $raw_wv = [System.IO.path]::ChangeExtension($temp_file_output,'wv')
           if([System.IO.file]::Exists($raw_wv)){
-            write-ezlogs " | Found raw converted wv $raw_wv" -showtime
-            write-ezlogs " | Converting wv to flac with ffmpeg: $flac_output" -showtime
+            write-ezlogs "| Found raw converted wv $raw_wv" -showtime
+            write-ezlogs "| Converting wv to flac with ffmpeg: $flac_output" -showtime
             try{
-              ffmpeg -i $raw_wv -acodec flac $flac_output -y
+              $null = ffmpeg -i $raw_wv -acodec flac $flac_output -y
             }catch{
               write-ezlogs "An exception occurred converting $raw_wv to flac with ffmpeg" -showtime -catcherror $_
             }         
@@ -184,9 +187,9 @@ function Start-AudioRecorder
             write-ezlogs "Something went wrong, cannot find converted raw wv file $raw_wv" -showtime -warning
           }                   
           if([System.IO.file]::Exists($flac_output)){
-            write-ezlogs "[SUCCESS] Successfully converted $temp_file_output to $flac_output" -showtime
+            write-ezlogs "Successfully converted $temp_file_output to $flac_output" -showtime -Success
             $file_output = [System.IO.path]::ChangeExtension($file_output,'flac')
-            write-ezlogs " | Moving converted file $temp_file_output to target destination $file_output"           
+            write-ezlogs "| Moving converted file $temp_file_output to target destination $file_output"           
             $null = Move-item $flac_output -Destination $file_output -Force
             write-ezlogs "[Cleanup] | Removing original wav file $temp_file_output" -showtime
             $null = Remove-item $temp_file_output -Force
@@ -211,7 +214,7 @@ function Start-AudioRecorder
           write-ezlogs "An exception occurred converting $file_output to flac" -showtime -catcherror $_
         }
       }else{
-        write-ezlogs " | Moving converted file $temp_file_output to target destination $file_output"           
+        write-ezlogs "| Moving converted file $temp_file_output to target destination $file_output"
         $null = Move-item $temp_file_output -Destination $file_output -Force
       }
       if($write_tags){     
@@ -222,7 +225,8 @@ function Start-AudioRecorder
               $write_tags = $track_info
             }
           }
-          write-ezlogs ">>>> Writing media tags info to file for media $($write_tags | out-string)" -showtime
+          write-ezlogs ">>>> Writing media tags info to file for media" -showtime -Dev_mode
+          write-ezlogs "Media $($write_tags | out-string)" -showtime -Dev_mode
           $taginfo = [taglib.file]::create($file_output) 
           if($taginfo.Tag){           
             if($write_tags.title){
@@ -243,18 +247,18 @@ function Start-AudioRecorder
               $taginfo.tag.disc = $write_tags.disc_number
             }
             if(-not [string]::IsNullOrEmpty($write_tags.cached_image_path)){
-              $image = $($write_tags.cached_image_path | select -First 1)
+              $image = $($write_tags.cached_image_path | Select-Object -First 1)
             }elseif(-not [string]::IsNullOrEmpty($write_tags.thumbnail)){
-              $image = $($write_tags.thumbnail | select -First 1)
+              $image = $($write_tags.thumbnail | Select-Object -First 1)
             }else{
               $image = $null
             } 
             $image_Cache_path = $Null
             if($image)
             {
-              write-ezlogs "Media Image found: $($image)" -showtime      
+              write-ezlogs "| Media Image found: $($image)" -showtime      
               if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
-                write-ezlogs " Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime
+                write-ezlogs "| Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime
                 $null = New-item ($thisApp.config.image_Cache_path) -ItemType directory -Force
               }
               if($write_tags.Album_ID){
@@ -275,36 +279,39 @@ function Start-AudioRecorder
                       if($thisApp.Config.Verbose_logging){write-ezlogs "| Cached Image not found, copying image $image to cache path $image_Cache_path" -enablelogs -showtime}
                       $null = Copy-item -LiteralPath $image -Destination $image_Cache_path -Force
                     }else{
-                      $uri = new-object system.uri($image)
+                      $uri = [system.uri]::new($image)
                       write-ezlogs "| Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -enablelogs -showtime
-                      (New-Object System.Net.WebClient).DownloadFile($uri,$image_Cache_path) 
+                      ([System.Net.WebClient]::new()).DownloadFile($uri,$image_Cache_path) 
                     }             
                     if([System.IO.File]::Exists($image_Cache_path)){
                       $stream_image = [System.IO.File]::OpenRead($image_Cache_path) 
-                      $image = new-object System.Windows.Media.Imaging.BitmapImage
-                      $image.BeginInit();
+                      $image = [System.Windows.Media.Imaging.BitmapImage]::new()
+                      $image.BeginInit()
                       $image.CacheOption = "OnLoad"
-                      #$image.CreateOptions = "DelayCreation"
-                      #$image.DecodePixelHeight = 229;
-                      $image.DecodePixelWidth = 500;
+                      $image.DecodePixelWidth = 500
                       $image.StreamSource = $stream_image
-                      $image.EndInit();        
+                      $image.EndInit()        
                       $stream_image.Close()
-                      $stream_image.Dispose()
                       $stream_image = $null
-                      $image.Freeze();
+                      $image.Freeze()
                       if($thisApp.Config.Verbose_logging){write-ezlogs "Saving decoded media image to path $image_Cache_path" -showtime -enablelogs}
                       $bmp = [System.Windows.Media.Imaging.BitmapImage]$image
                       $encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new()
                       $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
                       $save_stream = [System.IO.FileStream]::new("$image_Cache_path",'Create')
-                      $encoder.Save($save_stream)
-                      $save_stream.Dispose()       
+                      $encoder.Save($save_stream)        
                     }  
                     $cached_image = $image_Cache_path            
                   }catch{
                     $cached_image = $Null
                     write-ezlogs "An exception occurred attempting to download $image to path $image_Cache_path" -showtime -catcherror $_
+                  }finally{
+                    if($stream_image){
+                      $stream_image.dispose()
+                    }
+                    if($save_stream){
+                      $save_stream.Dispose() 
+                    }
                   }
                 }           
               }else{
@@ -313,7 +320,7 @@ function Start-AudioRecorder
               }                                      
             }
             if([System.IO.File]::Exists($cached_image)){
-              write-ezlogs " | Adding image to tag pictures: $cached_image" -enablelogs -showtime
+              write-ezlogs "| Adding image to tag pictures: $cached_image" -enablelogs -showtime
               $picture = [TagLib.Picture]::CreateFromPath($cached_image)
               $taginfo.Tag.Pictures = $picture
             }
@@ -342,7 +349,8 @@ function Start-AudioRecorder
             }
             $taginfo.tag.Comment = "Created with $($thisApp.Config.App_Name) - $($thisApp.Config.App_Version)"
             try{
-              write-ezlogs ">>>> Saving new tag info: $($taginfo.tag | out-string)" -showtime
+              write-ezlogs ">>>> Saving new tag info" -showtime
+              if($VerboseLog){write-ezlogs "Info: $($taginfo.tag | out-string)" -showtime -Verboselog:$VerboseLog}
               $taginfo.Save()
               $taginfo.dispose()
             }catch{
@@ -353,10 +361,9 @@ function Start-AudioRecorder
           write-ezlogs "An exception occurred getting taginfo for $file_output" -showtime -catcherror $_
         } 
       }
-      Update-Notifications -Level 'INFO' -Message "New Audio recording saved to $file_output" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout -Message_color 'LightGreen' -LevelFontWeight Bold 
+      Write-EZLogs -text "New Audio recording saved to $file_output" -CallBack:$false -Success -AlertUI
     }else{
-      write-ezlogs "Unable to find audio recording file at $file_output" -showtime -warning
-      Update-Notifications -Level 'WARNING' -Message "Unable to find audio recording file at $file_output" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout -Message_color 'Orange' -MessageFontWeight bold -LevelFontWeight Bold  
+      Write-EZLogs -text "Unable to find audio recording file at $file_output" -CallBack:$false -warning -AlertUI
     }
   }catch{
     write-ezlogs 'An exception occurred in Start-AudioRecorder' -showtime -catcherror $_
@@ -365,6 +372,12 @@ function Start-AudioRecorder
     }
     if($Recording){
       $Recording::StopRecording()
+    }
+  }finally{
+    if($ReenableEQ){
+      write-ezlogs ">>>> Re-enabling EQ after recording finished"
+      $thisApp.Config.Enable_EQ = $true
+      Update-MainWindow -thisApp $thisApp -synchash $synchash -Control 'Enable_EQ_Toggle' -Property 'isChecked' -value $true
     }
   }
 }
