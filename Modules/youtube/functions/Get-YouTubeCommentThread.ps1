@@ -124,7 +124,7 @@ function Get-YouTubeCommentThread {
             $result = $sr.ReadToEnd() | ConvertFrom-Json
             #$result = Invoke-RestMethod -Method Get -Uri $Uri -Headers $access_token
           }catch{  
-            if($_.Exception -match 'The remote server returned an error: \(404\) Not Found'){
+            if($_.Exception -match 'The remote server returned an error: \(404\) Not Found|The remote server returned an error: \(403\) Forbidden'){
               Write-EZLogs -text "Youtube API server returned '(404) Not Found' - for playlist id: $Id" -Warning -logtype Youtube
               return 'Not Found'
             }else{

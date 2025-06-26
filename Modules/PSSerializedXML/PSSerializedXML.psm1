@@ -611,6 +611,7 @@ public class Config
     public bool Show_Notifications { get; set; }
     public List<WebExtension> Webview2_Extensions { get; set; }
     public bool Use_invidious { get; set; }
+    public string InvidiousURL { get; set; }
     public string Audio_OutputModule { get; set; }
     public bool Notification_Audio { get; set; }
     public ArrayList LocalMedia_Library_Columns { get; set; }
@@ -1117,6 +1118,7 @@ function ConvertTo-Media {
                 'Profile_Date_Added' = $object.Profile_Date_Added
                 'url' = $object.url
                 'type' = $object.type
+                'Current_Progress_Secs' = $object.Current_Progress_Secs
                 'Track' = $object.Track
                 'Duration' = $object.Duration
                 'Display_Name' = $object.Display_Name
@@ -1140,6 +1142,7 @@ function ConvertTo-Media {
                 'Profile_Date_Added' = $object.Profile_Date_Added
                 'url' = $object.url
                 'type' = $object.type
+                'Current_Progress_Secs' = $object.Current_Progress_Secs
                 'Track' = $object.Track
                 'Duration' = $object.Duration
                 'Display_Name' = $object.Display_Name
@@ -1580,6 +1583,7 @@ function Export-SerializedXML {
         'Show_Notifications' = $InputObject.Show_Notifications
         'Webview2_Extensions' = $Webview2_Extensions
         'Use_invidious' = $InputObject.Use_invidious
+        'InvidiousURL' = $InputObject.InvidiousURL
         'Audio_OutputModule' = $InputObject.Audio_OutputModule
         'Notification_Audio' = $InputObject.Notification_Audio
         'LocalMedia_Library_Columns' = $InputObject.LocalMedia_Library_Columns

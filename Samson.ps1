@@ -3,9 +3,9 @@
     Samson
 
     .Version
-    1.0.2
+    1.0.3
 
-    .Build 
+    .Build
     PUBLIC
 
     .SYNOPSIS
@@ -13,7 +13,7 @@
 
     .DESCRIPTION
     Samson Media Player is a universal media player built in PowerShell that allows management and playback of media from multiple sources including local, Spotify, YouTube, Twitch and more. Powered by LibVLCSharp
-       
+
     .Requirements
     - Powershell v3.0 or higher
 
@@ -59,7 +59,7 @@
     .PARAMETER No_SettingsPreload
     Skips preloading the settings UI and controls in the background on startup
 
-    .PARAMETER force_modules 
+    .PARAMETER force_modules
     Force's any required powershell modules and related packages to be installed/reinstalled
 
     .PARAMETER ResetPluginCache
@@ -103,7 +103,7 @@
     .NOTES
     Author: EZTechhelp
     Site  : https://www.eztechhelp.com
-#> 
+#>
 
 #############################################################################
 #region Configurable Script Parameters
@@ -158,14 +158,14 @@ $logfile_directory = "$env:appdata\" # directory where log file should be create
 #endregion Log Variables
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Global Variables - DO NOT CHANGE UNLESS YOU KNOW WHAT YOU'R DOING
 #----------------------------------------------
 $required_appnames = 'Spotify','Spicetify','streamlink','vb-cable'
 if(!$NotrayMenu){
   $trayMenu = $true #Enables system tray icon, menu and mini-tray player
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Global Variables - DO NOT CHANGE UNLESS YOU KNOW WHAT YOU'R DOING
 #----------------------------------------------
 #############################################################################
@@ -177,26 +177,26 @@ if(!$NotrayMenu){
 #############################################################################
 $PSModuleAutoLoadingPreference = 'All'
 $ProgressPreference = 'SilentlyContinue'
-#---------------------------------------------- 
+#----------------------------------------------
 #region Use Run-As Function
 #----------------------------------------------
 function Use-RunAs
-{    
-  # Check if script is running as Adminstrator and if not use RunAs 
-  # Use Check Switch to check if admin 
+{
+  # Check if script is running as Adminstrator and if not use RunAs
+  # Use Check Switch to check if admin
   # http://gallery.technet.microsoft.com/scriptcenter/63fd1c0d-da57-4fb4-9645-ea52fc4f1dfb
 
-  param([Switch]$Check,[Switch]$ForceReboot,[Switch]$uninstall_Module,[switch]$FreshStart,[string]$logfile = $logfile,[switch]$RestartAsUser) 
-  $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator') 
-  if ($Check) { return $IsAdmin }    
+  param([Switch]$Check,[Switch]$ForceReboot,[Switch]$uninstall_Module,[switch]$FreshStart,[string]$logfile = $logfile,[switch]$RestartAsUser)
+  $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')
+  if ($Check) { return $IsAdmin }
   $ScriptPath = [System.IO.Path]::Combine($thisApp.Config.Current_folder,"$($thisApp.Config.App_Name).ps1")
   if(![System.IO.File]::Exists($ScriptPath)){
     $ScriptPath = $((Get-PSCallStack).ScriptName | Where-Object -FilterScript {$_ -notmatch '.psm1'} | Select-Object -First 1)
-  }  
+  }
   write-ezlogs -text '[USE-RUNAS] >>>> Checking if running as administrator'
-  if([System.IO.File]::Exists($ScriptPath)){  
-    if (-not $IsAdmin -or $ForceReboot -or $RestartAsUser){  
-      try{                
+  if([System.IO.File]::Exists($ScriptPath)){
+    if (-not $IsAdmin -or $ForceReboot -or $RestartAsUser){
+      try{
         if($uninstall_Module){
           $arg = "-NoProfile -NoLogo -ExecutionPolicy Bypass -file `"$($ScriptPath)`" -NonInteractive"
         }else{
@@ -215,20 +215,20 @@ function Use-RunAs
           Update-SplashScreen -hash $hash -Close
         }
         if($RestartAsUser){
-          $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine', 'Default') 
+          $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine', 'Default')
           foreach ($keyName in $Registry.OpenSubKey('SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\').GetSubKeyNames()) {
             if($Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$keyName").GetValue('DisplayName') -match $($thisApp.Config.App_Name)){
               $install_folder = $Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$keyName").GetValue('InstallLocation')
             }
-          }  
+          }
           if(!$install_folder){
             $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser', 'Default')
-            foreach ($keyName in $Registry.OpenSubKey('SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\').GetSubKeyNames()) {  
+            foreach ($keyName in $Registry.OpenSubKey('SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\').GetSubKeyNames()) {
               if($Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$keyName").GetValue('DisplayName') -match $($thisApp.Config.App_Name)){
                 $install_folder = $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$keyName").GetValue('InstallLocation')
               }
             }
-          } 
+          }
           [void]$Registry.Dispose()
           $ExePath = [System.IO.Path]::Combine($install_folder,"$($thisApp.Config.App_Name).exe")
           if([System.IO.File]::Exists($ExePath)){
@@ -246,10 +246,10 @@ function Use-RunAs
             #runas /trustlevel:0x20000 "$ExePath $arg"
             if([System.IO.File]::Exists("$env:ProgramW6432\PowerShell\7\pwsh.exe")){
               $processpath = "$env:ProgramW6432\PowerShell\7\pwsh.exe"
-            }else{         
+            }else{
               $processpath = "$psHome\powershell.exe"
             }
-            write-ezlogs -text "Restarting as user with Path: $($processpath)" -Warning 
+            write-ezlogs -text "Restarting as user with Path: $($processpath)" -Warning
             #runas /trustlevel:0x20000 "$processpath $arg"
             $newProc = new-object -TypeName System.Diagnostics.ProcessStartInfo -ArgumentList 'PowerShell'
             # Specify what to run, you need the full path after explorer.exe
@@ -261,7 +261,7 @@ function Use-RunAs
           }else{
             write-ezlogs -text "[USE-RUNAS] Cant find exe path to restart as user: $($ExePath) - Args: $($arg)" -Warning
             [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
-            [void][System.Windows.Forms.MessageBox]::Show("Cant find exe path to restart as user: $($ExePath) - ($($thisScript.name) Media Player - $($thisScript.Version) - PID: $($Process.id))`n`nIt is likely that this installation is corrupt!`n`nThe app will close and you will need to launch it manually again, making sure not to run as administrator","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
+            [void][System.Windows.Forms.MessageBox]::Show("Cant find exe path to restart as user: $($ExePath) - ($($thisScript.name) Media Player - $($thisScript.Version) - PID: $($Process.id))`n`nIt is likely that this installation is corrupt!`n`nThe app will close and you will need to launch it manually again, making sure not to run as administrator","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
             exit
           }
         }else{
@@ -269,25 +269,25 @@ function Use-RunAs
           $verb = 'RunAs'
           if([System.IO.File]::Exists("$env:ProgramW6432\PowerShell\7\pwsh.exe")){
             $Process = Start-Process -FilePath "$env:ProgramW6432\PowerShell\7\pwsh.exe" -Verb $verb -ArgumentList $arg -ErrorAction SilentlyContinue -WindowStyle Hidden
-          }else{         
+          }else{
             Start-Process -FilePath "$psHome\powershell.exe" -Verb $verb -ArgumentList $arg -ErrorAction SilentlyContinue -WindowStyle Hidden
           }
         }
-      }catch { 
+      }catch {
         write-ezlogs -text '[USE-RUNAS] An exception occurred attempting to restart script' -CatchError $_
-        break               
-      } 
+        break
+      }
       if($pid){
         stop-process -Id $pid -Force -ErrorAction SilentlyContinue
-      }      
-      exit # Quit this session of powershell 
-    }  
-  }else{   
+      }
+      exit # Quit this session of powershell
+    }
+  }else{
     write-ezlogs -text "[USE-RUNAS] Could not find Scriptpath: $ScriptPath -- MyInvocation: $($MyInvocation | out-string)" -Warning
-    break  
-  }  
+    break
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Use Run-As Function
 #----------------------------------------------
 
@@ -334,7 +334,7 @@ function Get-thisScriptInfo
   }
   return $thisScript
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-ThisScriptInfo Function
 #----------------------------------------------
 #############################################################################
@@ -347,10 +347,10 @@ function Get-thisScriptInfo
 #----------------------------------------------
 #region Script initialization
 #----------------------------------------------
-try{ 
+try{
   if($startup_perf_timer){
-    $thisScript_Measure = [system.diagnostics.stopwatch]::StartNew() 
-  } 
+    $thisScript_Measure = [system.diagnostics.stopwatch]::StartNew()
+  }
   $Global:thisapp = [hashtable]::Synchronized(@{})
   $hashsetup = [hashtable]::Synchronized(@{})
   #Set startup logging and variable paths
@@ -358,7 +358,7 @@ try{
   $logfile_directory = "$logfile_directory\$($thisScript.name)\Logs"
   if(!([System.IO.Directory]::Exists($logfile_directory))){
     [void][System.IO.Directory]::CreateDirectory($logfile_directory)
-  }   
+  }
   $Current_folder = $thisScript.Folder
   $startup_log = "$logfile_directory\$($thisScript.name)-$($thisScript.Version)-Startup.log"
   $perf_log = "$logfile_directory\$($thisScript.name)-$($thisScript.Version)-Perf.log"
@@ -376,15 +376,15 @@ try{
   }
   if([system.io.file]::Exists("$Current_folder\Modules\Show-FeedbackForm\Show-FeedbackForm.psm1")){
     [bool]$thisApp.Enable_Feedback_Features = $true
-  } 
+  }
 
   #Add Main Module path to env modules
   $ExistingPaths = $Env:PSModulePath -split ';' -replace '\\$',''
   if($ExistingPaths -notcontains "$Current_folder\Modules"){
     $Env:PSModulePath = "$Current_folder\Modules" + ';' + $Env:PSModulePath
-  } 
+  }
   #Add Secret Store module to env path
-  $secret_store = "$Current_folder\Modules\Microsoft.PowerShell.SecretStore\" 
+  $secret_store = "$Current_folder\Modules\Microsoft.PowerShell.SecretStore\"
   if($ExistingPaths -notcontains $secret_store){
     $Env:PSModulePath = $secret_store + ';' + $Env:PSModulePath
   }
@@ -395,14 +395,14 @@ try{
   if(!$thisScript.Version){
     [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
     $PSCallStack = Get-PSCallStack | Select-Object -Property *
-    $oReturn = [System.Windows.Forms.MessageBox]::Show("!!FATAL!!`nUnable to determine current version! The app cannot continue to load.`n`nThisScript: $($thisScript | out-string)`n`nCurrent_folder: $($Current_folder)`n`nPSCallStack: $(Get-PSCallStack | out-string)`n`nPSCallStack.InvocationInfo: $($PSCallStack.InvocationInfo | out-string)`n`nPSCommandPath: $($PSCommandPath)","$($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
+    $oReturn = [System.Windows.Forms.MessageBox]::Show("!!FATAL!!`nUnable to determine current version! The app cannot continue to load.`n`nThisScript: $($thisScript | out-string)`n`nCurrent_folder: $($Current_folder)`n`nPSCallStack: $(Get-PSCallStack | out-string)`n`nPSCallStack.InvocationInfo: $($PSCallStack.InvocationInfo | out-string)`n`nPSCommandPath: $($PSCommandPath)","$($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
     exit
   }
 
   if($startup_perf_timer -or $thisApp.Config.Startup_perf_timer){
     $Check_Version_Measure = [system.diagnostics.stopwatch]::StartNew()
   }
-    
+
   #Get install folder from registry if exits
   $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine', 'Default')
   foreach($key in $Registry.OpenSubKey('SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\').GetSubKeyNames()){
@@ -447,7 +447,7 @@ try{
     [System.IO.File]::AppendAllText($startup_log, $Message,[System.Text.Encoding]::Unicode)
   }else{
     $FreshStart = $false
-  } 
+  }
 
   #Load helper assembly, contains primary data classes and many other helpers
   if(-not [bool]('Media' -as [Type])){
@@ -463,7 +463,7 @@ try{
       [System.IO.File]::AppendAllText($startup_log, "[$([datetime]::Now)] [$($thisScript.name):$((Get-PSCallStack)[0].ScriptLineNumber)] [ERROR] Converting config file '$App_Settings_Directory\$($thisScript.name)-Config.xml' to '$App_Settings_File_Path': $($_ | out-string)",[System.Text.Encoding]::Unicode)
     }
   }
-  #Check Version and Start Splash Screen 
+  #Check Version and Start Splash Screen
   if(!$thisApp.Config -and [System.IO.File]::Exists($App_Settings_File_Path)){
     $thisApp.Config = Import-SerializedXML -Path $App_Settings_File_Path -isConfig
     if($FreshStart_Required -and $thisApp.Config.App_Version -lt $($thisScript.version)){
@@ -491,7 +491,7 @@ try{
           write-output -InputObject $Message
           [System.IO.File]::AppendAllText($startup_log, $Message,[System.Text.Encoding]::Unicode)
           Use-RunAs -RestartAsUser -logfile $startup_log
-          exit       
+          exit
         }
       }
       if($FreshStart_Required){
@@ -504,7 +504,7 @@ try{
   }
   if($Check_Version_Measure){
     $Check_Version_Measure.Stop()
-  } 
+  }
   #Dev Mode
   if(!$dev_mode -and !$debug_mode){
     $dev_mode = $thisApp.Config.Dev_mode
@@ -512,7 +512,7 @@ try{
     $dev_mode = $true
   }
 
-  #Start Logging  
+  #Start Logging
   if($startup_perf_timer -or $thisApp.Config.Startup_perf_timer){
     $Global:Start_EZLogs_Measure = [system.diagnostics.stopwatch]::StartNew()
   }
@@ -526,18 +526,18 @@ try{
 
   #Uninstall
   if($Uninstall){
-    Import-Module -Name "$Current_folder\Modules\Uninstall-Application\Uninstall-Application.psm1" -NoClobber -DisableNameChecking -Scope Local  
+    Import-Module -Name "$Current_folder\Modules\Uninstall-Application\Uninstall-Application.psm1" -NoClobber -DisableNameChecking -Scope Local
     Uninstall-Application -thisApp $thisApp -globalstopwatch $startup_stopwatch -UninstallLogFile "$logfile_directory\$($thisScript.Name)-$($thisScript.Version)-Uninstall.log"
   }
 
   #Verify app not already running - pass messages to existing if running
   if($startup_perf_timer -or $thisApp.Config.Startup_perf_timer){
     $Check_Existing_Process_Measure = [system.diagnostics.stopwatch]::StartNew()
-  } 
+  }
   if($dev_mode){
     write-ezlogs -text '###################### !!DEV OVERRIDE MODE ENABLED!! ######################' -Warning -linesbefore 1 -logfile $startup_log
   }elseif(($Process = [System.Management.ManagementObjectSearcher]::new([System.Management.ObjectQuery]::new("SELECT * FROM Win32_Process WHERE Name LIKE 'p%w%s%h%' AND CommandLine LIKE '%$($thisScript.name).ps1%' AND ProcessID != '$pid'")).get()) -ne $null){
-    try{   
+    try{
       if($OpentoPrimaryScreen){
         [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
         Import-Module -Name "$Current_folder\Modules\Get-HelperFunctions\Get-HelperFunctions.psm1" -NoClobber -DisableNameChecking
@@ -578,8 +578,8 @@ try{
         Stop-Process -Id $Process.ProcessId -Force -ErrorAction SilentlyContinue
       }else{
         exit
-      }     
-    }       
+      }
+    }
   }
   if($Process -is [System.IDisposable]){
     $Process.dispose()
@@ -592,15 +592,15 @@ try{
   try{
     if($thisApp.Config.Enable_HighDPI -or $ForceHighDPI){
       $DPIAware = [User32Wrapper.DPIAware]::IsProcessDPIAware()
-      if([System.Environment]::OSVersion.Version.Major -ge 10 -and [System.Environment]::OSVersion.Version.Build -ge 14393){       
-        if($DPIAware){         
-          $CurrentAwarness = [User32Wrapper.DPIAware]::GetAwarenessFromDpiAwarenessContext([User32Wrapper.DPIAware]::GetThreadDpiAwarenessContext())   
+      if([System.Environment]::OSVersion.Version.Major -ge 10 -and [System.Environment]::OSVersion.Version.Build -ge 14393){
+        if($DPIAware){
+          $CurrentAwarness = [User32Wrapper.DPIAware]::GetAwarenessFromDpiAwarenessContext([User32Wrapper.DPIAware]::GetThreadDpiAwarenessContext())
           if($CurrentAwarness -ne 2){
             if($install_folder){
               $App_Exe_Path = [System.IO.Path]::Combine("$install_folder","$($thisScript.Name).exe")
             }else{
               $App_Exe_Path = [System.IO.Path]::Combine("$Current_folder","$($thisScript.Name).exe")
-            }  
+            }
             $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser', 'Default')
             $keys = $Registry.OpenSubKey('SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers\')
             $HighDPIReg = $keys.GetValueNames() | & { process {
@@ -623,14 +623,14 @@ try{
         }else{
           write-ezlogs -text '>>>> Enabling Per-Monitor v2 DPI awareness for current process'
           [void][User32Wrapper.DPIAware]::SetProcessDpiAwarenessContext([User32Wrapper.DPIAware]::PER_MONITOR_AWARE_V2)
-        }       
+        }
       }elseif(([System.Environment]::OSVersion.Version.Major -eq 6 -and [System.Environment]::OSVersion.Version.Minor -eq 3) -or [System.Environment]::OSVersion.Version.Major -gt 6 ){
         write-ezlogs -text '>>>> Enabling Per-Monitor DPI awareness for current process'
         [void][User32Wrapper.DPIAware]::SetProcessDpiAwareness(2)
       }else{
         write-ezlogs -text 'Unable to configure high DPI for current process, OS not supported!' -Warning
       }
-    }   
+    }
   }catch{
     write-ezlogs -text 'An exception occurred attempting to set DPI awareness' -CatchError $_
   }finally{
@@ -645,9 +645,9 @@ try{
     $Check_Existing_Process_Measure.Stop()
   }
   if($startup_perf_timer -or $thisApp.Config.Startup_perf_timer){
-    $Start_SplashScreen_Measure = [system.diagnostics.stopwatch]::StartNew() 
-  } 
-  $Start_SplashScreen = Start-SplashScreen -SplashTitle $($thisScript.name) -SplashMessage 'Starting Up...' -current_folder $($Current_folder) -startup -perf_log $perf_log -log_file $startup_log -threading_Log_file $Threading_log_file -Verboselog:$dev_mode -startup_stopwatch $startup_stopwatch -startup_perf_timer $startup_perf_timer -PlayAudio:$thisApp.config.SplashScreenAudio -FreshStart:$FreshStart -NoSplashUI:$NoSplashUI -thisScript $thisScript
+    $Start_SplashScreen_Measure = [system.diagnostics.stopwatch]::StartNew()
+  }
+  $Start_SplashScreen = Start-SplashScreen -SplashTitle $($thisScript.name) -SplashMessage 'Starting Up...' -current_folder $($Current_folder) -startup -perf_log $perf_log -log_file $startup_log -threading_Log_file $Threading_log_file -Verboselog:$dev_mode -startup_stopwatch $startup_stopwatch -startup_perf_timer $startup_perf_timer -PlayAudio:$thisApp.config.SplashScreenAudio -FreshStart:$FreshStart -NoSplashUI:$NoSplashUI -thisScript $thisScript -logdateformat $logdateformat
   if($Start_SplashScreen_Measure){
     $Start_SplashScreen_Measure.Stop()
   }
@@ -678,10 +678,10 @@ try{
 }catch{
   write-ezlogs -text 'An exception occured during script initialization' -showtime -CatchError $_
   [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
-  [void][System.Windows.Forms.MessageBox]::Show("An exception occured during script initialization for ($($thisScript.name) Media Player - $($thisScript.Version) - PID: $($Process.id))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
+  [void][System.Windows.Forms.MessageBox]::Show("An exception occured during script initialization for ($($thisScript.name) Media Player - $($thisScript.Version) - PID: $($Process.id))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
   Stop-Process $pid -Force
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Script initialization
 #----------------------------------------------
 
@@ -692,12 +692,12 @@ try{
   #Load and Initialize UI XAML
   if($startup_perf_timer -or $thisApp.Config.Startup_perf_timer){
     $Initialize_Xaml_Measure = [system.diagnostics.stopwatch]::StartNew()
-  }   
+  }
   #Primary Syncronized hashtable
   $Global:synchash = [hashtable]::Synchronized([hashtable]::new(800,1, [StringComparer]::CurrentCultureIgnoreCase))
   Import-Module -Name "$Current_folder\Modules\Initialize-XAML\Initialize-Xaml.psm1" -NoClobber -DisableNameChecking -Scope Local
   Initialize-XAML -Current_folder $Current_folder -thisApp $thisApp -synchash $synchash
-  if($synchash.Window){   
+  if($synchash.Window){
     $synchash.Window.Title = "$($thisScript.Name) Media Player - $($thisScript.Version)"
     if($synchash.window.TaskbarItemInfo){
       $synchash.window.TaskbarItemInfo.Description = $synchash.Window.Title
@@ -709,7 +709,7 @@ try{
 }catch{
   write-ezlogs -text 'An exception occurred during XAML initialization' -showtime -CatchError $_
   [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
-  [void][System.Windows.Forms.MessageBox]::Show("An exception occurred during XAML initialization for ($($thisScript.name) Media Player - $($thisScript.Version) - PID: $($Process.id))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
+  [void][System.Windows.Forms.MessageBox]::Show("An exception occurred during XAML initialization for ($($thisScript.name) Media Player - $($thisScript.Version) - PID: $($Process.id))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
   Stop-Process $pid -Force
 }finally{
   Remove-Module -Name Initialize-Xaml -Force -ErrorAction SilentlyContinue
@@ -720,7 +720,7 @@ try{
   }
   if(!$synchash -or !$synchash.Window){
     [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
-    [void][System.Windows.Forms.MessageBox]::Show("An issue occurred during XAML initialization for ($($thisScript.name) Media Player - $($thisScript.Version) - PID: $($Process.id)) - No Window from XAML was found.`nStackTrace: $(Get-PSCallStack | out-string)`nERRORS: $($error | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
+    [void][System.Windows.Forms.MessageBox]::Show("An issue occurred during XAML initialization for ($($thisScript.name) Media Player - $($thisScript.Version) - PID: $($Process.id)) - No Window from XAML was found.`nStackTrace: $(Get-PSCallStack | out-string)`nERRORS: $($error | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
     if($error.count -gt 0 -and $Logfile){
       [System.IO.File]::AppendAllText($Logfile, "`n[$([datetime]::Now)] [ERROR] [STARTUP] [$((Get-PSCallStack)[0].FunctionName)] `n $($error | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
     }
@@ -792,7 +792,7 @@ try{
       Setup_Log_File              = "$logfile_directory\$($thisScript.Name)-$($thisScript.Version)-Setup.log"
       Threading_Log_File          = "$logfile_directory\$($thisScript.Name)-$($thisScript.Version)-Threading.log"
     }
-  }else{   
+  }else{
     if(!$thisApp.config){
       write-ezlogs -text ">>>> Loading main app config: $App_Settings_File_Path" -showtime
       $thisApp.Config = Import-SerializedXML -Path $App_Settings_File_Path -isConfig
@@ -807,7 +807,7 @@ try{
     $thisApp.Config.Playlist_Profile_Directory = "$env:appdata\$($thisScript.Name)\PlaylistProfiles"
     $thisApp.Config.EQPreset_Profile_Directory = "$env:appdata\$($thisScript.Name)\EQPresets"
     $thisApp.Config.VLC_Log_File = "$($logfile_directory)\$($thisScript.Name)-$($thisScript.Version)-VLC.log"
-    $thisApp.Config.LibVLC_Log_File = "$($logfile_directory)\$($thisScript.Name)-$($thisScript.Version)-LibVLC.log"    
+    $thisApp.Config.LibVLC_Log_File = "$($logfile_directory)\$($thisScript.Name)-$($thisScript.Version)-LibVLC.log"
     $thisApp.Config.Streamlink_Log_File = "$($logfile_directory)\$($thisScript.Name)-$($thisScript.Version)-Streamlink.log"
     $thisApp.Config.Startup_Log_File = $startup_log
     $thisApp.Config.Error_Log_File = "$logfile_directory\$($thisScript.Name)-$($thisScript.Version)-Errors.log"
@@ -849,7 +849,7 @@ try{
   }
   #TODO: Need to finish adding into settings - allow picking from list of approved VPNs
   if([string]::IsNullOrEmpty($thisApp.Config.Use_Preferred_VPN)){
-    $thisApp.Config.Use_Preferred_VPN = $true   
+    $thisApp.Config.Use_Preferred_VPN = $true
   }
   if([string]::IsNullOrEmpty($thisApp.Config.Preferred_VPN)){
     $thisApp.Config.Preferred_VPN = 'ProtonVPN'
@@ -869,8 +869,8 @@ try{
   if($thisApp.Config.Dev_mode){
     $thisApp.Config.Vlc_Verbose_logging = '3'
     $thisApp.Config.Streamlink_Verbose_logging = 'debug'
-  }else{ 
-    #TODO: Implement setting UI option for: $thisapp.config.Vlc_Verbose_logging  
+  }else{
+    #TODO: Implement setting UI option for: $thisapp.config.Vlc_Verbose_logging
     $thisApp.Config.Vlc_Verbose_logging = '1'
     if([string]::IsNullOrEmpty($thisApp.Config.Streamlink_Verbose_logging)){
       $thisApp.Config.Streamlink_Verbose_logging = 'info'
@@ -896,7 +896,7 @@ try{
 }catch{
   write-ezlogs -text '[ERROR] An exception occured loading or processing App configurations' -showtime -CatchError $_
   [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
-  $oReturn = [System.Windows.Forms.MessageBox]::Show("An exception occured loading or processing App configurations for ($($thisScript.name) Media Player - $($thisScript.Version)- PID: $($Process.id))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name) Media Player",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
+  $oReturn = [System.Windows.Forms.MessageBox]::Show("An exception occured loading or processing App configurations for ($($thisScript.name) Media Player - $($thisScript.Version)- PID: $($Process.id))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name) Media Player",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
   Stop-Process $pid -Force
 }finally{
   if($startup_perf_timer){
@@ -918,7 +918,7 @@ try{
 if($thisApp.Config.Startup_perf_timer){
   $Update_Timers_Startup_Measure = [system.diagnostics.stopwatch]::StartNew()
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-MainWindow Startup
 #----------------------------------------------
 try{
@@ -927,37 +927,37 @@ try{
 }catch{
   write-ezlogs -text 'An exception occurred in Update-MainWindow startup' -CatchError $_
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-MainWindow Startup
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Playlist, Queue Timer Startup
 #----------------------------------------------
 Import-Module -Name "$Current_folder\Modules\Get-Playlists\Get-Playlists.psm1" -NoClobber -DisableNameChecking -Scope Local
 Import-Module -Name "$Current_folder\Modules\Get-PlayQueue\Get-PlayQueue.psm1" -NoClobber -DisableNameChecking -Scope Local
 Update-Playlists -thisApp $thisApp -synchash $synchash -Startup
 Update-PlayQueue -thisApp $thisApp -synchash $synchash -Startup
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Playlist, Queue Timer Startup
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize-ChatView/CommentsView
 #----------------------------------------------
 Import-Module -Name "$Current_folder\Modules\Update-ChatView\Update-ChatView.psm1" -NoClobber -DisableNameChecking -Scope Local
 Import-Module -Name "$Current_folder\Modules\Get-YoutubeComments\Get-YoutubeComments.psm1" -NoClobber -DisableNameChecking -Scope Local
 Update-ChatView -synchash $synchash -thisApp $thisApp -startup
 Update-YoutubeComments -thisApp $thisApp -synchash $synchash -Startup
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize-ChatView/CommentsView
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-MediaState
 #----------------------------------------------
 Update-MediaState -thisApp $thisApp -synchash $synchash -Startup
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-MediaState
 #----------------------------------------------
 
@@ -965,43 +965,43 @@ Update-MediaState -thisApp $thisApp -synchash $synchash -Startup
 #region Reset Media Player Timer
 #----------------------------------------------
 Reset-MainPlayer -synchash $synchash -thisApp $thisApp -Startup
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion  Reset Media Player Timer
 #----------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region New-DialogNotification Timer
 #---------------------------------------------
 Import-Module -Name "$Current_folder\Modules\Update-Notifications\Update-Notifications.psm1" -NoClobber -DisableNameChecking -Scope Local
 New-DialogNotification -thisApp $thisApp -synchash $synchash -Startup
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion New-DialogNotification Timer
 #---------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-MainPlayer
 #----------------------------------------------
 Update-MainPlayer -synchash $synchash -thisApp $thisApp -startup
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-MainPlayer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-SpectrumAnalyzer
 #----------------------------------------------
 Import-Module -Name "$Current_folder\Modules\Get-WPFAnimation\Get-WPFAnimation.psm1" -NoClobber -DisableNameChecking -Scope Local
 Get-SpectrumAnalyzer -synchash $synchash -thisApp $thisApp -startup
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-SpectrumAnalyzer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update_TrayMenu Timer
 #----------------------------------------------
 <#$Update_TrayMenu_timer = [System.Windows.Threading.DispatcherTimer]::new()
     $Update_TrayMenu_timer_Event = {
     try{
-    $Update_TrayMenu_Measure = [system.diagnostics.stopwatch]::StartNew() 
+    $Update_TrayMenu_Measure = [system.diagnostics.stopwatch]::StartNew()
     Import-Module -Name "$Current_folder\Modules\Add-TrayMenu\Add-TrayMenu.psm1" -NoClobber -DisableNameChecking -Scope Local
     Add-TrayMenu -synchash $synchash -thisApp $thisApp -addJumplist -StartMini:$StartMini
     $this.Stop()
@@ -1019,11 +1019,11 @@ Get-SpectrumAnalyzer -synchash $synchash -thisApp $thisApp -startup
     }
     }
     $Update_TrayMenu_timer.Add_Tick($Update_TrayMenu_timer_Event)
-#>#---------------------------------------------- 
+#>#----------------------------------------------
 #endregion Update_TrayMenu Timer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region update_queue_timer Timer
 #----------------------------------------------
 $synchash.update_Queue_timer = [System.Windows.Threading.DispatcherTimer]::new()
@@ -1040,56 +1040,56 @@ $synchash.update_Queue_timer.Add_Tick({
       $this.Stop()
     }finally{
       $this.tag = $null
-      $this.Stop()   
-    }  
+      $this.Stop()
+    }
 })
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion update_Queue_timer Timer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region update_status_timer Timer
 #----------------------------------------------
 #TODO: This is really pointless/redundant - refactor/remove
 $synchash.update_status_timer = [System.Windows.Threading.DispatcherTimer]::new()
 $synchash.update_status_timer.Add_Tick({
-    try{        
+    try{
       if($this.tag -eq 'Twitch' -and $synchash.TwitchTable.ItemsSource.IsEmpty -ne $true){
         if($synchash.TwitchTable.ItemsSource -is [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView] -and !$synchash.TwitchTable.ItemsSource.IsInDeferRefresh){
           write-ezlogs -text '| Refreshing TwitchTable' -showtime -logtype Twitch
           $synchash.TwitchTable.ItemsSource.refresh()
         }
       }
-      if($this.tag -eq 'Local' -and $synchash.MediaTable.ItemsSource.IsEmpty -ne $true){         
+      if($this.tag -eq 'Local' -and $synchash.MediaTable.ItemsSource.IsEmpty -ne $true){
         if($synchash.MediaTable.ItemsSource -is [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView] -and !$synchash.MediaTable.ItemsSource.IsInDeferRefresh){
           write-ezlogs -text '>>>> Refreshing MediaTable ItemsSource' -showtime -logtype LocalMedia
           $synchash.MediaTable.ItemsSource.refresh()
-        }         
-      } 
+        }
+      }
       if($this.tag -eq 'Spotify' -and $synchash.SpotifyTable.ItemsSource.IsEmpty -ne $true){
         if($synchash.SpotifyTable.ItemsSource -is [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView] -and !$synchash.SpotifyTable.ItemsSource.IsInDeferRefresh){
           write-ezlogs -text '>>>> Refreshing SpotifyTable ItemsSource' -showtime -logtype Spotify
           $synchash.SpotifyTable.ItemsSource.refresh()
         }
       }
-      if($this.tag -eq 'Youtube' -and $synchash.YoutubeTable.ItemsSource.IsEmpty -ne $true){         
+      if($this.tag -eq 'Youtube' -and $synchash.YoutubeTable.ItemsSource.IsEmpty -ne $true){
         if($synchash.YoutubeTable.ItemsSource -is [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView] -and !$synchash.YoutubeTable.ItemsSource.IsInDeferRefresh){
           write-ezlogs -text '>>>> Refreshing YoutubeTable ItemsSource' -showtime -logtype Youtube
           $synchash.YoutubeTable.ItemsSource.refresh()
-        }         
-      }      
+        }
+      }
     }catch{
       write-ezlogs -text 'An exception occurred executing update_status_timer' -showtime -CatchError $_
     }finally{
       $this.tag = $null
       $this.Stop()
-    }   
+    }
 })
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion update_status_timer Timer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize-Vlc Timer
 #----------------------------------------------
 $synchash.Initialize_Vlc_timer = [System.Windows.Threading.DispatcherTimer]::new()
@@ -1102,7 +1102,7 @@ $Initialize_Vlc_timer_Event = {
       try{
         write-ezlogs -text "#### Play Media switch provided: $Startup_Playback ####" -showtime -color yellow -linesbefore 1
         $media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)avi|(?i)wmv|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mov|(?i)h264|(?i)mpeg|(?i)mpg4|(?i)movie|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))')
-        if(([system.io.file]::Exists($MediaFile) -and $MediaFile -match $media_pattern) -or [system.io.directory]::Exists($MediaFile)){      
+        if(([system.io.file]::Exists($MediaFile) -and $MediaFile -match $media_pattern) -or [system.io.directory]::Exists($MediaFile)){
           $media = Get-MediaProfile -thisApp $thisApp -synchash $synchash -Media_URL $MediaFile
           if($media){
             $synchash.Temporary_Playback_Media = $media
@@ -1127,7 +1127,7 @@ $Initialize_Vlc_timer_Event = {
       }catch{
         write-ezlogs -text "An exception occurred importing provided media from command line on startup: $MediaFile" -showtime -CatchError $_
       }
-    }elseif($Startup_Playback -and $thisApp.Config.Current_playing_media.id){    
+    }elseif($Startup_Playback -and $thisApp.Config.Current_playing_media.id){
       $synchash.Now_Playing_Title_Label.DataContext = 'LOADING...'
       write-ezlogs -text ">>>> Resuming previously playing media on startup for: $($thisApp.Config.Current_playing_media.title)"
       Start-Media -Media $thisApp.Config.Current_playing_media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -start_Paused:$thisApp.Config.Start_Paused -Startup
@@ -1147,11 +1147,11 @@ $Initialize_Vlc_timer_Event = {
   }
 }
 $synchash.Initialize_Vlc_timer.add_tick($Initialize_Vlc_timer_Event)
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize-Vlc Timer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize-EQ Timer
 #----------------------------------------------
 $synchash.Initialize_EQ_timer = [System.Windows.Threading.DispatcherTimer]::new()
@@ -1180,7 +1180,7 @@ $EQ_Timer_ScriptBlock = {
   }
 }
 $synchash.Initialize_EQ_timer.add_tick($EQ_Timer_ScriptBlock)
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize-EQ Timer
 #----------------------------------------------
 
@@ -1190,24 +1190,24 @@ $synchash.Initialize_EQ_timer.add_tick($EQ_Timer_ScriptBlock)
 #----------------------------------------------
 <#$synchash.vlc_audiotrack_timer = [System.Windows.Threading.DispatcherTimer]::new()
     $synchash.vlc_audiotrack_timer.Add_tick({
-    try{      
+    try{
     if($thisApp.Config.Libvlc_Version -eq '4'){
     $synchash.Vlc_Current_audiotrack = $synchash.vlc.tracks('Audio') | Where-Object {$_.Language -eq 'eng'}
     }else{
     $synchash.Vlc_Current_audiotrack = $synchash.vlc.media.tracks | Where-Object {$_.TrackType -eq 'Audio' -and $_.Language -eq 'eng'}
-    }        
+    }
     write-ezlogs ">>>> Setting Audio Track to $($synchash.vlc.audiotrack | out-string)" -showtime
-    if(-not [string]::IsNullOrEmpty($synchash.Vlc_Current_audiotrack.id)){       
-    try{                       
+    if(-not [string]::IsNullOrEmpty($synchash.Vlc_Current_audiotrack.id)){
+    try{
     if($thisApp.Config.Libvlc_Version -eq '4'){
     $synchash.VLC.Select($synchash.Vlc_Current_audiotrack)
     }else{
     $synchash.VLC.SetAudioTrack($synchash.Vlc_Current_audiotrack.id)
-    }            
+    }
     $synchash.Vlc_Current_audiotrack = $Null
     }catch{
     write-ezlogs "An exception occurred Setting Audio Track" -showtime -catcherror $_
-    }                                                                                 
+    }
     }
     $this.Stop()
     }catch{
@@ -1219,7 +1219,7 @@ $synchash.Initialize_EQ_timer.add_tick($EQ_Timer_ScriptBlock)
 #endregion Libvlc AudioTrack Timer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize-WebPlayer Timer
 #----------------------------------------------
 $synchash.Initialize_WebPlayer_timer = [System.Windows.Threading.DispatcherTimer]::new()
@@ -1230,13 +1230,13 @@ $synchash.Initialize_WebPlayer_timer.add_tick({
     }catch{
       write-ezlogs -text 'An exception occurred in Initialize_WebPlayer_timer' -showtime -CatchError $_
       $this.Stop()
-    }  
+    }
 })
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize-WebPlayer Timer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize-YoutubeWebPlayer Timer
 #----------------------------------------------
 $synchash.Initialize_YoutubeWebPlayer_timer = [System.Windows.Threading.DispatcherTimer]::new()
@@ -1247,13 +1247,13 @@ $synchash.Initialize_YoutubeWebPlayer_timer.add_tick({
     }catch{
       write-ezlogs -text 'An exception occurred in Initialize_YoutubeWebPlayer_timer' -showtime -CatchError $_
       $this.Stop()
-    }  
+    }
 })
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize-YoutubeWebPlayer Timer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize-WebBrowser Timer
 #----------------------------------------------
 $Initialize_WebBrowser_timer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
@@ -1271,11 +1271,11 @@ $Initialize_WebBrowser_timer = [System.Windows.Threading.DispatcherTimer]::new([
   }
 }
 $Initialize_WebBrowser_timer.add_tick($WebBrowserTimer_Event)
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize-WebBrowser Timer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update Media Progress Timer
 #----------------------------------------------
 $synchash.Timer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Normal)
@@ -1291,14 +1291,14 @@ $synchash.Timer.add_tick({
 })
 
 $synchash.Update_Playing_Playlist_Timer = [System.Windows.Threading.DispatcherTimer]::New([System.Windows.Threading.DispatcherPriority]::Background)
-$synchash.Update_Playing_Playlist_Timer.add_tick({    
+$synchash.Update_Playing_Playlist_Timer.add_tick({
     try{
       if($synchash.All_Playlists.Playlist_Tracks){
         $current_Playing_Playlist = Get-IndexesOf -Array $synchash.All_Playlists.Playlist_Tracks.values.id -Value $this.tag.id | & { process {
             $synchash.All_Playlists.Playlist_Tracks.values[$_]
         }}
       }elseif($synchash.Playlists_TreeView.Nodes.ChildNodes.Content.id){
-        $current_Playing_Playlist = Get-IndexesOf -Array $synchash.Playlists_TreeView.Nodes.ChildNodes.Content.id -Value $this.tag.id | & { process { 
+        $current_Playing_Playlist = Get-IndexesOf -Array $synchash.Playlists_TreeView.Nodes.ChildNodes.Content.id -Value $this.tag.id | & { process {
             $synchash.Playlists_TreeView.Nodes.ChildNodes.Content[$_]
         }}
       }elseif($synchash.Playlists_TreeView.Itemssource.Playlist_Tracks){
@@ -1327,32 +1327,32 @@ $synchash.Update_Playing_Playlist_Timer.add_tick({
     }finally{
       $this.tag = $null
       $this.stop()
-    }       
+    }
 })
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update Media Progress Timer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Torrent Select Timer
 #TODO: Need to Finish
 #----------------------------------------------
 $synchash.Torrent_Select_Timer = [System.Windows.Threading.DispatcherTimer]::new()
-$synchash.Torrent_Select_Timer.add_tick({    
+$synchash.Torrent_Select_Timer.add_tick({
     try{
-      $CustomDialog_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new() 
+      $CustomDialog_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
       $CustomDialog_Settings.ColorScheme = [MahApps.Metro.Controls.Dialogs.MetroDialogColorScheme]::Theme
       $CustomDialog_Settings.OwnerCanCloseWithDialog = $true
       $synchash.TorDialog = [MahApps.Metro.Controls.Dialogs.CustomDialog]::new($synchash.Window)
       [xml]$xaml = [System.IO.File]::ReadAllText("$($thisApp.config.Current_folder)\Views\TorDialog.xaml").replace('Views/Styles.xaml',"$($thisApp.config.Current_folder)`\Views`\Styles.xaml")
-      $reader = [System.Xml.XmlNodeReader]::new($xaml) 
+      $reader = [System.Xml.XmlNodeReader]::new($xaml)
       $synchash.TorDialogWindow = [Windows.Markup.XamlReader]::Load($reader)
-      $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]")| & { process {$synchash."$($_.Name)" = $synchash.TorDialogWindow.FindName($_.Name)}}    
+      $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]")| & { process {$synchash."$($_.Name)" = $synchash.TorDialogWindow.FindName($_.Name)}}
       [void]$reader.Dispose()
       $synchash.TorDialog.AddChild($synchash.TorDialogWindow)
       if($synchash.TorDialogButtonClose){
         $synchash.TorDialogButtonClose.add_click({
-            try{                         
+            try{
               $synchash.TorDialog.RequestCloseAsync()
               $synchash.TorDialog = $null
               $synchash.TorDialogWindow = $null
@@ -1363,7 +1363,7 @@ $synchash.Torrent_Select_Timer.add_tick({
       }
       if($synchash.TorDialog_Add_Button){
         $synchash.TorDialog_Add_Button.add_click({
-            try{                         
+            try{
               $synchash.TorSelected = $synchash.TorItems_Grid.Selecteditems
               $synchash.TorDialog.RequestCloseAsync()
               $synchash.TorDialog = $null
@@ -1391,15 +1391,15 @@ $synchash.Torrent_Select_Timer.add_tick({
       if($synchash.TorItems_Grid){
         $synchash.TorItems_Grid.Itemssource = $this.tag
       }
-      [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowMetroDialogAsync($synchash.Window, $synchash.TorDialog, $CustomDialog_Settings) 
+      [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowMetroDialogAsync($synchash.Window, $synchash.TorDialog, $CustomDialog_Settings)
     }catch{
       write-ezlogs -text 'An exception occurred executing Torrent_Select_Timer' -showtime -CatchError $_
     }finally{
       $this.tag = $null
-      $this.stop()   
-    }       
+      $this.stop()
+    }
 })
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Torrent Select Timer
 #---------------------------------------------
 if($Update_Timers_Startup_Measure){
@@ -1411,7 +1411,7 @@ if($Update_Timers_Startup_Measure){
 #endregion Startup Dispatcher Timers
 ###############################################
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region First Run
 #----------------------------------------------
 #Run First Run Setup if new version or fresh install
@@ -1443,7 +1443,7 @@ if($FreshStart -or -not $MediaProfileDir_Exists){
     }
   }else{
     write-ezlogs -text '>>>> No Media_Profile_Directory found, starting first run setup' -showtime
-  }  
+  }
   if([System.IO.File]::Exists("$env:localappdata\spotishell\$($thisApp.Config.App_Name).json")){
     try{
       write-ezlogs -text ">>>> Removing existing Spotify application json at $env:localappdata\spotishell\$($thisApp.Config.App_Name).json" -showtime
@@ -1452,7 +1452,7 @@ if($FreshStart -or -not $MediaProfileDir_Exists){
       write-ezlogs -text "An exception occurred attempting to remove $env:localappdata\spotishell\$($thisApp.Config.App_Name).json" -showtime -CatchError $_
     }
   }
-  if([System.IO.Directory]::Exists("$($thisApp.config.Temp_Folder)\Webview2")){   
+  if([System.IO.Directory]::Exists("$($thisApp.config.Temp_Folder)\Webview2")){
     try{
       write-ezlogs -text ">>>> Removing existing Webview2 data folder at $($thisApp.config.Temp_Folder)\Webview2" -showtime
       [void][System.IO.Directory]::Delete("$($thisApp.config.Temp_Folder)\Webview2",$true)
@@ -1460,7 +1460,7 @@ if($FreshStart -or -not $MediaProfileDir_Exists){
       write-ezlogs -text "An exception occurred attempting to remove $($thisApp.config.Temp_Folder)\Webview2" -showtime -CatchError $_
     }
   }
-  if([System.IO.Directory]::Exists("$($thisApp.config.Temp_Folder)\Setup_Webview2")){   
+  if([System.IO.Directory]::Exists("$($thisApp.config.Temp_Folder)\Setup_Webview2")){
     try{
       write-ezlogs -text ">>>> Removing existing Setup_Webview2 folder at $($thisApp.config.Temp_Folder)\Setup_Webview2" -showtime
       [void][System.IO.Directory]::Delete("$($thisApp.config.Temp_Folder)\Setup_Webview2",$true)
@@ -1468,7 +1468,7 @@ if($FreshStart -or -not $MediaProfileDir_Exists){
       write-ezlogs -text "An exception occurred attempting to remove $($thisApp.config.Temp_Folder)\Setup_Webview2" -showtime -CatchError $_
     }
   }
-  if([System.IO.Directory]::Exists("$($thisApp.config.Temp_Folder)\Images")){   
+  if([System.IO.Directory]::Exists("$($thisApp.config.Temp_Folder)\Images")){
     try{
       write-ezlogs -text ">>>> Removing existing cached images folder at $($thisApp.config.Temp_Folder)\Images" -showtime
       [void][System.IO.Directory]::Delete("$($thisApp.config.Temp_Folder)\Images",$true)
@@ -1476,14 +1476,14 @@ if($FreshStart -or -not $MediaProfileDir_Exists){
       write-ezlogs -text "An exception occurred attempting to remove $($thisApp.config.Temp_Folder)\Images" -showtime -CatchError $_
     }
   }
-  if([System.IO.Directory]::Exists("$($thisApp.config.Temp_Folder)\Tor")){   
+  if([System.IO.Directory]::Exists("$($thisApp.config.Temp_Folder)\Tor")){
     try{
       write-ezlogs -text ">>>> Removing existing Tor temp data folder at $($thisApp.config.Temp_Folder)\Tor" -showtime
       [void][System.IO.Directory]::Delete("$($thisApp.config.Temp_Folder)\Tor",$true)
     }catch{
       write-ezlogs -text "An exception occurred attempting to remove $($thisApp.config.Temp_Folder)\Tor" -showtime -CatchError $_
     }
-  }   
+  }
   #Verify Webview2 Installed
   try{
     $WebView2_Install_Check = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\*' -ErrorAction SilentlyContinue) | Where-Object -FilterScript {$_.name -match 'WebView2 Runtime'}
@@ -1492,12 +1492,12 @@ if($FreshStart -or -not $MediaProfileDir_Exists){
       $user_sid = ([System.Security.Principal.WindowsIdentity]::GetCurrent()).User.Value
       $WebView2_Install_Check = (Get-ItemProperty -Path "Registry::\HKEY_USERS\$user_sid\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue) | Where-Object -FilterScript {$_.Displayname -match 'WebView2 Runtime'}
       $WebView2_version = $WebView2_Install_Check.Version
-    }  
+    }
     if(-not [string]::IsNullOrEmpty($WebView2_Install_Check)){
       write-ezlogs -text "[FIRST-RUN] Webview2 is installed with version $($WebView2_version)" -showtime
     }else{
-      Update-SplashScreen -hash $hash -SplashMessage 'Installing Webview2 Runtime'   
-      if(![System.IO.file]::Exists("$($thisApp.config.current_folder)\Resources\WebView2\MicrosoftEdgeWebview2Setup.exe")){   
+      Update-SplashScreen -hash $hash -SplashMessage 'Installing Webview2 Runtime'
+      if(![System.IO.file]::Exists("$($thisApp.config.current_folder)\Resources\WebView2\MicrosoftEdgeWebview2Setup.exe")){
         try{
           $webview2_Link = 'https://go.microsoft.com/fwlink/p/?LinkId=2124703'
           $webview_exe = 'MicrosoftEdgeWebview2Setup.exe'
@@ -1536,7 +1536,7 @@ if($FreshStart -or -not $MediaProfileDir_Exists){
   #Assembly Optimization
   if($FreshStart -and $OptmizeAssemblies){
     Optimize-Assemblies -thisApp $thisApp
-  }  
+  }
   try{
     if((Use-RunAs -Check)){
       $PageTitle = "Administrator: First Run Setup - $($thisScript.name) Media Player"
@@ -1549,7 +1549,7 @@ if($FreshStart -or -not $MediaProfileDir_Exists){
           }catch{
             write-ezlogs -text "An exception occurred Clearing profile cache ($($thisApp.config.Media_Profile_Directory))" -showtime -CatchError $_
           }
-        }      
+        }
         Use-RunAs -RestartAsUser
         exit
       }
@@ -1568,7 +1568,7 @@ if($FreshStart -or -not $MediaProfileDir_Exists){
   }catch{
     write-ezlogs -text 'An exception occurred executing Show-SettingsWindow' -showtime -CatchError $_
     [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
-    $oReturn = [System.Windows.Forms.MessageBox]::Show("An exception occurred executing Show-SettingsWindow ($($thisScript.name) Media Player - Version: $($thisScript.Version) - PID: $($Process.id))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name) Media Player",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
+    $oReturn = [System.Windows.Forms.MessageBox]::Show("An exception occurred executing Show-SettingsWindow ($($thisScript.name) Media Player - Version: $($thisScript.Version) - PID: $($Process.id))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","[ERROR] - $($thisScript.name) Media Player",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
     Stop-Process $pid -Force
   }
 }
@@ -1587,11 +1587,11 @@ if($FirstRunCheck_Measure){
   write-ezlogs -text 'FirstRunCheck_Measure' -PerfTimer $FirstRunCheck_Measure
   $FirstRunCheck_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion First Run
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region confirm-requirements
 #----------------------------------------------
 #Verify and Install Required Apps/Components
@@ -1609,11 +1609,11 @@ try{
 }catch{
   write-ezlogs -text 'An exception occurred in script_onload_scripblock' -showtime -CatchError $_
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion confirm-requirements
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Play Media Handlers
 #----------------------------------------------
 $synchash.PlayMedia_Scriptblock = {
@@ -1673,7 +1673,7 @@ $synchash.PlayMedia_Scriptblock = {
       $Playlist_ID = $item.Source.DataContext.Content.Playlist_ID
     }else{
       $Playlist_ID = $item.OriginalSource.datacontext.Playlist_ID
-    } 
+    }
 
     #Look up media profile if we have one
     if(-not [string]::IsNullOrEmpty($Media_ID)){
@@ -1706,7 +1706,7 @@ $synchash.PlayMedia_Scriptblock = {
         }
         if($MediaItems){
           Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -media $MediaItems -Add_First $media.id -Use_RunSpace
-        }      
+        }
       }
       #If no new media has been selected to play, restart the current playing media if any, unless if event is a doubleclick.
       #Otherwise, check what type of media it is and pass it to its respective start playback function
@@ -1735,7 +1735,7 @@ $synchash.PlayMedia_Scriptblock = {
         #No media or action found to continue, act like this never happened!
         if($synchash.PlayButton_ToggleButton.isChecked){
           $synchash.PlayButton_ToggleButton.isChecked = $false
-        } 
+        }
         if($synchash.PlayButton_ToggleButton.Uid -eq 'IsPaused'){
           $synchash.PlayButton_ToggleButton.Uid = $null
         }
@@ -1743,8 +1743,8 @@ $synchash.PlayMedia_Scriptblock = {
           $synchash.MiniPlayButton_ToggleButton.Uid = $null
         }
         $NoPlaylistUpdate = $true
-        write-ezlogs -text "[PLAYMEDIA] Could not find media to play from routed event! - $($item.RoutedEvent) - originalsource: $($item.OriginalSource)" -showtime -Warning 
-      }  
+        write-ezlogs -text "[PLAYMEDIA] Could not find media to play from routed event! - $($item.RoutedEvent) - originalsource: $($item.OriginalSource)" -showtime -Warning
+      }
     }
   }catch{
     write-ezlogs -text "An exception has occurred attempting to execute playback for media $($media.url)" -CatchError $_ -AlertUI
@@ -1752,10 +1752,10 @@ $synchash.PlayMedia_Scriptblock = {
     #Set the current playing playlist
     if(!$NoPlaylistUpdate){
       if(-not [string]::IsNullOrEmpty($Playlist_ID)){
-        write-ezlogs -text "[PLAYMEDIA] >>>> Current Playlist_ID: $($Playlist_ID)" -showtime
+        write-ezlogs -text "[PLAYMEDIA] >>>> Current Playlist_ID: $($Playlist_ID)" -LogLevel 0 -Verboselog:$Verboselog
         $synchash.Current_Playing_Playlist = $Playlist_ID
       }
-      if($_.Source.Name -in 'SpotifyTable','YoutubeTable','MediaTable','TwitchTable' -or $_.source -is [System.Windows.Controls.Primitives.ToggleButton] -or $_.Source.tag.source.Name -in 'SpotifyTable','YoutubeTable','MediaTable','TwitchTable'){ 
+      if($_.Source.Name -in 'SpotifyTable','YoutubeTable','MediaTable','TwitchTable' -or $_.source -is [System.Windows.Controls.Primitives.ToggleButton] -or $_.Source.tag.source.Name -in 'SpotifyTable','YoutubeTable','MediaTable','TwitchTable'){
         $synchash.Current_Playing_Playlist_Source = 'Library'
       }elseif($_.Source.Name -in 'Track','Playlists_TreeView','LocalMedia_TreeView','TrayPlayer_TreeView' -or $_.Source.tag.source.Name -in 'Track','Playlists_TreeView','LocalMedia_TreeView','TrayPlayer_TreeView'){
         $synchash.Current_Playing_Playlist_Source = 'Playlist'
@@ -1766,8 +1766,8 @@ $synchash.PlayMedia_Scriptblock = {
       #Clear tracking of any current playing playlists
       $synchash.Current_Playing_Playlist = $null
       $synchash.Current_Playing_Playlist_Source = $null
-    } 
-    write-ezlogs -text "[PLAYMEDIA] | Current_Playing_Playlist_Source: $($synchash.Current_Playing_Playlist_Source) - NoPlaylistUpdate: $($NoPlaylistUpdate)" -showtime
+    }
+    write-ezlogs -text "[PLAYMEDIA] | Current_Playing_Playlist_Source: $($synchash.Current_Playing_Playlist_Source) - NoPlaylistUpdate: $($NoPlaylistUpdate)" -LogLevel 0 -Verboselog:$Verboselog
     if($thisApp.Config.Dev_mode){
       write-ezlogs -text "[PLAYMEDIA] item: $($item | out-string)" -Dev_mode
       write-ezlogs -text "[PLAYMEDIA] item.Source: $($item.Source | out-string)" -Dev_mode
@@ -1781,11 +1781,11 @@ $synchash.PlayMedia_Scriptblock = {
   }
 }
 [System.Windows.RoutedEventHandler]$synchash.PlayMedia_Command = $synchash.PlayMedia_Scriptblock
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Play Media Handlers
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Edit Cell Handlers
 #----------------------------------------------
 $synchash.EditCell_Scriptblock = {
@@ -1805,7 +1805,7 @@ $synchash.EditCell_Scriptblock = {
           write-ezlogs -text "[EditCell] CurrentRowColumnIndex: $($synchash.MediaTable.SelectionController.CurrentCellManager.CurrentRowColumnIndex | out-string)" -Dev_mode -logtype LocalMedia
           write-ezlogs -text "[EditCell] CurrentCell: $($synchash.MediaTable.SelectionController.CurrentCellManager.CurrentCell | out-string)" -Dev_mode -logtype LocalMedia
         }
-        $synchash.MediaTable.MoveCurrentCell($synchash.MediaTable.SelectionController.CurrentCellManager.CurrentRowColumnIndex)   
+        $synchash.MediaTable.MoveCurrentCell($synchash.MediaTable.SelectionController.CurrentCellManager.CurrentRowColumnIndex)
         $synchash.MediaTable.SelectionController.CurrentCellManager.BeginEdit()
         $item.Handled = $true
       }
@@ -1833,7 +1833,7 @@ $synchash.EditCell_Scriptblock = {
         $item.Handled = $true
         write-ezlogs -text "[YoutubeEditCell] SelectionController.CurrentCellManager : $($synchash.Youtubetable.SelectionController.CurrentCellManager | out-string)" -logtype Youtube
       }
-      'Twitchtable_Editbutton' { 
+      'Twitchtable_Editbutton' {
         $synchash.Twitchtable.AllowEditing = $true
         if($thisApp.Config.Dev_mode){
           write-ezlogs -text "[EditCell] SelectionController.CurrentCellManager : $($synchash.Twitchtable.SelectionController.CurrentCellManager | out-string)" -Dev_mode
@@ -1845,17 +1845,17 @@ $synchash.EditCell_Scriptblock = {
         $item.Handled = $true
         write-ezlogs -text "[TwitchEditCell] SelectionController.CurrentCellManager : $($synchash.Twitchtable.SelectionController.CurrentCellManager | out-string)" -logtype Twitch
       }
-    }  
+    }
   }catch{
     write-ezlogs -text 'An exception has occurred attempting to edit media library cell' -CatchError $_
   }
 }
 [System.Windows.RoutedEventHandler]$synchash.EditCell_Command = $synchash.EditCell_Scriptblock
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Edit Cell Handlers
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region DeleteEnter Handler
 #TODO: Review - this hasn't been touched in a while, probably needs refactor
 #----------------------------------------------
@@ -1863,7 +1863,7 @@ $synchash.EditCell_Scriptblock = {
   param([Parameter(Mandatory)][Object]$sender,[Parameter(Mandatory)][Windows.Input.KeyEventArgs]$e)
   $media = $_.OriginalSource.DataContext
   if(!$media.url){$media = $sender.tag}
-  if(!$media.url){$media = $sender.tag.Media} 
+  if(!$media.url){$media = $sender.tag.Media}
   if(!$media.url){$media = $sender.selecteditem.tag.Media}
   write-ezlogs -text "Keydown Pressed (Key: $($e.Key)) - OriginalSource: $($_.OriginalSource | Select-Object -Property *)" -LogLevel 3
   if($e.Key -eq 'Enter' -and $media.url){
@@ -1873,11 +1873,11 @@ $synchash.EditCell_Scriptblock = {
         $media = Get-MediaProfile -thisApp $thisApp -synchash $synchash -Media_ID $media.id
         Start-SpotifyMedia -Media $media -thisApp $thisApp -synchash $synchash -use_WebPlayer:$thisApp.config.Spotify_WebPlayer -Show_notifications:$thisApp.config.Show_notifications -RestrictedRunspace:$thisApp.config.Spotify_WebPlayer
       }else{
-        Start-Media -Media $media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification 
-      }  
+        Start-Media -Media $media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification
+      }
     }catch{
       write-ezlogs -text "An exception occurred attempting to play media using keyboard event $($e.Key | out-string) for media $($media.id)" -showtime -CatchError $_
-    }    
+    }
   }elseif($e.Key -eq 'Delete'-and $media.url){
     try{
       if($thisApp.config.Current_Playlist.values -contains $media.id){
@@ -1894,24 +1894,24 @@ $synchash.EditCell_Scriptblock = {
       Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace
     }catch{
       write-ezlogs -text "An exception occurred removing media $($media.id) using keyboard event $($e.Key | out-string)" -showtime -CatchError $_
-    } 
-  }   
+    }
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion DeleteEnter Handler
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Download Media Handler
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.DownloadMedia_Command = {
   param($sender)
   $media = $_.OriginalSource.DataContext
   if(!$media.url){$media = $sender.tag}
-  if(!$media.url){$media = $sender.tag.Media} 
-  if(!$media.url){$media = $_.OriginalSource.tag.media} 
+  if(!$media.url){$media = $sender.tag.Media}
+  if(!$media.url){$media = $_.OriginalSource.tag.media}
   if(($media.url -match 'youtube\.com' -or $media.url -match 'youtu\.be' -or $media.url -match 'soundcloud\.com') -and $media.url -notmatch 'tv\.youtube\.com'){
-  
+
     $Options = [System.Collections.Generic.List[PSCustomObject]]::new()
     $OptionPath = [PSCustomObject]@{
       'Name' = 'FolderPath'
@@ -1929,7 +1929,7 @@ $synchash.EditCell_Scriptblock = {
       'Value' = $false
       'Output' = ''
     }
-    [void]$Options.add($OptionAudioOnly)   
+    [void]$Options.add($OptionAudioOnly)
     <#    $Option = [PSCustomObject]@{
         'Name' = 'SaveFormatOptions'
         'Label' = 'Audio Format'
@@ -1945,17 +1945,17 @@ $synchash.EditCell_Scriptblock = {
       'Value' = $false
       'Output' = ''
     }
-    [void]$Options.add($OptionSponserBlock) 
+    [void]$Options.add($OptionSponserBlock)
     $Result = Show-CustomWindow -thisApp $thisApp -WindowTitle 'Download Media' -HeaderText 'Download Media Options' -Message "Select the following options below to confirm download of media: $($media.url)" -Type Options -Options $Options -WaitforOutput -TopMost
     $Destination = $Result[0].Output
     $AudioOnly = $Result[1].Output
     $SponserBlock = $Result[2].Output
     <#    if([System.IO.Directory]::Exists($thisApp.Config.Youtube_Download_Path)){
         $DownloadPath = $thisApp.Config.Youtube_Download_Path
-        $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+        $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
         $Button_Settings.AffirmativeButtonText = 'Yes'
-        $Button_Settings.NegativeButtonText = 'No'  
-        $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+        $Button_Settings.NegativeButtonText = 'No'
+        $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
         $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Download Media',"Are you sure you wish to download $($media.title) to $DownloadPath`?",$okandCancel,$Button_Settings)
         if($result -eq 'Affirmative'){
         write-ezlogs -text ">>>> User wished to download $($media.title)" -showtime
@@ -1965,7 +1965,7 @@ $synchash.EditCell_Scriptblock = {
         }
         }else{
         $DownloadPath = Open-FolderDialog -Title 'Select the directory path where media will be downloaded to'
-    }#>  
+    }#>
     if([System.IO.Directory]::Exists($Destination)){
       write-ezlogs -text ">>>> Downloading: $($media.title) -- to: $Destination" -showtime
       Invoke-DownloadMedia -Media $media -Download_Path $Destination -synchash $synchash -thisapp $thisApp -Show_notification -AudioOnly:$([bool]$AudioOnly) -UseSponserblock:$([bool]$SponserBlock)
@@ -1973,21 +1973,21 @@ $synchash.EditCell_Scriptblock = {
   }elseif($media.Source -eq 'TOR'){
     if($sender.header -eq 'Stream'){
       $StreamPlayback = $true
-      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
       $Button_Settings.AffirmativeButtonText = 'Yes'
-      $Button_Settings.NegativeButtonText = 'No'  
-      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+      $Button_Settings.NegativeButtonText = 'No'
+      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
       $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Stream Torrent',"Are you sure you wish to stream torrent $($media.title)`?",$okandCancel,$Button_Settings)
       if($result -eq 'Affirmative'){
         write-ezlogs -text ">>>> User wished to stream $($media.title)" -showtime
-        $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+        $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
         $Button_Settings.AffirmativeButtonText = 'Yes'
-        $Button_Settings.NegativeButtonText = 'No'  
-        $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+        $Button_Settings.NegativeButtonText = 'No'
+        $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
         $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Save Torrent',"Do you also wish to save/download the torrent media to a local path`?",$okandCancel,$Button_Settings)
         if($result -eq 'Affirmative'){
           write-ezlogs -text ">>>> User wished to download $($media.title)" -showtime
-          $DownloadPath = Open-FolderDialog -Title 'Select the directory path where the torrent will be downloaded to' 
+          $DownloadPath = Open-FolderDialog -Title 'Select the directory path where the torrent will be downloaded to'
           $SaveTorrent = $true
         }else{
           write-ezlogs -text "User did not wish to download $($media.title)" -showtime -Warning
@@ -1998,13 +1998,13 @@ $synchash.EditCell_Scriptblock = {
       }else{
         write-ezlogs -text "User did not wish to stream: $($media.title)" -showtime -Warning
         return
-      }       
+      }
     }else{
       $StreamPlayback = $false
-      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
       $Button_Settings.AffirmativeButtonText = 'Yes'
-      $Button_Settings.NegativeButtonText = 'No'  
-      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+      $Button_Settings.NegativeButtonText = 'No'
+      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
       $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Download Torrent',"Are you sure you wish to download $($media.title)`?",$okandCancel,$Button_Settings)
       if($result -eq 'Affirmative'){
         write-ezlogs -text ">>>> User wished to download: $($media.title)" -showtime
@@ -2014,7 +2014,7 @@ $synchash.EditCell_Scriptblock = {
         write-ezlogs -text "User did not wish to download: $($media.title)" -showtime -Warning
         return
       }
-      $DownloadPath = Open-FolderDialog -Title 'Select the directory path where the torrent will be downloaded to'   
+      $DownloadPath = Open-FolderDialog -Title 'Select the directory path where the torrent will be downloaded to'
     }
     if([System.IO.Directory]::Exists($DownloadPath)){
       write-ezlogs -text ">>>> Downloading $($media.title) to $DownloadPath" -showtime -logtype Tor
@@ -2022,107 +2022,116 @@ $synchash.EditCell_Scriptblock = {
     }
   }else{
     write-ezlogs -text 'Selected media is not currently supported for download! Sorry!' -Warning -AlertUI
-  }   
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Download Media Handler
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Record Media Handler
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.RecordMedia_Command = {
   param($sender)
-  $media = $_.OriginalSource.DataContext
-  if(!$media.url){$media = $sender.tag}
-  if(!$media.url){$media = $sender.tag.Media} 
-  if(!$media.url){$media = $_.OriginalSource.tag.media}  
-  if(!$media.url){
-    write-ezlogs -text "To Record, first select the media you wish to record from a playlist or library, then right-click and select 'Record'.`nTo learn more, see help topic for 'Enable Spotify Integration' under Spotify settings to learn how to use" -LogLevel 2 -AlertUI
-    $synchash.RecordButton_ToggleButton.isChecked = $false
-    return
-  }
-  if(($media.Source -eq 'Spotify') -or $media.url -match 'spotify\:'){
-    $Options = [System.Collections.Generic.List[PSCustomObject]]::new()
-    $OptionPath = [PSCustomObject]@{
-      'Name' = 'FolderPath'
-      'Label' = 'Destination Folder'
-      'Type' = 'textbox'
-      'BrowseType' = 'SaveFolder'
-      'Value' = $thisApp.Config.Youtube_Download_Path
-      'Output' = ''
+  try{
+    $media = $_.OriginalSource.DataContext
+    if(!$media.url){$media = $sender.tag}
+    if(!$media.url){$media = $sender.tag.Media}
+    if(!$media.url){$media = $_.OriginalSource.tag.media}
+    if(!$media.url){
+      write-ezlogs -text "To Record, first select the media you wish to record from a playlist or library, then right-click and select 'Record'.`nTo learn more, see help topic for 'Enable Spotify Integration' under Spotify settings to learn how to use" -LogLevel 2 -AlertUI
+      $synchash.RecordButton_ToggleButton.isChecked = $false
+      return
     }
-    [void]$Options.add($OptionPath)  
-    $Option = [PSCustomObject]@{
-      'Name' = 'SaveFormatOptions'
-      'Label' = 'Audio Format'
-      'Type' = 'Combobox'
-      'Value' = 'Default','FLAC','WAV'
-      'Output' = ''
-    }
-    [void]$Options.add($Option) 
-    $OptionMutePlayback = [PSCustomObject]@{
-      'Name' = 'MutePlayback'
-      'Label' = 'Mute Playback While Recording (WIP)'
-      'Type' = 'ToggleSwitch'
-      'Value' = $false
-      'Output' = ''
-    }
-    [void]$Options.add($OptionMutePlayback)
-    $Result = Show-CustomWindow -thisApp $thisApp -WindowTitle 'Record Media' -HeaderText 'Record Media Options' -Message "Select the following options below to confirm recording of media: $($media.Artist) - $($media.Title)" -Type Options -Options $Options -WaitforOutput -TopMost  
-    if($Result){
-      $SaveFolder = $Result[0].Output
-      $Format = $Result[1].Output
-      $MutePlayback = $Result[2].Output
-    }
-    <#    $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
-        $Button_Settings.AffirmativeButtonText = 'Yes'
-        $Button_Settings.NegativeButtonText = 'No'  
-        $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
-        $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Record Media',"Do you wish to start recording media $($media.title)`?`n`nYou will be prompted for a location to save the recording",$okandCancel,$Button_Settings)
-        if($result -eq 'Affirmative'){
-        write-ezlogs -text ">>>> User wished to record $($media.title)" -showtime
-        }else{
-        write-ezlogs -text "User did not wish to record $($media.title)" -showtime -Warning
-        $synchash.RecordButton_ToggleButton.isChecked = $false
-        return
-        }
-    $result = Open-FolderDialog -Title 'Select the directory path where media recording will be saved to'#>
+    if(($media.Source -eq 'Spotify') -or $media.url -match 'spotify\:'){
+      $Options = [System.Collections.Generic.List[PSCustomObject]]::new()
+      $OptionPath = [PSCustomObject]@{
+        'Name' = 'FolderPath'
+        'Label' = 'Destination Folder'
+        'Type' = 'textbox'
+        'BrowseType' = 'SaveFolder'
+        'Value' = $thisApp.Config.Youtube_Download_Path
+        'Output' = ''
+      }
+      [void]$Options.add($OptionPath)
+      $Option = [PSCustomObject]@{
+        'Name' = 'SaveFormatOptions'
+        'Label' = 'Audio Format'
+        'Type' = 'Combobox'
+        'Value' = 'Default','FLAC','WAV'
+        'Output' = ''
+      }
+      [void]$Options.add($Option)
+      $OptionMutePlayback = [PSCustomObject]@{
+        'Name' = 'MutePlayback'
+        'Label' = 'Mute Playback While Recording (WIP)'
+        'Type' = 'ToggleSwitch'
+        'Value' = $false
+        'Output' = ''
+      }
+      [void]$Options.add($OptionMutePlayback)
+      [void]$Options.add($media)
 
-    if([System.IO.Directory]::Exists($SaveFolder) -and $Format -in 'wav','mp3','wma','aac','flac','Default'){
-      write-ezlogs -text ">>>> Recording $($media.title) and saving to $result" -showtime
-      if($media.duration){
-        $record_duration = [timespan]::Parse($media.duration)
+      $synchash.CustomWindowResultTimer = [System.Windows.Threading.DispatcherTimer]::new()
+      $CustomWindowResultTimer_Event = {
+        try{
+          if($this.tag){
+            $SaveFolder = $this.tag[0].Output
+            $Format = $this.tag[1].Output
+            $MutePlayback = $this.tag[2].Output
+            $Media = $this.tag[3]
+          }
+          if($media -and [System.IO.Directory]::Exists($SaveFolder) -and $Format -in 'wav','mp3','wma','aac','flac','Default'){
+            write-ezlogs -text ">>>> Recording ($($media.title)) with format ($Format) and saving to $SaveFolder" -showtime
+            if($media.duration){
+              $record_duration = [timespan]::Parse($media.duration)
+            }
+            if($Format -eq 'Default'){
+              $Format = 'flac'
+            }
+            Start-SpotifyMedia -Media $media -thisApp $thisApp -synchash $synchash -use_WebPlayer:$thisApp.config.Spotify_WebPlayer -Show_notifications:$thisApp.config.Show_notifications -RestrictedRunspace:$thisApp.config.Spotify_WebPlayer
+            $record_media_scriptblock = {
+              param
+              (
+                [string]$SaveFolder = $SaveFolder,
+                $media = $media,
+                [timespan]$record_duration = $record_duration,
+                $Format = $Format,
+                [bool]$MutePlayback = $MutePlayback
+              )
+              Start-AudioRecorder -Savepath $SaveFolder -Output_Type $Format -filename "$($media.Artist) - $($media.title)" -media $media -duration $record_duration -Overwrite -synchash $synchash -thisApp $thisApp -write_tags $media -MutePlayback:$MutePlayback
+            }
+            $Variable_list = (Get-Variable) | & { process {if ($_.Options -notmatch 'ReadOnly|Constant'){$_}}}
+            Start-Runspace -scriptblock $record_media_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'record_media_scriptblock'
+          }else{
+            write-ezlogs -text "Cant start recording for: $($media.title) -- The provided directory path or format is invalid! Cannot continue" -showtime -Warning -AlertUI
+          }
+          $this.Stop()
+        }catch{
+          write-ezlogs -text 'An exception occurred in Initialize_Vlc_timer' -showtime -CatchError $_
+        }finally{
+          $this.Stop()
+          $this.tag = $Null
+          $this.Remove_Tick($CustomWindowResultTimer_Event)
+          $CustomWindowResultTimer_Event = $null
+          $synchash.CustomWindowResultTimer = $null
+          $synchash.Remove('CustomWindowResultTimer')
+        }
       }
-      if($Format -eq 'Default'){
-        $Format = 'flac'
-      }
-      Start-SpotifyMedia -Media $media -thisApp $thisApp -synchash $synchash -use_WebPlayer:$thisApp.config.Spotify_WebPlayer -Show_notifications:$thisApp.config.Show_notifications -RestrictedRunspace:$thisApp.config.Spotify_WebPlayer
-      $record_media_scriptblock = {
-        param
-        (
-          [string]$SaveFolder = $SaveFolder,
-          $media = $media,
-          [timespan]$record_duration = $record_duration,
-          $Format = $Format,
-          [bool]$MutePlayback = $MutePlayback
-        )
-        Start-AudioRecorder -Savepath $SaveFolder -Output_Type $Format -filename "$($media.Artist) - $($media.title)" -media $media -duration $record_duration -Overwrite -synchash $synchash -thisApp $thisApp -write_tags $media -MutePlayback:$MutePlayback
-      }
-      $Variable_list = (Get-Variable) | & { process {if ($_.Options -notmatch 'ReadOnly|Constant'){$_}}}
-      Start-Runspace -scriptblock $record_media_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'record_media_scriptblock'
+      $synchash.CustomWindowResultTimer.add_tick($CustomWindowResultTimer_Event)
+      $Result = Show-CustomWindow -thisApp $thisApp -synchash $synchash -WindowTitle 'Record Media' -HeaderText 'Record Media Options' -Message "Select the following options below to confirm recording of media: $($media.Artist) - $($media.Title)" -Type Options -Options $Options -TopMost
     }else{
-      write-ezlogs -text 'The provided directory path or format is invalid! Cannot continue' -showtime -Warning -AlertUI
+      write-ezlogs -text "Provided media is not valid to use with the recorder -- Media: $($media.url)" -Warning -AlertUI
     }
-  }else{
-    write-ezlogs -text "Provided media is not valid to use with the recorder -- Media: $($media.url)" -Warning -AlertUI
-  }  
+  }catch{
+    write-ezlogs -text 'An exception occurred in RecordMedia_Command' -showtime -CatchError $_
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Download Media Handler
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Download Timer
 #----------------------------------------------
 $synchash.downloadTimer = [System.Windows.Threading.DispatcherTimer]::new()
@@ -2157,7 +2166,7 @@ $synchash.downloadTimer.add_tick({
           [int]$id = $($synchash.Download_UID)
           write-ezlogs -text "Updating download notification with ID $($id)" -Dev_mode
           Update-Notifications -id $id -Level $level -Message $synchash.Download_message -VerboseLog -thisApp $thisApp -synchash $synchash -EnableAudio:$false -ActionName 'Cancel' -ActionScriptBlock $synchash.Download_Notification_Action
-        }          
+        }
       }else{
         write-ezlogs -text "Stopping download timer -- Download_status: $($synchash.Download_status) -- Download_message: $($synchash.Download_message) -- Download_UID: $($synchash.Download_UID)"
         $this.Stop()
@@ -2167,18 +2176,18 @@ $synchash.downloadTimer.add_tick({
       $this.Stop()
     }
 })
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Download Timer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Start Media Timer
 #----------------------------------------------
 $synchash.start_media_timer = [System.Windows.Threading.DispatcherTimer]::new()
 $synchash.start_media_timer.add_tick({
     try{
       if($synchash.Start_media){
-        write-ezlogs -text "Attempting restart of media: $($synchash.ForceUseYTDLP)" -Warning
+        write-ezlogs -text "Attempting restart of media:$($synchash.Start_media.Title) -- ForceUseYTDLP: $($synchash.ForceUseYTDLP)" -Warning
         if($synchash.Youtube_WebPlayer_retry -eq 'NoEmbed'){
           $use_Invidious = $false
           $No_YT_Embed = $true
@@ -2198,45 +2207,45 @@ $synchash.start_media_timer.add_tick({
     }finally{
       $this.tag = $null
       $this.Stop()
-    }  
+    }
 })
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Start Media Timer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Stop Media Timer
 #----------------------------------------------
 $synchash.Stop_media_timer = [System.Windows.Threading.DispatcherTimer]::new()
 $synchash.Stop_media_timer.add_tick({
     try{
-      write-ezlogs -text 'Attempting to cancel/stop media playback' -showtime -Warning
+      write-ezlogs -text 'Attempting to cancel/stop media playback' -LogLevel 0 -Verboselog:$Verboselog
       Stop-Media -synchash ([System.WeakReference]::new($synchash)) -thisApp $thisApp -UpdateQueue -StopMonitor
     }catch{
       write-ezlogs -text 'An exception occurred in Stop_media_timer' -showtime -CatchError $_
     }finally{
       $this.Stop()
-    }  
+    }
 })
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Stop Media Timer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Mute Media Timer
 #----------------------------------------------
 $synchash.Mute_media_timer = [System.Windows.Threading.DispatcherTimer]::new()
 $synchash.Mute_media_timer.add_tick({
     try{
       write-ezlogs -text 'Attempting to Mute playback' -showtime -Warning
-      Set-Mute -synchash $synchash -thisApp $thisApp 
+      Set-Mute -synchash $synchash -thisApp $thisApp
     }catch{
       write-ezlogs -text 'An exception occurred in Mute_media_timer' -showtime -CatchError $_
     }finally{
       $this.Stop()
-    }  
+    }
 })
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Mute Media Timer
 #----------------------------------------------
 
@@ -2290,7 +2299,7 @@ $EndEditCurrentCellScripblock = {
   }
 }
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Import-Media
 #----------------------------------------------
 if($thisApp.Config.Startup_perf_timer){
@@ -2299,25 +2308,25 @@ if($thisApp.Config.Startup_perf_timer){
 #region LocalMedia_Startup_Timers
 $synchash.LocalMedia_TableStartup_timer = [System.Windows.Threading.DispatcherTimer]::new()
 $LocalMedia_Startup_Timer_Tick = {
-  try{         
+  try{
     $LocalMedia_TableStartup_timer_measure = [system.diagnostics.stopwatch]::StartNew()
     #Default Library Columns
     if([string]::IsNullOrEmpty($thisApp.Config.LocalMedia_Library_Columns)){
       $thisApp.Config.LocalMedia_Library_Columns = 'Display_Name','Title','Artist','Album'
     }
-    if($synchash.MediaTable){       
+    if($synchash.MediaTable){
       if(!$NoMediaLibrary){
         if($thisApp.Config.Dev_mode){
           $synchash.MediaTable.add_Loaded({
               try{
                 $sender = ($args[0])
-                $e = ($args[1])          
-                write-ezlogs -text "##### MediaTable Loaded event: $($e | out-string)" -Dev_mode           
+                $e = ($args[1])
+                write-ezlogs -text "##### MediaTable Loaded event: $($e | out-string)" -Dev_mode
               }catch{
                 write-ezlogs -text 'An exception occurred in MediaTable.add_Loaded' -CatchError $_
               }
           })
-        }         
+        }
         #[Syncfusion.SfSkinManager.SfSkinManager]::SetTheme($synchash.MediaTable,[Syncfusion.SfSkinManager.Theme]::new('MaterialDark',[string[]]{'ComboBoxAdv','DropDownButtonAdv','Windows11Dark'}))
         if($synchash.Mediatable.Columns -and $this.tag){
           $synchash.Mediatable.Columns.Suspend()
@@ -2341,7 +2350,7 @@ $LocalMedia_Startup_Timer_Tick = {
                 $dataTemplate = [System.Windows.DataTemplate]::new()
                 $dataTemplate.VisualTree = $StackPanelFactory
                 $_.CellTemplate = $dataTemplate
-              }elseif($_.Headertext -in 'Display Name','Title','Artist','Album','Track'){                  
+              }elseif($_.Headertext -in 'Display Name','Title','Artist','Album','Track'){
                 $GridFactory = [System.Windows.FrameworkElementFactory]::new([Windows.Controls.Grid])
                 $TextBlockFactory = [System.Windows.FrameworkElementFactory]::new([Windows.Controls.TextBlock])
                 $Binding = [System.Windows.Data.Binding]::new('Value')
@@ -2364,8 +2373,8 @@ $LocalMedia_Startup_Timer_Tick = {
                   $_.isHidden = $true
                 }
               }elseif($_.Headertext -notin $thisApp.Config.LocalMedia_Library_Columns){
-                $_.isHidden = $true 
-              }                     
+                $_.isHidden = $true
+              }
           }}
           $synchash.Mediatable.Columns.Resume()
         }
@@ -2375,7 +2384,7 @@ $LocalMedia_Startup_Timer_Tick = {
         }
         if($synchash.All_local_Media.count -gt 0){
           $synchash.MediaTable.BeginInit()
-          write-ezlogs -text '>>>> Creating GridVirtualizingCollectionView for All_local_Media and binding to Mediatable itemssource' -showtime -LogLevel 2 -logtype LocalMedia
+          write-ezlogs -text '>>>> Creating GridVirtualizingCollectionView for All_local_Media and binding to Mediatable itemssource' -logtype LocalMedia -LogLevel 0 -Verboselog:$verboselog
           $synchash.MediaTable.Itemssource = [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView]::new($synchash.All_local_Media)
           if($synchash.MediaTable.Itemssource.SourceCollection.Capacity){
             $synchash.MediaTable.Itemssource.SourceCollection.Capacity = $synchash.All_local_Media.count
@@ -2392,11 +2401,11 @@ $LocalMedia_Startup_Timer_Tick = {
           $Binding.Mode = [System.Windows.Data.BindingMode]::OneTime
           [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Media_Table_Total_Media,[System.Windows.Controls.TextBlock]::TextProperty, $Binding)
           if($synchash.MediaTable.ItemsSource){
-            $synchash.Mediatable.isEnabled = $true 
+            $synchash.Mediatable.isEnabled = $true
           }
           #Apply user groupings
           if(($synchash.MediaTable) -and $thisApp.Config.Local_Group_By){
-            try{   
+            try{
               #TODO: Temporary to cleanup issue from old configs
               if($thisApp.Config.Local_Group_By -eq 'Syncfusion.UI.Xaml.Grid.GroupColumnDescription'){
                 $Groups = 'Artist'
@@ -2407,22 +2416,22 @@ $LocalMedia_Startup_Timer_Tick = {
                 [Void]$synchash.MediaTable.GroupColumnDescriptions.clear()
                 foreach($group in $Groups){
                   if($group -and $synchash.MediaTable.GroupColumnDescriptions.ColumnName -notcontains $group){
-                    write-ezlogs -text "| Adding groupdescription to LocalMedia_View for property: $($group)" -logtype LocalMedia -LogLevel 2
+                    write-ezlogs -text "| Adding groupdescription to LocalMedia_View for property: $($group)" -logtype LocalMedia -LogLevel 0 -Verboselog:$verboselog
                     $groupdescription = [Syncfusion.UI.Xaml.Grid.GroupColumnDescription]::new()
                     $groupdescription.ColumnName = $group
-                    [Void]$synchash.MediaTable.GroupColumnDescriptions.Add($groupdescription)             
+                    [Void]$synchash.MediaTable.GroupColumnDescriptions.Add($groupdescription)
                   }
                 }
-              }             
+              }
             }catch{
               write-ezlogs -text 'An exception occurred attempting to set group descriptions' -showtime -CatchError $_
-            }              
+            }
           }
           if($thisApp.Config.Enable_LocalMedia_Monitor -and $thisApp.Config.Media_Directories -and !$thisApp.LocalMedia_Monitor_Enabled){
             $thisApp.Config.Media_Directories | & { process {
                 Start-FileWatcher -FolderPath $_ -MonitorSubFolders -use_Runspace -Start_ProfileManager:$(!$thisApp.ProfileManagerEnabled) -synchash $synchash -thisapp $thisApp -Runspace_Guid (New-GUID).Guid
             }}
-          }        
+          }
         }else{
           write-ezlogs -text 'No Local Media was found in LocalMedia_View to bind to MediaTable itemssource! Disabling Local Media Library' -showtime -Warning -logtype LocalMedia
           if($synchash.Mediatable.isEnabled){
@@ -2435,27 +2444,27 @@ $LocalMedia_Startup_Timer_Tick = {
           if($synchash.LocalMedia_Browser_Tab.isEnabled){
             $synchash.LocalMedia_Browser_Tab.isEnabled = $false
           }
-        }        
-      } 
+        }
+      }
       if($synchash.LocalMedia_Progress_Ring){
         Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'LocalMedia_Progress_Ring' -Property 'isActive' -value $false
-      }                                  
+      }
       if($synchash.LocalMedia_Progress_Label){
         $synchash.LocalMedia_Progress_Label.Visibility = 'Hidden'
       }
       if($synchash.LocalMedia_Progress2_Label){
         $synchash.LocalMedia_Progress2_Label.Visibility = 'Hidden'
-      } 
-      Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaTable' -Property 'isEnabled' -value $true    
-      Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaTable' -Property 'Visibility' -value 'Visible' 
-      Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'LocalMedia_Browser_Tab' -Property 'Visibility' -value 'Visible'    
+      }
+      Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaTable' -Property 'isEnabled' -value $true
+      Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaTable' -Property 'Visibility' -value 'Visible'
+      Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'LocalMedia_Browser_Tab' -Property 'Visibility' -value 'Visible'
       if($synchash.LocalMedia_Browser_Tab -and $synchash.MainGrid_Bottom_TabControl.items -notcontains $synchash.LocalMedia_Browser_Tab){
         write-ezlogs -text '>>>> Adding Local Media tab to media library' -showtime -logtype LocalMedia
-        [Void]$synchash.MainGrid_Bottom_TabControl.items.Add($synchash.LocalMedia_Browser_Tab) 
+        [Void]$synchash.MainGrid_Bottom_TabControl.items.Add($synchash.LocalMedia_Browser_Tab)
       }
     }else{
       write-ezlogs -text 'No Mediatable UI is available' -Warning
-    }                                                     
+    }
   }catch{
     write-ezlogs -text '[ERROR] An exception occurred attempting to set itemsource for MediaTable' -showtime -color red -CatchError $_
   }finally{
@@ -2466,7 +2475,7 @@ $LocalMedia_Startup_Timer_Tick = {
       write-ezlogs -text 'LocalMedia_TableStartup_Timer Measure' -PerfTimer $LocalMedia_TableStartup_timer_measure
       $LocalMedia_TableStartup_timer_measure = $null
     }
-  }    
+  }
 }
 $synchash.LocalMedia_TableStartup_timer.add_Tick($LocalMedia_Startup_Timer_Tick)
 
@@ -2479,22 +2488,22 @@ $synchash.LocalMediaUpdate_timer.add_Tick({
         }
         if($synchash.MediaTable_RefreshLabel){
           $synchash.MediaTable_RefreshLabel.Visibility = 'Visible'
-        }       
+        }
         if($synchash.Refresh_LocalMedia_Button){
-          $synchash.Refresh_LocalMedia_Button.isEnabled = $false 
+          $synchash.Refresh_LocalMedia_Button.isEnabled = $false
         }
         if($this.tag -ne $null){
           Update-LocalMedia -synchash $synchash -thisApp $thisApp -UpdatePlaylists -UpdateDirectory $this.tag -update_Library
         }else{
           Update-LocalMedia -synchash $synchash -thisApp $thisApp -UpdatePlaylists -update_Library
-        }        
-      }                                   
+        }
+      }
     }catch{
       write-ezlogs -text 'An exception occurred in LocalMediaUpdate_timer' -showtime -CatchError $_
     }finally{
       $this.tag = $null
       $this.Stop()
-    }   
+    }
 })
 #endregion LocalMedia_Startup_Timers
 
@@ -2511,7 +2520,7 @@ if($thisApp.Config.Import_Local_Media){
     $synchash.LocalMedia_Browser_Tab.isEnabled = $false
   }
   if($synchash.MainGrid_Bottom_TabControl.items -contains $synchash.LocalMedia_Browser_Tab){
-    [Void]$synchash.MainGrid_Bottom_TabControl.items.Remove($synchash.LocalMedia_Browser_Tab) 
+    [Void]$synchash.MainGrid_Bottom_TabControl.items.Remove($synchash.LocalMedia_Browser_Tab)
   }
 }
 
@@ -2524,10 +2533,10 @@ if($synchash.LocalMedia_Column_Button){
             $Header = $_.Headertext
             if($Header -notin 'Play' -and $synchash.LocalMedia_Column_Button.items -notcontains $Header){
               $MenuItem = [System.Windows.Controls.MenuItem]::new()
-              $MenuItem.IsCheckable = $true     
+              $MenuItem.IsCheckable = $true
               $MenuItem.Header = $Header
-              if($_.isHidden){      
-                $MenuItem.IsChecked = $false                 
+              if($_.isHidden){
+                $MenuItem.IsChecked = $false
               }else{
                 $MenuItem.IsChecked = $true
               }
@@ -2572,7 +2581,7 @@ if($synchash.LocalMedia_Column_Button){
                   }
               })
               [Void]$synchash.LocalMedia_Column_Button.items.add($MenuItem)
-            }                    
+            }
         }}
       }catch{
         write-ezlogs -text 'An exception occurred in LocalMedia_ColumnComboBox.add_Loaded' -CatchError $_
@@ -2587,21 +2596,21 @@ if($synchash.MediaTable){
       try{
         if($e.Data.GetDataPresent('ListViewRecords')){
           $draggingRecords = $e.Data.GetData('ListViewRecords') -as [System.Collections.ObjectModel.ObservableCollection[object]]
-        }else{ 
+        }else{
           $draggingRecords = $e.Data.GetData('Records') -as [System.Collections.ObjectModel.ObservableCollection[object]]
         }
         if($draggingRecords -eq $null){
           return
         }
-        #To get the dropping position of the record 
-        #$dropPosition = GetDropPosition(args, rowColumnIndex, draggingRecords); 
- 
-        #To Show the draggable popup with the DropAbove/DropBelow message 
-        #ShowDragDropPopup(dropPosition, draggingRecords, args); 
- 
-        #To Show the up and down indicators while dragging the row 
-        #if($this.AllowDrop){ 
-        #  ShowDragIndicators($dropPosition, $rowColumnIndex, $args); 
+        #To get the dropping position of the record
+        #$dropPosition = GetDropPosition(args, rowColumnIndex, draggingRecords);
+
+        #To Show the draggable popup with the DropAbove/DropBelow message
+        #ShowDragDropPopup(dropPosition, draggingRecords, args);
+
+        #To Show the up and down indicators while dragging the row
+        #if($this.AllowDrop){
+        #  ShowDragIndicators($dropPosition, $rowColumnIndex, $args);
         #}
         $e.Handled = $true
       }catch{
@@ -2633,18 +2642,18 @@ if($synchash.MediaTable){
         if($e.action -eq 'Add' -and $e.newItems.ColumnName -notin $thisApp.Config.Local_Group_By){
           [Void]$thisApp.Config.Local_Group_By.add($e.newItems.ColumnName)
         }elseif($e.action -eq 'Remove' -and $e.OldItems.ColumnName -in $thisApp.Config.Local_Group_By){
-          write-ezlogs -text ">>>> Removing group '$($e.OldItems.ColumnName)' from Local_Group_By"
+          write-ezlogs -text ">>>> Removing group '$($e.OldItems.ColumnName)' from Local_Group_By" -LogLevel 0 -Verboselog:$VerboseLog
           [Void]$thisApp.Config.Local_Group_By.Remove($e.OldItems.ColumnName)
         }
         if($thisApp.Config.LocalMedia_Library_CollapseAllGroups -and $e.action -eq 'Add'){
           try{
             $synchash.MediaTable.AutoExpandGroups = $false
-            write-ezlogs -text ">>>> Collapsing all groups for MediaTable - Column: $($e.newItems.ColumnName)"
+            write-ezlogs -text ">>>> Collapsing all groups for MediaTable - Column: $($e.newItems.ColumnName)" -LogLevel 0 -Verboselog:$VerboseLog
             $synchash.MediaTable.CollapseAllGroup()
           }catch{
             write-ezlogs -text 'An exception occurred calling MediaTable.CollapseAllGroup()' -CatchError $_
           }
-        }                
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in LocalMedia_View.GroupDescriptions.add_CollectionChanged' -showtime -CatchError $_
       }
@@ -2664,7 +2673,7 @@ if($synchash.LocalMediaCollapseGroups){
           write-ezlogs -text 'No groups available to collapse for Mediatable' -Warning
           $sender.isChecked = $false
           $thisApp.Config.psobject.properties.add([System.Management.Automation.PSNoteProperty]::new('LocalMedia_Library_CollapseAllGroups',$false))
-        }       
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in LocalMediaCollapseGroups.Add_Checked' -CatchError $_
       }
@@ -2678,8 +2687,8 @@ if($synchash.LocalMediaCollapseGroups){
           $synchash.MediaTable.ExpandAllGroup()
         }else{
           write-ezlogs -text 'No groups available to expand for Mediatable' -Warning
-        } 
-        $thisApp.Config.psobject.properties.add([System.Management.Automation.PSNoteProperty]::new('LocalMedia_Library_CollapseAllGroups',$false))      
+        }
+        $thisApp.Config.psobject.properties.add([System.Management.Automation.PSNoteProperty]::new('LocalMedia_Library_CollapseAllGroups',$false))
       }catch{
         write-ezlogs -text 'An exception occurred in LocalMediaCollapseGroups.Add_Checked' -CatchError $_
       }
@@ -2695,13 +2704,13 @@ if($synchash.FilterTextBox){
         if($synchash.MediaTable.itemssource -and !$synchash.MediaTable.Itemssource.isInDeferRefresh -and $synchash.MediaTable.View){
           #$synchash.MediaTable.View.BeginInit()
           $synchash.MediaTable.View.Filter = {
-            param ($item) 
+            param ($item)
             if(-not [string]::IsNullOrEmpty($synchash.FilterTextBox.Text)){
               $text = $(($synchash.FilterTextBox.Text)).trim()
             }
             $SearchPattern = "$([regex]::Escape($text))"
             $($item.Title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.Artist) -match $SearchPattern -or $($item.Album) -match $SearchPattern
-          }                       
+          }
           #$synchash.MediaTable.View.EndInit()
           if($synchash.MediaTable.View){
             $synchash.MediaTable.View.RefreshFilter()
@@ -2724,9 +2733,9 @@ if($synchash.FilterTextBox){
       try{
         $newFocus = $e.NewFocus
         if($newFocus -is [Syncfusion.UI.Xaml.Grid.SfDataGrid] -or $newFocus -is [Syncfusion.UI.Xaml.Grid.GridCell]){
-          write-ezlogs -text "Preventing new focus from: $($newFocus)" -Warning
+          write-ezlogs -text "Preventing new focus from: $($newFocus)" -Warning -LogLevel 0 -Verboselog:$Verboselog
           $e.Handled = $true
-        }       
+        }
       }catch{
         write-ezlogs -text 'An exception occurrred in Add_PreviewLostKeyboardFocus event' -showtime -CatchError $_
       }
@@ -2736,11 +2745,11 @@ if($synchash.FilterTextBox){
       try{
         if(!$synchash.LocalMediaFilter_timer.isEnabled){
           $synchash.LocalMediaFilter_timer.start()
-        }        
+        }
       }catch{
         write-ezlogs -text 'An exception occurrred in FilterTextBox.Add_TextChanged event' -showtime -CatchError $_
       }
-  }) 
+  })
 
   $synchash.MediaTable.Add_FilterChanged({
       param([Parameter(Mandatory)][Object]$sender,[Parameter(Mandatory)][Object][Syncfusion.UI.Xaml.Grid.GridFilterEventArgs]$e)
@@ -2748,10 +2757,10 @@ if($synchash.FilterTextBox){
         $total = "$($synchash.MediaTable.View.records.Count)"
         if($synchash.Media_Table_Total_Media.Text -ne $total){
           $synchash.Media_Table_Total_Media.Text = $total
-        }      
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in MediaTableFilterChanged' -showtime -CatchError $_
-      }   
+      }
   })
 
   if($synchash.LocalSearch_Button){
@@ -2759,11 +2768,11 @@ if($synchash.FilterTextBox){
         try{
           if(!$synchash.LocalMediaFilter_timer.isEnabled){
             $synchash.LocalMediaFilter_timer.start()
-          }          
+          }
         }catch{
           write-ezlogs -text 'An exception occurred in LocalSearch_Button' -showtime -CatchError $_
-        }   
-    }) 
+        }
+    })
     $synchash.FilterTextBox.Add_PreviewKeyDown({
         param([Parameter(Mandatory)][Object]$sender,[Parameter(Mandatory)][Windows.Input.KeyEventArgs]$e)
         try{
@@ -2782,7 +2791,7 @@ if($synchash.FilterTextBox){
         try{
           if($synchash.MediaTable){
             $synchash.MediaTable.FilterRowPosition = 'FixedTop'
-          }         
+          }
         }catch{
           write-ezlogs -text 'An exception occurred in LocalMediaRowFilter.Add_Checked' -CatchError $_
         }
@@ -2792,31 +2801,31 @@ if($synchash.FilterTextBox){
         try{
           if($synchash.MediaTable){
             $synchash.MediaTable.FilterRowPosition = 'None'
-          }          
+          }
         }catch{
           write-ezlogs -text 'An exception occurred in LocalMediaRowFilter.Add_Checked' -CatchError $_
         }
     })
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Import-Media
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Refresh Local Media Button
 #----------------------------------------------
 $synchash.Refresh_LocalMedia_timer = [System.Windows.Threading.DispatcherTimer]::New([System.Windows.Threading.DispatcherPriority]::ApplicationIdle)
 $synchash.Refresh_LocalMedia_timer.add_Tick({
     param([Parameter(Mandatory)][Object]$sender,[Parameter(Mandatory)][System.EventArgs]$e)
-    try{  
+    try{
       $AllMedia_Profile_Directory_Path = [System.IO.Path]::Combine($thisApp.Config.Media_Profile_Directory,'All-MediaProfile')
       $AllMedia_Profile_File_Path = [System.IO.Path]::Combine($AllMedia_Profile_Directory_Path,'All-Media-Profile.xml')
       if($this.tag -eq 'Refresh_LocalMedia_Button'){
-        $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+        $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
         $Button_Settings.AffirmativeButtonText = 'Yes'
         $Button_Settings.NegativeButtonText = 'No'
-        $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+        $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
         $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Refresh Local Media Library',"This will reimport all of your Local Media as configured under the Local Media tab in Settings. This can take a few minutes depending on the number of media to process.`n`nAre you sure you wish to continue?",$okandCancel,$Button_Settings)
         if($result -eq 'Affirmative'){
           write-ezlogs -text '>>>> User wished to refresh the Local Media Library' -showtime
@@ -2863,7 +2872,7 @@ $synchash.Refresh_LocalMedia_timer.add_Tick({
                   write-ezlogs -text '| All_local_Media is empty - creating blank collectionview' -Warning
                   #$synchash.LocalMedia_View = [System.WeakReference]::new([Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView]::new())
                   $synchash.MediaTable.Itemssource = [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView]::new()
-                }          
+                }
                 $synchash.MediaTable.Itemssource.UsePLINQ = $true
                 #$synchash.LocalMedia_View.Target.UsePLINQ = $true
                 # Create a binding to pair the datagrid to the observable collection
@@ -2875,12 +2884,12 @@ $synchash.Refresh_LocalMedia_timer.add_Tick({
                   $synchash.Mediatable.ClearFilters()
                 }elseif($synchash.MediaTable.View){
                   $synchash.MediaTable.View.Filter = {
-                    param ($item) 
+                    param ($item)
                     if(-not [string]::IsNullOrEmpty($synchash.FilterTextBox.Text)){
                       $text = $(($synchash.FilterTextBox.Text).tolower()).trim()
                     }
-                    $($item.Title) -match $([regex]::Escape($text)) -or $($item.Display_Name) -match $([regex]::Escape($text))-or $($item.Artist) -match $([regex]::Escape($text)) -or $($item.Album) -match $([regex]::Escape($text))           
-                  } 
+                    $($item.Title) -match $([regex]::Escape($text)) -or $($item.Display_Name) -match $([regex]::Escape($text))-or $($item.Artist) -match $([regex]::Escape($text)) -or $($item.Album) -match $([regex]::Escape($text))
+                  }
                 }
               }
               $synchash.Mediatable.Itemssource.Refresh()
@@ -2891,22 +2900,22 @@ $synchash.Refresh_LocalMedia_timer.add_Tick({
           }
           #Apply user groupings
           if($thisApp.Config.Local_Group_By){
-            try{   
+            try{
               $Groups = $thisApp.Config.Local_Group_By
               if($synchash.MediaTable.GroupColumnDescriptions){
                 [Void]$synchash.MediaTable.GroupColumnDescriptions.clear()
                 $Groups | & { process {
                     if($_ -and $synchash.MediaTable.GroupColumnDescriptions.ColumnName -notcontains $_){
-                      write-ezlogs -text "| Adding groupdescription to LocalMedia_View for property: $($_)" -logtype LocalMedia -LogLevel 2
+                      write-ezlogs -text "| Adding groupdescription to LocalMedia_View for property: $($_)" -logtype LocalMedia -LogLevel 0 -Verboselog:$verboselog
                       $groupdescription = [Syncfusion.UI.Xaml.Grid.GroupColumnDescription]::new()
                       $groupdescription.ColumnName = $_
                       [Void]$synchash.MediaTable.GroupColumnDescriptions.Add($groupdescription)
                     }
-                }} 
-              }             
+                }}
+              }
             }catch{
               write-ezlogs -text 'An exception occurred attempting to set group descriptions' -showtime -CatchError $_
-            }              
+            }
           }
           [Void][System.Windows.Data.BindingOperations]::ClearAllBindings($synchash.Media_Table_Total_Media)
           $synchash.Mediatable.Itemssource.Refresh()
@@ -2916,8 +2925,8 @@ $synchash.Refresh_LocalMedia_timer.add_Tick({
           [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Media_Table_Total_Media,[System.Windows.Controls.TextBox]::TextProperty, $Binding)
           Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'Media_Table_Total_Media' -Property 'Text' -value $synchash.MediaTable.ItemsSource.count
           Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'LocalMedia_RefreshProgress_Ring' -Property 'isActive' -value $false
-          Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'MediaTable_RefreshLabel' -Property 'Visibility' -value 'Collapsed'         
-          Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'Refresh_LocalMedia_Button' -Property 'isEnabled' -value $true                 
+          Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'MediaTable_RefreshLabel' -Property 'Visibility' -value 'Collapsed'
+          Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'Refresh_LocalMedia_Button' -Property 'isEnabled' -value $true
         }
         $this.tag = $null
         $this.stop()
@@ -2926,55 +2935,49 @@ $synchash.Refresh_LocalMedia_timer.add_Tick({
         if($synchash.Mediatable.itemssource){
           write-ezlogs -text '>>>> Manually refreshing Mediatable itemssource'
           $synchash.Mediatable.BeginInit()
-          #$synchash.Mediatable.ClearFilters() 
+          #$synchash.Mediatable.ClearFilters()
           if($synchash.Mediatable.Itemssource -is [System.IDisposable]){
-            write-ezlogs -text '| Disposing Mediatable.Itemssource'
+            write-ezlogs -text '| Disposing Mediatable.Itemssource' -LogLevel 0 -Verboselog:$verboselog
             $synchash.Mediatable.Itemssource = $null
           }
           if($synchash.All_local_Media){
-            write-ezlogs -text "| Creating new GridVirtualizingCollectionView for $($synchash.All_local_Media.count) items"
+            write-ezlogs -text "| Creating new GridVirtualizingCollectionView for $($synchash.All_local_Media.count) items" -LogLevel 0 -Verboselog:$verboselog
             $synchash.Mediatable.Itemssource = [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView]::new($synchash.All_local_Media)
             if($synchash.MediaTable.Itemssource.SourceCollection.Capacity){
               $synchash.MediaTable.Itemssource.SourceCollection.Capacity = $synchash.All_local_Media.count
             }
           }else{
-            write-ezlogs -text '| Creating new GridVirtualizingCollectionView' 
+            write-ezlogs -text '| Creating new GridVirtualizingCollectionView' -LogLevel 0 -Verboselog:$verboselog
             $synchash.Mediatable.Itemssource = [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView]::new()
-          }         
+          }
           $synchash.Mediatable.Itemssource.UsePLINQ = $true
-          write-ezlogs -text '| Binding GridVirtualizingCollectionView to MediaTable itemssource'         
-          # Create a binding to pair the datagrid to the observable collection
-          <#          $MediaTableBinding = [System.Windows.Data.Binding]::new()
-              $MediaTableBinding.Source = $synchash.LocalMedia_View.Target
-              $MediaTableBinding.Mode = [System.Windows.Data.BindingMode]::OneWay
-          [void][System.Windows.Data.BindingOperations]::SetBinding($syncHash.MediaTable,[Syncfusion.UI.Xaml.Grid.SfDataGrid]::ItemsSourceProperty, $MediaTableBinding)#>
-          #$synchash.Mediatable.Itemssource = $synchash.LocalMedia_View
+          write-ezlogs -text '| Binding GridVirtualizingCollectionView to MediaTable itemssource' -LogLevel 0 -Verboselog:$verboselog
           $synchash.Mediatable.Itemssource.Refresh()
           #Apply user groupings
           if($thisApp.Config.Local_Group_By){
-            try{   
+            try{
               $Groups = $thisApp.Config.Local_Group_By
               if($synchash.MediaTable.GroupColumnDescriptions -is [Syncfusion.UI.Xaml.Grid.GroupColumnDescriptions]){
                 [Void]$synchash.MediaTable.GroupColumnDescriptions.clear()
                 $Groups | & { process {
                     if($_ -and $synchash.MediaTable.GroupColumnDescriptions.ColumnName -notcontains $_){
-                      write-ezlogs -text "| Adding groupdescription to LocalMedia_View for property: $($_)" -logtype LocalMedia -LogLevel 2
+                      write-ezlogs -text "| Adding groupdescription to LocalMedia_View for property: $($_)" -logtype LocalMedia -LogLevel 0 -Verboselog:$verboselog
                       $groupdescription = [Syncfusion.UI.Xaml.Grid.GroupColumnDescription]::new()
                       $groupdescription.ColumnName = $_
                       [Void]$synchash.MediaTable.GroupColumnDescriptions.Add($groupdescription)
                     }
                 }}
-              }              
+              }
             }catch{
               write-ezlogs -text 'An exception occurred attempting to set group descriptions' -showtime -CatchError $_
-            }              
+            }
           }
           $synchash.Mediatable.EndInit()
           $synchash.MediaTable.isEnabled = $true
         }
         if($synchash.LocalMedia_Progress_Ring){
-          $synchash.LocalMedia_Progress_Ring.isActive = $false        
-        }                                  
+          $synchash.LocalMedia_Progress_Ring.isActive = $false
+        }
         if($synchash.LocalMedia_Progress_Label){
           $synchash.LocalMedia_Progress_Label.Visibility = 'Hidden'
         }
@@ -2983,11 +2986,11 @@ $synchash.Refresh_LocalMedia_timer.add_Tick({
         }
         if($synchash.Refresh_LocalMedia_Button){
           $synchash.Refresh_LocalMedia_Button.isEnabled = $true
-        } 
+        }
         if($synchash.LocalMedia_RefreshProgress_Ring){
           $synchash.LocalMedia_RefreshProgress_Ring.isActive = $false
           $synchash.MediaTable_RefreshLabel.Visibility = 'Collapsed'
-        } 
+        }
         $this.tag = $null
         $this.stop()
         return
@@ -3016,7 +3019,7 @@ $synchash.Refresh_LocalMedia_timer.add_Tick({
       }
       $synchash.LocalMedia_Progress_Ring.isActive = $true
       $synchash.MediaTable.isEnabled = $false
-      Import-Media -Media_directories $thisApp.config.Media_Directories -use_runspace -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -startup:$import -thisApp $thisApp -Refresh_All_Media -NoMediaLibrary:$NoMediaLibrary -SkipGetMedia:$skipGetMedia -AddNewOnly:$AddNewOnly   
+      Import-Media -Media_directories $thisApp.config.Media_Directories -use_runspace -verboselog:$thisApp.Config.Verbose_logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -startup:$import -thisApp $thisApp -Refresh_All_Media -NoMediaLibrary:$NoMediaLibrary -SkipGetMedia:$skipGetMedia -AddNewOnly:$AddNewOnly
     }catch{
       write-ezlogs -text 'An exception occurred in Refresh_LocalMedia_Button.Add_Click' -showtime -CatchError $_
     }finally{
@@ -3024,7 +3027,7 @@ $synchash.Refresh_LocalMedia_timer.add_Tick({
       $this.tag = $null
     }
 })
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Refresh Local Media Button
 #----------------------------------------------
 if($import_media_measure){
@@ -3032,7 +3035,7 @@ if($import_media_measure){
   write-ezlogs -text 'Import-Media Startup' -PerfTimer $import_media_measure
   $import_media_measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #region Import-Spotify
 #----------------------------------------------
 if($thisApp.Config.Startup_perf_timer){
@@ -3055,8 +3058,8 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
           $synchash.SpotifyTable.add_Loaded({
               try{
                 $sender = ($args[0])
-                $e = ($args[1])            
-                write-ezlogs -text "##### SpotifyTable Loaded event: $($e | out-string)" -Dev_mode             
+                $e = ($args[1])
+                write-ezlogs -text "##### SpotifyTable Loaded event: $($e | out-string)" -Dev_mode
               }catch{
                 write-ezlogs -text 'An exception occurred in SpotifyTable.add_Loaded' -CatchError $_
               }
@@ -3066,15 +3069,15 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
             try{
               $sender = ($args[0])
               $e = ($args[1])
-              if ($e.Data.GetDataPresent('ListViewRecords')){ 
-                $draggingRecords = $e.Data.GetData('ListViewRecords') -as [System.Collections.ObjectModel.ObservableCollection[object]]  
-              }else{ 
-                $draggingRecords = $e.Data.GetData('Records') -as [System.Collections.ObjectModel.ObservableCollection[object]] 
+              if ($e.Data.GetDataPresent('ListViewRecords')){
+                $draggingRecords = $e.Data.GetData('ListViewRecords') -as [System.Collections.ObjectModel.ObservableCollection[object]]
+              }else{
+                $draggingRecords = $e.Data.GetData('Records') -as [System.Collections.ObjectModel.ObservableCollection[object]]
               }
               if($draggingRecords -eq $null){
-                return  
-              }         
-              $e.Handled = $true 
+                return
+              }
+              $e.Handled = $true
             }catch{
               write-ezlogs -text 'An exception occurred in SpotifyTable.add_PreviewDragOver' -CatchError $_
             }
@@ -3084,7 +3087,7 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
           #$synchash.SpotifyTable.SetValue([Syncfusion.UI.Xaml.Grid.ProgressRing]::ForegroundProperty,[System.Windows.Media.SolidColorBrush]::new($thisapp.config.Current_Theme.PrimaryAccentColor.ToString()))
           [Void]$synchash.SpotifyTable.RemoveHandler([System.Windows.Controls.Button]::PreviewMouseDoubleClickEvent,$synchash.PlayMedia_Command)
           [Void]$synchash.SpotifyTable.AddHandler([System.Windows.Controls.Button]::PreviewMouseDoubleClickEvent,$synchash.PlayMedia_Command)
-          if($synchash.SpotifyTable.Columns.HeaderText -contains 'Play'){ 
+          if($synchash.SpotifyTable.Columns.HeaderText -contains 'Play'){
             $synchash.SpotifyTable.columns| & { process {
                 if($_.Headertext -eq 'Play'){
                   if($thisApp.Config.Dev_mode){write-ezlogs -text '| Adding SpotifyTable play button' -showtime -Dev_mode}
@@ -3105,7 +3108,7 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
                   $dataTemplate = [System.Windows.DataTemplate]::new()
                   $dataTemplate.VisualTree = $StackPanelFactory
                   $_.CellTemplate = $dataTemplate
-                }elseif($_.Headertext -in 'Display Name','Title','Artist','Album','Track'){                  
+                }elseif($_.Headertext -in 'Display Name','Title','Artist','Album','Track'){
                   $GridFactory = [System.Windows.FrameworkElementFactory]::new([Windows.Controls.Grid])
                   $TextBlockFactory = [System.Windows.FrameworkElementFactory]::new([Windows.Controls.TextBlock])
                   $Binding = [System.Windows.Data.Binding]::new('Value')
@@ -3123,18 +3126,18 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
                   [Void]$GridFactory.AppendChild($buttonFactory)
                   $dataTemplate = [System.Windows.DataTemplate]::new()
                   $dataTemplate.VisualTree = $GridFactory
-                  $_.CellTemplate = $dataTemplate              
+                  $_.CellTemplate = $dataTemplate
                   if($_.Headertext -notin $thisApp.Config.SpotifyMedia_Library_Columns){
                     $_.isHidden = $true
-                  } 
+                  }
                 }elseif($_.Headertext -notin $thisApp.Config.SpotifyMedia_Library_Columns){
-                  $_.isHidden = $true                
+                  $_.isHidden = $true
                 }
             }}
           }else{
             [Void]$synchash.SpotifyTable.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
             [Void]$synchash.SpotifyTable.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
-          } 
+          }
 
           if($synchash.SpotifyMedia_Column_Button){
             $synchash.SpotifyMedia_Column_Button.add_Loaded({
@@ -3144,10 +3147,10 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
                       $Header = $_.Headertext
                       if($Header -notin 'Play' -and $synchash.SpotifyMedia_Column_Button.items -notcontains $Header){
                         $MenuItem = [System.Windows.Controls.MenuItem]::new()
-                        $MenuItem.IsCheckable = $true     
+                        $MenuItem.IsCheckable = $true
                         $MenuItem.Header = $Header
-                        if($_.isHidden){      
-                          $MenuItem.IsChecked = $false                 
+                        if($_.isHidden){
+                          $MenuItem.IsChecked = $false
                         }else{
                           $MenuItem.IsChecked = $true
                         }
@@ -3190,9 +3193,9 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
                             }catch{
                               write-ezlogs -text "An exception occurred in add_Unchecked for menuitem: $($this.Header)" -CatchError $_
                             }
-                        })                                                    
+                        })
                         [Void]$synchash.SpotifyMedia_Column_Button.items.add($MenuItem)
-                      }                    
+                      }
                   }}
                 }catch{
                   write-ezlogs -text 'An exception occurred in SpotifyMedia_ColumnComboBox.add_Loaded' -CatchError $_
@@ -3205,7 +3208,7 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
           }
           if($synchash.SpotifyTable -and $synchash.All_Spotify_Media.count -gt 0){
             try{
-              write-ezlogs -text '>>>> Creating GridVirtualizingCollectionView for All_Spotify_Media and binding to SpotifyTable itemssource' -showtime -LogLevel 2 -logtype Spotify
+              write-ezlogs -text '>>>> Creating GridVirtualizingCollectionView for All_Spotify_Media and binding to SpotifyTable itemssource' -logtype Spotify -LogLevel 0 -Verboselog:$verboselog
               $synchash.SpotifyTable.BeginInit()
               $synchash.SpotifyTable.Itemssource = [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView]::new($synchash.All_Spotify_Media)
               if($synchash.SpotifyTable.Itemssource.SourceCollection.Capacity){
@@ -3225,24 +3228,24 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
                 $Groups = 'Playlist'
               }else{
                 $Groups = $thisApp.Config.Spotify_Group_By
-              }            
+              }
               if($synchash.SpotifyTable.GroupColumnDescriptions  -is [Syncfusion.UI.Xaml.Grid.GroupColumnDescriptions]){
                 [Void]$synchash.SpotifyTable.GroupColumnDescriptions.clear()
-                if(($synchash.SpotifyTable.ItemsSource) -and $Groups){                  
+                if(($synchash.SpotifyTable.ItemsSource) -and $Groups){
                   $Groups | & { process {
                       if($_ -and $synchash.SpotifyTable.GroupColumnDescriptions.ColumnName -notcontains $_){
-                        write-ezlogs -text "| Adding groupdescription to SpotifyMedia_View for property: $($_)" -logtype Spotify -LogLevel 2
+                        write-ezlogs -text "| Adding groupdescription to SpotifyMedia_View for property: $($_)" -logtype Spotify -LogLevel 0 -Verboselog:$verboselog
                         $groupdescription = [Syncfusion.UI.Xaml.Grid.GroupColumnDescription]::new()
                         $groupdescription.ColumnName = $_
                         [Void]$synchash.SpotifyTable.GroupColumnDescriptions.Add($groupdescription)
                       }
-                  }}                           
+                  }}
                 }
-              }                              
+              }
             }catch{
               write-ezlogs -text 'An exception occurred in syncHash.SpotifyTable.add_Loaded' -CatchError $_
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Spotify Monitor
             #----------------------------------------------
             if($thisApp.Config.Spotify_update -and $thisApp.Config.Spotify_Update_Interval -eq 'On Startup' -and $this.tag -eq 'Startup'){
@@ -3255,36 +3258,36 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
                 write-ezlogs -text 'An exception occurred in Start-SpotifyMonitor' -showtime -CatchError $_
               }
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Spotify Monitor
-            #---------------------------------------------- 
-          }                              
-          $synchash.Spotify_Table_Total_Media.Text = "$($synchash.SpotifyTable.ItemsSource.Count)" 
+            #----------------------------------------------
+          }
+          $synchash.Spotify_Table_Total_Media.Text = "$($synchash.SpotifyTable.ItemsSource.Count)"
         }
         $Controls_to_Update = [System.Collections.Generic.List[object]]::new(5)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'SpotifyMedia_Progress_Ring'
             'Property' = 'isActive'
             'Value'  = $false
-        })          
+        })
         [Void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'SpotifyMedia_Progress_Label'
             'Property' = 'Visibility'
             'Value'  = 'Hidden'
-        })     
+        })
         [Void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'SpotifyMedia_Progress2_Label'
             'Property' = 'Visibility'
             'Value'  = 'Hidden'
-        })          
+        })
         [Void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'SpotifyTable'
             'Property' = 'isEnabled'
             'Value'  = $true
-        })            
+        })
         [Void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'SpotifyTable'
@@ -3295,8 +3298,8 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
         Update-MainWindow -synchash $synchash -thisApp $thisApp -controls $Controls_to_Update
       }else{
         write-ezlogs -text 'No SpotifyTable UI is available' -Warning
-      }        
-    }catch{      
+      }
+    }catch{
       write-ezlogs -text 'An exception occurred attempting to set itemsource for SpotifyTable' -showtime -CatchError $_
     }finally{
       $this.Stop()
@@ -3304,11 +3307,11 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
         $SpotifyMedia_Startup_measure.stop()
         write-ezlogs -text 'Total SpotifyMedia_Startup' -PerfTimer $SpotifyMedia_Startup_measure -Perf #-GetMemoryUsage -forceCollection
       }
-    }    
-}) 
+    }
+})
 #endregion Spotify_Startup_Timers
 try{
-  if($thisApp.Config.Import_Spotify_Media){ 
+  if($thisApp.Config.Import_Spotify_Media){
     Update-SplashScreen -hash $hash -SplashMessage 'Importing Spotify Media'
     Import-Module -Name "$Current_folder\Modules\Import-Spotify\Import-Spotify.psm1" -NoClobber -DisableNameChecking -Scope Local
     Import-Spotify -Media_directories $thisApp.config.Media_Directories -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -startup -thisApp $thisApp -NoMediaLibrary:$NoMediaLibrary -Import_Cache_Profile -RestrictedRunspace
@@ -3321,14 +3324,14 @@ try{
       $synchash.Spotify_Tabitem.isEnabled = $false
     }
     if($synchash.MainGrid_Bottom_TabControl.items -contains $synchash.Spotify_Tabitem){
-      [Void]$synchash.MainGrid_Bottom_TabControl.items.Remove($synchash.Spotify_Tabitem) 
+      [Void]$synchash.MainGrid_Bottom_TabControl.items.Remove($synchash.Spotify_Tabitem)
     }
-  }   
+  }
 }catch{
   write-ezlogs -text 'An exception occurred Importing Spotify Media' -CatchError $_
 }
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Spotify Groups
 #----------------------------------------------
 if($synchash.SpotifyTable){
@@ -3343,25 +3346,25 @@ if($synchash.SpotifyTable){
         if($e.action -eq 'Add' -and $e.newItems.ColumnName -notin $thisApp.Config.Spotify_Group_By){
           [Void]$thisApp.Config.Spotify_Group_By.add($e.newItems.ColumnName)
         }elseif($e.action -eq 'Remove' -and $e.OldItems.ColumnName -in $thisApp.Config.Spotify_Group_By){
-          write-ezlogs -text ">>>> Removing group '$($e.OldItems.ColumnName)' from Spotify_Group_By"
+          write-ezlogs -text ">>>> Removing group '$($e.OldItems.ColumnName)' from Spotify_Group_By" -LogLevel 0 -Verboselog:$VerboseLog
           [Void]$thisApp.Config.Spotify_Group_By.Remove($e.OldItems.ColumnName)
         }
         if($thisApp.Config.SpotifyMedia_Library_CollapseAllGroups -and $e.action -eq 'Add'){
           try{
-            $synchash.SpotifyTable.AutoExpandGroups = $false           
-            write-ezlogs -text ">>>> Collapsing all groups for SpotifyTable - Spotify_Group_By: $($thisApp.Config.Spotify_Group_By)"
+            $synchash.SpotifyTable.AutoExpandGroups = $false
+            write-ezlogs -text ">>>> Collapsing all groups for SpotifyTable - Spotify_Group_By: $($thisApp.Config.Spotify_Group_By)" -LogLevel 0 -Verboselog:$VerboseLog
             $synchash.SpotifyTable.CollapseAllGroup()
           }catch{
             write-ezlogs -text 'An exception occurred calling SpotifyTable.CollapseAllGroup()' -CatchError $_
           }
-        }                
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in SpotifyMedia_View.GroupDescriptions.add_CollectionChanged' -showtime -CatchError $_
       }
   })
 }
 if($synchash.SpotifyMediaCollapseGroups){
-  $synchash.SpotifyMediaCollapseGroups.isChecked = $thisApp.Config.SpotifyMedia_Library_CollapseAllGroups                
+  $synchash.SpotifyMediaCollapseGroups.isChecked = $thisApp.Config.SpotifyMedia_Library_CollapseAllGroups
   $synchash.SpotifyMediaCollapseGroups.Add_Checked({
       param($sender)
       try{
@@ -3374,7 +3377,7 @@ if($synchash.SpotifyMediaCollapseGroups){
           write-ezlogs -text 'No groups available to collapse for Spotifytable' -Warning
           $sender.isChecked = $false
           $thisApp.Config.SpotifyMedia_Library_CollapseAllGroups = $false
-        }       
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in SpotifyMediaCollapseGroups.Add_Checked' -CatchError $_
       }
@@ -3385,21 +3388,21 @@ if($synchash.SpotifyMediaCollapseGroups){
         if($synchash.SpotifyTable.GroupColumnDescriptions -is [Syncfusion.UI.Xaml.Grid.GroupColumnDescriptions]){
           $synchash.SpotifyTable.AutoExpandGroups = $true
           write-ezlogs -text '>>>> Expanding all groups for SpotifyTable'
-          $synchash.SpotifyTable.ExpandAllGroup() 
+          $synchash.SpotifyTable.ExpandAllGroup()
         }else{
           write-ezlogs -text 'No groups available to expand for Spotifytable' -Warning
-        } 
-        $thisApp.Config.SpotifyMedia_Library_CollapseAllGroups = $false       
+        }
+        $thisApp.Config.SpotifyMedia_Library_CollapseAllGroups = $false
       }catch{
         write-ezlogs -text 'An exception occurred in SpotifyMediaCollapseGroups.Add_Checked' -CatchError $_
       }
   })
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Spotify Groups
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Spotify Filters
 #----------------------------------------------
 if($synchash.SpotifyFilterTextBox){
@@ -3409,12 +3412,12 @@ if($synchash.SpotifyFilterTextBox){
         $SpotifyFilter_measure = [system.diagnostics.stopwatch]::StartNew()
         if($synchash.SpotifyTable.Itemssource -and !$synchash.SpotifyTable.Itemssource.IsInDeferRefresh){
           $synchash.SpotifyTable.View.Filter = {
-            param ($item) 
+            param ($item)
             if(-not [string]::IsNullOrEmpty($synchash.SpotifyFilterTextBox.Text)){
               $text = $(($synchash.SpotifyFilterTextBox.Text).tolower()).trim()
             }
             $SearchPattern = "$([regex]::Escape($text))"
-            $($item.Title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.Artist) -match $SearchPattern -or $($item.Album) -match $SearchPattern -or $($item.Playlist) -match $SearchPattern       
+            $($item.Title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.Artist) -match $SearchPattern -or $($item.Album) -match $SearchPattern -or $($item.Playlist) -match $SearchPattern
           }
           if($synchash.SpotifyTable.View){
             $synchash.SpotifyTable.View.RefreshFilter()
@@ -3443,7 +3446,7 @@ if($synchash.SpotifyFilterTextBox){
         if($newFocus -is [Syncfusion.UI.Xaml.Grid.SfDataGrid] -or $newFocus -is [Syncfusion.UI.Xaml.Grid.GridCell]){
           write-ezlogs -text "[SpotifyFilterTextBox] Preventing new focus from: $($newFocus)" -Warning
           $args[1].Handled = $true
-        }       
+        }
       }catch{
         write-ezlogs -text 'An exception occurrred in SpotifyFilterTextBox Add_PreviewLostKeyboardFocus event' -showtime -CatchError $_
       }
@@ -3453,11 +3456,11 @@ if($synchash.SpotifyFilterTextBox){
       try{
         if(!$synchash.SpotifyFilter_timer.isEnabled){
           $synchash.SpotifyFilter_timer.start()
-        }        
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in SpotifyFilterTextBox.Add_TextChanged' -CatchError $_
       }
-  }) 
+  })
   if($synchash.SpotifySearch_Button){
     $synchash.SpotifySearch_Button.Add_Click({
         try{
@@ -3466,8 +3469,8 @@ if($synchash.SpotifyFilterTextBox){
           }
         }catch{
           write-ezlogs -text 'An exception occurred in SpotifySearch_Button' -showtime -CatchError $_
-        }   
-    }) 
+        }
+    })
     $synchash.SpotifyFilterTextBox.Add_PreviewKeyDown({
         param
         ([Parameter(Mandatory)][Object]$sender,[Parameter(Mandatory)][Windows.Input.KeyEventArgs]$e)
@@ -3481,27 +3484,27 @@ if($synchash.SpotifyFilterTextBox){
     })
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Spotify Filters
 #----------------------------------------------
- 
-#---------------------------------------------- 
+
+#----------------------------------------------
 #endregion Import-Spotify
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Spotify Actions Button
 #----------------------------------------------
 $synchash.Refresh_SpotifyMedia_timer = [System.Windows.Threading.DispatcherTimer]::new()
 $synchash.Refresh_SpotifyMedia_timer.add_Tick({
-    try{  
+    try{
       if($this.tag -in 'Refresh_SpotifyMedia_Button','Get-SpotifyStatus'){
         if($this.tag -eq 'Refresh_SpotifyMedia_Button'){
           $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
           $Button_Settings.AffirmativeButtonText = 'Yes'
-          $Button_Settings.NegativeButtonText = 'No'  
-          $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
-          $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Refresh Spotify Media Library',"This will reimport all of your Spotify tracks and playlists as configured under the Spotify tab in Settings. This can take a few minutes depending on the number of media to process.`n`nAre you sure you wish to continue?",$okandCancel,$Button_Settings)         
+          $Button_Settings.NegativeButtonText = 'No'
+          $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
+          $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Refresh Spotify Media Library',"This will reimport all of your Spotify tracks and playlists as configured under the Spotify tab in Settings. This can take a few minutes depending on the number of media to process.`n`nAre you sure you wish to continue?",$okandCancel,$Button_Settings)
         }elseif($this.tag -eq 'Get-SpotifyStatus'){
           $result = 'Affirmative'
         }
@@ -3537,10 +3540,10 @@ $synchash.Refresh_SpotifyMedia_timer.add_Tick({
           $synchash.SpotifyTable.Itemssource.Refresh()
           if($synchash.SpotifyTable.View){
             $synchash.SpotifyTable.View.EndInit()
-          }      
+          }
           if($thisApp.Config.Import_Spotify_Media){
             Get-SpotifyStatus -thisApp $thisApp -synchash $synchash -Use_runspace
-          }                  
+          }
           return
         }
       }
@@ -3556,57 +3559,57 @@ $synchash.Refresh_SpotifyMedia_timer.add_Tick({
 if($synchash.SpotifyMedia_Actions_Button){
   $synchash.SpotifyMedia_Actions_Button.add_Loaded({
       try{
-        $synchash.SpotifyMedia_Actions_Button.items.clear() 
+        $synchash.SpotifyMedia_Actions_Button.items.clear()
         $Header = 'Quick Refresh'
         if($synchash.SpotifyMedia_Actions_Button.items -notcontains $Header){
           $synchash.QuickRefresh_SpotifyMedia_Button = [System.Windows.Controls.MenuItem]::new()
-          $synchash.QuickRefresh_SpotifyMedia_Button.IsCheckable = $false    
-          $synchash.QuickRefresh_SpotifyMedia_Button.Header = $Header 
+          $synchash.QuickRefresh_SpotifyMedia_Button.IsCheckable = $false
+          $synchash.QuickRefresh_SpotifyMedia_Button.Header = $Header
           $synchash.QuickRefresh_SpotifyMedia_Button.ToolTip = 'Refreshes the library view with existing records'
           $synchash.QuickRefresh_SpotifyMedia_Button.Name = 'QuickRefresh_SpotifyMedia_Button'
           $menuItem_imagecontrol = [MahApps.Metro.IconPacks.PackIconMaterial]::new()
           $menuItem_imagecontrol.width = '14'
           $menuItem_imagecontrol.Height = '14'
-          $menuItem_imagecontrol.Kind = 'Refresh'        
+          $menuItem_imagecontrol.Kind = 'Refresh'
           $synchash.QuickRefresh_SpotifyMedia_Button.Icon = $menuItem_imagecontrol
-          $synchash.QuickRefresh_SpotifyMedia_Button.Add_Click({   
-              try{  
-                $synchash.Refresh_SpotifyMedia_timer.tag = 'QuickRefresh_SpotifyMedia_Button'  
-                $synchash.Refresh_SpotifyMedia_timer.start()              
+          $synchash.QuickRefresh_SpotifyMedia_Button.Add_Click({
+              try{
+                $synchash.Refresh_SpotifyMedia_timer.tag = 'QuickRefresh_SpotifyMedia_Button'
+                $synchash.Refresh_SpotifyMedia_timer.start()
               }catch{
                 write-ezlogs -text 'An exception occurred in QuickRefresh_SpotifyMedia_Button_menuitem.Add_Click' -showtime -CatchError $_
               }
-          })                                               
+          })
           [Void]$synchash.SpotifyMedia_Actions_Button.items.add($synchash.QuickRefresh_SpotifyMedia_Button)
         }
         $Header = 'Rescan Library'
         if($synchash.SpotifyMedia_Actions_Button.items -notcontains $Header){
           $synchash.Refresh_SpotifyMedia_Button = [System.Windows.Controls.MenuItem]::new()
-          $synchash.Refresh_SpotifyMedia_Button.IsCheckable = $false    
+          $synchash.Refresh_SpotifyMedia_Button.IsCheckable = $false
           $synchash.Refresh_SpotifyMedia_Button.Header = $Header
           $synchash.Refresh_SpotifyMedia_Button.ToolTip = 'Performs full rescan of media and rebuild of library'
           $synchash.Refresh_SpotifyMedia_Button.Name = 'Refresh_SpotifyMedia_Button'
           $menuItem_imagecontrol = [MahApps.Metro.IconPacks.PackIconMaterial]::new()
           $menuItem_imagecontrol.width = '14'
           $menuItem_imagecontrol.Height = '14'
-          $menuItem_imagecontrol.Kind = 'DatabaseRefreshOutline'        
+          $menuItem_imagecontrol.Kind = 'DatabaseRefreshOutline'
           $synchash.Refresh_SpotifyMedia_Button.Icon = $menuItem_imagecontrol
-          $synchash.Refresh_SpotifyMedia_Button.Add_Click({   
-              try{  
-                $synchash.Refresh_SpotifyMedia_timer.tag = 'Refresh_SpotifyMedia_Button'  
-                $synchash.Refresh_SpotifyMedia_timer.start()           
+          $synchash.Refresh_SpotifyMedia_Button.Add_Click({
+              try{
+                $synchash.Refresh_SpotifyMedia_timer.tag = 'Refresh_SpotifyMedia_Button'
+                $synchash.Refresh_SpotifyMedia_timer.start()
               }catch{
                 write-ezlogs -text 'An exception occurred in Refresh_SpotifyMedia_Button.Add_Click' -showtime -CatchError $_
               }
-          })                                               
+          })
           [Void]$synchash.SpotifyMedia_Actions_Button.items.add($synchash.Refresh_SpotifyMedia_Button)
-        }                     
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in SpotifyMedia_Actions_Button.add_Loaded' -CatchError $_
       }
   })
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Spotify Actions Button
 #----------------------------------------------
 if($import_Spotify_measure){
@@ -3614,7 +3617,7 @@ if($import_Spotify_measure){
   write-ezlogs -text 'Import-Spotify Startup' -PerfTimer $import_Spotify_measure
   $import_Spotify_measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #region Import-Youtube
 #----------------------------------------------
 if($thisApp.Config.Startup_perf_timer){
@@ -3623,7 +3626,7 @@ if($thisApp.Config.Startup_perf_timer){
 $synchash.YoutubeMedia_TableStartup_timer = [System.Windows.Threading.DispatcherTimer]::new()
 $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
     try{
-      if($thisApp.Config.YoutubeBrowser_Paging -ne $null -and $synchash.YoutubeMedia_View.PageIndex -ne $null){           
+      if($thisApp.Config.YoutubeBrowser_Paging -ne $null -and $synchash.YoutubeMedia_View.PageIndex -ne $null){
         $synchash.YoutubeFilter_Handler = $null
       }
       if([string]::IsNullOrEmpty($thisApp.Config.YoutubeMedia_Library_Columns)){
@@ -3635,20 +3638,20 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
         $synchash.YoutubeTable.add_PreviewDragOver({
             Param([Parameter(Mandatory)]$sender,[Parameter(Mandatory)][Windows.DragEventArgs]$e)
             try{
-              if ($e.Data.GetDataPresent('ListViewRecords')){ 
-                $draggingRecords = $e.Data.GetData('ListViewRecords') -as [System.Collections.ObjectModel.ObservableCollection[object]]  
-              }else{ 
-                $draggingRecords = $e.Data.GetData('Records') -as [System.Collections.ObjectModel.ObservableCollection[object]] 
+              if ($e.Data.GetDataPresent('ListViewRecords')){
+                $draggingRecords = $e.Data.GetData('ListViewRecords') -as [System.Collections.ObjectModel.ObservableCollection[object]]
+              }else{
+                $draggingRecords = $e.Data.GetData('Records') -as [System.Collections.ObjectModel.ObservableCollection[object]]
               }
               if($draggingRecords -eq $null){
-                return  
+                return
               }
               $e.Handled = $true
             }catch{
               write-ezlogs -text 'An exception occurred in YoutubeTable.add_PreviewDragOver' -CatchError $_
             }
         })
-        if($synchash.YoutubeTable.Columns.HeaderText -contains 'Play'){        
+        if($synchash.YoutubeTable.Columns.HeaderText -contains 'Play'){
           $synchash.YoutubeTable.columns| & { process {
               if($_.HeaderText -eq 'Play'){
                 write-ezlogs -text '| Adding YoutubeTable play button' -showtime -logtype youtube -LogLevel 3
@@ -3669,7 +3672,7 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
                 $dataTemplate = [System.Windows.DataTemplate]::new()
                 $dataTemplate.VisualTree = $StackPanelFactory
                 $_.CellTemplate = $dataTemplate
-              }elseif($_.Headertext -in 'Display Name','Title','Artist','Album','Track'){                  
+              }elseif($_.Headertext -in 'Display Name','Title','Artist','Album','Track'){
                 $GridFactory = [System.Windows.FrameworkElementFactory]::new([Windows.Controls.Grid])
                 $TextBlockFactory = [System.Windows.FrameworkElementFactory]::new([Windows.Controls.TextBlock])
                 $Binding = [System.Windows.Data.Binding]::new('Value')
@@ -3690,7 +3693,7 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
                 $_.CellTemplate = $dataTemplate
                 if($_.Headertext -notin $thisApp.Config.YoutubeMedia_Library_Columns){
                   $_.isHidden = $true
-                }                              
+                }
               }elseif($_.HeaderText -notin $thisApp.Config.YoutubeMedia_Library_Columns){
                 $_.IsHidden = $true
               }
@@ -3698,7 +3701,7 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
         }else{
           [Void]$synchash.YoutubeTable.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
           [Void]$synchash.YoutubeTable.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
-        } 
+        }
         if($synchash.YoutubeMedia_Column_Button){
           $synchash.YoutubeMedia_Column_Button.add_Loaded({
               try{
@@ -3707,10 +3710,10 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
                     $Header = $_.Headertext
                     if($Header -notin 'Play' -and $synchash.YoutubeMedia_Column_Button.items -notcontains $Header){
                       $MenuItem = [System.Windows.Controls.MenuItem]::new()
-                      $MenuItem.IsCheckable = $true     
+                      $MenuItem.IsCheckable = $true
                       $MenuItem.Header = $Header
-                      if($_.isHidden){      
-                        $MenuItem.IsChecked = $false                 
+                      if($_.isHidden){
+                        $MenuItem.IsChecked = $false
                       }else{
                         $MenuItem.IsChecked = $true
                       }
@@ -3753,9 +3756,9 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
                           }catch{
                             write-ezlogs -text "An exception occurred in add_Unchecked for menuitem: $($this.Header)" -CatchError $_
                           }
-                      })                                                    
+                      })
                       [Void]$synchash.YoutubeMedia_Column_Button.items.add($MenuItem)
-                    }                    
+                    }
                 }}
               }catch{
                 write-ezlogs -text 'An exception occurred in YoutubeMedia_ColumnComboBox.add_Loaded' -CatchError $_
@@ -3769,10 +3772,10 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
         if($synchash.Media_ContextMenu){
           [Void]$synchash.YoutubeTable.RemoveHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Media_ContextMenu)
           [Void]$synchash.YoutubeTable.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Media_ContextMenu)
-        }                   
+        }
         if($synchash.YoutubeMedia_View -ne $null){
           try{
-            write-ezlogs -text '>>>> Setting Youtube itemssource' -showtime -logtype youtube -LogLevel 3   
+            write-ezlogs -text '>>>> Setting Youtube itemssource' -showtime -logtype youtube -LogLevel 0 -Verboselog:$VerboseLog
             # Create a binding to pair the listbox to the observable collection
             $synchash.YoutubeMedia_ListLock = [PSCustomObject]::new()
             $MediaTableBinding = [System.Windows.Data.Binding]::new()
@@ -3780,35 +3783,35 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
             $MediaTableBinding.Source = $synchash.YoutubeMedia_View
             $MediaTableBinding.Mode = [System.Windows.Data.BindingMode]::OneTime
             [void][System.Windows.Data.BindingOperations]::EnableCollectionSynchronization($synchash.YoutubeMedia_View,$synchash.YoutubeMedia_ListLock)
-            [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.YoutubeTable,[Syncfusion.UI.Xaml.Grid.SfDataGrid]::ItemsSourceProperty, $MediaTableBinding)    
+            [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.YoutubeTable,[Syncfusion.UI.Xaml.Grid.SfDataGrid]::ItemsSourceProperty, $MediaTableBinding)
           }catch{
             write-ezlogs -text 'An exception occurred binding Youtube itemssource' -CatchError $_
-          }                                                                                  
+          }
         }
-        $Controls_to_Update = [System.Collections.Generic.List[object]]::new(5) 
+        $Controls_to_Update = [System.Collections.Generic.List[object]]::new(5)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'Youtube_Progress_Ring'
             'Property' = 'isActive'
             'Value'  = $false
-        })             
-        [Void]$Controls_to_Update.Add($newRow) 
+        })
+        [Void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'YoutubeMedia_Progress_Label'
             'Property' = 'Visibility'
             'Value'  = 'Hidden'
-        })         
+        })
         [Void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'YoutubeMedia_Progress2_Label'
             'Property' = 'Visibility'
             'Value'  = 'Hidden'
-        })             
+        })
         [Void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'YoutubeTable'
             'Property' = 'isEnabled'
             'Value'  = $true
-        })             
+        })
         [Void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'YoutubeTable'
@@ -3817,10 +3820,10 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
         })
         [Void]$Controls_to_Update.Add($newRow)
         Update-MainWindow -synchash $synchash -thisApp $thisApp -controls $Controls_to_Update
-        if($synchash.YoutubeTable -and $synchash.YoutubeMedia_View){ 
+        if($synchash.YoutubeTable -and $synchash.YoutubeMedia_View){
           try{
-            $synchash.Youtube_Table_Total_Media.Text = "$($synchash.YoutubeTable.ItemsSource.Count)"                  
-            if($thisApp.Config.Youtube_Group_By){        
+            $synchash.Youtube_Table_Total_Media.Text = "$($synchash.YoutubeTable.ItemsSource.Count)"
+            if($thisApp.Config.Youtube_Group_By){
               #TODO: Temporary to cleanup issue from old configs
               if($thisApp.Config.Youtube_Group_By -eq 'Syncfusion.UI.Xaml.Grid.GroupColumnDescription'){
                 $Groups = 'Playlist'
@@ -3830,26 +3833,26 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
               if($synchash.YoutubeTable.GroupColumnDescriptions -is [Syncfusion.UI.Xaml.Grid.GroupColumnDescriptions]){
                 [Void]$synchash.YoutubeTable.GroupColumnDescriptions.clear()
                 $Groups | & { process {
-                    write-ezlogs -text ">>>> Checking YoutubeMedia_View for group property: $($_)" -logtype youtube -LogLevel 2
+                    write-ezlogs -text ">>>> Checking YoutubeMedia_View for group property: $($_)" -logtype youtube -LogLevel 0 -Verboselog:$verboselog
                     if($_ -and $synchash.YoutubeTable.GroupColumnDescriptions.ColumnName -notcontains $_){
-                      write-ezlogs -text "| Adding groupdescription to YoutubeMedia_View for property: $($_)" -logtype youtube -LogLevel 2
+                      write-ezlogs -text "| Adding groupdescription to YoutubeMedia_View for property: $($_)" -logtype youtube -LogLevel 0 -Verboselog:$verboselog
                       $groupdescription = [Syncfusion.UI.Xaml.Grid.GroupColumnDescription]::new()
                       $groupdescription.ColumnName = $_
                       [Void]$synchash.YoutubeTable.GroupColumnDescriptions.Add($groupdescription)
                     }
-                }} 
-              }                          
+                }}
+              }
             }
             write-ezlogs -text ">>>> Refreshing Youtubetable ItemsSource - Total: $($synchash.YoutubeTable.ItemsSource.Count)" -showtime -logtype youtube -LogLevel 2
-            $synchash.YoutubeTable.ItemsSource.refresh()    
+            $synchash.YoutubeTable.ItemsSource.refresh()
           }catch{
             write-ezlogs -text 'An exception occurred setting YoutubeTable' -CatchError $_
-          } 
-          #---------------------------------------------- 
+          }
+          #----------------------------------------------
           #region Youtube Monitor
           #----------------------------------------------
           if($thisApp.Config.youtube_update -and $thisApp.Config.Youtube_Update_Interval -eq 'On Startup' -and $this.tag -eq 'Startup'){
-            write-ezlogs -text '>>>> Executing Get-YoutubeStatus' -logtype youtube
+            write-ezlogs -text '>>>> Executing Get-YoutubeStatus' -logtype youtube -LogLevel 0 -Verboselog:$verboselog
             Get-YoutubeStatus -thisApp $thisApp -synchash $synchash -Use_runspace
           }elseif($thisApp.config.Youtube_Update -and -not [string]::IsNullOrEmpty($thisApp.config.Youtube_Update_Interval) -and $thisApp.config.Youtube_Update_Interval -ne 'On Startup' -and $this.tag -eq 'Startup'){
             try{
@@ -3858,14 +3861,14 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
               write-ezlogs -text 'An exception occurred in Start-YoutubeMonitor' -showtime -CatchError $_
             }
           }
-          #---------------------------------------------- 
+          #----------------------------------------------
           #endregion Youtube Monitor
-          #----------------------------------------------                      
-        }                   
+          #----------------------------------------------
+        }
       }else{
-        write-ezlogs -text 'No YoutubeTable UI is available' -Warning 
-      } 
-      $this.tag = $null                                     
+        write-ezlogs -text 'No YoutubeTable UI is available' -Warning
+      }
+      $this.tag = $null
       $this.Stop()
     }catch{
       $this.Stop()
@@ -3873,10 +3876,10 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
     }finally{
       $this.tag = $null
       $this.Stop()
-    }    
+    }
 })
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Youtube Filters
 #----------------------------------------------
 if($synchash.YoutubeFilterTextBox){
@@ -3886,12 +3889,12 @@ if($synchash.YoutubeFilterTextBox){
         $YoutubeFilter_measure = [system.diagnostics.stopwatch]::StartNew()
         if($synchash.YoutubeTable.Itemssource -and !$synchash.YoutubeTable.Itemssource.IsInDeferRefresh){
           $synchash.YoutubeTable.View.Filter = {
-            param ($item) 
+            param ($item)
             if(-not [string]::IsNullOrEmpty($synchash.YoutubeFilterTextBox.Text)){
               $text = $(($synchash.YoutubeFilterTextBox.Text).tolower()).trim()
             }
             $SearchPattern = "$([regex]::Escape($text))"
-            $($item.title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.Artist) -match $SearchPattern -or $($item.Album) -match $SearchPattern -or $($item.Playlist) -match $SearchPattern                               
+            $($item.title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.Artist) -match $SearchPattern -or $($item.Album) -match $SearchPattern -or $($item.Playlist) -match $SearchPattern
           }
           if($synchash.YoutubeTable.View){
             $synchash.YoutubeTable.View.RefreshFilter()
@@ -3909,11 +3912,11 @@ if($synchash.YoutubeFilterTextBox){
       try{
         if(!$synchash.YoutubeMediaFilter_timer.isEnabled){
           $synchash.YoutubeMediaFilter_timer.start()
-        }  
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in YoutubeFilterTextBox.Add_TextChanged' -CatchError $_
-      }      
-  })  
+      }
+  })
 
   $synchash.YoutubeTable.add_FilterChanged({
       param($sender,[Syncfusion.UI.Xaml.Grid.GridFilterEventArgs]$e)
@@ -3930,7 +3933,7 @@ if($synchash.YoutubeFilterTextBox){
         if($newFocus -is [Syncfusion.UI.Xaml.Grid.SfDataGrid] -or $newFocus -is [Syncfusion.UI.Xaml.Grid.GridCell]){
           write-ezlogs -text "[YoutubeFilterTextBox] Preventing new focus from: $($newFocus)" -Warning
           $args[1].Handled = $true
-        }       
+        }
       }catch{
         write-ezlogs -text 'An exception occurrred in YoutubeFilterTextBox Add_PreviewLostKeyboardFocus event' -showtime -CatchError $_
       }
@@ -3944,30 +3947,30 @@ if($synchash.YoutubeFilterTextBox){
           }
         }catch{
           write-ezlogs -text 'An exception occurred in YoutubeSearch_Button' -showtime -CatchError $_
-        }   
-    }) 
+        }
+    })
     $synchash.YoutubeFilterTextBox.Add_KeyDown({
-        [System.Windows.Input.KeyEventArgs]$e = $args[1] 
+        [System.Windows.Input.KeyEventArgs]$e = $args[1]
         try{
           write-ezlogs -text "Youtubefiltertextbox $($e | out-string)"
           if($e.key -eq 'Return' -and !$synchash.YoutubeMediaFilter_timer.isEnabled){
             $synchash.YoutubeMediaFilter_timer.start()
-          }  
+          }
         }catch{
           write-ezlogs -text 'An exception occurred inYoutubeFilterTextBox.Add_KeyDowt' -showtime -CatchError $_
-        }    
+        }
     })
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Youtube Filters
 #----------------------------------------------
-if($thisApp.Config.Import_Youtube_Media){  
+if($thisApp.Config.Import_Youtube_Media){
   if($hash.Window.isVisible){
     Update-SplashScreen -hash $hash -SplashMessage 'Importing Youtube Media'
   }
   Import-Module -Name "$Current_folder\Modules\Import-Youtube\Import-Youtube.psm1" -NoClobber -DisableNameChecking -Scope Local
-  Import-Youtube -Youtube_playlists $thisApp.Config.Youtube_Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -PlayMedia_Command $synchash.PlayMedia_Command -startup -thisApp $thisApp -use_runspace 
+  Import-Youtube -Youtube_playlists $thisApp.Config.Youtube_Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -PlayMedia_Command $synchash.PlayMedia_Command -startup -thisApp $thisApp -use_runspace
 }elseif($synchash.Window -and $synchash.MainGrid_Bottom_TabControl){
   write-ezlogs -text 'Importing of Youtube Media is not enabled' -showtime -Warning -logtype Youtube
   if($synchash.YoutubeTable){
@@ -3977,14 +3980,14 @@ if($thisApp.Config.Import_Youtube_Media){
     $synchash.Youtube_Tabitem.isEnabled = $false
   }
   if($synchash.MainGrid_Bottom_TabControl.items -contains $synchash.Youtube_Tabitem){
-    [Void]$synchash.MainGrid_Bottom_TabControl.items.Remove($synchash.Youtube_Tabitem) 
+    [Void]$synchash.MainGrid_Bottom_TabControl.items.Remove($synchash.Youtube_Tabitem)
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Import-Youtube
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Youtube Groups
 #----------------------------------------------
 if($synchash.YoutubeTable){
@@ -3998,25 +4001,25 @@ if($synchash.YoutubeTable){
         if($e.action -eq 'Add' -and $e.newItems.ColumnName -notin $thisApp.Config.Youtube_Group_By){
           [Void]$thisApp.Config.Youtube_Group_By.add($e.newItems.ColumnName)
         }elseif($e.action -eq 'Remove' -and $e.OldItems.ColumnName -in $thisApp.Config.Youtube_Group_By){
-          write-ezlogs -text ">>>> Removing group '$($e.OldItems.ColumnName)' from Youtube_Group_By"
+          write-ezlogs -text ">>>> Removing group '$($e.OldItems.ColumnName)' from Youtube_Group_By" -LogLevel 0 -Verboselog:$VerboseLog
           [Void]$thisApp.Config.Youtube_Group_By.Remove($e.OldItems.ColumnName)
         }
         if($thisApp.Config.YoutubeMedia_Library_CollapseAllGroups -and $e.action -eq 'Add'){
           try{
-            $synchash.YoutubeTable.AutoExpandGroups = $false                      
-            write-ezlogs -text ">>>> Collapsing all groups for YoutubeTable - Youtube_Group_By: $($thisApp.Config.Youtube_Group_By)"
+            $synchash.YoutubeTable.AutoExpandGroups = $false
+            write-ezlogs -text ">>>> Collapsing all groups for YoutubeTable - Youtube_Group_By: $($thisApp.Config.Youtube_Group_By)" -LogLevel 0 -Verboselog:$VerboseLog
             $synchash.YoutubeTable.CollapseAllGroup()
           }catch{
             write-ezlogs -text 'An exception occurred calling YoutubeTable.CollapseAllGroup()' -CatchError $_
           }
-        }                
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in YoutubeMedia_View.GroupDescriptions.add_CollectionChanged' -showtime -CatchError $_
       }
   })
 }
 if($synchash.YoutubeMediaCollapseGroups){
-  $synchash.YoutubeMediaCollapseGroups.isChecked = $thisApp.Config.YoutubeMedia_Library_CollapseAllGroups                
+  $synchash.YoutubeMediaCollapseGroups.isChecked = $thisApp.Config.YoutubeMedia_Library_CollapseAllGroups
   $synchash.YoutubeMediaCollapseGroups.Add_Checked({
       param($sender)
       try{
@@ -4029,7 +4032,7 @@ if($synchash.YoutubeMediaCollapseGroups){
           write-ezlogs -text 'No groups available to collapse for Youtubetable' -Warning
           $sender.isChecked = $false
           $thisApp.Config.YoutubeMedia_Library_CollapseAllGroups = $false
-        }       
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in YoutubeMediaCollapseGroups.Add_Checked' -CatchError $_
       }
@@ -4043,34 +4046,34 @@ if($synchash.YoutubeMediaCollapseGroups){
           $synchash.YoutubeTable.ExpandAllGroup()
         }else{
           write-ezlogs -text 'No groups available to expand for Youtubetable' -Warning
-        } 
-        $thisApp.Config.YoutubeMedia_Library_CollapseAllGroups = $false         
+        }
+        $thisApp.Config.YoutubeMedia_Library_CollapseAllGroups = $false
       }catch{
         write-ezlogs -text 'An exception occurred in YoutubeMediaCollapseGroups.Add_Checked' -CatchError $_
       }
   })
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Youtube Groups
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Youtube Actions Button
 #----------------------------------------------
 $synchash.Refresh_youtubeMedia_timer = [System.Windows.Threading.DispatcherTimer]::new()
 $synchash.Refresh_youtubeMedia_timer.add_Tick({
-    try{  
+    try{
       if($this.tag -eq 'QuickRefresh_youtubeMedia_Button'){
         if($synchash.YoutubeTable.Itemssource){
           if($synchash.YoutubeTable.View){
             $synchash.YoutubeTable.View.BeginInit()
-          }        
+          }
           $synchash.YoutubeTable.ClearFilters()
           if($synchash.All_Youtube_Media){
             $synchash.YoutubeMedia_View = [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView]::new($synchash.All_Youtube_Media)
           }else{
             $synchash.YoutubeMedia_View = [Syncfusion.UI.Xaml.Grid.GridVirtualizingCollectionView]::new()
-          }          
+          }
           $synchash.YoutubeMedia_View.UsePLINQ = $true
           $synchash.YoutubeTable.Itemssource = $synchash.YoutubeMedia_View
           $synchash.YoutubeTable.Itemssource.Refresh()
@@ -4093,12 +4096,12 @@ $synchash.Refresh_youtubeMedia_timer.add_Tick({
 #Youtube Full Refresh Command
 [System.Windows.RoutedEventHandler]$Refresh_YoutubeMedia_Command = {
   param($sender)
-  try{  
+  try{
     if($thisApp.Config.Import_Youtube_Media){
-      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
       $Button_Settings.AffirmativeButtonText = 'Yes'
-      $Button_Settings.NegativeButtonText = 'No'  
-      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+      $Button_Settings.NegativeButtonText = 'No'
+      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
       $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Refresh Youtube Media Library',"This will reimport all of your Youtube Videos and playlists as configured under the Youtube tab in Settings. This can take a few minutes depending on the number of media to process.`n`nAre you sure you wish to continue?",$okandCancel,$Button_Settings)
       if($result -eq 'Affirmative'){
         write-ezlogs -text '>>>> User wished to refresh the Youtube Library' -showtime
@@ -4106,7 +4109,7 @@ $synchash.Refresh_youtubeMedia_timer.add_Tick({
         Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'Youtube_Progress_Ring' -Property 'isActive' -value $true
         if($synchash.YoutubeTable.Itemssource){
           $synchash.YoutubeTable.Itemssource = $null
-        }                
+        }
         if([system.io.file]::Exists("$($thisApp.Config.Media_Profile_Directory)\All-Youtube_MediaProfile\All-Youtube_Media-Profile.xml")){
           write-ezlogs -text ">>>> Removing existing Youtube Media Profile at: $($thisApp.Config.Media_Profile_Directory)\All-Youtube_MediaProfile\All-Youtube_Media-Profile.xml" -LogLevel 2
           try{
@@ -4123,7 +4126,7 @@ $synchash.Refresh_youtubeMedia_timer.add_Tick({
       }
     }else{
       write-ezlogs -text 'Cannot refresh Youtube library as Youtube Integration is disabled!' -Warning -AlertUI
-    }               
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in Refresh_YoutubeMedia_Command' -showtime -CatchError $_
     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'YoutubeTable' -Property 'isEnabled' -value $true
@@ -4135,78 +4138,78 @@ if($synchash.YoutubeMedia_Actions_Button){
   $synchash.YoutubeMedia_Actions_Button.add_Loaded({
       try{
         $synchash.YoutubeMedia_Actions_Button.items.clear()
-        #Add Media 
+        #Add Media
         $Header = 'Add Video'
         if($synchash.YoutubeMedia_Actions_Button.items -notcontains $Header){
           $synchash.Add_YoutubeMedia_Button = [System.Windows.Controls.MenuItem]::new()
-          $synchash.Add_YoutubeMedia_Button.IsCheckable = $false    
-          $synchash.Add_YoutubeMedia_Button.Header = $Header 
+          $synchash.Add_YoutubeMedia_Button.IsCheckable = $false
+          $synchash.Add_YoutubeMedia_Button.Header = $Header
           $synchash.Add_YoutubeMedia_Button.ToolTip = 'Add Youtube videos or playlists to library'
           $synchash.Add_YoutubeMedia_Button.Name = 'Add_YoutubeMedia_Button'
           $menuItem_imagecontrol = [MahApps.Metro.IconPacks.PackIconMaterial]::new()
           $menuItem_imagecontrol.width = '14'
           $menuItem_imagecontrol.Height = '14'
-          $menuItem_imagecontrol.Kind = 'PlusCircleOutline'        
+          $menuItem_imagecontrol.Kind = 'PlusCircleOutline'
           $synchash.Add_YoutubeMedia_Button.Icon = $menuItem_imagecontrol
-          $synchash.Add_YoutubeMedia_Button.Add_Click({   
-              try{  
-                $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()        
+          $synchash.Add_YoutubeMedia_Button.Add_Click({
+              try{
+                $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
                 $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalInputExternal($synchash.Window,'Add Youtube Video','Enter/Paste the URL of the Youtube Video or Playlist',$Button_Settings)
-                if(-not [string]::IsNullOrEmpty($result) -and (Test-url -address $result)){       
+                if(-not [string]::IsNullOrEmpty($result) -and (Test-url -address $result)){
                   write-ezlogs -text ">>>> Adding Youtube video $result" -showtime -color cyan -logtype Youtube
-                  Import-Youtube -Youtube_URL $result -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp      
+                  Import-Youtube -Youtube_URL $result -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp
                 }else{
                   write-ezlogs -text "The provided URL is not valid or was not provided! -- $result" -showtime -Warning -logtype Youtube
-                }                
+                }
               }catch{
                 write-ezlogs -text 'An exception occurred in Add_YoutubeMedia_Button.Add_Click' -showtime -CatchError $_
               }
-          })                                               
+          })
           [Void]$synchash.YoutubeMedia_Actions_Button.items.add($synchash.Add_YoutubeMedia_Button)
         }
         $Header = 'Quick Refresh'
         if($synchash.YoutubeMedia_Actions_Button.items -notcontains $Header){
           $synchash.QuickRefresh_YoutubeMedia_Button = [System.Windows.Controls.MenuItem]::new()
-          $synchash.QuickRefresh_YoutubeMedia_Button.IsCheckable = $false    
-          $synchash.QuickRefresh_YoutubeMedia_Button.Header = $Header 
+          $synchash.QuickRefresh_YoutubeMedia_Button.IsCheckable = $false
+          $synchash.QuickRefresh_YoutubeMedia_Button.Header = $Header
           $synchash.QuickRefresh_YoutubeMedia_Button.ToolTip = 'Refreshes the library view with existing records'
           $synchash.QuickRefresh_YoutubeMedia_Button.Name = 'QuickRefresh_YoutubeMedia_Button'
           $menuItem_imagecontrol = [MahApps.Metro.IconPacks.PackIconMaterial]::new()
           $menuItem_imagecontrol.width = '14'
           $menuItem_imagecontrol.Height = '14'
-          $menuItem_imagecontrol.Kind = 'Refresh'        
+          $menuItem_imagecontrol.Kind = 'Refresh'
           $synchash.QuickRefresh_YoutubeMedia_Button.Icon = $menuItem_imagecontrol
-          $synchash.QuickRefresh_YoutubeMedia_Button.Add_Click({   
-              try{  
+          $synchash.QuickRefresh_YoutubeMedia_Button.Add_Click({
+              try{
                 $synchash.Refresh_youtubeMedia_timer.tag = 'QuickRefresh_youtubeMedia_Button'
-                $synchash.Refresh_youtubeMedia_timer.start()             
+                $synchash.Refresh_youtubeMedia_timer.start()
               }catch{
                 write-ezlogs -text 'An exception occurred in QuickRefresh_YoutubeMedia_Button_menuitem.Add_Click' -showtime -CatchError $_
               }
-          })                                               
+          })
           [Void]$synchash.YoutubeMedia_Actions_Button.items.add($synchash.QuickRefresh_YoutubeMedia_Button)
         }
         $Header = 'Rescan Library'
         if($synchash.YoutubeMedia_Actions_Button.items -notcontains $Header){
           $synchash.Refresh_YoutubeMedia_Button = [System.Windows.Controls.MenuItem]::new()
-          $synchash.Refresh_YoutubeMedia_Button.IsCheckable = $false    
+          $synchash.Refresh_YoutubeMedia_Button.IsCheckable = $false
           $synchash.Refresh_YoutubeMedia_Button.Header = $Header
           $synchash.Refresh_YoutubeMedia_Button.ToolTip = 'Performs full rescan of media and rebuild of library'
           $synchash.Refresh_YoutubeMedia_Button.Name = 'Refresh_YoutubeMedia_Button'
           $menuItem_imagecontrol = [MahApps.Metro.IconPacks.PackIconMaterial]::new()
           $menuItem_imagecontrol.width = '14'
           $menuItem_imagecontrol.Height = '14'
-          $menuItem_imagecontrol.Kind = 'DatabaseRefreshOutline'        
+          $menuItem_imagecontrol.Kind = 'DatabaseRefreshOutline'
           $synchash.Refresh_YoutubeMedia_Button.Icon = $menuItem_imagecontrol
-          [Void]$synchash.Refresh_YoutubeMedia_Button.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Refresh_YoutubeMedia_Command)                                            
+          [Void]$synchash.Refresh_YoutubeMedia_Button.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Refresh_YoutubeMedia_Command)
           [Void]$synchash.YoutubeMedia_Actions_Button.items.add($synchash.Refresh_YoutubeMedia_Button)
-        }                     
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in YoutubeMedia_Actions_Button.add_Loaded' -CatchError $_
       }
   })
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Youtube Actions Button
 #----------------------------------------------
 if($import_Youtube_measure){
@@ -4214,7 +4217,7 @@ if($import_Youtube_measure){
   write-ezlogs -text 'Import_Youtube_measure' -Perf -PerfTimer $import_Youtube_measure
   $import_Youtube_measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #region Import-Twitch
 #----------------------------------------------
 if($thisApp.Config.Startup_perf_timer){
@@ -4249,7 +4252,7 @@ $synchash.TwitchMedia_TableStartup_timer.add_Tick({
                 $dataTemplate = [System.Windows.DataTemplate]::new()
                 $dataTemplate.VisualTree = $StackPanelFactory
                 $_.CellTemplate = $dataTemplate
-              }elseif($_.Headertext -eq 'Display Name'){                  
+              }elseif($_.Headertext -eq 'Display Name'){
                 $GridFactory = [System.Windows.FrameworkElementFactory]::new([Windows.Controls.Grid])
                 $TextBlockFactory = [System.Windows.FrameworkElementFactory]::new([Windows.Controls.TextBlock])
                 $Binding = [System.Windows.Data.Binding]::new('Value')
@@ -4267,7 +4270,7 @@ $synchash.TwitchMedia_TableStartup_timer.add_Tick({
                 [Void]$GridFactory.AppendChild($buttonFactory)
                 $dataTemplate = [System.Windows.DataTemplate]::new()
                 $dataTemplate.VisualTree = $GridFactory
-                $_.CellTemplate = $dataTemplate              
+                $_.CellTemplate = $dataTemplate
               }elseif($_.HeaderText -notin $thisApp.Config.TwitchMedia_Library_Columns){
                 $_.IsHidden = $true
               }
@@ -4277,7 +4280,7 @@ $synchash.TwitchMedia_TableStartup_timer.add_Tick({
           [Void]$synchash.TwitchTable.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
         }
         if(-not [string]::IsNullOrEmpty($synchash.TwitchMedia_View) -and $synchash.TwitchTable){
-          write-ezlogs -text '>>>> Setting Twitch itemssource' -showtime
+          write-ezlogs -text '>>>> Setting Twitch itemssource' -logtype Twitch -LogLevel 0 -Verboselog:$VerboseLog
           # Create a binding to pair the listbox to the observable collection
           $synchash.TwitchMedia_ListLock = [PSCustomObject]::new()
           $MediaTableBinding = [System.Windows.Data.Binding]::new()
@@ -4286,32 +4289,32 @@ $synchash.TwitchMedia_TableStartup_timer.add_Tick({
           $MediaTableBinding.Mode = [System.Windows.Data.BindingMode]::OneTime
           [void][System.Windows.Data.BindingOperations]::EnableCollectionSynchronization($synchash.TwitchMedia_View,$synchash.TwitchMedia_ListLock)
           [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.TwitchTable,[Syncfusion.UI.Xaml.Grid.SfDataGrid]::ItemsSourceProperty, $MediaTableBinding)
-        }                           
+        }
         $synchash.Twitch_Table_Total_Media.text = "$($synchash.TwitchMedia_View.Count)"
         $Controls_to_Update = [System.Collections.Generic.list[Object]]::new(5)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'Twitch_Progress_Ring'
             'Property' = 'isActive'
             'Value'  = $false
-        })         
-        [Void]$Controls_to_Update.Add($newRow) 
+        })
+        [Void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'TwitchMedia_Progress_Label'
             'Property' = 'Visibility'
             'Value'  = 'Hidden'
-        })           
+        })
         [Void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'TwitchMedia_Progress2_Label'
             'Property' = 'Visibility'
             'Value'  = 'Hidden'
-        })         
+        })
         [Void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'TwitchTable'
             'Property' = 'isEnabled'
             'Value'  = $true
-        })       
+        })
         [Void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'TwitchTable'
@@ -4321,32 +4324,32 @@ $synchash.TwitchMedia_TableStartup_timer.add_Tick({
         [Void]$Controls_to_Update.Add($newRow)
         Update-MainWindow -synchash $synchash -thisApp $thisApp -controls $Controls_to_Update
         if($synchash.MainGrid_Bottom_TabControl.items -notcontains $synchash.Twitch_Tabitem){
-          [Void]$synchash.MainGrid_Bottom_TabControl.items.Add($synchash.Twitch_Tabitem) 
+          [Void]$synchash.MainGrid_Bottom_TabControl.items.Add($synchash.Twitch_Tabitem)
         }
-        try{                  
-          if(($synchash.TwitchTable.ItemsSource) -and $thisApp.Config.Twitch_Group_By){   
+        try{
+          if(($synchash.TwitchTable.ItemsSource) -and $thisApp.Config.Twitch_Group_By){
             #TODO: Temporary to cleanup issue from old configs
             if($thisApp.Config.Twitch_Group_By -eq 'Syncfusion.UI.Xaml.Grid.GroupColumnDescription'){
               $Groups = 'Live_Status'
             }else{
               $Groups = $thisApp.Config.Twitch_Group_By
-            }                      
+            }
             if($synchash.TwitchTable.GroupColumnDescriptions -is [Syncfusion.UI.Xaml.Grid.GroupColumnDescriptions]){
               [Void]$synchash.TwitchTable.GroupColumnDescriptions.clear()
               $Groups | & { process {
                   if($_ -and $synchash.TwitchTable.GroupColumnDescriptions.ColumnName -notcontains $_){
-                    write-ezlogs -text "| Adding groupdescription to TwitchMedia_View for property: $($_)" -logtype Twitch -LogLevel 2
+                    write-ezlogs -text "| Adding groupdescription to TwitchMedia_View for property: $($_)" -logtype Twitch -LogLevel 0 -Verboselog:$verboselog
                     $groupdescription = [Syncfusion.UI.Xaml.Grid.GroupColumnDescription]::new()
                     $groupdescription.ColumnName = $_
                     [Void]$synchash.TwitchTable.GroupColumnDescriptions.Add($groupdescription)
                   }
-              }} 
-            }                        
+              }}
+            }
           }
         }catch{
           write-ezlogs -text 'An exception occurred setting groups for TwitchTable' -CatchError $_
         }
-        #---------------------------------------------- 
+        #----------------------------------------------
         #region Twitch Monitor
         #----------------------------------------------
         if($thisApp.config.Twitch_Update -and $thisApp.config.Twitch_Update_Interval){
@@ -4356,18 +4359,18 @@ $synchash.TwitchMedia_TableStartup_timer.add_Tick({
             write-ezlogs -text 'An exception occurred in Start-TwitchMonitor' -showtime -CatchError $_
           }
         }
-        #---------------------------------------------- 
+        #----------------------------------------------
         #endregion Twitch Monitor
-        #----------------------------------------------        
+        #----------------------------------------------
       }else{
         write-ezlogs -text 'No Twitchtable UI is available' -Warning
-      }                       
+      }
     }catch{
       $this.Stop()
       write-ezlogs -text 'An exception occurred attempting to set itemsource for TwitchTable' -showtime -CatchError $_
     }finally{
-      $this.Stop()  
-    }  
+      $this.Stop()
+    }
 })
 #endregion Twitch Startup Timers
 
@@ -4376,21 +4379,21 @@ if($thisApp.Config.Import_Twitch_Media){
     Update-SplashScreen -hash $hash -SplashMessage 'Importing Twitch Media'
   }
   Import-Module -Name "$Current_folder\Modules\Import-Twitch\Import-Twitch.psm1" -NoClobber -DisableNameChecking -Scope Local
-  Import-Twitch -Twitch_playlists $thisApp.Config.Twitch_Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -startup -thisApp $thisApp -use_runspace  
+  Import-Twitch -Twitch_playlists $thisApp.Config.Twitch_Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -startup -thisApp $thisApp -use_runspace
 }elseif($synchash.Window -and $synchash.MainGrid_Bottom_TabControl){
   write-ezlogs -text 'Importing of Twitch Media is not enabled' -showtime -Warning -logtype Twitch
   if($synchash.TwitchTable){
     $synchash.TwitchTable.isEnabled = $false
   }
   if($synchash.MainGrid_Bottom_TabControl.items -contains $synchash.Twitch_Tabitem){
-    [Void]$synchash.MainGrid_Bottom_TabControl.items.Remove($synchash.Twitch_Tabitem) 
+    [Void]$synchash.MainGrid_Bottom_TabControl.items.Remove($synchash.Twitch_Tabitem)
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Import-Twitch
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Twitch Dragging
 #----------------------------------------------
 if($synchash.TwitchTable){
@@ -4398,25 +4401,25 @@ if($synchash.TwitchTable){
       try{
         $sender = ($args[0])
         $e = ($args[1])
-        if ($e.Data.GetDataPresent('ListViewRecords')){ 
-          $draggingRecords = $e.Data.GetData('ListViewRecords') -as [System.Collections.ObjectModel.ObservableCollection[object]]  
-        }else{ 
-          $draggingRecords = $e.Data.GetData('Records') -as [System.Collections.ObjectModel.ObservableCollection[object]] 
+        if ($e.Data.GetDataPresent('ListViewRecords')){
+          $draggingRecords = $e.Data.GetData('ListViewRecords') -as [System.Collections.ObjectModel.ObservableCollection[object]]
+        }else{
+          $draggingRecords = $e.Data.GetData('Records') -as [System.Collections.ObjectModel.ObservableCollection[object]]
         }
         if($draggingRecords -eq $null){
-          return  
-        }         
+          return
+        }
         $e.Handled = $true
       }catch{
         write-ezlogs -text 'An exception occurred in TwitchTable.add_PreviewDragOver' -CatchError $_
       }
   })
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Twitch Dragging
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Twitch Filters
 #----------------------------------------------
 $synchash.TwitchFilter_timer = [System.Windows.Threading.DispatcherTimer]::New([System.Windows.Threading.DispatcherPriority]::Background)
@@ -4425,17 +4428,17 @@ $synchash.TwitchFilter_timer.add_Tick({
       $TwitchFilter_measure = [system.diagnostics.stopwatch]::StartNew()
       if($synchash.TwitchTable.itemssource -and !$synchash.TwitchTable.Itemssource.isInDeferRefresh){
         $synchash.TwitchTable.View.Filter = {
-          param ($item) 
+          param ($item)
           if(-not [string]::IsNullOrEmpty($synchash.TwitchFilterTextBox.Text)){
             $text = $(($synchash.TwitchFilterTextBox.Text).tolower()).trim()
           }
           $SearchPattern = "$([regex]::Escape($text))"
-          $($item.Title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.Channel_Name) -match $SearchPattern -or $($item.Live_Status) -match $SearchPattern -or $($item.Status_Msg) -match $SearchPattern        
+          $($item.Title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.Channel_Name) -match $SearchPattern -or $($item.Live_Status) -match $SearchPattern -or $($item.Status_Msg) -match $SearchPattern
         }
         if($synchash.TwitchTable.View){
           $synchash.TwitchTable.View.RefreshFilter()
         }
-      }                             
+      }
     }catch{
       write-ezlogs -text 'An exception occurred in TwitchFilterTextBox' -showtime -CatchError $_
     }finally{
@@ -4444,17 +4447,17 @@ $synchash.TwitchFilter_timer.add_Tick({
       write-ezlogs -text 'TwitchFilter_timer' -PerfTimer $TwitchFilter_measure -Perf
     }
 })
- 
+
 if($synchash.TwitchFilterTextBox){
   $synchash.TwitchFilterTextBox.Add_TextChanged({
       try{
         if(!$synchash.TwitchFilter_timer.isEnabled){
           $synchash.TwitchFilter_timer.start()
-        }        
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in TwitchFilterTextBox.Add_TextChanged' -showtime -CatchError $_
-      }   
-  }) 
+      }
+  })
 
   $synchash.TwitchFilterTextBox.Add_PreviewLostKeyboardFocus({
       try{
@@ -4462,7 +4465,7 @@ if($synchash.TwitchFilterTextBox){
         if($newFocus -is [Syncfusion.UI.Xaml.Grid.SfDataGrid] -or $newFocus -is [Syncfusion.UI.Xaml.Grid.GridCell]){
           write-ezlogs -text "[TwitchFilterTextBox] Preventing new focus from: $($newFocus)" -Warning
           $args[1].Handled = $true
-        }       
+        }
       }catch{
         write-ezlogs -text 'An exception occurrred in TwitchFilterTextBox Add_PreviewLostKeyboardFocus event' -showtime -CatchError $_
       }
@@ -4474,8 +4477,8 @@ if($synchash.TwitchFilterTextBox){
         $synchash.Twitch_Table_Total_Media.text = "$($synchash.TwitchTable.View.records.Count)"
       }catch{
         write-ezlogs -text 'An exception occurred in TwitchFilterChanged' -showtime -CatchError $_
-      }   
-  })  
+      }
+  })
 }
 
 if($synchash.TwitchSearch_Button){
@@ -4486,8 +4489,8 @@ if($synchash.TwitchSearch_Button){
         }
       }catch{
         write-ezlogs -text 'An exception occurred in TwitchSearch_Button' -showtime -CatchError $_
-      }   
-  }) 
+      }
+  })
   $synchash.TwitchFilterTextBox.Add_PreviewKeyDown({
       param([Parameter(Mandatory)][Object]$sender,[Parameter(Mandatory)][Windows.Input.KeyEventArgs]$e)
       try{
@@ -4499,11 +4502,11 @@ if($synchash.TwitchSearch_Button){
       }
   })
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Twitch Filters
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Twitch Groups
 #----------------------------------------------
 if($synchash.TwitchMedia_Column_Button){
@@ -4514,10 +4517,10 @@ if($synchash.TwitchMedia_Column_Button){
             $Header = $_.Headertext
             if($Header -notin 'Play' -and $synchash.TwitchMedia_Column_Button.items -notcontains $Header){
               $MenuItem = [System.Windows.Controls.MenuItem]::new()
-              $MenuItem.IsCheckable = $true     
+              $MenuItem.IsCheckable = $true
               $MenuItem.Header = $Header
-              if($_.isHidden){      
-                $MenuItem.IsChecked = $false                 
+              if($_.isHidden){
+                $MenuItem.IsChecked = $false
               }else{
                 $MenuItem.IsChecked = $true
               }
@@ -4560,9 +4563,9 @@ if($synchash.TwitchMedia_Column_Button){
                   }catch{
                     write-ezlogs -text "An exception occurred in add_Unchecked for menuitem: $($this.Header)" -CatchError $_
                   }
-              })                                                    
+              })
               [Void]$synchash.TwitchMedia_Column_Button.items.add($MenuItem)
-            }                    
+            }
         }}
       }catch{
         write-ezlogs -text 'An exception occurred in TwitchMedia_ColumnComboBox.add_Loaded' -CatchError $_
@@ -4580,25 +4583,25 @@ if($synchash.TwitchTable){
         if($e.action -eq 'Add' -and $e.newItems.ColumnName -notin $thisApp.Config.Twitch_Group_By){
           [Void]$thisApp.Config.Twitch_Group_By.add($e.newItems.ColumnName)
         }elseif($e.action -eq 'Remove' -and $e.OldItems.ColumnName -in $thisApp.Config.Twitch_Group_By){
-          write-ezlogs -text ">>>> Removing group '$($e.OldItems.ColumnName)' from Twitch_Group_By"
+          write-ezlogs -text ">>>> Removing group '$($e.OldItems.ColumnName)' from Twitch_Group_By" -LogLevel 0 -Verboselog:$VerboseLog
           [Void]$thisApp.Config.Twitch_Group_By.Remove($e.OldItems.ColumnName)
         }
         if($thisApp.Config.TwitchMedia_Library_CollapseAllGroups -and $e.action -eq 'Add'){
           try{
-            $synchash.TwitchTable.AutoExpandGroups = $false                      
-            write-ezlogs -text ">>>> Collapsing all groups for TwitchTable - Twitch_Group_By: $($thisApp.Config.Twitch_Group_By)"
+            $synchash.TwitchTable.AutoExpandGroups = $false
+            write-ezlogs -text ">>>> Collapsing all groups for TwitchTable - Twitch_Group_By: $($thisApp.Config.Twitch_Group_By)" -LogLevel 0 -Verboselog:$VerboseLog
             $synchash.TwitchTable.CollapseAllGroup()
           }catch{
             write-ezlogs -text 'An exception occurred calling TwitchTable.CollapseAllGroup()' -CatchError $_
           }
-        }                
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in TwitchMedia_View.GroupDescriptions.add_CollectionChanged' -showtime -CatchError $_
       }
   })
 }
 if($synchash.TwitchMediaCollapseGroups){
-  $synchash.TwitchMediaCollapseGroups.isChecked = $thisApp.Config.TwitchMedia_Library_CollapseAllGroups                
+  $synchash.TwitchMediaCollapseGroups.isChecked = $thisApp.Config.TwitchMedia_Library_CollapseAllGroups
   $synchash.TwitchMediaCollapseGroups.Add_Checked({
       param($sender)
       try{
@@ -4611,7 +4614,7 @@ if($synchash.TwitchMediaCollapseGroups){
           write-ezlogs -text 'No groups available to collapse for Twitchtable' -Warning
           $sender.isChecked = $false
           $thisApp.Config.TwitchMedia_Library_CollapseAllGroups = $false
-        }       
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in TwitchMediaCollapseGroups.Add_Checked' -CatchError $_
       }
@@ -4625,23 +4628,23 @@ if($synchash.TwitchMediaCollapseGroups){
           $synchash.TwitchTable.ExpandAllGroup()
         }else{
           write-ezlogs -text 'No groups available to expand for Twitchtable' -Warning
-        } 
-        $thisApp.Config.TwitchMedia_Library_CollapseAllGroups = $false        
+        }
+        $thisApp.Config.TwitchMedia_Library_CollapseAllGroups = $false
       }catch{
         write-ezlogs -text 'An exception occurred in TwitchMediaCollapseGroups.Add_Checked' -CatchError $_
       }
   })
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Twitch Groups
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Twitch Action Button
 #----------------------------------------------
 $synchash.Refresh_TwitchMedia_timer = [System.Windows.Threading.DispatcherTimer]::new()
 $synchash.Refresh_TwitchMedia_timer.add_Tick({
-    try{  
+    try{
       if($this.tag -eq 'QuickRefresh_TwitchMedia_Button'){
         if($synchash.TwitchTable.Itemssource){
           if($synchash.TwitchTable.View){
@@ -4672,17 +4675,17 @@ $synchash.Refresh_TwitchMedia_timer.add_Tick({
 #Twitch Full Refresh Command
 [System.Windows.RoutedEventHandler]$Refresh_TwitchMedia_Command = {
   param($sender)
-  try{  
+  try{
     $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
     $Button_Settings.AffirmativeButtonText = 'Yes'
-    $Button_Settings.NegativeButtonText = 'No'  
-    $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+    $Button_Settings.NegativeButtonText = 'No'
+    $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
     $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Refresh Twitch Media Library',"This will re-import all of your Twitch channels as configured under the Twitch tab in Settings. This can take a few minutes depending on the number of media to process.`n`nAre you sure you wish to continue?",$okandCancel,$Button_Settings)
     if($result -eq 'Affirmative'){
       write-ezlogs -text '>>>> User wished to refresh the Twitch Library' -showtime
       if($synchash.TwitchTable.Itemssource){
         $synchash.TwitchTable.Itemssource = $null
-      } 
+      }
       $All_Twitch_MediaProfile = "$($thisApp.Config.Media_Profile_Directory)\All-Twitch_MediaProfile\All-Twitch_Media-Profile.xml"
       if([system.io.file]::Exists($All_Twitch_MediaProfile)){
         write-ezlogs -text ">>>> Removing existing Twitch Media Profile at: $All_Twitch_MediaProfile" -LogLevel 2
@@ -4697,7 +4700,7 @@ $synchash.Refresh_TwitchMedia_timer.add_Tick({
     }else{
       write-ezlogs -text 'User did not wish to refresh the Twitch Library' -showtime -Warning
       return
-    }               
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in Refresh_TwitchMedia_Command' -showtime -CatchError $_
     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'TwitchTable' -Property 'isEnabled' -value $true
@@ -4709,78 +4712,78 @@ if($synchash.TwitchMedia_Actions_Button){
   $synchash.TwitchMedia_Actions_Button.add_Loaded({
       try{
         $synchash.TwitchMedia_Actions_Button.items.clear()
-        #Add Media 
+        #Add Media
         $Header = 'Add Stream'
         if($synchash.TwitchMedia_Actions_Button.items -notcontains $Header){
           $synchash.Add_TwitchMedia_Button = [System.Windows.Controls.MenuItem]::new()
-          $synchash.Add_TwitchMedia_Button.IsCheckable = $false    
-          $synchash.Add_TwitchMedia_Button.Header = $Header 
+          $synchash.Add_TwitchMedia_Button.IsCheckable = $false
+          $synchash.Add_TwitchMedia_Button.Header = $Header
           $synchash.Add_TwitchMedia_Button.ToolTip = 'Add Twitch streams and channels to library'
           $synchash.Add_TwitchMedia_Button.Name = 'Add_TwitchMedia_Button'
           $menuItem_imagecontrol = [MahApps.Metro.IconPacks.PackIconMaterial]::new()
           $menuItem_imagecontrol.width = '14'
           $menuItem_imagecontrol.Height = '14'
-          $menuItem_imagecontrol.Kind = 'PlusCircleOutline'        
+          $menuItem_imagecontrol.Kind = 'PlusCircleOutline'
           $synchash.Add_TwitchMedia_Button.Icon = $menuItem_imagecontrol
-          $synchash.Add_TwitchMedia_Button.Add_Click({ 
-              try{  
-                $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()        
+          $synchash.Add_TwitchMedia_Button.Add_Click({
+              try{
+                $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
                 $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalInputExternal($synchash.Window,'Add Twitch Channel','Enter/Paste the URL of the Twitch Channel or Stream',$Button_Settings)
-                if(-not [string]::IsNullOrEmpty($result) -and (Test-url -address $result)){       
+                if(-not [string]::IsNullOrEmpty($result) -and (Test-url -address $result)){
                   write-ezlogs -text ">>>> Adding Twitch channel $result" -showtime -color cyan -logtype Youtube
-                  Import-Twitch -Twitch_URL $result -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory  -thisApp $thisApp      
+                  Import-Twitch -Twitch_URL $result -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory  -thisApp $thisApp
                 }else{
                   write-ezlogs -text "The provided URL is not valid or was not provided! -- $result" -showtime -Warning -logtype Youtube
-                }                
+                }
               }catch{
                 write-ezlogs -text 'An exception occurred in Add_TwitchMedia_Button.Add_Click' -showtime -CatchError $_
               }
-          })                                               
+          })
           [Void]$synchash.TwitchMedia_Actions_Button.items.add($synchash.Add_TwitchMedia_Button)
         }
         $Header = 'Quick Refresh'
         if($synchash.TwitchMedia_Actions_Button.items -notcontains $Header){
           $synchash.QuickRefresh_TwitchMedia_Button = [System.Windows.Controls.MenuItem]::new()
-          $synchash.QuickRefresh_TwitchMedia_Button.IsCheckable = $false    
-          $synchash.QuickRefresh_TwitchMedia_Button.Header = $Header 
+          $synchash.QuickRefresh_TwitchMedia_Button.IsCheckable = $false
+          $synchash.QuickRefresh_TwitchMedia_Button.Header = $Header
           $synchash.QuickRefresh_TwitchMedia_Button.ToolTip = 'Refreshes the library view with existing records'
           $synchash.QuickRefresh_TwitchMedia_Button.Name = 'QuickRefresh_TwitchMedia_Button'
           $menuItem_imagecontrol = [MahApps.Metro.IconPacks.PackIconMaterial]::new()
           $menuItem_imagecontrol.width = '14'
           $menuItem_imagecontrol.Height = '14'
-          $menuItem_imagecontrol.Kind = 'Refresh'        
+          $menuItem_imagecontrol.Kind = 'Refresh'
           $synchash.QuickRefresh_TwitchMedia_Button.Icon = $menuItem_imagecontrol
-          $synchash.QuickRefresh_TwitchMedia_Button.Add_Click({   
-              try{  
+          $synchash.QuickRefresh_TwitchMedia_Button.Add_Click({
+              try{
                 $synchash.Refresh_TwitchMedia_timer.tag = 'QuickRefresh_TwitchMedia_Button'
-                $synchash.Refresh_TwitchMedia_timer.start()             
+                $synchash.Refresh_TwitchMedia_timer.start()
               }catch{
                 write-ezlogs -text 'An exception occurred in QuickRefresh_TwitchMedia_Button_menuitem.Add_Click' -showtime -CatchError $_
               }
-          })                                               
+          })
           [Void]$synchash.TwitchMedia_Actions_Button.items.add($synchash.QuickRefresh_TwitchMedia_Button)
         }
         $Header = 'Rescan Library'
         if($synchash.TwitchMedia_Actions_Button.items -notcontains $Header){
           $synchash.Refresh_TwitchMedia_Button = [System.Windows.Controls.MenuItem]::new()
-          $synchash.Refresh_TwitchMedia_Button.IsCheckable = $false    
+          $synchash.Refresh_TwitchMedia_Button.IsCheckable = $false
           $synchash.Refresh_TwitchMedia_Button.Header = $Header
           $synchash.Refresh_TwitchMedia_Button.ToolTip = 'Performs full rescan of media and rebuild of library'
           $synchash.Refresh_TwitchMedia_Button.Name = 'Refresh_TwitchMedia_Button'
           $menuItem_imagecontrol = [MahApps.Metro.IconPacks.PackIconMaterial]::new()
           $menuItem_imagecontrol.width = '14'
           $menuItem_imagecontrol.Height = '14'
-          $menuItem_imagecontrol.Kind = 'DatabaseRefreshOutline'        
+          $menuItem_imagecontrol.Kind = 'DatabaseRefreshOutline'
           $synchash.Refresh_TwitchMedia_Button.Icon = $menuItem_imagecontrol
-          [Void]$synchash.Refresh_TwitchMedia_Button.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Refresh_TwitchMedia_Command)                                            
+          [Void]$synchash.Refresh_TwitchMedia_Button.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Refresh_TwitchMedia_Command)
           [Void]$synchash.TwitchMedia_Actions_Button.items.add($synchash.Refresh_TwitchMedia_Button)
-        }                     
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in TwitchMedia_Actions_Button.add_Loaded' -CatchError $_
       }
   })
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Twitch Action Button
 #----------------------------------------------
 if($import_Twitch_measure){
@@ -4788,7 +4791,7 @@ if($import_Twitch_measure){
   write-ezlogs -text 'Import-Twitch Startup' -PerfTimer $import_Twitch_measure
   $import_Twitch_measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #region DragDrop Handlers
 #----------------------------------------------
 #TODO: All DragDrop stuff needs to be redone from scratch
@@ -4805,23 +4808,23 @@ $synchash.PreviewDrop_command = {
     #write-ezlogs ">>>> GetDataPresent d.data.name $($d.data.GetDataPresent([GongSolutions.Wpf.DragDrop.DragDrop]::GetSelectDroppedItems($d)) | out-string)" -showtime -Dev_mode
     #write-ezlogs ">>>> OG Source $($d.OriginalSource | out-string)" -showtime -Dev_mode
     write-ezlogs -text ">>>> d.data $($d.Data.GetDataPresent([Windows.Forms.DataFormats]::Text) | out-string)" -showtime -Dev_mode
-    write-ezlogs -text ">>>> d.data GetFormats $($($d.Data.GetData('Records')) | out-string)" -showtime -Dev_mode  
+    write-ezlogs -text ">>>> d.data GetFormats $($($d.Data.GetData('Records')) | out-string)" -showtime -Dev_mode
     write-ezlogs -text ">>>> d $($d | out-string)" -showtime -Dev_mode
     if($d.Data.GetDataPresent([Windows.Forms.DataFormats]::Text)){
-      try{  
+      try{
         $LinkDrop = $d.data.GetData([Windows.Forms.DataFormats]::Text)
         if(-not [string]::IsNullOrEmpty($LinkDrop) -and (Test-url -address $LinkDrop)){
           if($LinkDrop -match 'twitch\.tv'){
             $d.Handled = $true
             $twitch_channel = $((Get-Culture).textinfo.totitlecase(($LinkDrop | split-path -Leaf).tolower()))
-            write-ezlogs -text ">>>> Adding Twitch channel $twitch_channel - $LinkDrop" -showtime -color cyan    
-            $group = 'Twitch'                   
+            write-ezlogs -text ">>>> Adding Twitch channel $twitch_channel - $LinkDrop" -showtime -color cyan
+            $group = 'Twitch'
           }elseif($LinkDrop -match 'youtube\.com' -or $LinkDrop -match 'youtu\.be'){
             $group = 'Youtube'
             write-ezlogs -text ">>>> Adding Youtube link: $LinkDrop" -showtime -color cyan
             <#            if($LinkDrop -match '&t='){
                 $LinkDrop = ($($LinkDrop) -split('&t='))[0].trim()
-                }          
+                }
                 write-ezlogs -text ">>>> Adding Youtube link $LinkDrop" -showtime -color cyan
 
                 if($LinkDrop -match '\/tv\.youtube\.com\/'){
@@ -4835,11 +4838,11 @@ $synchash.PreviewDrop_command = {
                 }else{
                 $youtube_id = [regex]::matches($LinkDrop, 'tv.youtube.com\/watch\/(?<value>.*)')| ForEach-Object -Process {$_.groups[1].value}
                 }
-                $type = 'YoutubeTV'   
+                $type = 'YoutubeTV'
                 }elseif($LinkDrop -match 'v='){
-                $youtube_id = ($($LinkDrop) -split('v='))[1].trim()    
+                $youtube_id = ($($LinkDrop) -split('v='))[1].trim()
                 }elseif($LinkDrop -match 'list='){
-                $youtube_id = ($($LinkDrop) -split('list='))[1].trim()                  
+                $youtube_id = ($($LinkDrop) -split('list='))[1].trim()
                 }elseif($LinkDrop -match '\/watch\/'){
                 $youtube_id = [regex]::matches($LinkDrop, '\/watch\/(?<value>.*)')| ForEach-Object -Process {$_.groups[1].value}
                 }elseif($LinkDrop -notmatch 'v=' -and $LinkDrop -notmatch '\?' -and $LinkDrop -notmatch '\&'){
@@ -4847,10 +4850,10 @@ $synchash.PreviewDrop_command = {
                 }
                 if($youtube_id -match '\&pp='){
                 $youtube_id = ($youtube_id -split '\&pp=')[0]
-            } #>                                
-            $d.Handled = $true          
+            } #>
+            $d.Handled = $true
           }
-          if($d.Handled){         
+          if($d.Handled){
             if($thisApp.Config.PlayLink_OnDrop){
               if($group -eq 'Youtube'){
                 $synchash.Youtube_Progress_Ring.isActive = $true
@@ -4860,35 +4863,35 @@ $synchash.PreviewDrop_command = {
                     $video_info = Get-YouTubeVideo -Id $youtube_id
                     }catch{
                     write-ezlogs -text 'An exception occurred executing Get-YoutubeVideo' -showtime -CatchError $_
-                    }               
-                    if($video_info){ 
+                    }
+                    if($video_info){
                     if($video_info.snippet.title){
                     $title = $video_info.snippet.title
                     }elseif($video_info.localizations.en.title){
                     $title = $video_info.localizations.en.title
-                    }                                
+                    }
                     $description = $video_info.snippet.description
                     $channel_id = $video_info.snippet.channelId
-                    $channel_title = $video_info.snippet.channelTitle                 
+                    $channel_title = $video_info.snippet.channelTitle
                     $images = $video_info.snippet.thumbnails
                     $thumbnail = $video_info.snippet.thumbnails.medium.url
                     if($video_info.contentDetails.duration){
                     $TimeValues = $video_info.contentDetails.duration
                     if($TimeValues){
-                    try{         
-                    $duration = [TimeSpan]::FromHours((Convert-TimespanToInt -Timespan $TimeValues))       
+                    try{
+                    $duration = [TimeSpan]::FromHours((Convert-TimespanToInt -Timespan $TimeValues))
                     if($duration){
                     $duration = "$(([string]$duration.hours).PadLeft(2,'0')):$(([string]$duration.Minutes).PadLeft(2,'0')):$(([string]$duration.Seconds).PadLeft(2,'0'))"
-                    }             
+                    }
                     }catch{
                     write-ezlogs -text "An exception occurred parsing duration for $($title)" -showtime -CatchError $_
                     }
-                    }           
                     }
-                    $viewcount = $video_info.statistics.viewCount              
+                    }
+                    $viewcount = $video_info.statistics.viewCount
                     }else{
                     $title = "Youtube Video - $youtube_id"
-                    }                
+                    }
                     }
                     $media = [PSCustomObject]::new(@{
                     'title'            = $title
@@ -4912,7 +4915,7 @@ $synchash.PreviewDrop_command = {
                   $id = $TwitchAPI.user_id
                 }elseif($twitch_channel){
                   $idbytes = [System.Text.Encoding]::UTF8.GetBytes("$($twitch_channel)-TwitchChannel")
-                  $id = [System.Convert]::ToBase64String($idbytes)     
+                  $id = [System.Convert]::ToBase64String($idbytes)
                 }
                 if($TwitchAPI.thumbnail_url){
                   $thumbnail = "$($TwitchAPI.thumbnail_url -replace '{width}x{height}','500x500')"
@@ -4925,9 +4928,9 @@ $synchash.PreviewDrop_command = {
                   $description = $TwitchAPI.description
                 }else{
                   $profile_image_url = $null
-                  $offline_image_url = $null  
-                  $description = $null   
-                } 
+                  $offline_image_url = $null
+                  $description = $null
+                }
                 $channel_url = "https://twitch.tv/$($twitch_channel)"
                 $media = [PSCustomObject]::new(@{
                     'title'            = $title
@@ -4962,10 +4965,10 @@ $synchash.PreviewDrop_command = {
             }
             try{
               if($group -eq 'Youtube'){
-                Import-Youtube -Youtube_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp 
+                Import-Youtube -Youtube_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp
               }elseif($group -eq 'Twitch'){
                 Import-Twitch -Twitch_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp -use_runspace
-              }           
+              }
               if($thisApp.Config.PlayLink_OnDrop){
                 write-ezlogs -text '>>>> Starting update_status_timer' -showtime
                 try{
@@ -4980,44 +4983,44 @@ $synchash.PreviewDrop_command = {
               }
             }catch{
               write-ezlogs -text "An exception occurred importing media for $LinkDrop" -showtime -CatchError $_
-            }     
-          }        
+            }
+          }
         }else{
           write-ezlogs -text "The provided URL is not valid or was not provided! -- $LinkDrop" -showtime -Warning
-        }                        
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in PreviewDrop' -showtime -CatchError $_
-      }    
+      }
     }elseif($d.Data.GetDataPresent([Windows.Forms.DataFormats]::FileDrop)){
-      try{  
-        $FileDrop = $d.Data.GetData([Windows.Forms.DataFormats]::FileDrop)  
-        if(([System.IO.FIle]::Exists($FileDrop) -or [System.IO.Directory]::Exists($FileDrop))){     
-          $d.Handled = $true  
+      try{
+        $FileDrop = $d.Data.GetData([Windows.Forms.DataFormats]::FileDrop)
+        if(([System.IO.FIle]::Exists($FileDrop) -or [System.IO.Directory]::Exists($FileDrop))){
+          $d.Handled = $true
           write-ezlogs -text ">>>> Adding Local Media $FileDrop" -showtime -color cyan
-          Import-Media -Media_Path $FileDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace -AddNewOnly      
+          Import-Media -Media_Path $FileDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace -AddNewOnly
         }else{
           write-ezlogs -text "The provided Path is not valid or was not provided! -- $FileDrop" -showtime -Warning
-        }                        
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in PreviewDrop' -showtime -CatchError $_
-      }    
-    }elseif($d.data.GetDataPresent([GongSolutions.Wpf.DragDrop.DragDrop]::DataFormat.Name) -or $d.Data.GetData('Records')){       
+      }
+    }elseif($d.data.GetDataPresent([GongSolutions.Wpf.DragDrop.DragDrop]::DataFormat.Name) -or $d.Data.GetData('Records')){
       $item = $d.data.GetData([GongSolutions.Wpf.DragDrop.DragDrop]::DataFormat.Name)
       if(!$item){
         $item = $d.Data.GetData('Records')
       }
       write-ezlogs -text "[DragDrop] item $($item | out-string)" -Dev_mode
-      $media = $item.tag.Media    
+      $media = $item.tag.Media
       if($item.Name -eq 'Playlist'){
         $From_Playlist_Name = $item.title
         if($synchash.Playlists_TreeView.Items){
           $media = ($synchash.Playlists_TreeView.Items | Where-Object -FilterScript {$_.Title -eq $From_Playlist_Name}).items.tag.media
         }else{
           $media = ($synchash.Playlists_TreeView.Nodes | Where-Object -FilterScript {$_.Content.Title -eq $From_Playlist_Name}).ChildNodes.content.tag.media
-        }        
+        }
       }elseif($item.parent.Header.title){
-        $From_Playlist_Name = $item.parent.Header.title 
-      }elseif($sender.Name -eq 'PlayQueue_TreeView'){      
+        $From_Playlist_Name = $item.parent.Header.title
+      }elseif($sender.Name -eq 'PlayQueue_TreeView'){
         $From_Playlist_Name = 'Play Queue'
       }elseif($item.source -eq 'Local' -or $item.source -eq 'Spotify' -or $item.source -eq 'Youtube' -or $item.source -eq 'Twitch'){
         $From_Playlist_Name = 'MediaLibrary'
@@ -5033,7 +5036,7 @@ $synchash.PreviewDrop_command = {
       if($d.originalsource.datacontext.Name -eq 'Play_Queue' -or $d.originalsource.TemplatedParent.Name -eq 'PlayQueue_TreeView' -or $d.Source.Name -in 'PlayQueue_TreeView_Library','PlayQueue_TreeView'){
         $to_Playlist_Name = 'Play Queue'
       }elseif($d.originalsource.datacontext.Playlist_name){
-        $to_Playlist_Name = $d.originalsource.datacontext.Playlist_name    
+        $to_Playlist_Name = $d.originalsource.datacontext.Playlist_name
       }elseif($d.source.parent.Header.title){
         $to_Playlist_Name = $d.source.parent.Header.title
       }elseif($d.originalsource.TemplatedParent.Parent.header.title){
@@ -5060,15 +5063,15 @@ $synchash.PreviewDrop_command = {
       write-ezlogs -text ">>>> Drag/Drop From Playlist Name: $($From_Playlist_Name)" -showtime
       write-ezlogs -text ">>>> Drag/Drop To Playlist Name $($to_Playlist_Name)" -showtime
       write-ezlogs -text ">>>> to_playlist $($to_PlayList)" -showtime
-      if($to_Playlist_Name -eq 'Play Queue'){      
-        Write-EZLogs -text "[DragDrop] Adding Media: $($media.title) to queue" -Warning  
+      if($to_Playlist_Name -eq 'Play Queue'){
+        Write-EZLogs -text "[DragDrop] Adding Media: $($media.title) to queue" -Warning
         if($From_Playlist_Name -eq $to_Playlist_Name){
-          $d.Handled = $false 
-          $d.Effects = [System.Windows.DragDropEffects]::Move 
-          $synchash.Playqueuedrop_update_timer = [System.Windows.Threading.DispatcherTimer]::new()         
+          $d.Handled = $false
+          $d.Effects = [System.Windows.DragDropEffects]::Move
+          $synchash.Playqueuedrop_update_timer = [System.Windows.Threading.DispatcherTimer]::new()
           $synchash.Playqueuedrop_update_timer.add_tick({
-              try{               
-                $Play_Queue = $synchash.PlayQueue_TreeView.items                
+              try{
+                $Play_Queue = $synchash.PlayQueue_TreeView.items
                 [Void]$thisApp.config.Current_Playlist.clear()
                 Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -media $Play_Queue -Use_RunSpace -RefreshQueue
                 $this.Stop()
@@ -5077,16 +5080,16 @@ $synchash.PreviewDrop_command = {
                 write-ezlogs -text 'An exception occurred in Playqueuedrop_update_timer' -showtime -CatchError $_
               }
           })
-          $synchash.Playqueuedrop_update_timer.start() 
+          $synchash.Playqueuedrop_update_timer.start()
         }else{
           Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -media @($media) -Use_RunSpace -RefreshQueue
           $d.Handled = $true
           #$d.Handled = $true
-          #$synchash.update_Queue_timer.start() 
-        }                  
-        #$synchash.PlayQueue_TreeView.items.refresh()             
+          #$synchash.update_Queue_timer.start()
+        }
+        #$synchash.PlayQueue_TreeView.items.refresh()
         #
-        #$synchash.update_status_timer.start()                           
+        #$synchash.update_status_timer.start()
       }elseif($From_Playlist_Name -eq 'MediaLibrary' -and $to_Playlist_Name){
         try{
           $d.Effects = [System.Windows.DragDropEffects]::Copy
@@ -5099,7 +5102,7 @@ $synchash.PreviewDrop_command = {
                 $synchash.all_playlists[$_]
               }
           }}
-          if($Playlist_To_Add){               
+          if($Playlist_To_Add){
             Add-Playlist -Media $media -Playlist $to_Playlist_Name -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -Use_RunSpace -Update_UI -Export_PlaylistsCache
             $d.Handled = $true
           }
@@ -5107,13 +5110,13 @@ $synchash.PreviewDrop_command = {
           $d.Handled = $true
           write-ezlogs -text "An exception occurred adding $($media.id) from $($media.source) to Playlist $to_Playlist_Name" -showtime -CatchError $_
           $error.clear()
-        }    
+        }
       }elseif($synchash.all_playlists -and $to_Playlist_Name -and $to_Playlist_Name -ne $From_Playlist_Name){
         try{
           $d.Effects = [System.Windows.DragDropEffects]::Move
           foreach($m in $media){
             write-ezlogs -text ">>>> Updating playlists for media $($m.title) - $($m.id)" -LogLevel 3
-            Update-Playlist -Playlist $From_Playlist_Name -media $media -synchash $synchash -thisApp $thisApp -Remove -no_UIRefresh      
+            Update-Playlist -Playlist $From_Playlist_Name -media $media -synchash $synchash -thisApp $thisApp -Remove -no_UIRefresh
           }
           Add-Playlist -Media $media -Playlist $to_Playlist_Name -thisApp $thisApp -synchash $synchash
           Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -Startup -use_Runspace
@@ -5122,11 +5125,11 @@ $synchash.PreviewDrop_command = {
           $d.Handled = $true
           write-ezlogs -text "An exception occurred moving $($media.id) from Playlist $($From_Playlist_Name) to Playlist $to_Playlist_Name" -showtime -CatchError $_
           $error.clear()
-        }    
+        }
       }elseif($From_Playlist_Name -eq $to_Playlist_Name){
         try{
-          $d.Effects = [System.Windows.DragDropEffects]::Move 
-          $d.Handled = $false                  
+          $d.Effects = [System.Windows.DragDropEffects]::Move
+          $d.Handled = $false
           #write-ezlogs ">>>> Reordering track $($Media.title) in playlist $($From_Playlist_Name)" -showtime
           if($synchash.Playlists_TreeView.itemssource.SourceCollection){
             $Playlist_items = Get-IndexesOf -Array $synchash.Playlists_TreeView.itemssource.SourceCollection.Title -Value $From_Playlist_Name | & { process {
@@ -5139,15 +5142,15 @@ $synchash.PreviewDrop_command = {
             }}
             #$Playlist_items = ($syncHash.Playlists_TreeView.itemssource | Where-Object {$_.Title -eq $From_Playlist_Name})
           }
-          $Playlist_To_Update = $synchash.all_playlists | Where-Object -FilterScript {$_.Playlist_tracks.values.id -eq $media.id -and $_.Name -eq $From_Playlist_Name} 
+          $Playlist_To_Update = $synchash.all_playlists | Where-Object -FilterScript {$_.Playlist_tracks.values.id -eq $media.id -and $_.Name -eq $From_Playlist_Name}
           <#          if($Playlist_To_Update){
               if(($Playlist_To_Update.PlayList_tracks.GetType()).name -notmatch 'OrderedDictionary'){$Playlist_To_Update.PlayList_tracks = ConvertTo-OrderedDictionary -hash ($Playlist_To_Update.PlayList_tracks)}
           }#>
           write-ezlogs -text "Playlist_To_Update: $($Playlist_To_Update | out-string)" -Dev_mode
-          $Playlist_update_timer = [System.Windows.Threading.DispatcherTimer]::new()         
+          $Playlist_update_timer = [System.Windows.Threading.DispatcherTimer]::new()
           $Playlist_update_timer.add_tick({
-              try{               
-                #write-ezlogs "Playlist to update before: $($Playlist_To_Update.Playlist_tracks.Title | out-string)"                        
+              try{
+                #write-ezlogs "Playlist to update before: $($Playlist_To_Update.Playlist_tracks.Title | out-string)"
                 if($Playlist_To_Update.Playlist_tracks.values -and $Playlist_items.tag.media){
                   $Playlist_To_Update.PlayList_tracks.clear()
                   $indextoAdd = 0
@@ -5159,35 +5162,35 @@ $synchash.PreviewDrop_command = {
                     }
                     #[Void]$Updated_Playlist.add($item)
                   }
-                  $d.Handled = $false                
+                  $d.Handled = $false
                 }else{
                   write-ezlogs -text "Unable to find Playlist($Playlist_To_Update) to update for media $($media.title) - $($media.id)" -showtime -Warning
                   $d.Handled = $true
-                }                           
+                }
                 $this.Stop()
               }catch{
                 $this.Stop()
                 write-ezlogs -text 'An exception occurred in playlist_update_timer' -showtime -CatchError $_
               }
-          })                   
+          })
           $Playlist_update_timer.start()
           Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace
           #$syncHash.Playlists_TreeView.itemssource.refresh()
-          return                                              
+          return
         }catch{
           $d.Handled = $true
           write-ezlogs -text "An exception occurred moving $($media.id) from Playlist $($from_Playlist) to Playlist $to_PlayList" -showtime -CatchError $_
-        }           
+        }
       }else{
         $d.Handled = $true
         write-ezlogs -text 'Not sure what to do' -showtime -Warning
-      }              
+      }
     }else{
       $d.Handled = $true
-    } 
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in PreviewDrop_command' -CatchError $_
-  }     
+  }
 }
 
 
@@ -5224,30 +5227,30 @@ $synchash.TreeViewDropped_command = {
             $media = $Target_PlaylistNode.ChildNodes.Content
             $clearplaylist = $true
           }
-          write-ezlogs -text "[TreeViewDropped] | Updating existing playlist: $($Target_PlaylistNode.Content.title) -- Nodes: $($Nodes | out-string)"
+          write-ezlogs -text "[TreeViewDropped] | Updating existing playlist: $($Target_PlaylistNode.Content.title) -- Nodes: $($Nodes.title)"
           Add-Playlist -Media $media -Playlist $Target_PlaylistNode.Content.title -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -Use_RunSpace -Export_PlaylistsCache -Update_UI -position $Position -PositionTargetMedia $Target_Node -ClearPlaylist:$clearplaylist
-        } 
+        }
       }else{
-        write-ezlogs -text "[TreeViewDropped] | Updating existing playlist: $($Target_PlaylistNode.Content.title) -- Nodes: $($Nodes | out-string)"
-      }      
+        write-ezlogs -text "[TreeViewDropped] | Cannot update playlist, No playistd ID provided -- Title: $($Target_PlaylistNode.Content.title) -- Nodes: $($Nodes | out-string)" -warning
+      }
     }else{
       write-ezlogs -text "[TreeViewDropped] Unknown node/media type in playlist dragdrop -- e: $($e | out-string) - Nodes: $($Nodes | out-string)" -Warning
     }
   }catch{
     write-ezlogs -text 'An exception occurred in TreeViewDropped_command' -CatchError $_
-  }     
+  }
 }
 $synchash.TreeViewDropping_command = {
   Param(
     [System.Object]$sender,
     [Syncfusion.UI.Xaml.TreeView.TreeViewItemDroppingEventArgs]$e
   )
-  try{     
+  try{
     if($e.TargetNode.Content.Name -eq 'Playlist'){
       $Target_PlaylistNode = $e.TargetNode
     }else{
       $Target_PlaylistNode = $e.TargetNode.ParentNode
-    } 
+    }
     $SourceDataGrid = $e.data.GetData('SourceDataGrid')
     if($SourceDataGrid.SelectedItems){
       $SourceNode = $SourceDataGrid.SelectedItems
@@ -5258,21 +5261,21 @@ $synchash.TreeViewDropping_command = {
       $e.Handled = $true
       write-ezlogs -text "[TreeViewDropping] Cannot drop item as child as target is not playlist -- Target Name: $($e.TargetNode.Content.Name)" -Warning
       return
-    }elseif($SourceDataGrid -and $SourceNode.ID -and $e.DropPosition -ne [Syncfusion.UI.Xaml.TreeView.DropPosition]::None){           
+    }elseif($SourceDataGrid -and $SourceNode.ID -and $e.DropPosition -ne [Syncfusion.UI.Xaml.TreeView.DropPosition]::None){
       if($SourceNode.Playlist_ID -and ('Track' -in $SourceNode.Name -or 'Playlist' -in $SourceNode.Name)){
-        if($Target_PlaylistNode.ChildNodes.Content -and $Target_PlaylistNode.Content.title){    
-          write-ezlogs -text "[TreeViewDropping] | Adding to playlist: $($Target_PlaylistNode.Content.title) with content: $($Target_PlaylistNode.ChildNodes.Content.Title)"             
+        if($Target_PlaylistNode.ChildNodes.Content -and $Target_PlaylistNode.Content.title){
+          write-ezlogs -text "[TreeViewDropping] | Adding to playlist: $($Target_PlaylistNode.Content.title) with content: $($Target_PlaylistNode.ChildNodes.Content.Title)"
           Add-Playlist -Media $Target_PlaylistNode.ChildNodes.Content -Playlist $Target_PlaylistNode.Content.title -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -Use_RunSpace -Export_PlaylistsCache -ClearPlaylist -Update_UI
-        } 
+        }
       }elseif($SourceNode.ID -and $Target_PlaylistNode.Content.Title){
         write-ezlogs -text "[TreeViewDropping] >>>> New dragdrop for node IDs: $($SourceNode.ID) -- Title: $($SourceNode.Title) -- from datagrid: $($SourceDataGrid.Name) -- To playlist: $($Target_PlaylistNode.Content.Title) -- DropPosition: $($e.DropPosition)" -showtime
-        Add-Playlist -Media $SourceNode.ID -Playlist $Target_PlaylistNode.Content.Title -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -Use_RunSpace -Export_PlaylistsCache -Update_UI            
+        Add-Playlist -Media $SourceNode.ID -Playlist $Target_PlaylistNode.Content.Title -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -Use_RunSpace -Export_PlaylistsCache -Update_UI
       }else{
         write-ezlogs -text "[TreeViewDropping] Unable to determine what to do with drag dropped node: $($SourceNode | out-string) -- TargetNode: $($Target_PlaylistNode | out-string)" -Warning
         $e.Handled = $true
-      }      
+      }
     }elseif($e.Data.GetDataPresent([Windows.Forms.DataFormats]::Text)){
-      try{  
+      try{
         if($Target_PlaylistNode.Content.title){
           $PlaylistName = $Target_PlaylistNode.Content.title
         }elseif($e.TargetNode.Content.Name){
@@ -5289,25 +5292,23 @@ $synchash.TreeViewDropping_command = {
             if($thisApp.Config.PlayLink_OnDrop){
               Add-TwitchPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkDrop -linktext $twitch_channel -Channel $twitch_channel -AddtoPlaylist $PlaylistName
             }
-            Import-Twitch -Twitch_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace                          
+            Import-Twitch -Twitch_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace
           }elseif($LinkDrop -match 'youtube\.com' -or $LinkDrop -match 'youtu\.be'){
-            write-ezlogs -text "[TreeViewDropping] >>>> Adding Youtube link: $LinkDrop - Playlist: $($PlaylistName)" -showtime -color cyan            
+            write-ezlogs -text "[TreeViewDropping] >>>> Adding Youtube link: $LinkDrop - Playlist: $($PlaylistName)" -showtime -color cyan
             Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkDrop -AddtoPlaylist $PlaylistName -StartPlayback:$thisApp.Config.PlayLink_OnDrop
-            Import-Youtube -Youtube_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp           
-            #$e.Handled = $true          
-          }        
+            Import-Youtube -Youtube_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp
+            #$e.Handled = $true
+          }
         }else{
           write-ezlogs -text "[TreeViewDropping] The provided URL is not valid or was not provided! -- $LinkDrop" -showtime -Warning
-        }                        
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in TreeViewDropping' -showtime -CatchError $_
-      }    
-    }else{
-      write-ezlogs -text "[TreeViewDropping] Unknown node/media type in playlist dragdrop -- e: $($e.data | out-string)" -Warning
-    }  
+      }
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in TreeViewDropping_command' -CatchError $_
-  }     
+  }
 }
 $synchash.TreeViewDragStarting_command = {
   Param(
@@ -5317,12 +5318,12 @@ $synchash.TreeViewDragStarting_command = {
   try{
     if('Playlist' -in $e.DraggingNodes.Content.Name){
       write-ezlogs -text "[TreeViewDragStarting] Cannot drag item as it is a playlist -- Title: $($e.DraggingNodes.Content.Title)" -Warning
-      $e.Cancel = $true      
+      $e.Cancel = $true
       return
-    }   
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in TreeViewDropping_command' -CatchError $_
-  }     
+  }
 }
 if($synchash.Playlists_TreeView){
   [Void]$synchash.Playlists_TreeView.add_ItemDropped($synchash.TreeViewDropped_command)
@@ -5363,11 +5364,11 @@ if($synchash.SpotifyTable){
   $synchash.SpotifyTable.add_PreviewDrop($synchash.PreviewDrop_Command)
 }
 
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion DragDrop Handlers
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Add to Playlist
 #----------------------------------------------
 $synchash.Add_to_Playlist_timer = [System.Windows.Threading.DispatcherTimer]::new()
@@ -5377,24 +5378,24 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       $Selected_Media = $this.tag.Selected_Media
       $sender = $this.tag.sender
       write-ezlogs -text ">>>> Adding to playlist: $($Playlist) - Number of media: $($Selected_Media.count)" -showtime
-      if($Playlist -in 'Play Queue','Add to Play Queue','Add Playlist to Play Queue' -and $Selected_Media){   
+      if($Playlist -in 'Play Queue','Add to Play Queue','Add Playlist to Play Queue' -and $Selected_Media){
         Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -media @($Selected_Media) -Use_RunSpace -RefreshQueue
-        return   
-      }elseif($Playlist -eq 'Play'){     
+        return
+      }elseif($Playlist -eq 'Play'){
         if($sender.tag.source.Name -eq 'Play_Queue'){
           $Selected_Media = $synchash.PlayQueue_TreeView.Items.tag.media
         }
         if(!$Selected_Media){
           $Selected_Media = $sender.tag.datacontext.items
         }
-        if($sender.tag.source.Name -ne 'Play_Queue'){       
+        if($sender.tag.source.Name -ne 'Play_Queue'){
           if($Selected_Media){
             Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -media @($Selected_Media) -Use_RunSpace -RefreshQueue
           }
         }else{
           write-ezlogs -text ">>>> Saving app config: $($thisApp.Config.Config_Path)" -showtime
           Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
-          Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_Runspace #-Full_Refresh   
+          Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_Runspace #-Full_Refresh
           Get-PlayQueue -verboselog:$false -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace
         }
         $start_media = $Selected_Media | Select-Object -First 1
@@ -5411,9 +5412,9 @@ $synchash.Add_to_Playlist_timer.add_Tick({
         if($start_media.source -eq 'Spotify' -or $start_media.url -match 'spotify\:'){
           Start-SpotifyMedia -Media $start_media -thisApp $thisApp -synchash $synchash -use_WebPlayer:$thisApp.config.Spotify_WebPlayer -Show_notifications:$thisApp.config.Show_notifications -RestrictedRunspace:$thisApp.config.Spotify_WebPlayer
         }else{
-          Start-Media -media $start_media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification 
+          Start-Media -media $start_media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification
         }
-        return                   
+        return
       }elseif($Selected_Media){
         write-ezlogs -text "| Adding $($Selected_Media.count) items to Playlist $Playlist" -showtime
         Add-Playlist -Media $Selected_Media -Playlist $Playlist -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -Use_RunSpace -Update_UI
@@ -5427,7 +5428,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     }finally{
       $this.tag = $null
       $this.Stop()
-    } 
+    }
 })
 
 [System.Windows.RoutedEventHandler]$synchash.Add_to_PlaylistCommand = {
@@ -5471,7 +5472,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       write-ezlogs -text "Found $($Selected_Media.count) media of artist: $($media.Artist)"
     }elseif($sender.parent.header -eq 'Add Album to...' -and $media.Album){
       $Selected_Media = foreach($album in $media.Album){
-        Get-IndexesOf -Array $synchash.All_local_Media.Album -Value $album | & { process {          
+        Get-IndexesOf -Array $synchash.All_local_Media.Album -Value $album | & { process {
             if($synchash.All_local_Media[$_].Artist -in $media.Artist){
               $synchash.All_local_Media[$_]
             }
@@ -5479,7 +5480,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
         Get-IndexesOf -Array $synchash.All_Spotify_Media.Album -Value $album | & { process {
             if($synchash.All_Spotify_Media[$_].Artist -in $media.Artist){
               $synchash.All_Spotify_Media[$_]
-            }  
+            }
         }}
         Get-IndexesOf -Array $synchash.All_Youtube_Media.Album -Value $album | & { process {
             if($synchash.All_Youtube_Media[$_].Artist -in $media.Artist){
@@ -5519,7 +5520,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       if($PlaylistID  -and $synchash.all_playlists.Playlist_ID){
         $Selected_Media = lock-object -InputObject $synchash.all_playlists_ListLock -ScriptBlock {
           $index = $synchash.all_playlists.Playlist_ID.IndexOf($PlaylistID )
-          if($index -ne -1){    
+          if($index -ne -1){
             if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
               $synchash.all_playlists.GetItemAt($index).PlayList_tracks.values
             }else{
@@ -5531,12 +5532,12 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       }
     }else{
       $Selected_Media = $null
-    } 
+    }
     $AddToPlaylist_Items = @{
       'sender'        = $sender
       'Add_to_Playlist' = $sender.header
       'Selected_Media' = $Selected_Media
-    }   
+    }
     $synchash.Add_to_Playlist_timer.tag = $AddToPlaylist_Items
     $synchash.Add_to_Playlist_timer.start()
   }catch{
@@ -5559,14 +5560,14 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     $Playlist_ID = $sender.datacontext.content.Playlist_ID
   }
   write-ezlogs -text ">>>> Rename Playlist Name: $($Playlist)" -showtime -Dev_mode
-  $media = $sender.tag.Media 
+  $media = $sender.tag.Media
   $mediaid = $media.id
   if(!$mediaid){
     $mediaid = $sender.tag.Source.Selecteditem.id
   }
   if(!$media.url -and $Playlist_ID -and $synchash.all_playlists.Playlist_ID){
     $pindex = $synchash.all_playlists.Playlist_ID.IndexOf($Playlist_ID)
-    if($pindex -ne -1){               
+    if($pindex -ne -1){
       if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
         $playlist_lookup = $synchash.all_playlists.GetItemAt($pindex)
       }else{
@@ -5582,7 +5583,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   }
   #write-ezlogs "Media: $($media | out-string)" -showtime -dev_mode
   $Playlist_Directory_Path = [System.IO.Path]::Combine($thisApp.config.Playlist_Profile_Directory,'Custom-Playlists')
-  write-ezlogs -text "Prompting for new playlist name for ($Playlist)..." -showtime
+  write-ezlogs -text "Prompting for new playlist name for ($Playlist) -- Media: $($media.title)" -showtime
   try{
     $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
     if($synchash.MediaLibrary_Viewer.isVisible){
@@ -5595,57 +5596,57 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     }else{
       $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalInputExternal($DialogWindow,'Add New Playlist','Enter the name of the new playlist',$Button_Settings)
     }
-    if(-not [string]::IsNullOrEmpty($result)){   
+    if(-not [string]::IsNullOrEmpty($result)){
       $illegal = [Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
       $pattern = "[™`�$illegal]"
-      $result = ([Regex]::Replace($result, $pattern, '')).trim() 
+      $result = ([Regex]::Replace($result, $pattern, '')).trim()
       [int]$character_Count = ($result | measure-object -Character -ErrorAction SilentlyContinue).Characters
       if([int]$character_Count -ge 100){
         write-ezlogs -text "Playlist name too long! ($character_Count characters). Please choose a name 100 characters or less " -showtime -Warning
-        $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+        $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
         $Button_Settings.AffirmativeButtonText = 'Ok'
         $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
         $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,"Playlist name too long! ($character_Count)",'Please choose a name for the playlist that is 100 characters or less',$okandCancel,$Button_Settings)
         return
       }
     }
-    if(-not [string]::IsNullOrEmpty($result)){ 
+    if(-not [string]::IsNullOrEmpty($result)){
       if($sender.header -eq 'Create Playlist from Queue'){
-        write-ezlogs -text "Creating new playlist $result from Play Queue " -showtime -Warning    
+        write-ezlogs -text "Creating new playlist $result from Play Queue " -showtime -Warning
         Add-Playlist -Media $synchash.PlayQueue_TreeView.Items -Playlist $result -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -Use_RunSpace -Update_UI -Export_PlaylistsCache
         return
-      }elseif($sender.header -eq 'Save as New Playlist'){  
+      }elseif($sender.header -eq 'Save as New Playlist'){
         if($sender.datacontext.Playlist_ID){
           $Playlist_ID = $sender.datacontext.Playlist_ID
         }elseif($sender.tag.Source.Selecteditem.Playlist_ID){
           $Playlist_ID = $sender.tag.Source.Selecteditem.Playlist_ID
         }elseif($sender.tag.datacontext.Playlist_ID){
           $Playlist_ID = $sender.tag.datacontext.Playlist_ID
-        }     
+        }
         if($Playlist_ID -and $synchash.all_playlists.Playlist_ID){
-          $Playlist_items = lock-object -InputObject $synchash.all_playlists_ListLock -ScriptBlock { 
-            if($synchash.all_playlists.Playlist_ID){               
+          $Playlist_items = lock-object -InputObject $synchash.all_playlists_ListLock -ScriptBlock {
+            if($synchash.all_playlists.Playlist_ID){
               $index = $synchash.all_playlists.Playlist_ID.IndexOf($Playlist_ID)
-              if($index -ne -1){    
+              if($index -ne -1){
                 if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
                   $Playlist = $synchash.all_playlists.GetItemAt($index).PlayList_tracks.values
                 }else{
                   $Playlist = $synchash.all_playlists[$index].PlayList_tracks.values
                 }
-              }  
+              }
             }
           }
         }else{
           write-ezlogs -text "Unable to find playlist to copy! -- Sender: $($sender | out-string) - Sender.datacontext: $($sender.datacontext | out-string)" -Warning
         }
-        write-ezlogs -text "Creating new playlist $result from playlist: $($Playlist | Out-String) " -showtime -Warning         
+        write-ezlogs -text "Creating new playlist $result from playlist: $($Playlist | Out-String) " -showtime -Warning
         if(!$Playlist_items -and (Test-URL -address $media.uri) -or (Test-URL -address $media.url)){
           $Playlist_items = $media
-        }  
+        }
         Add-Playlist -Media $Playlist_items -Playlist $result -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -Use_RunSpace -Update_UI -Export_PlaylistsCache
         return
-      }elseif($sender.parent.header -in 'Add Artist to...','Add Album to...' -or $sender.header -in 'Add Artist to...','Add Album to...','New Playlist'){ 
-        write-ezlogs -text "Adding media to new playlist $($result)" -showtime -Warning
+      }elseif($sender.parent.header -in 'Add Artist to...','Add Album to...' -or $sender.header -in 'Add Artist to...','Add Album to...','New Playlist'){
+        write-ezlogs -text "Adding media to new playlist $($result): Header: $($sender.header)" -showtime -Warning
         if($sender.header -eq 'Add Artist to...' -or $sender.parent.header -eq 'Add Artist to...'){
           $Playlist_items = foreach($artist in $media.artist){
             Get-IndexesOf -Array $synchash.All_local_Media.artist -Value $artist | & { process {
@@ -5680,35 +5681,44 @@ $synchash.Add_to_Playlist_timer.add_Tick({
             }}
           }
         }elseif($sender.tag.source.Name -eq 'YoutubeTable'){
-          write-ezlogs -text '| Getting media from Youtube selected items' -LogLevel 2
+          write-ezlogs -text '| Getting media from Youtube selected items' -LogLevel 0 -Verboselog:$verboselog
           $Playlist_items = $synchash.YoutubeTable.selecteditems
         }elseif($sender.tag.source.Name -eq 'SpotifyTable'){
-          write-ezlogs -text '| Getting media from SpotifyTable selected items' -LogLevel 2
+          write-ezlogs -text '| Getting media from SpotifyTable selected items' -LogLevel 0 -Verboselog:$verboselog
           $Playlist_items = $synchash.SpotifyTable.selecteditems
         }elseif($sender.tag.source.Name -eq 'MediaTable'){
-          write-ezlogs -text '| Getting media from local Media selected items' -LogLevel 2
+          write-ezlogs -text '| Getting media from local Media selected items' -LogLevel 0 -Verboselog:$verboselog
           $Playlist_items = $synchash.MediaTable.selecteditems
         }elseif($sender.tag.source.Name -eq 'TwitchTable'){
-          write-ezlogs -text '| Getting media from Twitch  selected items' -LogLevel 2
+          write-ezlogs -text '| Getting media from Twitch  selected items' -LogLevel 0 -Verboselog:$verboselog
           $Playlist_items = $synchash.TwitchTable.selecteditems
         }elseif($sender.tag.source.TreeViewItemInfo.TreeView -is [Syncfusion.UI.Xaml.TreeView.SfTreeView]){
-          $Playlist_items = $sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems.Content
+          if($sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems.Content){
+            write-ezlogs -text "| Getting media from source TreeVie SelectedItems.Content"
+            $Playlist_items = $sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems.Content
+          }elseif($sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems){
+            write-ezlogs -text "| Getting media from source TreeView SelectedItems"
+            $Playlist_items = $sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems
+          }elseif((Test-ValidPath -path $media.uri -Type URLorFile) -or (Test-ValidPath -path $media.url -Type URLorFile)){
+            write-ezlogs -text "| Getting single media passed to routed event" -LogLevel 0 -Verboselog:$verboselog
+            $Playlist_items = $media
+          }
         }elseif((Test-ValidPath -path $media.uri -Type URLorFile) -or (Test-ValidPath -path $media.url -Type URLorFile)){
-          write-ezlogs -text '| Getting single media passed to routed event' -LogLevel 2
+          write-ezlogs -text '| Getting single media passed to routed event' -LogLevel 0 -Verboselog:$verboselog
           $Playlist_items = $media
-        } 
-        write-ezlogs -text "| Playlist items to add: $(($Playlist_items).count)" -showtime -Warning          
+        }
+        write-ezlogs -text "| Playlist items to add: $(($Playlist_items).count)" -Warning
         Add-Playlist -Media $Playlist_items -Playlist $result -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -Use_RunSpace -Update_UI -Export_PlaylistsCache
         return
       }elseif($sender.header -eq 'Rename Playlist'){
-        write-ezlogs -text ">>>> Renaming Playlist $($Playlist) to $($result)" -showtime -Warning
+        write-ezlogs -text ">>>> Renaming Playlist '$($Playlist)' to: $($result)" -Warning
         if($sender.datacontext.Playlist_ID){
           $Playlist_ID = $sender.datacontext.Playlist_ID
         }elseif($sender.tag.Source.Selecteditem.Playlist_ID){
           $Playlist_ID = $sender.tag.Source.Selecteditem.Playlist_ID
         }elseif($sender.tag.datacontext.Playlist_ID){
           $Playlist_ID = $sender.tag.datacontext.Playlist_ID
-        } 
+        }
         $sourceplaylist = Get-IndexesOf -Array $synchash.All_playlists.playlist_id -Value $Playlist_ID | & { process {
             if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
               $synchash.all_playlists.GetItemAt($_)
@@ -5717,8 +5727,8 @@ $synchash.Add_to_Playlist_timer.add_Tick({
             }
         }}
         if($result -eq $sourceplaylist.Name){
-          write-ezlogs -text "Playlist name provided is the same, no action will be taken for playlist $($result)" -showtime -Warning
-          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+          write-ezlogs -text "Playlist name provided is the same, no action will be taken for playlist: $($result)" -Warning
+          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
           $Button_Settings.AffirmativeButtonText = 'Ok'
           $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
           $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Playlist name is the same',"The Playlist name you provided is the same as the existing name $($result), no action will be taken",$okandCancel,$Button_Settings)
@@ -5731,14 +5741,14 @@ $synchash.Add_to_Playlist_timer.add_Tick({
           write-ezlogs -text "Unable to find existing playlist profile to rename to: $($result)" -showtime -Warning
           return
         }
-      }elseif($media){   
-        write-ezlogs -text "creating new empty playlist $result for media $($media.title)" -showtime -Warning        
+      }elseif($media){
+        write-ezlogs -text "creating new empty playlist $result for media $($media.title)" -showtime -Warning
         Add-Playlist -Media $media -Playlist $result -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -Use_RunSpace -Update_UI -Export_PlaylistsCache
-        return       
+        return
       }else{
-        write-ezlogs -text "No media selected, creating new empty playlist $result" -showtime -Warning    
+        write-ezlogs -text "No media selected, creating new empty playlist $result" -showtime -Warning
         Add-Playlist -Media $media -Playlist $result -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -Use_RunSpace -Update_UI -Export_PlaylistsCache
-        return             
+        return
       }
       write-ezlogs -text ">>>> Saving app config: $($thisApp.Config.Config_Path)" -showtime
       Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
@@ -5750,11 +5760,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     write-ezlogs -text "An exception occurred adding $($media.title | Out-String) to new Playlist $($Playlist)" -showtime -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Add to Playlist
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Export Playlists
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.Export_PlaylistCommand = {
@@ -5783,21 +5793,21 @@ $synchash.Add_to_Playlist_timer.add_Tick({
           $Playlist_to_Export = $synchash.all_playlists[$pindex]
         }
       }
-    }  
-    if(!$Playlist_to_Export){     
+    }
+    if(!$Playlist_to_Export){
       $Playlist_Path_Name = "$($Playlist)-CustomPlaylist.xml"
       $Playlist_Directory_Path = [System.IO.Path]::Combine($thisApp.config.Playlist_Profile_Directory,'Custom-Playlists')
-      $Playlist_File_Path = [System.IO.Path]::Combine($Playlist_Directory_Path,$Playlist_Path_Name)  
-      write-ezlogs -text "Cant find playlist from all_playlists cache with ID $($PlaylistID), looking for playlist at path: $Playlist_File_Path" -showtime -Warning 
+      $Playlist_File_Path = [System.IO.Path]::Combine($Playlist_Directory_Path,$Playlist_Path_Name)
+      write-ezlogs -text "Cant find playlist from all_playlists cache with ID $($PlaylistID), looking for playlist at path: $Playlist_File_Path" -showtime -Warning
       if([System.IO.File]::Exists($Playlist_File_Path)){
-        write-ezlogs -text "| Importing Playlist Profile: $Playlist_File_Path" -showtime 
+        write-ezlogs -text "| Importing Playlist Profile: $Playlist_File_Path" -showtime
         $Playlist_to_Export = Import-CliXml -Path $Playlist_File_Path
       }else{
         write-ezlogs -text "Unable to find playlist $($Playlist) to export at path $($Playlist_File_Path), cannot continue!" -showtime -Warning
         return
       }
     }
-    if($sender.header -eq 'Export Playlist' -and $Playlist_to_Export){  
+    if($sender.header -eq 'Export Playlist' -and $Playlist_to_Export){
       $result = Open-FileDialog -Title "Select the name and location of the export file for Playlist $($Playlist_to_Export.Name)"  -filter 'XML Files (*.xml)|*.xml' -SaveDialog
       $folder = [system.IO.Path]::GetDirectoryName($result)
       if([System.IO.Directory]::Exists($folder)){
@@ -5816,8 +5826,8 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   param($sender)
   try{
     if(($synchash.all_playlists.count -lt 1)){
-      write-ezlogs -text 'Cant find playlists from all_playlists cache, looking for any playlist profiles' -showtime -Warning 
-      $synchash.all_playlists = [System.Collections.Generic.List[Object]]::new()     
+      write-ezlogs -text 'Cant find playlists from all_playlists cache, looking for any playlist profiles' -showtime -Warning
+      $synchash.all_playlists = [System.Collections.Generic.List[Object]]::new()
       $playlist_pattern = [regex]::new('$(?<=((?i)Playlist.xml))')
       [System.IO.Directory]::EnumerateFiles($thisApp.config.Playlist_Profile_Directory,'*','AllDirectories').where({$_ -match $playlist_pattern}) | & { process {
           $profile_path = $null
@@ -5827,22 +5837,22 @@ $synchash.Add_to_Playlist_timer.add_Tick({
             try{
               if([System.IO.File]::Exists($profile_path)){
                 $Playlist_profile = Import-CliXml -Path $profile_path
-              }          
+              }
             }catch{
               write-ezlogs -text "An exception occurred importing Playlist profile path ($profile_path)" -showtime -CatchError $_
-            }             
+            }
             $Playlist_encodedTitle = $Playlist_profile.Playlist_ID
             if($Playlist_encodedTitle -and $synchash.all_playlists.Playlist_ID -notcontains $Playlist_encodedTitle){
               try{
                 [Void]$synchash.all_playlists.Add($Playlist_profile)
               }catch{
                 write-ezlogs -text "An exception occurred adding playlist ($Playlist_encodedTitle) from path $profile_path" -showtime -CatchError $_
-              }  
-            }               
+              }
+            }
           }
       }}
     }
-    if($synchash.all_playlists.count -gt 0){  
+    if($synchash.all_playlists.count -gt 0){
       $folder = Open-FolderDialog -Title 'Select the directory where all playlists will exported to'
       if([System.IO.Directory]::Exists($folder)){
         write-ezlogs -text ">>>> Exporting All Playlists to path $folder" -showtime
@@ -5852,7 +5862,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
               Export-Clixml -InputObject $_ -Path "$($folder)\$($_.name).xml" -Force -Encoding UTF8
             }catch{
               write-ezlogs -text "An exception occurred exporting Playlist $($_.name) to $($folder)\$($_.name)" -CatchError $_
-            }                   
+            }
         }}
       }else{
         write-ezlogs -text "The provided save folder $($folder) is not valid or none was provided" -showtime -Warning
@@ -5864,15 +5874,15 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     write-ezlogs -text 'An exception occurred in Export_PlaylistCommand' -showtime -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Export Playlists
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Import Playlists
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.Import_PlaylistCommand = {
-  param($sender) 
+  param($sender)
   write-ezlogs -text 'Opening file select dialog...' -showtime
   try{
     $Playlist_Directory_Path = [System.IO.Path]::Combine($thisApp.config.Playlist_Profile_Directory,'Custom-Playlists')
@@ -5881,10 +5891,10 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     }
     $results = Open-FileDialog -Title 'Select the Playlist file(s) you wish to import'  -filter 'XML Files (*.xml)|*.xml' -CheckPathExists -MultiSelect
     if($results.count -gt 1){
-      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
       $Button_Settings.AffirmativeButtonText = 'Yes'
-      $Button_Settings.NegativeButtonText = 'No'  
-      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+      $Button_Settings.NegativeButtonText = 'No'
+      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
       $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,"Overwrite Playlists`?",'You are importing multiple playlists. Do you wish to automatically overwrite any existing playlists found? Selecting no means you will be prompted to overwrite for each existing playlist found',$okandCancel,$Button_Settings)
       if($result -eq 'Affirmative'){
         write-ezlogs -text 'User wished to overwrite any existing playlists found' -showtime
@@ -5895,28 +5905,28 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       }
     }
     $results | & { process {
-        if([system.io.file]::Exists($_)){ 
+        if([system.io.file]::Exists($_)){
           write-ezlogs -text ">>>> Importing playlist profile to $_" -showtime
           $Playlist_profile = Import-Clixml $_
           $Playlist_Path_Name = "$($Playlist_profile.Name)-CustomPlaylist.xml"
           $Import_playlist_Destination_path = [System.IO.Path]::Combine($Playlist_Directory_Path,$Playlist_Path_Name)
           if([string]::IsNullOrEmpty($Playlist_profile.Playlist_ID)){
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Ok'
             $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
             $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid Playlist!',"The file ($($_)) does not appear to be a valid playlist profile that can be imported",$okandCancel,$Button_Settings)
             return
           }elseif($synchash.All_Playlists.id -contains $Playlist_profile.Playlist_ID -and !$Overwrite_All){
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Ok'
             $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
             $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Playlist Already Exists!',"The playlist ($($Playlist_profile.Name)) already exists with id $($($Playlist_profile.ID))",$okandCancel,$Button_Settings)
             return
-          }elseif($synchash.All_Playlists.Name -contains $Playlist_profile.Name -and !$Overwrite_All){       
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+          }elseif($synchash.All_Playlists.Name -contains $Playlist_profile.Name -and !$Overwrite_All){
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Yes'
-            $Button_Settings.NegativeButtonText = 'No'  
-            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+            $Button_Settings.NegativeButtonText = 'No'
+            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
             $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,"Overwrite Playlist $($Playlist_profile.Name)`?","A playlist with name ($($Playlist_profile.Name)) already exists. Do you wish to overwrite the existing with the imported playlist?",$okandCancel,$Button_Settings)
             if($result -eq 'Affirmative'){
               write-ezlogs -text "User wished to overwrite playlist $($Playlist_profile.Name)" -showtime
@@ -5924,11 +5934,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
               write-ezlogs -text "User did not wish to overwrite playlist $($Playlist_profile.Name)" -showtime
               return
             }
-          }elseif([system.io.file]::Exists($Import_playlist_Destination_path) -and !$Overwrite_All){       
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+          }elseif([system.io.file]::Exists($Import_playlist_Destination_path) -and !$Overwrite_All){
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Yes'
             $Button_Settings.NegativeButtonText = 'No'
-            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
             $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,"Overwrite Playlist $($Playlist_profile.Name)`?","A playlist profile at ($($Import_playlist_Destination_path)) already exists. Do you wish to overwrite the existing with the imported playlist?",$okandCancel,$Button_Settings)
             if($result -eq 'Affirmative'){
               write-ezlogs -text "User wished to overwrite playlist $($Playlist_profile.Name)" -showtime
@@ -5946,21 +5956,21 @@ $synchash.Add_to_Playlist_timer.add_Tick({
           Add-Playlist -thisApp $thisApp -synchash $synchash -Playlist $Playlist_profile.name -Media $Playlist_profile.PlayList_tracks.values -ClearPlaylist -Update_UI
         }else{
           write-ezlogs -text "No valid playlist to import was found at $($result)" -showtime -Warning
-        }   
+        }
     }}
   }catch{
     write-ezlogs -text 'An exception occurred in Import_PlaylistCommand' -showtime -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Import Playlists
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Refresh Playlists
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.Refresh_PlaylistCommand = {
-  param($sender) 
+  param($sender)
   try{
     write-ezlogs -text '>>>> Manually refreshing all playlists' -showtime
     Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -Quick_Refresh
@@ -5968,11 +5978,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     write-ezlogs -text 'An exception occurred in Refresh_PlaylistCommand' -showtime -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Refresh Playlists
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Sort Playlists
 #TODO: Finish - make sure to bind menu items states together
 #----------------------------------------------
@@ -5988,20 +5998,20 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -Startup -use_Runspace -SortBy $this.Header
     $this.parent.items | & { process {
         if($_.Header -eq $this.Header){
-          Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning
+          Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
           $_.isChecked = $this.isChecked
         }else{
-          Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning
+          Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
           $_.isChecked = $false
         }
     }}
     if($this.Name -ne $synchash.Sort_Playlist_Button.name){
       $synchash.Sort_Playlist_Button.items | & { process {
           if($_.Header -eq $this.Header){
-            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning
+            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
             $_.isChecked = $this.isChecked
           }else{
-            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning
+            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
             $_.isChecked = $false
           }
       }}
@@ -6009,10 +6019,10 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     if($this.Name -ne $synchash.Sort_Playlist_VideoView_Button.name){
       $synchash.Sort_Playlist_VideoView_Button.items | & { process {
           if($_.Header -eq $this.Header){
-            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning
+            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
             $_.isChecked = $this.isChecked
           }else{
-            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning
+            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
             $_.isChecked = $false
           }
       }}
@@ -6020,10 +6030,10 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     if($this.Name -ne $synchash.Sort_Playlist_Button_Library.name){
       $synchash.Sort_Playlist_Button_Library.items | & { process {
           if($_.Header -eq $this.Header){
-            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning
+            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
             $_.isChecked = $this.isChecked
           }else{
-            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning
+            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
             $_.isChecked = $false
           }
       }}
@@ -6046,7 +6056,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
           $MenuItem.isChecked = [bool]($Header -in $thisApp.Config.Playlists_SortBy)
           [Void]$MenuItem.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Sort_Playlist_Click_Command)
           [Void]$sender.items.add($MenuItem)
-        }                    
+        }
     }}
   }catch{
     write-ezlogs -text "An exception occurred in $($sender.Name).add_Loaded" -CatchError $_
@@ -6092,18 +6102,18 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     write-ezlogs -text "An exception occurred in Click event for menuitem: $($this.Header)" -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Sort Playlists
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Delete Playlists
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.DeletePlaylist_Command = {
   param($sender)
   try{
     if($sender.Parent.DataContext.title){
-      $Playlist = $sender.Parent.DataContext.title 
+      $Playlist = $sender.Parent.DataContext.title
       $Playlist_ID = $sender.Parent.DataContext.Playlist_ID
     }elseif($sender.tag.Source.Selecteditem.title){
       $Playlist = $sender.tag.Source.Selecteditem.title
@@ -6116,11 +6126,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       $Playlist_ID = $sender.DataContext.Content.Playlist_ID
     }
     if($Playlist){
-      write-ezlogs -text "[DeletePlaylist_Command] Prompting for to confirm playlist deletion for $Playlist..." -showtime    
-      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+      write-ezlogs -text "[DeletePlaylist_Command] Prompting for to confirm playlist deletion for $Playlist..." -showtime
+      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
       $Button_Settings.AffirmativeButtonText = 'Yes'
-      $Button_Settings.NegativeButtonText = 'No'  
-      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+      $Button_Settings.NegativeButtonText = 'No'
+      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
       $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,"Delete Playlist $Playlist","Are you sure you wish to remove the $Playlist Playlist? This will not remove the media items in the playlist",$okandCancel,$Button_Settings)
       if($result -eq 'Affirmative'){
         if($Playlist_ID){
@@ -6172,14 +6182,14 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   }catch{
     write-ezlogs -text "An exception occurred deleting Playlist $($Playlist)" -showtime -CatchError $_
   }
-}  
-#---------------------------------------------- 
+}
+#----------------------------------------------
 #endregion Delete Playlists
-#---------------------------------------------- 
-            
-#---------------------------------------------- 
+#----------------------------------------------
+
+#----------------------------------------------
 #region Remove From/Clear Playlists
-#----------------------------------------------                  
+#----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.Remove_from_PlaylistCommand = {
   param($sender)
   try{
@@ -6214,7 +6224,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       $media = $sender.datacontext.content
       write-ezlogs -text "Found $($media.count) media to remove from sender.datacontext.content"
     }elseif($sender.tag.Media.id){
-      $media = $sender.tag.Media 
+      $media = $sender.tag.Media
       write-ezlogs -text "Found $($media.count) media to remove from sender.tag.Media"
     }
     if($sender.header -eq 'Remove Artist From...' -or $sender.parent.header -eq 'Remove Artist From...' -and $media.artist){
@@ -6243,7 +6253,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       }
     }
     if($sender.header -eq 'All Playlists'){
-      write-ezlogs -text ">>>> Removing $($media.count) tracks from all playlists" 
+      write-ezlogs -text ">>>> Removing $($media.count) tracks from all playlists"
       Update-Playlist -Playlist $sender.header -media $media -synchash $synchash -thisApp $thisApp -RemoveFromAll -use_Runspace
       return
     }
@@ -6266,13 +6276,13 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   }catch{
     write-ezlogs -text "An exception occurred updating playlist $($Playlist)" -showtime -CatchError $_
   }
-}   
+}
 
 [System.Windows.RoutedEventHandler]$synchash.Clear_PlaylistCommand = {
   param($sender)
   try{
     #TODO: Cleanup
-    $media = $sender.tag.Media  
+    $media = $sender.tag.Media
     $Playlist = $sender.DataContext.title
     $PlaylistID = $sender.DataContext.Playlist_ID
     if(!$Playlist){
@@ -6288,14 +6298,14 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       $Playlist = $sender.Tag.Media.Playlist_name
     }
     if($PlaylistID){
-      write-ezlogs -text ">>>> Prompting to confirm clear of playlist: $Playlist..." -showtime    
-      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+      write-ezlogs -text ">>>> Prompting to confirm clear of playlist: $Playlist..." -showtime
+      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
       $Button_Settings.AffirmativeButtonText = 'Yes'
-      $Button_Settings.NegativeButtonText = 'No'  
-      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+      $Button_Settings.NegativeButtonText = 'No'
+      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
       $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,"Clear Playlist $Playlist","Are you sure you wish to clear and remove all tracks from the '$Playlist' Playlist? This will not remove the media items in the playlist",$okandCancel,$Button_Settings)
       if($result -eq 'Affirmative'){
-        write-ezlogs -text "| The user wishes to clear the playlist: $($Playlist) - id: $PlaylistID" 
+        write-ezlogs -text "| The user wishes to clear the playlist: $($Playlist) - id: $PlaylistID"
         Update-Playlist -Playlist $Playlist -media $media -synchash $synchash -thisApp $thisApp -Clear -playlist_id $PlaylistID
       }else{
         write-ezlogs -text "| The user did not wish to clear the playlist: $($Playlist)" -Warning
@@ -6310,11 +6320,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     write-ezlogs -text "An exception occurred clearing playlist $($Playlist)" -showtime -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Remove From/Clear Playlists
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Add to Spotify Playlist
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.Add_Spotify_Playlist_Command = {
@@ -6322,17 +6332,17 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   try{
     $media = $_.OriginalSource.DataContext
     if(!$media.url){$media = $sender.tag}
-    if(!$media.url){$media = $sender.tag.Media}  
-    Add-SpotifyPlaylist -thisApp $thisApp -synchash $synchash -media $media -Sender $sender  
+    if(!$media.url){$media = $sender.tag.Media}
+    Add-SpotifyPlaylist -thisApp $thisApp -synchash $synchash -media $media -Sender $sender
   }catch{
     write-ezlogs -text "An exception occurred in Add_Spotify_Playlist_Command - Media: $($media | out-string)" -showtime -CatchError $_
-  } 
-} 
-#---------------------------------------------- 
+  }
+}
+#----------------------------------------------
 #endregion Add to Spotify Playlist
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Remove From Spotify Playlist
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.Remove_Spotify_Playlist_Command  = {
@@ -6340,17 +6350,17 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   try{
     $media = $_.OriginalSource.DataContext
     if(!$media.url){$media = $sender.tag}
-    if(!$media.url){$media = $sender.tag.Media}  
-    Remove-SpotifyPlaylist -thisApp $thisApp -synchash $synchash -media $media -Sender $sender  
+    if(!$media.url){$media = $sender.tag.Media}
+    Remove-SpotifyPlaylist -thisApp $thisApp -synchash $synchash -media $media -Sender $sender
   }catch{
     write-ezlogs -text "An exception occurred in Remove_Spotify_Playlist_Command - Media: $($media | out-string)" -showtime -CatchError $_
-  } 
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Remove From Spotify Playlist
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Open Web URL
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.OpenWeb_Command  = {
@@ -6358,7 +6368,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   try{
     $media = $_.OriginalSource.DataContext
     if(!$media.url){$media = $sender.tag}
-    if(!$media.url){$media = $sender.tag.Media}  
+    if(!$media.url){$media = $sender.tag.Media}
     if($media.url -match 'youtube\.com' -or $media.Source -eq 'Youtube' -or $media.Source -eq 'Twitch'  -or $media.url -eq 'Twitch\.tv'){
       if(Test-URL -address $media.url){
         if($media.url -match 'youtube\.com' -or $media.url -match 'youtu\.be'){
@@ -6366,7 +6376,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
             $youtube_id = ($($media.url) -split('v='))[1].trim()
             if($youtube_id -match '\&pp='){
               $youtube_id = ($youtube_id -split '\&pp=')[0]
-            } 
+            }
             #TODO: Expose custom invidious instance/url in settings
             if($thisApp.Config.Use_invidious){
               #$url = "https://yewtu.be/embed/$youtube_id`?&autoplay=1"
@@ -6377,16 +6387,16 @@ $synchash.Add_to_Playlist_timer.add_Tick({
             }
           }elseif($media.url -match 'list='){
             $Playlist_ID = ($($media.url) -split('list='))[1].trim()
-            if($thisApp.Config.Use_invidious){            
-              #$url = "https://yewtu.be/embed/videoseries?list=$playlist_id`&autoplay=1" 
+            if($thisApp.Config.Use_invidious){
+              #$url = "https://yewtu.be/embed/videoseries?list=$playlist_id`&autoplay=1"
               #$url = "https://invidious.nerdvpn.de/embed/videoseries?list=$playlist_id`&autoplay=1"
-              $url = "https://invidious.jing.rocks/embed/videoseries?list=$Playlist_ID`&autoplay=1"      
+              $url = "https://invidious.jing.rocks/embed/videoseries?list=$Playlist_ID`&autoplay=1"
             }else{
               $url = "https://www.youtube.com/embed/videoseries?list=$youtube_id`&autoplay=1"
-            }                   
+            }
           }else{
             $url = $media.url
-          }        
+          }
         }else{
           $url = $media.url
         }
@@ -6408,22 +6418,22 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   }catch{
     write-ezlogs -text "An exception occurred in OpenWeb command - URL: $url" -showtime -CatchError $_
   }
-   
-} 
-#---------------------------------------------- 
+
+}
+#----------------------------------------------
 #endregion Open Web URL
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Open Local Path
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.OpenFolder_Command  = {
   param($sender)
   $media = $_.OriginalSource.DataContext
   if(!$media.url){$media = $sender.tag}
-  if(!$media.url){$media = $sender.tag.Media} 
+  if(!$media.url){$media = $sender.tag.Media}
   $path = $media.directory
-  if($thisApp.Config.Verbose_logging){write-ezlogs -text "Opening Directory path $($path)" -showtime} 
+  if($thisApp.Config.Verbose_logging){write-ezlogs -text "Opening Directory path $($path)" -showtime}
   if([System.IO.Directory]::Exists($path)){
     Start-Process $path
   }elseif([System.IO.Directory]::Exists([regex]::unescape($path))){
@@ -6431,15 +6441,15 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   }elseif([System.IO.Directory]::Exists([regex]::escape($path))){
     Start-Process -FilePath $([regex]::escape($path))
   }else{
-    write-ezlogs -text "Directory Path $($path) is invalid!" -showtime -Warning  
+    write-ezlogs -text "Directory Path $($path) is invalid!" -showtime -Warning
     Update-Notifications  -Level 'WARNING' -Message "Unable to find path $($path) to open!" -VerboseLog -Message_color 'Orange' -thisApp $thisApp -synchash $synchash -Open_Flyout -MessageFontWeight bold -LevelFontWeight Bold -No_runspace
-  }   
-} 
-#---------------------------------------------- 
+  }
+}
+#----------------------------------------------
 #endregion Open Local Path
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Clear/Refresh Queue
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.Clear_Queue_Command  = {
@@ -6464,14 +6474,14 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     #ClearScriptBlockCache to reclaim memory
     [void][ScriptBlock].GetMethod('ClearScriptBlockCache', [System.Reflection.BindingFlags]'Static,NonPublic').Invoke($Null, $Null)
     write-ezlogs -text ">>>> Clearing Current Play Queue | $(Get-MemoryUsage -forceCollection)" -showtime
-    if($thisApp.Config.Dev_mode){     
+    if($thisApp.Config.Dev_mode){
       $Runspaces = Get-Runspace | Where-Object -FilterScript {$_.RunspaceAvailability -notin 'Busy' -and $_.RunspaceStateInfo -notin 'closing','opening' -and $_.ApartmentState -eq 'MTA'}
       write-ezlogs -text "| Current open runspaces: $($Runspaces | Select-Object -Property * | out-string)" -showtime -Dev_mode
       $Runspaces = $null
     }
   }catch{
     write-ezlogs -text 'An exception occurred clearing the play queue' -showtime -Warning
-  }    
+  }
 }
 
 [System.Windows.RoutedEventHandler]$synchash.Refresh_Queue_Command  = {
@@ -6481,20 +6491,20 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     Get-PlayQueue -verboselog:$false -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace
   }catch{
     write-ezlogs -text 'An exception occurred refreshing the play queue' -showtime -Warning
-  }    
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Clear/Refresh Queue
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Remove Media
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$Remove_MediaCommand  = {
   param($sender)
   $Media_info = $_.OriginalSource.DataContext
   if(!$Media_info.url){$Media_info = $sender.tag}
-  if(!$Media_info.url){$Media_info = $sender.tag.Media}  
+  if(!$Media_info.url){$Media_info = $sender.tag.Media}
   if($sender.tag.source.Name -eq 'YoutubeTable'){
     $Playlist_items = $synchash.YoutubeTable.selecteditems
   }elseif($sender.tag.source.Name -eq 'SpotifyTable'){
@@ -6505,8 +6515,8 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     $Playlist_items = $synchash.TwitchTable.selecteditems
   }
   $Count = @($Playlist_items).count
-  $Selected_Media = [System.Collections.Generic.List[object]]::new($Count)  
-  if($Count -gt 1){  
+  $Selected_Media = [System.Collections.Generic.List[object]]::new($Count)
+  if($Count -gt 1){
     $Playlist_items | & { process {[Void]$Selected_Media.add($_)}}
     $title = 'Remove Selected Media'
     $Message = "Are you sure you wish to remove the $(@($Playlist_items).count) selected media?"
@@ -6517,12 +6527,12 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   }
   try{
     if($synchash.MediaLibraryAnchorable.isFloating){
-      $result = [System.Windows.Forms.MessageBox]::Show("$Message`n`nThis will remove the media from all playlists and Media Libraries. It will NOT delete the media itself","$title",[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Question) 
+      $result = [System.Windows.Forms.MessageBox]::Show("$Message`n`nThis will remove the media from all playlists and Media Libraries. It will NOT delete the media itself","$title",[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Question)
     }else{
-      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
       $Button_Settings.AffirmativeButtonText = 'Yes'
-      $Button_Settings.NegativeButtonText = 'No'  
-      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+      $Button_Settings.NegativeButtonText = 'No'
+      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
       $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,"$title","$Message`n`nThis will remove the media from all playlists and browsers. It will NOT delete the media itself",$okandCancel,$Button_Settings)
     }
     if($result -eq 'Affirmative' -or $result -eq 'Yes'){
@@ -6530,19 +6540,19 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       $AllMedia_Profile_File_Path = [System.IO.Path]::Combine($AllMedia_Profile_Directory_Path,'All-Media-Profile.xml')
       if($Selected_Media.count -gt 0){
         Remove-Media -synchash $synchash -media_toRemove $Selected_Media -thisapp $thisApp -update_Library
-      }                                                       
+      }
     }else{
       write-ezlogs -text "User declined to delete media $($Selected_Media.title)" -showtime -Warning
-    }        
+    }
   }catch{
     write-ezlogs -text "An exception occurred removing $($Selected_Media | Out-String)" -showtime -CatchError $_
-  }    
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Remove Media
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Video View Overlay Pause
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.VideoViewMouseLeftButtonDown_command = {
@@ -6556,11 +6566,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     write-ezlogs -text 'An exception occurred in Window VideoViewMouseLeftButtonDown_command event' -showtime -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Video View Overlay Pause
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Playlists Expand/Collapsed Events
 #----------------------------------------------
 [System.EventHandler`1[Syncfusion.UI.Xaml.TreeView.NodeExpandedCollapsedEventArgs]]$synchash.ExpandTreeView_Command  = {
@@ -6571,11 +6581,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       if(!$playlistitem){
         $playlistitem = $item.node.content
       }
-      if($playlistitem.Playlist_ID -and $synchash.all_playlists.Playlist_ID){       
+      if($playlistitem.Playlist_ID -and $synchash.all_playlists.Playlist_ID){
         if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
           $pindex = $synchash.all_playlists.playlist_id.indexof($playlistitem.Playlist_ID)
           if($pindex -ne -1){
-            $Playlist = $synchash.all_playlists.GetItemAt($pindex)  
+            $Playlist = $synchash.all_playlists.GetItemAt($pindex)
           }
         }else{
           $Playlist = $synchash.all_playlists.where({$_.Playlist_ID -eq $playlistitem.Playlist_ID})
@@ -6586,14 +6596,14 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       }else{
         $isExpanded = $item.originalsource.IsExpanded
       }
-      write-ezlogs -text ">>>> [ExpandTreeView_Command] $($sender.name) - Playlist $($Playlist.name) - Playlist.isExpanded: $($Playlist.isExpanded) -- item.node.IsExpanded: $($isExpanded)" -showtime
+      write-ezlogs -text ">>>> [ExpandTreeView_Command] $($sender.name) - Playlist $($Playlist.name) - Playlist.isExpanded: $($Playlist.isExpanded) -- item.node.IsExpanded: $($isExpanded)" -LogLevel 0 -Verboselog:$verboselog
       if($Playlist -and $Playlist.isExpanded -ne $isExpanded){
         foreach($list in $Playlist){
-          write-ezlogs -text ">>>> Updating playlist $($list.name) expanded state: $($list.isExpanded) to: $($isExpanded)" -showtime
+          write-ezlogs -text ">>>> Updating playlist $($list.name) expanded state: $($list.isExpanded) to: $($isExpanded)" -LogLevel 0 -Verboselog:$verboselog
           if(-not [string]::IsNullOrEmpty($list.isExpanded)){
             $list.isExpanded = $isExpanded
           }
-        }      
+        }
       }
       if($sender.name -ne 'TrayPlayer_TreeView' -and $synchash.TrayPlayer_TreeView.IsLoaded -and $item.node){
         if($isExpanded){
@@ -6633,7 +6643,7 @@ if($synchash.Playlists_TreeView){
     [Void]$synchash.Playlists_TreeView.HierarchyPropertyDescriptors.add($descriptor)
   }else{
     [Void]$synchash.Playlists_TreeView.AddHandler([System.Windows.Controls.TreeViewItem]::ExpandedEvent,$synchash.ExpandTreeView_Command)
-    [Void]$synchash.Playlists_TreeView.AddHandler([System.Windows.Controls.TreeViewItem]::CollapsedEvent,$synchash.ExpandTreeView_Command)  
+    [Void]$synchash.Playlists_TreeView.AddHandler([System.Windows.Controls.TreeViewItem]::CollapsedEvent,$synchash.ExpandTreeView_Command)
   }
 }
 #Video Player
@@ -6643,24 +6653,24 @@ if($synchash.TrayPlayer_TreeView){
     $synchash.TrayPlayer_TreeView.add_NodeCollapsed($synchash.ExpandTreeView_Command)
   }else{
     [Void]$synchash.TrayPlayer_TreeView.AddHandler([System.Windows.Controls.TreeViewItem]::ExpandedEvent,$synchash.ExpandTreeView_Command)
-    [Void]$synchash.TrayPlayer_TreeView.AddHandler([System.Windows.Controls.TreeViewItem]::CollapsedEvent,$synchash.ExpandTreeView_Command)  
+    [Void]$synchash.TrayPlayer_TreeView.AddHandler([System.Windows.Controls.TreeViewItem]::CollapsedEvent,$synchash.ExpandTreeView_Command)
   }
 }
 #Library
 if($synchash.LocalMedia_TreeView){
   if($synchash.LocalMedia_TreeView -is [Syncfusion.UI.Xaml.TreeView.SfTreeView]){
     $synchash.LocalMedia_TreeView.add_NodeExpanded($synchash.ExpandTreeView_Command)
-    $synchash.LocalMedia_TreeView.add_NodeCollapsed($synchash.ExpandTreeView_Command)     
+    $synchash.LocalMedia_TreeView.add_NodeCollapsed($synchash.ExpandTreeView_Command)
   }else{
     [Void]$synchash.LocalMedia_TreeView.AddHandler([System.Windows.Controls.TreeViewItem]::ExpandedEvent,$synchash.ExpandTreeView_Command)
-    [Void]$synchash.LocalMedia_TreeView.AddHandler([System.Windows.Controls.TreeViewItem]::CollapsedEvent,$synchash.ExpandTreeView_Command)  
+    [Void]$synchash.LocalMedia_TreeView.AddHandler([System.Windows.Controls.TreeViewItem]::CollapsedEvent,$synchash.ExpandTreeView_Command)
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Playlists Expand/Collapsed Events
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Check Twitch Command
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.CheckTwitch_Command  = {
@@ -6668,7 +6678,7 @@ if($synchash.LocalMedia_TreeView){
   try{
     $media = $_.OriginalSource.DataContext
     if(!$media.url){$media = $sender.tag}
-    if(!$media.url){$media = $sender.tag.Media} 
+    if(!$media.url){$media = $sender.tag.Media}
     if([string]::IsNullOrEmpty($media.url)){$media = $sender.selecteditem.tag.Media}
     if($media.url -match 'twitch\.tv'){
       Get-TwitchStatus -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -checkall -Use_runspace -Refresh_Follows
@@ -6679,11 +6689,11 @@ if($synchash.LocalMedia_TreeView){
     write-ezlogs -text 'An exception occurred in CheckTwitch_Command' -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Check Twitch Command
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region TwitchLiveAlert Command
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.TwitchLiveAlert_Command  = {
@@ -6725,7 +6735,7 @@ if($synchash.LocalMedia_TreeView){
             $Config_Twitch.Enable_LiveAlert = $Enable_liveAlert
           }
         }
-        if($synchash.all_playlists.Playlist_tracks.values.url){              
+        if($synchash.all_playlists.Playlist_tracks.values.url){
           $playlist_track = Get-IndexesOf -Array $synchash.all_playlists.Playlist_tracks.values.url -Value $media.url | & { process {
               $playlist_track = $synchash.all_playlists.Playlist_tracks.values[$_]
               if($playlist_track){
@@ -6746,23 +6756,23 @@ if($synchash.LocalMedia_TreeView){
     write-ezlogs -text 'An exception occurred in TwitchLiveAlert_Command' -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion TwitchLiveAlert Command
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Edit Profile Command
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.EditProfile_Command  = {
   param($sender)
   $media = $_.OriginalSource.DataContext
   if(!$media.url){$media = $sender.tag}
-  if(!$media.url){$media = $sender.tag.Media} 
+  if(!$media.url){$media = $sender.tag.Media}
   if([string]::IsNullOrEmpty($media.url)){$media = $sender.selecteditem.tag.Media}
   write-ezlogs -text "[EditProfile_Command] Media to Edit: $($args | out-string)" -Dev_mode
   if($media.id -and $media.url){
-    try{ 
-      #TODO: Warn users this is not complete and shouldnt be used!   
+    try{
+      #TODO: Warn users this is not complete and shouldnt be used!
       if($synchash.MediaLibrary_Viewer.isVisible){
         $DialogWindow = $synchash.MediaLibrary_Viewer
       }elseif($synchash.MiniPlayer_Viewer.isVisible){
@@ -6773,14 +6783,14 @@ if($synchash.LocalMedia_TreeView){
       if(!$thisApp.config.IsRead_TestFeatures){
         $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
         $Button_Settings.AffirmativeButtonText = 'Yes'
-        $Button_Settings.NegativeButtonText = 'No'  
-        $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+        $Button_Settings.NegativeButtonText = 'No'
+        $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
         $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($DialogWindow,'Use WIP feature?',"The profile/media properties editor is not complete and has known issues in its current state. It is not recommended to use so you do so at your own risk!!`n`nAre you sure you wish to continue? (This message will not be displayed again)",$okandCancel,$Button_Settings)
         $thisApp.config.IsRead_TestFeatures = $true
         if($result -eq 'Affirmative'){
-          write-ezlogs -text 'User indicated they wish to continue and use the profile editor despite warnings' -showtime -Warning 
+          write-ezlogs -text 'User indicated they wish to continue and use the profile editor despite warnings' -showtime -Warning
         }else{
-          write-ezlogs -text 'User indicated they did not wish to continue, smart move' -showtime -Warning  
+          write-ezlogs -text 'User indicated they did not wish to continue, smart move' -showtime -Warning
           return
         }
       }
@@ -6792,11 +6802,11 @@ if($synchash.LocalMedia_TreeView){
     write-ezlogs -text 'No valid Media was provided' -showtime -Warning
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Edit Profile Command
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Find Youtube Command
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.FindYoutube_Command = {
@@ -6804,11 +6814,11 @@ if($synchash.LocalMedia_TreeView){
   $datacontext = $_.OriginalSource.DataContext
   $media = $_.OriginalSource.DataContext
   if(!$media.url){$media = $sender.tag}
-  if(!$media.url){$media = $sender.tag.Media} 
+  if(!$media.url){$media = $sender.tag.Media}
   if([string]::IsNullOrEmpty($media.url)){$media = $sender.selecteditem.tag.Media}
   write-ezlogs -text "[FindYoutube_Command] Media to find on Youtube: $($media | out-string)" -Dev_mode
   if($media.id -and ($media.title -or $media.name)){
-    try{    
+    try{
       if(!$media.title){
         $query = "`"$($media.name)`""
       }else{
@@ -6844,7 +6854,7 @@ if($synchash.LocalMedia_TreeView){
         }
         Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Open
       }
-      Start-WebNavigation -uri $url -synchash $synchash -WebView2 $synchash.WebBrowser -thisScript $thisScript -thisApp $thisApp      
+      Start-WebNavigation -uri $url -synchash $synchash -WebView2 $synchash.WebBrowser -thisScript $thisScript -thisApp $thisApp
       $synchash.Webbrowseranchorable.isselected = $true
     }catch{
       write-ezlogs -text 'An exception occurred in FindYoutube_Command routed event' -showtime -CatchError $_
@@ -6853,11 +6863,11 @@ if($synchash.LocalMedia_TreeView){
     write-ezlogs -text 'No valid Media was provided or found' -showtime -Warning
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Find Youtube Command
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Add to Youtube Playlist Command
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.Add_Youtube_Playlist_Command  = {
@@ -6865,17 +6875,17 @@ if($synchash.LocalMedia_TreeView){
   try{
     $media = $_.OriginalSource.DataContext
     if(!$media.url){$media = $sender.tag}
-    if(!$media.url){$media = $sender.tag.Media}  
-    Add-YoutubePlaylist -thisApp $thisApp -synchash $synchash -media $media -Sender $sender  
+    if(!$media.url){$media = $sender.tag.Media}
+    Add-YoutubePlaylist -thisApp $thisApp -synchash $synchash -media $media -Sender $sender
   }catch{
     write-ezlogs -text "An exception occurred in Add_Youtube_Playlist_Command - Media: $($media | out-string)" -showtime -CatchError $_
-  } 
-} 
-#---------------------------------------------- 
+  }
+}
+#----------------------------------------------
 #endregion Add to Youtube Playlist Command
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Remove from Youtube Playlist Command
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.Remove_Youtube_Playlist_Command  = {
@@ -6883,23 +6893,23 @@ if($synchash.LocalMedia_TreeView){
   try{
     $media = $_.OriginalSource.DataContext
     if(!$media.url){$media = $sender.tag}
-    if(!$media.url){$media = $sender.tag.Media}  
+    if(!$media.url){$media = $sender.tag.Media}
     if($sender.Header -and $media.id){
-      write-ezlogs -text ">>>> Removing $($media.title) from playlist $($sender.header)" 
-      Remove-YoutubePlaylist -thisApp $thisApp -synchash $synchash -media $media -Sender $sender  
+      write-ezlogs -text ">>>> Removing $($media.title) from playlist $($sender.header)"
+      Remove-YoutubePlaylist -thisApp $thisApp -synchash $synchash -media $media -Sender $sender
     }else{
       write-ezlogs -text 'Unable to find media or playlist to remove! Check logs for details' -Warning -AlertUI
-      write-ezlogs -text "| Couldn't find media id or playlist name from sender.header -- Media: $($media | out-stdring) -- Sender: $($sender | out-string)" -Warning      
+      write-ezlogs -text "| Couldn't find media id or playlist name from sender.header -- Media: $($media | out-stdring) -- Sender: $($sender | out-string)" -Warning
     }
   }catch{
     write-ezlogs -text "An exception occurred in Remove_Youtube_Playlist_Command - Media: $($media | out-string)" -showtime -CatchError $_
-  } 
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Remove from Youtube Playlist Command
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region ContextMenu Routed Event Handlers
 #----------------------------------------------
 $synchash.Media_ContextMenu_ScriptBlock = {
@@ -6907,7 +6917,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
   try{
     $OriginalSource = [System.WeakReference]::new($e.OriginalSource)
     $RemovefromQueue = $false
-    if($OriginalSource.IsAlive){ 
+    if($OriginalSource.IsAlive){
       $media = $OriginalSource.target.datacontext
       if($OriginalSource.target.datacontext.Name -eq 'Track' -and $OriginalSource.target.datacontext.id){
         try{
@@ -6943,7 +6953,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             $e.Source.SelectedItems = [System.Collections.ObjectModel.ObservableCollection[object]]::new()
           }elseif($e.Source.SelectedItems.count -le 1){
             $e.Source.SelectedItems.clear()
-          }          
+          }
           $treeViewNode = $e.Source.GetNodeAt($e.GetPosition($e.source))
           #TODO: Multi-Selection on Right-click is fucked
           $treeviewitem = Get-VisualParentUp -source $OriginalSource.target -type ([Syncfusion.UI.Xaml.TreeView.TreeViewItem])
@@ -6980,7 +6990,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
         Datacontext = $OriginalSource.target.datacontext
         source      = $source.Target
       }
-      if (($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right) -and $media.ID) { 
+      if (($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right) -and $media.ID) {
         if($thisApp.Config.Dev_mode){write-ezlogs -text " [ContextMenu] Creating context menu for a media item -- media: $($media | out-string)" -Dev_mode}
         if($media.ID -eq $synchash.Current_playing_media.id){
           if($synchash.PlayButton_ToggleButton.isChecked){
@@ -7006,7 +7016,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           'Enabled'   = $true
           'IsCheckable' = $false
         }
-        [Void]$items.Add($Play_Media)  
+        [Void]$items.Add($Play_Media)
         if(($e.Source.Name -eq 'YoutubeTable' -or $media.type -match 'Youtube' -or $media.url -match 'Youtube\.com' -or $media.url -match 'youtu\.be' -or $media.url -match 'soundcloud\.com') -and ($media.type -notmatch 'Twitch' -and $media.url -notmatch 'twitch\.tv')){
           $Download_Media = @{
             'Header'    = 'Download'
@@ -7020,7 +7030,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'IsCheckable' = $false
           }
           [Void]$items.Add($Download_Media)
-          if($media.url -notmatch 'soundcloud\.com'){  
+          if($media.url -notmatch 'soundcloud\.com'){
             $Youtube_playlists_match = Get-IndexesOf -Array $synchash.All_Youtube_Media.type -Value 'YoutubePlaylistItem' | & { process {
                 $p = $synchash.All_Youtube_Media[$_]
                 if($p.playlist_id -ne $media.playlist_id){
@@ -7039,16 +7049,16 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             }
             $Youtube_Sub_items = [System.Collections.Generic.List[object]]::new()
             $Youtube_Removeplaylist_items = [System.Collections.Generic.List[object]]::new()
-            $Youtube_playlists_match | & { process { 
+            $Youtube_playlists_match | & { process {
                 $playlist_header = $null
                 if($_.Playlist_ID){
                   $youtube_id = $_.Playlist_ID
                 }elseif($_.url -match 'list='){
-                  $youtube_id = ($($_.url) -split('list='))[1].trim()                         
-                } 
+                  $youtube_id = ($($_.url) -split('list='))[1].trim()
+                }
                 if($youtube_id -match '\&pp='){
                   $youtube_id = ($youtube_id -split '\&pp=')[0]
-                }               
+                }
                 if($_.Playlist){
                   $playlist_header = $_.Playlist
                 }else{
@@ -7064,13 +7074,13 @@ $synchash.Media_ContextMenu_ScriptBlock = {
                   'Icon_kind' = $null
                   'Color'     = 'White'
                 }
-                [Void]$Youtube_Addplaylist_items.Add($Youtube_Playlist)                      
+                [Void]$Youtube_Addplaylist_items.Add($Youtube_Playlist)
             }}
             $separator = @{
               'Separator' = $true
               'Style'   = 'SeparatorGradient'
-            }            
-            [Void]$Youtube_Addplaylist_items.Add($separator) 
+            }
+            [Void]$Youtube_Addplaylist_items.Add($separator)
             $Add_New_Youtube_Playlist = @{
               'Header'    = 'Add to New Playlist..'
               'Tag'       = $Media_Tag
@@ -7081,7 +7091,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
               'Icon_kind' = 'PlaylistPlus'
               'Color'     = 'White'
             }
-            [Void]$Youtube_Addplaylist_items.Add($Add_New_Youtube_Playlist) 
+            [Void]$Youtube_Addplaylist_items.Add($Add_New_Youtube_Playlist)
             if(@($Youtube_Addplaylist_items).count -gt 0){
               $Add_to_Youtube_Playlist = @{
                 'Header'   = 'Add to Youtube Playlist'
@@ -7108,8 +7118,8 @@ $synchash.Media_ContextMenu_ScriptBlock = {
               if($Playlist.Playlist_ID){
                 $youtube_id = $Playlist.Playlist_ID
               }elseif($Playlist.url -match 'list='){
-                $youtube_id = ($($Playlist.url) -split('list='))[1].trim()                         
-              }         
+                $youtube_id = ($($Playlist.url) -split('list='))[1].trim()
+              }
               if($Playlist.Playlist){
                 $playlist_header = $Playlist.Playlist
               }else{
@@ -7146,8 +7156,8 @@ $synchash.Media_ContextMenu_ScriptBlock = {
               'Enabled'  = $true
               'Sub_items' = $Youtube_Sub_items
             }
-            [Void]$items.Add($Youtube_Actions)     
-          }        
+            [Void]$items.Add($Youtube_Actions)
+          }
         }
         if((($e.Source.Name -eq 'SpotifyTable' -or $media.source -eq 'Spotify') -or $media.url -match 'spotify\:')){
           $Record_Media = @{
@@ -7161,7 +7171,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Enabled'   = $true
             'IsCheckable' = $false
           }
-          [Void]$items.Add($Record_Media)     
+          [Void]$items.Add($Record_Media)
           $Spotify_Sub_items = [System.Collections.Generic.List[object]]::new()
           if([string]::IsNullOrEmpty($synchash.Spotify_install_status)){
             if([System.IO.File]::Exists("$($env:appdata)\Spotify\Spotify.exe")){
@@ -7170,7 +7180,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             }else{
               $synchash.Spotify_install_status = 'NotInstalled'
               $synchash.Spotify_install_Path = $null
-            } 
+            }
           }
           if(-not [string]::IsNullOrEmpty($synchash.Spotify_install_status) -and $synchash.Spotify_install_status -ne 'NotInstalled'){
             $Open_in_Spotify = @{
@@ -7190,8 +7200,8 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           }elseif($media.Playlist_URL -match 'playlist\:'){
             $Playlist_ID = ($($media.Playlist_URL) -split('playlist:'))[1].trim()
           }elseif($media.uri -match 'playlist\:'){
-            $Playlist_ID = ($($media.uri) -split('playlist\:'))[1].trim()                     
-          }     
+            $Playlist_ID = ($($media.uri) -split('playlist\:'))[1].trim()
+          }
           if($thisApp.Config.Dev_Mode){
             $spotify_playlists_match = ($synchash.All_Spotify_Media.where({$_.playlist_id -ne $Playlist_ID -and $_.id -ne $media.id -and $_.playlist -ne $media.playlist})).playlist | Sort-Object -Unique
             $sCount = $spotify_playlists_match.count
@@ -7214,8 +7224,8 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             $separator = @{
               'Separator' = $true
               'Style'   = 'SeparatorGradient'
-            }            
-            [Void]$Spotify_playlist_items.Add($separator) 
+            }
+            [Void]$Spotify_playlist_items.Add($separator)
             $Add_New_Spotify_Playlist = @{
               'Header'    = 'Add to New Playlist..'
               'Tag'       = $Media_Tag
@@ -7283,8 +7293,8 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Enabled'  = $true
             'Sub_items' = $Spotify_Sub_items
           }
-          [Void]$items.Add($Spotify_Actions) 
-        }    
+          [Void]$items.Add($Spotify_Actions)
+        }
         if(($e.Source.Name -ne 'YoutubeTable' -and $media.type -notmatch 'Youtube') -and ($media.url -notmatch 'Youtube\.com' -and $media.web_url -notmatch 'youtube\.com' -and $media.url -notmatch 'youtu\.be')){
           $Find_on_Youtube = @{
             'Header'    = 'Find on Youtube'
@@ -7297,7 +7307,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Enabled'   = $true
             'IsCheckable' = $false
           }
-          [Void]$items.Add($Find_on_Youtube)     
+          [Void]$items.Add($Find_on_Youtube)
         }
         if((Test-URL -address $media.url) -or (Test-URL -address $media.uri)){
           $Open_Web = @{
@@ -7311,7 +7321,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Enabled'   = $true
             'IsCheckable' = $false
           }
-          [Void]$items.Add($Open_Web) 
+          [Void]$items.Add($Open_Web)
         }
         if($media.url -match 'twitch\.tv'){
           if($thisApp.config.Twitch_Playlists){
@@ -7320,7 +7330,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
               $Config_Twitch = $thisApp.config.Twitch_Playlists[$Config_index]
             }
           }
-          $Twitch_Sub_items = [System.Collections.Generic.List[object]]::new()   
+          $Twitch_Sub_items = [System.Collections.Generic.List[object]]::new()
           $CheckTwitch_Media = @{
             'Header'    = 'Refresh Status'
             'ToolTip'   = 'Refreshes all Twitch Media'
@@ -7332,7 +7342,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Enabled'   = $true
             'IsCheckable' = $false
           }
-          [Void]$Twitch_Sub_items.Add($CheckTwitch_Media)     
+          [Void]$Twitch_Sub_items.Add($CheckTwitch_Media)
           if($thisApp.config.Enable_Twitch_Notifications){
             $tooltip = 'Receive an in-app notification when this channel goes live'
             $color = 'White'
@@ -7365,8 +7375,8 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Enabled'  = $true
             'Sub_items' = $Twitch_Sub_items
           }
-          [Void]$items.Add($Twitch_Actions)  
-        } 
+          [Void]$items.Add($Twitch_Actions)
+        }
         if($e.Source.Name -eq 'MediaTable' -or $media.Directory){
           $Open_MediaLocation = @{
             'Header'    = 'Open File Location'
@@ -7379,8 +7389,8 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Enabled'   = $true
             'IsCheckable' = $false
           }
-          [Void]$items.Add($Open_MediaLocation)    
-        }                      
+          [Void]$items.Add($Open_MediaLocation)
+        }
         $Playlists = $synchash.all_playlists | & { process {
             if(-not [string]::IsNullOrEmpty($_.name) -and $_.Playlist_tracks.values.id -notcontains $media.ID){
               $_
@@ -7399,11 +7409,11 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Color'     = 'White'
           }
           [Void]$Sub_items.Add($Custom_Playlist_Add)
-        }     
+        }
         $separator = @{
           'Separator' = $true
           'Style'   = 'SeparatorGradient'
-        }            
+        }
         [Void]$Sub_items.Add($separator)
         if($thisApp.config.Current_Playlist.values -notcontains $media.id){
           $RemovefromQueue = $false
@@ -7421,7 +7431,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           [Void]$Sub_items.Add($Add_to_PlayQueue)
         }else{
           $RemovefromQueue = $true
-        }            
+        }
         $Add_New_Playlist = @{
           'Header'    = 'New Playlist'
           'Tag'       = $Media_Tag
@@ -7441,7 +7451,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           'Enabled'  = $true
           'Sub_items' = $Sub_items
         }
-        [Void]$items.Add($Add_to_Playlist)   
+        [Void]$items.Add($Add_to_Playlist)
         if($media.Artist){
           $Add_Artist_to_Playlist = @{
             'Header'   = 'Add Artist to...'
@@ -7484,13 +7494,13 @@ $synchash.Media_ContextMenu_ScriptBlock = {
               'Icon_kind' = $null
               'Color'     = 'White'
             }
-            [Void]$Remove_Sub_items.Add($Custom_Playlist_Remove)      
+            [Void]$Remove_Sub_items.Add($Custom_Playlist_Remove)
           }
           $separator = @{
             'Separator' = $true
             'Style'   = 'SeparatorGradient'
-          }            
-          [Void]$Remove_Sub_items.Add($separator)  
+          }
+          [Void]$Remove_Sub_items.Add($separator)
           $RemoveFromAll_Playlists = @{
             'Header'    = 'All Playlists'
             'Tag'       = $Media_Tag
@@ -7500,13 +7510,13 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Icon_kind' = $null
             'Color'     = 'White'
           }
-          [Void]$Remove_Sub_items.Add($RemoveFromAll_Playlists)   
+          [Void]$Remove_Sub_items.Add($RemoveFromAll_Playlists)
         }
         $separator = @{
           'Separator' = $true
           'Style'   = 'SeparatorGradient'
-        }            
-        [Void]$items.Add($separator) 
+        }
+        [Void]$items.Add($separator)
         if($thisApp.config.Current_Playlist.values){
           $QueueArtists = foreach($value in $thisApp.config.Current_Playlist.values){
             Get-IndexesOf -Array $synchash.All_local_Media.id -Value $value | & { process {
@@ -7519,13 +7529,13 @@ $synchash.Media_ContextMenu_ScriptBlock = {
                 if($synchash.All_Spotify_Media[$_].Artist){
                   $synchash.All_Spotify_Media[$_].Artist
                   break
-                }   
+                }
             }}
             Get-IndexesOf -Array $synchash.All_Youtube_Media.id -Value $value | & { process {
                 if($synchash.All_Youtube_Media[$_].Artist){
                   $synchash.All_Youtube_Media[$_].Artist
                   break
-                } 
+                }
             }}
             Get-IndexesOf -Array $synchash.All_Twitch_Media.id -Value $value | & { process {
                 if($synchash.All_Twitch_Media[$_].Artist){
@@ -7535,7 +7545,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             }}
           }
         }
-        if($RemovefromQueue){        
+        if($RemovefromQueue){
           $Remove_From_PlayQueue = @{
             'Header'   = 'Remove from Play Queue'
             'ToolTip'  = 'Remove this media from the Play Queue'
@@ -7594,12 +7604,12 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           'Command'  = $Remove_MediaCommand
           'Enabled'  = $true
         }
-        [Void]$items.Add($Remove_Media)   
+        [Void]$items.Add($Remove_Media)
         $separator = @{
           'Separator' = $true
           'Style'   = 'SeparatorGradient'
-        }            
-        [Void]$items.Add($separator) 
+        }
+        [Void]$items.Add($separator)
         $Edit_Profile = @{
           'Header'    = 'Media Properties'
           'ToolTip'   = 'View or Edit Media properties'
@@ -7611,7 +7621,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           'Enabled'   = $true
           'IsCheckable' = $false
         }
-        [Void]$items.Add($Edit_Profile)                                
+        [Void]$items.Add($Edit_Profile)
       }elseif(($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right -and -not [string]::IsNullOrEmpty($OriginalSource.target.datacontext) -and ($OriginalSource.target.GetType()).Name -match 'Textblock' -and $e.Source.Name -ne 'PlayQueue_TreeView' -and (-not [string]::IsNullOrEmpty($e.OriginalSource.datacontext.title))) -or ($isPlaylist -and (!$media -or $media.Name -eq 'Playlist'))){
         write-ezlogs -text " [ContextMenu] Creating context menu for a Playlist -- e.OriginalSource.datacontext: $($OriginalSource.target.datacontext)" -Dev_mode
         $e.Handled = $true
@@ -7626,7 +7636,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           'Enabled'   = $true
           'IsCheckable' = $false
         }
-        [Void]$items.Add($Playlist_PlayAll)    
+        [Void]$items.Add($Playlist_PlayAll)
         $Playlist_toQueue = @{
           'Header'    = 'Add Playlist to Play Queue'
           'Color'     = 'White'
@@ -7637,7 +7647,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           'Enabled'   = $true
           'IsCheckable' = $false
         }
-        [Void]$items.Add($Playlist_toQueue)    
+        [Void]$items.Add($Playlist_toQueue)
         $Playlist_Save = @{
           'Header'    = 'Save as New Playlist'
           'Color'     = 'White'
@@ -7648,7 +7658,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           'Enabled'   = $true
           'IsCheckable' = $false
         }
-        [Void]$items.Add($Playlist_Save) 
+        [Void]$items.Add($Playlist_Save)
         $Playlist_Rename = @{
           'Header'    = 'Rename Playlist'
           'Color'     = 'White'
@@ -7671,13 +7681,13 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           'Enabled'   = $true
           'IsCheckable' = $false
         }
-        [Void]$items.Add($Playlist_Export)       
+        [Void]$items.Add($Playlist_Export)
         if($e.Source.Name -ne 'YoutubeTable' -and $e.Source.Name -ne 'SpotifyTable' -and $e.Source.Name -ne 'MediaTable'){
           $separator = @{
             'Separator' = $true
             'Style'   = 'SeparatorGradient'
-          }            
-          [Void]$items.Add($separator)   
+          }
+          [Void]$items.Add($separator)
           $Playlist_clear = @{
             'Header'    = 'Clear Playlist'
             'Color'     = 'White'
@@ -7688,7 +7698,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Enabled'   = $true
             'IsCheckable' = $false
           }
-          [Void]$items.Add($Playlist_clear)             
+          [Void]$items.Add($Playlist_clear)
           $Playlist_Delete = @{
             'Header'    = 'Delete Playlist'
             'Color'     = 'White'
@@ -7699,7 +7709,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Enabled'   = $true
             'IsCheckable' = $false
           }
-          [Void]$items.Add($Playlist_Delete) 
+          [Void]$items.Add($Playlist_Delete)
         }
         $Playlist_Export = @{
           'Header'    = 'Export Playlist'
@@ -7712,7 +7722,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           'Enabled'   = $true
           'IsCheckable' = $false
         }
-        [Void]$items.Add($Playlist_Export)  
+        [Void]$items.Add($Playlist_Export)
         if($thisApp.Config.Dev_mode){
           $Sort_Sub_items = [System.Collections.Generic.List[object]]::new()
           ([Media].GetProperties()).Name | & { process {
@@ -7726,7 +7736,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
                 'IsCheckable' = $true
                 'isChecked' = $([bool]$media.SortItemsBy -eq $_)
               }
-              [Void]$Sort_Sub_items.Add($Sortitem) 
+              [Void]$Sort_Sub_items.Add($Sortitem)
           }}
           $Sort_Playlist_Items = @{
             'Header'   = 'Sort Items By..'
@@ -7735,8 +7745,8 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Enabled'  = $true
             'Sub_items' = $Sort_Sub_items
           }
-          [Void]$items.Add($Sort_Playlist_Items)  
-        }                 
+          [Void]$items.Add($Sort_Playlist_Items)
+        }
       }elseif($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right -and $e.Source.Name -eq 'PlayQueue_TreeView'){
         write-ezlogs -text '[ContextMenu] Creating context menu for PlayQueue' -Dev_mode
         $e.Handled = $true
@@ -7751,32 +7761,32 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           'Enabled'   = $true
           'IsCheckable' = $false
         }
-        [Void]$items.Add($Playlist_Save)       
+        [Void]$items.Add($Playlist_Save)
       }
       if($e.Source.Name -in 'TrayPlayerQueue_TreeView','TrayPlayer_TreeView','VideoView_Queue'){
         $WPFtraymenu = $true
       }else{
         $WPFtraymenu  = $false
       }
-      if($items -and $OriginalSource.target){ 
+      if($items -and $OriginalSource.target){
         if($OriginalSource.target){
           $OriginalSource.target.tag = $Media_Tag
-        }  
+        }
         if($isPlaylist -or $isPlaylistitem){
           Add-WPFMenu -control $source.target -items $items -AddContextMenu -sourceWindow $synchash -TrayMenu:$WPFtraymenu
         }else{
           Add-WPFMenu -control $OriginalSource.target -items $items -AddContextMenu -sourceWindow $synchash -TrayMenu:$WPFtraymenu
-        }     
+        }
       }else{
         write-ezlogs -text "No items generated or no originalsource to add contextmenu to - isPlaylist: $isPlaylist -- Source.Name: - $($e.Source.Name) - Media: $($media | out-string) - DataContext: $($OriginalSource.target.DataContext | out-string) - items: $($items | out-string)" -Warning
         $e.Handled = $false
       }
     }else{
       write-ezlogs -text "Contextmenu already set for $($OriginalSource.target)" -Warning
-    }      
+    }
   }catch{
     write-ezlogs -text "An exception occurred creating contextmenu for $($e.Source.Name)" -showtime -CatchError $_
-  }  
+  }
 }
 [System.Windows.RoutedEventHandler]$synchash.Media_ContextMenu = $synchash.Media_ContextMenu_ScriptBlock
 
@@ -7821,11 +7831,11 @@ if($synchash.TwitchTable){
   [Void]$synchash.TwitchTable.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Media_ContextMenu)
   [Void]$synchash.TwitchTable.AddHandler([System.Windows.Controls.Button]::PreviewMouseDoubleClickEvent,$synchash.PlayMedia_Command)
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion ContextMenu Routed Event Handlers
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize Vlc Startup
 #----------------------------------------------
 $initialize_VLC_Runspace = {
@@ -7835,11 +7845,11 @@ $initialize_VLC_Runspace = {
     }
     $libvlc_Assemblies = @(
       "$($thisApp.Config.Current_Folder)\Assembly\Libvlc\LibVLCSharp.dll"
-    ) 
+    )
     foreach($a in $libvlc_Assemblies){
       if($thisApp.Config.Dev_mode){write-ezlogs -text ">>>> Loading Libvlc assembly: $a" -Dev_mode}
       [Void][System.Reflection.Assembly]::LoadFrom($a)
-    }     
+    }
     if([bool]('LibVLCSharp.Core' -as [Type])){
       $libvlc_Version = 4
     }elseif([bool]('LibVLCSharp.Shared.Core' -as [Type])){
@@ -7857,21 +7867,21 @@ $initialize_VLC_Runspace = {
         $synchash.libvlc = [LibVLCSharp.LibVLC]::new('--file-logging',"--logfile=$($thisApp.config.Vlc_Log_file)","--log-verbose=$($thisApp.config.Vlc_Verbose_logging)",'--reset-plugins-cache')
       }else{
         $synchash.libvlc = [LibVLCSharp.LibVLC]::new('--file-logging',"--logfile=$($thisApp.config.Vlc_Log_file)","--log-verbose=$($thisApp.config.Vlc_Verbose_logging)")
-      }     
+      }
     }else{
       [void][LibVLCSharp.Shared.Core]::Initialize("$($thisApp.Config.Current_folder)\Resources\Libvlc")
       if(![System.IO.File]::Exists("$($thisApp.Config.Current_folder)\Resources\Libvlc\plugins\plugins.dat") -or $ResetPluginCache){
         $synchash.libvlc = [LibVLCSharp.Shared.LibVLC]::new('--file-logging',"--logfile=$($thisApp.config.Vlc_Log_file)","--log-verbose=$($thisApp.config.Vlc_Verbose_logging)",'--reset-plugins-cache')
       }else{
         $synchash.libvlc = [LibVLCSharp.Shared.LibVLC]::new('--file-logging',"--logfile=$($thisApp.config.Vlc_Log_file)","--log-verbose=$($thisApp.config.Vlc_Verbose_logging)")
-      }      
+      }
     }
     if($thisApp.Config.Installed_AppID -and !$FreshStart){
       $appid = $thisApp.Config.Installed_AppID
     }else{
       $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
       $thisApp.Config.Installed_AppID = $appid
-    } 
+    }
     if($appid){
       [void]$synchash.libvlc.SetAppId($appid,"$($thisApp.Config.App_Version)","$($thisApp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico")
     }
@@ -7888,11 +7898,11 @@ $initialize_VLC_Runspace = {
   }
 }
 Start-Runspace -scriptblock $initialize_VLC_Runspace -StartRunspaceJobHandler -runspace_name 'initialize_VLC_Runspace' -thisApp $thisApp -synchash $synchash -RestrictedRunspace -function_list Write-EZLogs,Get-AllStartApps,Export-SerializedXML
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize Vlc Startup
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Playlists/Queue Startup
 #----------------------------------------------
 if($thisApp.Config.Startup_perf_timer){
@@ -7906,7 +7916,7 @@ if($get_playlists_Startup_Measure){
   write-ezlogs -text 'Get-Playlists/Queue Startup' -PerfTimer $get_playlists_Startup_Measure
   $get_playlists_Startup_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Playlists/Queue Startup
 #----------------------------------------------
 
@@ -7917,7 +7927,7 @@ if($thisApp.Config.startup_perf_timer){
   $Button_Event_Handler_Measure = [system.diagnostics.stopwatch]::StartNew()
 }
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Test_ChatBot Button
 #TODO: From old OpenAI integration tests - to be removed
 #----------------------------------------------
@@ -7935,7 +7945,7 @@ if(($dev_mode -or $debug_mode) -and $synchash.ChatBot_Button -and [system.io.fil
         Update-ChildWindow -synchash $synchash -thisApp $thisApp -Control 'Window' -Method 'Activate' -sendername 'OpenAI'
         Update-ChildWindow -synchash $synchash -thisApp $thisApp -sendername 'OpenAI'-NewDialog
       }else{
-        $windowtitle = "Chat with Samson -  $($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version)"    
+        $windowtitle = "Chat with Samson -  $($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version)"
         Show-ChildWindow -synchash $synchash -thisApp $thisApp -WindowTitle $windowtitle -Logo "$($thisApp.Config.Current_Folder)\Resources\Skins\Samson_Logo_Title.png" -sendername $sendername -Message 'Ask me a question...' -Prompt
       }
     }catch{
@@ -7944,11 +7954,11 @@ if(($dev_mode -or $debug_mode) -and $synchash.ChatBot_Button -and [system.io.fil
   }
   [Void]$synchash.ChatBot_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.Test_Notification_Command)
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Test_ChatBot Button
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Hell Button
 #----------------------------------------------
 if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Fun\devilutionx\devilutionx.exe") -and [system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Fun\devilutionx\diabdat.mpq") -and $synchash.Hell_Button){
@@ -7961,7 +7971,7 @@ if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Fun\dev
         write-ezlogs -text '>>>> Devilutionx is already running' -LogLevel 2
       }elseif([system.io.file]::Exists($Devilutionx)){
         write-ezlogs -text ">>>> Launching Devilutionx: $($Devilutionx)" -LogLevel 2
-        $Process = Start-Process $Devilutionx -PassThru      
+        $Process = Start-Process $Devilutionx -PassThru
         $frame = [System.Windows.Threading.DispatcherFrame]::new()
         $frame.Dispatcher.BeginInvoke([Action]{
             write-ezlogs -text '>>>> Waiting for process to start' -LogLevel 2
@@ -8008,18 +8018,21 @@ if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Fun\dev
   $synchash.Hell_Button.isEnabled = $false
   $synchash.Hell_Button.Visibility = 'Collapsed'
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Hell Button
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Dispose Button (Dev)
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$Synchash.ClearMemory_Command = {
   param($sender)
   try{
+    Clear-Host
+    write-ezlogs -text "[DEBUG] Errors: | $($error | out-string)`n | Before $(Get-MemoryUsage -forceCollection)" -showtime
+    $error.Clear()
     [void][ScriptBlock].GetMethod('ClearScriptBlockCache', [System.Reflection.BindingFlags]'Static,NonPublic').Invoke($null, $null)
-    write-ezlogs -text "[DEBUG] Current Runspaces: | $($thisApp.Jobs.name)`n | $(Get-MemoryUsage -forceCollection)" -showtime
+    write-ezlogs -text "[DEBUG] Current Runspaces: | $($thisApp.Jobs.name)`n | After $(Get-MemoryUsage -forceCollection)" -showtime
   }catch{
     write-ezlogs -text 'An exception occurred in Dispose_Button click event' -showtime -CatchError $_
   }
@@ -8032,11 +8045,11 @@ if($synchash.Dispose_Button -and ($thisApp.Config.Dev_mode -or $Enable_Test_Feat
   $synchash.Dispose_Button.isEnabled = $false
   $synchash.Dispose_Button.visibility = 'Collapsed'
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Dispose Button (Dev)
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Hotkeys_Button
 #----------------------------------------------
 if($synchash.Hotkeys_Button){
@@ -8052,11 +8065,11 @@ if($synchash.Hotkeys_Button){
   }
   [Void]$synchash.Hotkeys_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$Hotkeys_Button_Command)
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Hotkeys_Button
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Screenshot Button
 #----------------------------------------------
 if($synchash.ScreenShot_Button){
@@ -8116,14 +8129,13 @@ if($synchash.ScreenShot_Button){
           $screenshot = New-ScreenShot -outFolder $outputDir -tempPath $outputDir -fps 60 -screen_Capture_Duration 1 -captureCursor 1 -Verbose
           if($screenshot){
             write-ezlogs -text "App Snapshot: $screenshot" -showtime
-            if([system.io.file]::Exists($screenshot)){
+            if([system.io.file]::Exists($screenshot) -or [System.IO.Directory]::Exists($screenshot)){
               $Script:Output_screenshot_File = $screenshot
               $ActionScriptBlock2 = {
-                #IDE needs this declaration as it apparently doesnt understand variable scoping!
                 $Output_screenshot_File = $Output_screenshot_File
-                write-ezlogs -text ">>>> Opening file: $($Output_screenshot_File)"
+                write-ezlogs -text ">>>> Opening screenshot output: $($Output_screenshot_File)"
                 start-process $Output_screenshot_File -ErrorAction SilentlyContinue
-                $Output_screenshot_File = $null     
+                $Output_screenshot_File = $null
               }
             }
             Update-Notifications  -Level 'INFO' -Message "Saved App Snapshot: $screenshot" -VerboseLog -Message_color 'Cyan' -thisApp $thisApp -synchash $synchash -Open_Flyout -MessageFontWeight bold -LevelFontWeight Bold -No_runspace -ActionScriptBlock $ActionScriptBlock2 -ActionName 'Open'
@@ -8140,16 +8152,16 @@ if($synchash.ScreenShot_Button){
   }
   [Void]$synchash.ScreenShot_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.Screenshot_button_Command)
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Screenshot Button
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Show_Library_button Button
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.Show_Video_Button_CLick_Command = {
   param($sender)
-  try{   
+  try{
     if($sender.isChecked){
       $Action = 'Open'
     }else{
@@ -8160,11 +8172,11 @@ if($synchash.ScreenShot_Button){
     write-ezlogs -text 'An exception occurred in Show_Video_Button_Checked_Command event' -showtime -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Show_Library_button Button
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Detach Media Player Button
 #----------------------------------------------
 #Fullscreen Window
@@ -8196,23 +8208,23 @@ if($synchash.ScreenShot_Button){
         Update-MainWindow -synchash $synchash -thisApp $thisApp -Hide
         Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaLibraryAnchorable' -Method 'float'
       }else{
-        $synchash.MediaLibraryAnchorable.float()  
+        $synchash.MediaLibraryAnchorable.float()
       }
       $synchash.MediaLibraryAnchorable.isSelected = $true
       $synchash.LibraryButton_ToggleButton.isChecked = $true
     }
     if($synchash.MediaLibraryFloat.isVisible){
       $synchash.MediaLibraryFloat.Activate()
-    }   
+    }
   }catch{
     write-ezlogs -text 'Exception occurred opening new webview2 window for MediaLibrary_Viewer' -showtime -CatchError $_
-  }                            
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Detach Media Player Button
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Show Audio Options
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.Audio_Options_Command = {
@@ -8221,7 +8233,7 @@ if($synchash.ScreenShot_Button){
     if(!$synchash.AudioOptions_Viewer.isVisible){
       $synchash.AudioButton_ToggleButton.isChecked = $true
       write-ezlogs -text '[AudioOptions_Viewer_Command] >>>> Attempting to open AudioOptions_Viewer' -showtime
-      $XamlAudioOptions_Viewer = [System.IO.File]::ReadAllText("$($Current_folder)\Views\AudioOptionsViewer.xaml").replace('Views/Styles.xaml',"$($Current_folder)`\Views`\Styles.xaml") 
+      $XamlAudioOptions_Viewer = [System.IO.File]::ReadAllText("$($Current_folder)\Views\AudioOptionsViewer.xaml").replace('Views/Styles.xaml',"$($Current_folder)`\Views`\Styles.xaml")
       $AudioOptions_windowXaml = [Windows.Markup.XAMLReader]::Parse($XamlAudioOptions_Viewer)
       $reader = [XML.XMLReader]::Create([IO.StringReader]$XamlAudioOptions_Viewer)
       while ($reader.Read()){
@@ -8233,7 +8245,7 @@ if($synchash.ScreenShot_Button){
       $reader.Dispose()
       if($synchash.RootGrid.children -contains $synchash.AudioOptions_Grid){
         [Void]$synchash.RootGrid.children.Remove($synchash.AudioOptions_Grid)
-      }      
+      }
       if($synchash.AudioOptions_Viewer.content -notcontains $synchash.AudioOptions_Grid){
         [Void]$synchash.AudioOptions_Viewer.addChild($synchash.AudioOptions_Grid)
       }
@@ -8259,8 +8271,8 @@ if($synchash.ScreenShot_Button){
           }
         }
         if($themes){
-          [Void]$themes.Dispose() 
-        } 
+          [Void]$themes.Dispose()
+        }
         $themeManager.ClearThemes()
         $themeManager = $null
       }
@@ -8276,7 +8288,7 @@ if($synchash.ScreenShot_Button){
       $gradientstop_Collection = [System.Windows.Media.GradientStopCollection]::new()
       [Void]$gradientstop_Collection.Add($gradientstop1)
       [Void]$gradientstop_Collection.Add($gradientstop2)
-      $gradientbrush.GradientStops = $gradientstop_Collection  
+      $gradientbrush.GradientStops = $gradientstop_Collection
       $synchash.AudioOptions_Viewer.Background = $gradientbrush
       $synchash.AudioOptions_Viewer.style = $synchash.Window.TryFindResource('WindowChromeStyle')
       $synchash.AudioOptions_Viewer.icon = "$($thisApp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico"
@@ -8286,7 +8298,7 @@ if($synchash.ScreenShot_Button){
       $synchash.AudioOptions_Title_menu_Image.Height = '18'
       $synchash.AudioOptions_Viewer.Title = "Audio Options - $($thisApp.Config.App_Name) Media Player"
       $synchash.AudioOptions_DockPanel_Label.Content = "Audio Options - $($thisApp.Config.App_Name)"
-      $synchash.AudioOptions_Viewer.TaskbarItemInfo.Description = "Audio Options - $($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version)"      
+      $synchash.AudioOptions_Viewer.TaskbarItemInfo.Description = "Audio Options - $($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version)"
       $synchash.AudioOptions_Viewer.IsWindowDraggable = 'True'
       $synchash.AudioOptions_Viewer.ShowTitleBar = $true
       $synchash.AudioOptions_Viewer.UseNoneWindowStyle = $false
@@ -8309,7 +8321,7 @@ if($synchash.ScreenShot_Button){
         $image = $null
       }
       if($synchash.AudioOptions_Background_Image_Source2 -and [system.io.file]::Exists("$($Current_folder)\Resources\Skins\Audio\EQ_SkinThin_Feet.png")){
-        $stream_image = [System.IO.File]::OpenRead("$($Current_folder)\Resources\Skins\Audio\EQ_SkinThin_Feet.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($Current_folder)\Resources\Skins\Audio\EQ_SkinThin_Feet.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         [void]$image.BeginInit()
         $image.CacheOption = 'OnLoad'
@@ -8326,7 +8338,7 @@ if($synchash.ScreenShot_Button){
         $image = $null
       }
       if($synchash.EQButton -and [system.io.file]::Exists("$($Current_folder)\Resources\Skins\Audio\EQ_ToggleButton.png")){
-        $stream_image = [System.IO.File]::OpenRead("$($Current_folder)\Resources\Skins\Audio\EQ_ToggleButton.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($Current_folder)\Resources\Skins\Audio\EQ_ToggleButton.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         [void]$image.BeginInit()
         $image.CacheOption = 'OnLoad'
@@ -8339,9 +8351,9 @@ if($synchash.ScreenShot_Button){
         [void]$image.Freeze()
         $synchash.EQButton.Source = $image
         $image = $null
-      } 
+      }
       if($synchash.EQPowerPowerButton -and [system.io.file]::Exists("$($Current_folder)\Resources\Skins\Audio\EQ_PowerToggleButton.png")) {
-        $stream_image = [System.IO.File]::OpenRead("$($Current_folder)\Resources\Skins\Audio\EQ_PowerToggleButton.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($Current_folder)\Resources\Skins\Audio\EQ_PowerToggleButton.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         [void]$image.BeginInit()
         $image.CacheOption = 'OnLoad'
@@ -8352,10 +8364,10 @@ if($synchash.ScreenShot_Button){
         [void]$stream_image.Dispose()
         $stream_image = $null
         [void]$image.Freeze()
-        $synchash.EQPowerPowerButton.Source = $image      
+        $synchash.EQPowerPowerButton.Source = $image
         $synchash.EQPower_ToggleButton.isChecked = $true
         $image = $null
-      } 
+      }
       [System.Windows.RoutedEventHandler]$synchash.AudioOptions_LeftButtonDownCommand = {
         param($sender,[System.Windows.Input.MouseButtonEventArgs]$e)
         try{
@@ -8366,22 +8378,22 @@ if($synchash.ScreenShot_Button){
         }catch{
           write-ezlogs -text 'An exception occurred in AudioOptions_Viewer MouseLeftButtonDown event' -showtime -CatchError $_
         }
-      } 
-      
+      }
+
       [System.Windows.RoutedEventHandler]$synchash.PreviewGotKeyboardFocus_Event = {
         Param($sender,[System.Windows.Input.KeyboardFocusChangedEventArgs]$e)
         try{
           write-ezlogs -text ">>>> $($sender.Title) got keyboard focus event: oldfocus: $($e.oldfocus.name) - NewFocus: $($e.newFocus.name)" -Dev_mode
-          if($sender.isVisible -and !$e.oldFocus -and $e.newFocus){  
+          if($sender.isVisible -and !$e.oldFocus -and $e.newFocus){
             $e.handled = $false
             if($hashsetup.Window.isVisible -and !$hashsetup.Window.Topmost){
               write-ezlogs -text "| Activating settings window: $($hashsetup.Window.isVisible)" -Dev_mode
               Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -BringToFront
-            }                   
+            }
             if(!$sender.Topmost){
               $isNotTopMost = $true
               $sender.Topmost = $true
-            }                   
+            }
             if($synchash.Window.isVisible -and !$synchash.Window.Topmost){
               write-ezlogs -text '| Activating Main window' -Dev_mode
               $synchash.Window.Topmost = $true
@@ -8391,23 +8403,23 @@ if($synchash.ScreenShot_Button){
               write-ezlogs -text '| Activating MediaLibraryFloat window' -Dev_mode
               $synchash.MediaLibraryFloat.Topmost = $true
               $synchash.MediaLibraryFloat.Topmost = $false
-            }  
+            }
             if($isNotTopMost){
               $sender.Topmost = $false
               $sender.Activate()
-            }                                                  
+            }
           }
         }catch{
           write-ezlogs -text 'An exception occurred in Window.add_PreviewGotKeyboardFocus' -showtime -CatchError $_
         }
-      }     
+      }
       [System.Windows.RoutedEventHandler]$synchash.AudioOptions_Loaded_Event = {
         try{
           if($synchash.Audio_Flyout){
             $synchash.Audio_Flyout.IsOpen = $true
-          } 
-          #Register window to installed application ID 
-          $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($synchash.AudioOptions_Viewer)     
+          }
+          #Register window to installed application ID
+          $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($synchash.AudioOptions_Viewer)
           if($thisApp.Config.Installed_AppID){
             $appid = $thisApp.Config.Installed_AppID
           }else{
@@ -8416,22 +8428,22 @@ if($synchash.ScreenShot_Button){
           if($Window_Helper.Handle -and $appid){
             $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
             write-ezlogs -text ">>>> Registering AudioOptions_Viewer window handle: $($Window_Helper.Handle) -- to appid: $appid" -Dev_mode
-            $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)    
+            $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)
             Add-Member -InputObject $thisApp.config -Name 'Installed_AppID' -Value $appid -MemberType NoteProperty -Force
-          }                
+          }
         }catch{
           write-ezlogs -text 'An exception occurred in AudioOptions_Viewer.add_loaded' -CatchError $_
-        } 
-      }  
+        }
+      }
       $synchash.AudioOptions_Closing_Event = {
         try{
           $synchash.Audio_Flyout.IsOpen = $false
           $EQ_Preamp = $synchash.Preamp_Slider.Value
-          $current_EQ_Bands = $thisApp.Config.EQ_Bands             
+          $current_EQ_Bands = $thisApp.Config.EQ_Bands
           if(-not [string]::IsNullOrEmpty($thisApp.Config.EQ_Selected_Preset)){
-            $preset_name = $thisApp.Config.EQ_Selected_Preset 
+            $preset_name = $thisApp.Config.EQ_Selected_Preset
             $preset = Add-EQPreset -PresetName $preset_name -EQ_Bands $current_EQ_Bands -EQ_Preamp $EQ_Preamp -thisApp $thisApp -synchash $synchash -verboselog
-          }                           
+          }
           if($preset.Preset_Name){
             if($synchash.LoadPreset_Button.items.header -notcontains $preset.Preset_Name -and $preset.Preset_Name -ne 'Memory 1' -and $preset.Preset_Name -ne 'Memory 2' -and $thisApp.config.EQ_Presets.Preset_Name -notcontains $preset.Preset_Name){
               $MenuItem = [System.Windows.Controls.MenuItem]::new()
@@ -8442,14 +8454,14 @@ if($synchash.ScreenShot_Button){
               }
               [Void](Get-EventHandlers -Element $MenuItem -RoutedEvent ([System.Windows.Controls.MenuItem]::ClickEvent) -RemoveHandlers)
               [Void]$MenuItem.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$synchash.EQPreset_Menuitem_Command)
-              [Void]$synchash.LoadPreset_Button.items.add($MenuItem)      
+              [Void]$synchash.LoadPreset_Button.items.add($MenuItem)
             }else{
               write-ezlogs -text "An existing preset with name $preset_name already exists -- updated to current values" -showtime -Warning
-            }                                
+            }
           }
           if($synchash.AudioOptions_Viewer.content -contains $synchash.AudioOptions_Grid){
             $synchash.AudioOptions_Viewer.content = $null
-          } 
+          }
           if($synchash.RootGrid.children -notcontains $synchash.AudioOptions_Grid){
             [Void]$synchash.RootGrid.children.Add($synchash.AudioOptions_Grid)
           }
@@ -8457,18 +8469,18 @@ if($synchash.ScreenShot_Button){
         }catch{
           write-ezlogs -text 'An exception occurred in AudioOptions_Viewer.add_closing' -showtime -CatchError $_
         }
-      } 
+      }
       $synchash.AudioOptions_Closed_Event = {
         try{
-          $synchash.EQ_Timer.start()               
+          $synchash.EQ_Timer.start()
           write-ezlogs -text '>>>> Audio Options Closed' -LogLevel 2
         }catch{
           write-ezlogs -text 'An exception occurred in AudioOptions_Viewer.add_closed' -showtime -CatchError $_
         }
-      } 
+      }
       [System.Windows.RoutedEventHandler]$synchash.AudioOptions_UnLoaded_Event = {
-        Param($sender)    
-        try{         
+        Param($sender)
+        try{
           $Element = [System.WeakReference]::new($sender).Target
           [Void](Get-EventHandlers -Element $Element -RoutedEvent ([MahApps.Metro.Controls.MetroWindow]::MouseLeftButtonDownEvent) -RemoveHandlers)
           $synchash.AudioOptions_LeftButtonDownCommand = $null
@@ -8494,7 +8506,7 @@ if($synchash.ScreenShot_Button){
                 if($thisApp.Config.Dev_mode){write-ezlogs -text ">>>> Unregistering AudioOptions_Viewer UI name: $_" -Dev_mode}
                 [void]$sender.UnRegisterName($_)
                 [void]$synchash.Remove($_)
-              }        
+              }
           }}
           write-ezlogs -text ">>>> AudioOptions_Viewer window $($sender.Name) has unloaded" -showtime -LogLevel 2 -GetMemoryUsage -forceCollection
           $sender = $null
@@ -8505,7 +8517,7 @@ if($synchash.ScreenShot_Button){
       }
       $Element = [System.WeakReference]::new($synchash.AudioOptions_Viewer).Target
       [Void](Get-EventHandlers -Element $Element -RoutedEvent ([System.Windows.Controls.MenuItem]::UnloadedEvent) -RemoveHandlers)
-      $Element.AddHandler([MahApps.Metro.Controls.MetroWindow]::PreviewGotKeyboardFocusEvent,$synchash.PreviewGotKeyboardFocus_Event)      
+      $Element.AddHandler([MahApps.Metro.Controls.MetroWindow]::PreviewGotKeyboardFocusEvent,$synchash.PreviewGotKeyboardFocus_Event)
       $Element.AddHandler([MahApps.Metro.Controls.MetroWindow]::MouseLeftButtonDownEvent,$synchash.AudioOptions_LeftButtonDownCommand)
       $Element.add_closing($synchash.AudioOptions_Closing_Event)
       $Element.add_closed($synchash.AudioOptions_Closed_Event)
@@ -8520,22 +8532,22 @@ if($synchash.ScreenShot_Button){
     }
   }catch{
     write-ezlogs -text 'Exception occurred opening new window for AudioOptions_Viewer' -showtime -CatchError $_
-  }                            
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Show Audio Options
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region PlayQueueFlyout
 #----------------------------------------------
 if($synchash.PlayQueueFlyout){
   try{
     if($thisApp.Config.startup_perf_timer){
       $PlayQueueFlyout_Measure = [system.diagnostics.stopwatch]::StartNew()
-    }   
+    }
     $PlayQueueFlyoutbrush = [System.Windows.Media.ImageBrush]::new()
-    $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.Current_Folder)\Resources\Skins\Cassette Door - Blank.png") 
+    $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.Current_Folder)\Resources\Skins\Cassette Door - Blank.png")
     $image = [System.Windows.Media.Imaging.BitmapImage]::new()
     [void]$image.BeginInit()
     $image.CacheOption = 'OnLoad'
@@ -8546,7 +8558,7 @@ if($synchash.PlayQueueFlyout){
     [void]$stream_image.Dispose()
     $stream_image = $null
     [void]$image.Freeze()
-    $PlayQueueFlyoutbrush.ImageSource = $image 
+    $PlayQueueFlyoutbrush.ImageSource = $image
     $synchash.PlayQueueFlyout.Background = $PlayQueueFlyoutbrush
     $image = $null
     $PlayQueueFlyoutbrush = $null
@@ -8560,11 +8572,11 @@ if($synchash.PlayQueueFlyout){
     }
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion PlayQueueFlyout
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Add/Open Media Button
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -8597,53 +8609,53 @@ if($thisApp.Config.startup_perf_timer){
           $result_cleaned = $null
           if([system.io.file]::Exists($_) -or [system.io.directory]::Exists($_)){
             if([system.io.file]::Exists($_) -and ([System.IO.FileInfo]::new($_) | Where-Object -FilterScript {$_.Extension -notmatch $media_pattern})){
-              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
               $Button_Settings.AffirmativeButtonText = 'Ok'
               $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
               $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid Media!',"The media file you selected is invalid or unsupported - $_ - halthing further actions",$okandCancel,$Button_Settings)
               write-ezlogs -text "The media file selected is invalid or unsupported - $_" -showtime -Warning -LogLevel 2
               return
             }elseif([system.io.file]::Exists($_) -and ([System.IO.FileInfo]::new($_) | Where-Object -FilterScript {$_.Extension -match $media_pattern})){
-              $result_cleaned = ([Regex]::Replace($_, $pattern, '')).trim() 
-              if(-not [string]::IsNullOrEmpty($result_cleaned)){  
-                write-ezlogs -text "| Adding Selected Media file Path $_ to Dialog_Local_File_Textbox"          
-                [Void]$ValidPaths.add($result_cleaned)   
+              $result_cleaned = ([Regex]::Replace($_, $pattern, '')).trim()
+              if(-not [string]::IsNullOrEmpty($result_cleaned)){
+                write-ezlogs -text "| Adding Selected Media file Path $_ to Dialog_Local_File_Textbox"
+                [Void]$ValidPaths.add($result_cleaned)
               }else{
                 write-ezlogs -text "The provided Path is not valid! -- $_" -showtime -Warning -LogLevel 2
-              }          
+              }
             }elseif([system.io.directory]::Exists($_)){
               $Pathroot = [system.io.path]::GetPathRoot($_)
               if($thisApp.Config.Media_Directories -contains $Pathroot){
                 write-ezlogs -text "The provided path ($_) is already included in root path: $Pathroot" -Warning
                 [Void]$DuplicatePaths.add($_)
               }elseif($thisApp.Config.Media_Directories -notcontains $_){
-                $result_cleaned = ([Regex]::Replace($_, $pattern, '')).trim() 
-                if(-not [string]::IsNullOrEmpty($result_cleaned)){  
-                  write-ezlogs -text "| Adding Selected Media Path $_ to Dialog_Local_File_Textbox"           
-                  [Void]$ValidPaths.add($result_cleaned)   
+                $result_cleaned = ([Regex]::Replace($_, $pattern, '')).trim()
+                if(-not [string]::IsNullOrEmpty($result_cleaned)){
+                  write-ezlogs -text "| Adding Selected Media Path $_ to Dialog_Local_File_Textbox"
+                  [Void]$ValidPaths.add($result_cleaned)
                 }else{
-                  write-ezlogs -text "The provided Path is not valid! -- $_" -showtime -Warning -LogLevel 2 
-                } 
+                  write-ezlogs -text "The provided Path is not valid! -- $_" -showtime -Warning -LogLevel 2
+                }
               }else{
                 write-ezlogs -text "The provided path $_ has already been added" -Warning
                 [Void]$DuplicatePaths.add($_)
               }
-            }            
+            }
           }else{
             write-ezlogs -text "No Path was provided! - $($_)" -showtime -Warning
-          }      
+          }
       }}
-      if($DuplicatePaths.count -gt 0){             
-        $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+      if($DuplicatePaths.count -gt 0){
+        $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
         $Button_Settings.AffirmativeButtonText = 'Ok'
         $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-        $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Duplicate Media!',"The following media paths will be skipped as they have already been added or are included in existing root paths:`n$($DuplicatePaths | out-string) ",$okandCancel,$Button_Settings)       
+        $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Duplicate Media!',"The following media paths will be skipped as they have already been added or are included in existing root paths:`n$($DuplicatePaths | out-string) ",$okandCancel,$Button_Settings)
       }
-      if($ValidPaths.count -gt 0){             
-        $synchash.Dialog_Local_File_Textbox.text = $ValidPaths -join ','    
+      if($ValidPaths.count -gt 0){
+        $synchash.Dialog_Local_File_Textbox.text = $ValidPaths -join ','
       }else{
         write-ezlogs -text 'No valid Paths were provided!' -showtime -Warning -LogLevel 2
-      }  
+      }
     }
   }catch{
     write-ezlogs -text 'An exception occurred in BrowseMedia_Command click event' -showtime -CatchError $_
@@ -8653,109 +8665,21 @@ if($thisApp.Config.startup_perf_timer){
 [System.Windows.RoutedEventHandler]$synchash.Add_Media_Apply_Command  = {
   param($sender)
   try{
-    $media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)avi|(?i)wmv|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mov|(?i)h264|(?i)mpeg|(?i)mpg4|(?i)movie|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))',[System.Text.RegularExpressions.RegexOptions]::Compiled)
-    $illegal = [Regex]::Escape(-join [System.Io.Path]::GetInvalidPathChars())
-    $pattern = "[$illegal]"
-    if(-not [string]::IsNullOrEmpty($synchash.Dialog_Local_File_Textbox.text) -and $synchash.Dialog_Local_File_Textbox.isEnabled){      
-      $result = $synchash.Dialog_Local_File_Textbox.text -split ','
-      if($result.count -gt 1 -or [system.io.directory]::Exists($result)){     
-        $result | & { process {
-            if([system.io.directory]::Exists($_)){
-              if($thisApp.Config.Media_Directories -notcontains $_){
-                $result_cleaned = ([Regex]::Replace($_, $pattern, '')).trim() 
-                if(-not [string]::IsNullOrEmpty($result_cleaned)){  
-                  write-ezlogs -text "| Adding Selected Media Path $_ to Media_Directories sources"           
-                  [Void]$thisApp.Config.Media_Directories.add($result_cleaned)   
-                }else{
-                  write-ezlogs -text "The provided Path is not valid! -- $_" -showtime -Warning -LogLevel 2 
-                } 
-              }else{
-                write-ezlogs -text "The provided path $_ has already been added" -Warning
-              }
-            }      
-        }} 
-        Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -UpdateMediaDirectories -RefreshLibrary Local 
-      }else{
-        if([system.io.file]::Exists($result) -or [system.io.directory]::Exists($result)){
-          if([system.io.file]::Exists($result) -and ([System.IO.FileInfo]::new($result) | Where-Object -FilterScript {$_.Extension -notmatch $media_pattern})){
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
-            $Button_Settings.AffirmativeButtonText = 'Ok'
-            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-            $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid Media!',"The media file you provided is invalid or unsupported - $result",$okandCancel,$Button_Settings)
-            write-ezlogs -text "The media file provided is invalid or unsupported - $result" -showtime -Warning -LogLevel 2
-            return
-          }
-          $result_cleaned = ([Regex]::Replace($result, $pattern, '')).trim()      
-          if(-not [string]::IsNullOrEmpty($result_cleaned)){             
-            write-ezlogs -text ">>>> Adding Local Media $result_cleaned" -showtime -color cyan -LogLevel 2 -logtype LocalMedia
-            Import-Media -Media_Path $result_cleaned -verboselog:$false -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp -StartPlayback:$synchash.Dialog_StartPlayback_Toggle.isOn     
-          }else{
-            write-ezlogs -text "The provided Path is not valid! -- $result" -showtime -Warning -LogLevel 2 -logtype LocalMedia
-          }  
-        }else{
-          write-ezlogs -text "No Path was provided! - $($result)" -showtime -Warning -LogLevel 2
-          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
-          $Button_Settings.AffirmativeButtonText = 'Ok'
-          $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-          $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid Media!',"The media file you provided is invalid or unsupported - $result",$okandCancel,$Button_Settings)
-        }
-      }
-    }elseif(-not [string]::IsNullOrEmpty($synchash.Dialog_Remote_URL_Textbox.text) -and $synchash.Dialog_Remote_URL_Textbox.isEnabled){
-      $result = ($synchash.Dialog_Remote_URL_Textbox.text).trim()
-      if((Test-url -address $result) -and ($result -match 'youtube\.com|yewtu\.be|soundcloud\.com|youtu.be')){       
-        if($thisApp.Config.Import_Youtube_Media){
-          write-ezlogs -text ">>>> Adding Youtube video $result" -showtime -color cyan -logtype Youtube
-          Import-Youtube -Youtube_URL $result -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp -StartPlayback:$synchash.Dialog_StartPlayback_Toggle.isOn 
-        }else{
-          write-ezlogs -text ">>>> Starting temporary Youtube video $result" -showtime -color cyan
-          Start-NewMedia -synchash $synchash -thisApp $thisApp -Mediaurl $result -Use_Runspace -MediaType Youtube
-          return
-        }
-      }elseif((Test-url -address $result)){
-        if($result -match 'twitch\.tv'){
-          write-ezlogs -text "The provided URL is twitch - $result" -showtime
-          $type = 'Twitch'
-        }else{
-          write-ezlogs -text "The provided URL is unknown - $result" -showtime -Warning
-          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
-          $Button_Settings.AffirmativeButtonText = 'Yes'
-          $Button_Settings.NegativeButtonText = 'No'
-          $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
-          $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Unknown URL!',"The URL you provided does not appear to be an officially supported media type. Playback might or might not work.`n`nDo you wish to continue? - $result",$okandCancel,$Button_Settings)
-          $type = 'Other'
-        }
-        Start-NewMedia -synchash $synchash -thisApp $thisApp -Mediaurl $result -Use_Runspace -MediaType $type
-        return
-      }else{
-        write-ezlogs -text "The provided URL is invalid or unsupported - $result" -showtime -Warning
-        $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
-        $Button_Settings.AffirmativeButtonText = 'Ok'
-        $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-        $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid URL!',"The URL you provided is invalid or unsupported - $result",$okandCancel,$Button_Settings)
-        return
-      } 
-    }else{
-      write-ezlogs -text 'No URL or file path was provided!' -showtime -Warning
-      $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
-      $Button_Settings.AffirmativeButtonText = 'Ok'
-      $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-      $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Did you forget something?','No URL or file path was provided!',$okandCancel,$Button_Settings)
-      return
-    }
+
   }catch{
     write-ezlogs -text 'An exception occurred in BrowseMedia_Command click event' -showtime -CatchError $_
   }finally{
     if($synchash.YoutubeWebview2_Visibility -and $synchash.YoutubeWebView2){
-      $synchash.YoutubeWebView2.Visibility = 'Visible'    
-    }    
+      $synchash.YoutubeWebView2.Visibility = 'Visible'
+    }
     if($synchash.VideoView_Visibility  -and $synchash.VideoView){
-      $synchash.VideoView.Visibility = 'Visible'    
-    }  
+      $synchash.VideoView.Visibility = 'Visible'
+    }
     if($synchash.chat_WebView2_Visibility -and $synchash.chat_WebView2){
-      $synchash.chat_WebView2.Visibility = 'Visible'    
+      $synchash.chat_WebView2.Visibility = 'Visible'
     }
     if($synchash.Comments_Grid_Visibility -and $synchash.Comments_Grid){
-      $synchash.Comments_Grid.Visibility = 'Visible'    
+      $synchash.Comments_Grid.Visibility = 'Visible'
     }
     $synchash.CustomDialog.RequestCloseAsync()
     $synchash.CustomDialog = $null
@@ -8769,6 +8693,163 @@ if($thisApp.Config.startup_perf_timer){
 [System.Windows.RoutedEventHandler]$synchash.Add_Media_Command = {
   param($sender)
   try{
+
+
+    $Options = [System.Collections.Generic.List[PSCustomObject]]::new()
+    $OptionPath = [PSCustomObject]@{
+      'Name' = 'RemoteURL'
+      'Label' = 'Remote Network/Web URL'
+      'Type' = 'textbox'
+      'SingleInputAllowed' = $true
+      'Value' = ''
+      'Output' = ''
+    }
+    [void]$Options.add($OptionPath)
+    $OptionPath = [PSCustomObject]@{
+      'Name' = 'FolderPath'
+      'Label' = 'Local Folder'
+      'Type' = 'textbox'
+      'SingleInputAllowed' = $true
+      'BrowseType' = 'OpenFolder'
+      'Value' = ''
+      'Output' = ''
+    }
+    [void]$Options.add($OptionPath)
+    $OptionPath = [PSCustomObject]@{
+      'Name' = 'FilePath'
+      'Label' = 'Local Files'
+      'Type' = 'textbox'
+      'SingleInputAllowed' = $true
+      'BrowseType' = 'OpenFile'
+      'Value' = ''
+      'Output' = ''
+    }
+    [void]$Options.add($OptionPath)
+    $OptionMutePlayback = [PSCustomObject]@{
+      'Name' = 'StartPlayback'
+      'Label' = 'Start Playback'
+      'Type' = 'ToggleSwitch'
+      'Value' = $false
+      'Output' = ''
+    }
+    [void]$Options.add($OptionMutePlayback)
+
+    $synchash.CustomWindowResultTimer = [System.Windows.Threading.DispatcherTimer]::new()
+    $CustomWindowResultTimer_Event = {
+      try{
+        if($this.tag){
+          $RemoteURL = $this.tag[0].Output
+          $LocalFolder = $this.tag[1].Output
+          $LocalFiles = $this.tag[2].Output
+          $StartPlayback = $this.tag[3].Output
+        }
+        $media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)avi|(?i)wmv|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mov|(?i)h264|(?i)mpeg|(?i)mpg4|(?i)movie|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))',[System.Text.RegularExpressions.RegexOptions]::Compiled)
+        $illegal = [Regex]::Escape(-join [System.Io.Path]::GetInvalidPathChars())
+        $pattern = "[$illegal]"
+        if(-not [string]::IsNullOrEmpty($LocalFiles) -or -not [string]::IsNullOrEmpty($LocalFolder)){
+          $resultFiles = $LocalFiles -split ','
+          $resultFolders = $LocalFolder -split ','
+          if($resultFolders.count -gt 1 -or [system.io.directory]::Exists($resultFolders)){
+            $resultFolders | & { process {
+                if([system.io.directory]::Exists($_)){
+                  if($thisApp.Config.Media_Directories -notcontains $_){
+                    $result_cleaned = ([Regex]::Replace($_, $pattern, '')).trim()
+                    if(-not [string]::IsNullOrEmpty($result_cleaned)){
+                      write-ezlogs -text "| Adding Selected Media Path $_ to Media_Directories sources"
+                      [Void]$thisApp.Config.Media_Directories.add($result_cleaned)
+                    }else{
+                      write-ezlogs -text "The provided Path is not valid! -- $_" -showtime -Warning -LogLevel 2
+                    }
+                  }else{
+                    write-ezlogs -text "The provided path $_ has already been added" -Warning
+                  }
+                }
+            }}
+            Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -UpdateMediaDirectories -RefreshLibrary Local
+          }else{
+            if($resultFiles.count -gt 1 -or [system.io.file]::Exists($resultFiles)){
+              if([system.io.file]::Exists($resultFiles) -and ([System.IO.FileInfo]::new($resultFiles) | Where-Object -FilterScript {$_.Extension -notmatch $media_pattern})){
+                $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
+                $Button_Settings.AffirmativeButtonText = 'Ok'
+                $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
+                $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid Media!',"The media file you provided is invalid or unsupported - $resultFiles",$okandCancel,$Button_Settings)
+                write-ezlogs -text "The media file provided is invalid or unsupported - $resultFiles" -showtime -Warning -LogLevel 2
+                return
+              }
+              $result_cleaned = ([Regex]::Replace($LocalFiles, $pattern, '')).trim()
+              if(-not [string]::IsNullOrEmpty($result_cleaned)){
+                write-ezlogs -text ">>>> Adding Local Media $result_cleaned" -showtime -color cyan -LogLevel 2 -logtype LocalMedia
+                Import-Media -Media_Path $result_cleaned -verboselog:$false -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp -StartPlayback:$StartPlayback
+              }else{
+                write-ezlogs -text "The provided Path is not valid! -- $resultFiles" -showtime -Warning -LogLevel 2 -logtype LocalMedia
+              }
+            }else{
+              write-ezlogs -text "No Path was provided! - $($resultFiles)" -showtime -Warning -LogLevel 2
+              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
+              $Button_Settings.AffirmativeButtonText = 'Ok'
+              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
+              $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid Media!',"The media file you provided is invalid or unsupported - $resultFiles",$okandCancel,$Button_Settings)
+            }
+          }
+        }elseif(-not [string]::IsNullOrEmpty($RemoteURL)){
+          $result = ($RemoteURL).trim()
+          if((Test-url -address $result) -and ($result -match 'youtube\.com|yewtu\.be|soundcloud\.com|youtu.be')){
+            if($thisApp.Config.Import_Youtube_Media){
+              write-ezlogs -text ">>>> Adding Youtube video $result" -showtime -color cyan -logtype Youtube
+              Import-Youtube -Youtube_URL $result -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp -StartPlayback:$StartPlayback
+            }else{
+              write-ezlogs -text ">>>> Starting temporary Youtube video $result" -showtime -color cyan
+              Start-NewMedia -synchash $synchash -thisApp $thisApp -Mediaurl $result -Use_Runspace -MediaType Youtube
+              return
+            }
+          }elseif((Test-url -address $result)){
+            if($result -match 'twitch\.tv'){
+              write-ezlogs -text "The provided URL is twitch - $result" -showtime
+              $type = 'Twitch'
+            }else{
+              write-ezlogs -text "The provided URL is unknown - $result" -showtime -Warning
+              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
+              $Button_Settings.AffirmativeButtonText = 'Yes'
+              $Button_Settings.NegativeButtonText = 'No'
+              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
+              $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Unknown URL!',"The URL you provided does not appear to be an officially supported media type. Playback might or might not work.`n`nDo you wish to continue? - $result",$okandCancel,$Button_Settings)
+              $type = 'Other'
+            }
+            Start-NewMedia -synchash $synchash -thisApp $thisApp -Mediaurl $result -Use_Runspace -MediaType $type
+            return
+          }else{
+            write-ezlogs -text "The provided URL is invalid or unsupported - $result" -showtime -Warning
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
+            $Button_Settings.AffirmativeButtonText = 'Ok'
+            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
+            $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid URL!',"The URL you provided is invalid or unsupported - $result",$okandCancel,$Button_Settings)
+            return
+          }
+        }else{
+          write-ezlogs -text 'No URL or file path was provided!' -showtime -Warning
+          #$Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
+          #$Button_Settings.AffirmativeButtonText = 'Ok'
+          #$okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
+          #$dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Did you forget something?','No URL or file path was provided!',$okandCancel,$Button_Settings)
+          return
+        }
+        $this.Stop()
+      }catch{
+        write-ezlogs -text 'An exception occurred in Initialize_Vlc_timer' -showtime -CatchError $_
+      }finally{
+        $this.Stop()
+        $this.tag = $Null
+        $this.Remove_Tick($CustomWindowResultTimer_Event)
+        $CustomWindowResultTimer_Event = $null
+        $synchash.CustomWindowResultTimer = $null
+        $synchash.Remove('CustomWindowResultTimer')
+      }
+    }
+    $synchash.CustomWindowResultTimer.add_tick($CustomWindowResultTimer_Event)
+    $Result = Show-CustomWindow -thisApp $thisApp -synchash $synchash -WindowTitle 'Add/Open Media' -HeaderText 'Open Media Options' -Message "Provide the path to the media to be added or played" -Type Options -Options $Options -TopMost
+
+    return
+
     if($synchash.CustomDialog -or $synchash.DialogWindow.IsVisible){
       write-ezlogs -text "A custom dialog is already open, cannot create another -- args: $($args | out-string)" -Warning
       return
@@ -8779,14 +8860,14 @@ if($thisApp.Config.startup_perf_timer){
       [Void]$synchash.Window.Show()
       [Void]$synchash.Window.Activate()
     }
-    $CustomDialog_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new() 
+    $CustomDialog_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
     $CustomDialog_Settings.ColorScheme = [MahApps.Metro.Controls.Dialogs.MetroDialogColorScheme]::Theme
     $CustomDialog_Settings.OwnerCanCloseWithDialog = $true
     $synchash.CustomDialog = [MahApps.Metro.Controls.Dialogs.CustomDialog]::new($synchash.Window)
     [xml]$xaml = [System.IO.File]::ReadAllText("$($thisApp.Config.Current_folder)\Views\Dialog.xaml").replace('Views/Styles.xaml',"$($thisApp.Config.Current_folder)`\Views`\Styles.xaml")
-    $reader = ([System.Xml.XmlNodeReader]::new($xaml)) 
+    $reader = ([System.Xml.XmlNodeReader]::new($xaml))
     $synchash.DialogWindow = [Windows.Markup.XamlReader]::Load($reader)
-    $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | & { process {$synchash."$($_.Name)" = $synchash.DialogWindow.FindName($_.Name)}}    
+    $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | & { process {$synchash."$($_.Name)" = $synchash.DialogWindow.FindName($_.Name)}}
     [Void]$reader.Dispose()
     $xaml = $null
     $reader = $null
@@ -8794,20 +8875,20 @@ if($thisApp.Config.startup_perf_timer){
     $synchash.DialogButtonClose.add_click({
         try{
           if($synchash.YoutubeWebview2_Visibility -and $synchash.YoutubeWebView2){
-            $synchash.YoutubeWebView2.Visibility = 'Visible'    
-          }    
+            $synchash.YoutubeWebView2.Visibility = 'Visible'
+          }
           if($synchash.VideoView_Visibility -and $synchash.VideoView){
-            $synchash.VideoView.Visibility = 'Visible'    
-          }  
+            $synchash.VideoView.Visibility = 'Visible'
+          }
           if($synchash.chat_WebView2_Visibility -and $synchash.chat_WebView2){
-            $synchash.chat_WebView2.Visibility = 'Visible'    
+            $synchash.chat_WebView2.Visibility = 'Visible'
           }
           if($synchash.Comments_Grid_Visibility -and $synchash.Comments_Grid){
-            $synchash.Comments_Grid.Visibility = 'Visible'    
-          }     
+            $synchash.Comments_Grid.Visibility = 'Visible'
+          }
           if($synchash.WebView2_Visibility -and $synchash.WebView2){
-            $synchash.WebView2.Visibility = 'Visible'    
-          }                          
+            $synchash.WebView2.Visibility = 'Visible'
+          }
           $synchash.CustomDialog.RequestCloseAsync()
           $synchash.CustomDialog = $null
           $synchash.DialogWindow = $null
@@ -8860,26 +8941,26 @@ if($thisApp.Config.startup_perf_timer){
     $synchash.WebView2_Visibility = $synchash.WebView2.isVisible -and !$synchash.MediaViewAnchorable.isFloating
 
     if($synchash.YoutubeWebview2_Visibility -and $synchash.YoutubeWebView2){
-      $synchash.YoutubeWebView2.Visibility = 'Collapsed'    
+      $synchash.YoutubeWebView2.Visibility = 'Collapsed'
     }
     if($synchash.VideoView_Visibility -and $synchash.VideoView){
-      $synchash.VideoView.Visibility = 'Collapsed'   
+      $synchash.VideoView.Visibility = 'Collapsed'
     }
     if($synchash.chat_WebView2_Visibility -and $synchash.chat_WebView2){
-      $synchash.chat_WebView2.Visibility = 'Collapsed'    
+      $synchash.chat_WebView2.Visibility = 'Collapsed'
     }
     if($synchash.Comments_Grid_Visibility -and $synchash.Comments_Grid){
-      $synchash.Comments_Grid.Visibility = 'Collapsed'    
+      $synchash.Comments_Grid.Visibility = 'Collapsed'
     }
     if($synchash.WebView2_Visibility -and $synchash.WebView2){
-      $synchash.WebView2.Visibility = 'Collapsed'    
+      $synchash.WebView2.Visibility = 'Collapsed'
     }
     $synchash.Dialog_Browse_Button.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.BrowseMedia_Command)
     $synchash.Dialog_Browse_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.BrowseMedia_Command)
     $synchash.Dialog_BrowseFolders_Button.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.BrowseMedia_Command)
     $synchash.Dialog_BrowseFolders_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.BrowseMedia_Command)
-    $synchash.Dialog_Add_Button.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.Add_Media_Apply_Command) 
-    $synchash.Dialog_Add_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.Add_Media_Apply_Command)   
+    $synchash.Dialog_Add_Button.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.Add_Media_Apply_Command)
+    $synchash.Dialog_Add_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.Add_Media_Apply_Command)
     [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowMetroDialogAsync($synchash.Window, $synchash.CustomDialog, $CustomDialog_Settings)
   }catch{
     write-ezlogs -text 'An exception occurred in Add_Media_Command click event' -showtime -CatchError $_
@@ -8894,7 +8975,7 @@ if($synchash.LocalMedia_Actions_Button){
         $Header = 'Add Media'
         if($synchash.LocalMedia_Actions_Button.items -notcontains $Header){
           $synchash.Add_localMedia_Button = [System.Windows.Controls.MenuItem]::new()
-          $synchash.Add_localMedia_Button.IsCheckable = $false    
+          $synchash.Add_localMedia_Button.IsCheckable = $false
           $synchash.Add_localMedia_Button.ToolTip = 'Add new media paths to library'
           $synchash.Add_localMedia_Button.Header = $Header
           $menuItem_imagecontrol = [MahApps.Metro.IconPacks.PackIconMaterial]::new()
@@ -8902,53 +8983,53 @@ if($synchash.LocalMedia_Actions_Button){
           $menuItem_imagecontrol.Height = '14'
           $menuItem_imagecontrol.Kind = 'PlusCircleOutline'
           $synchash.Add_localMedia_Button.Icon = $menuItem_imagecontrol
-          $synchash.Add_localMedia_Button.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$synchash.Add_Media_Command)                                                
+          $synchash.Add_localMedia_Button.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$synchash.Add_Media_Command)
           [Void]$synchash.LocalMedia_Actions_Button.items.add($synchash.Add_localMedia_Button)
-        } 
+        }
         $Header = 'Quick Refresh'
         if($synchash.LocalMedia_Actions_Button.items -notcontains $Header){
           $synchash.QuickRefresh_LocalMedia_Button = [System.Windows.Controls.MenuItem]::new()
-          $synchash.QuickRefresh_LocalMedia_Button.IsCheckable = $false    
-          $synchash.QuickRefresh_LocalMedia_Button.Header = $Header 
+          $synchash.QuickRefresh_LocalMedia_Button.IsCheckable = $false
+          $synchash.QuickRefresh_LocalMedia_Button.Header = $Header
           $synchash.QuickRefresh_LocalMedia_Button.ToolTip = 'Refreshes the library view with existing records'
           $synchash.QuickRefresh_LocalMedia_Button.Name = 'QuickRefresh_LocalMedia_Button'
           $menuItem_imagecontrol = [MahApps.Metro.IconPacks.PackIconMaterial]::new()
           $menuItem_imagecontrol.width = '14'
           $menuItem_imagecontrol.Height = '14'
-          $menuItem_imagecontrol.Kind = 'Refresh'        
+          $menuItem_imagecontrol.Kind = 'Refresh'
           $synchash.QuickRefresh_LocalMedia_Button.Icon = $menuItem_imagecontrol
-          $synchash.QuickRefresh_LocalMedia_Button.Add_Click({   
-              try{  
-                $synchash.Refresh_LocalMedia_timer.tag = 'QuickRefresh_LocalMedia_Button'  
-                $synchash.Refresh_LocalMedia_timer.start()            
+          $synchash.QuickRefresh_LocalMedia_Button.Add_Click({
+              try{
+                $synchash.Refresh_LocalMedia_timer.tag = 'QuickRefresh_LocalMedia_Button'
+                $synchash.Refresh_LocalMedia_timer.start()
               }catch{
                 write-ezlogs -text 'An exception occurred in LocalMedia_Actions_Button_menuitem.Add_Click' -showtime -CatchError $_
               }
-          })                                               
+          })
           [Void]$synchash.LocalMedia_Actions_Button.items.add($synchash.QuickRefresh_LocalMedia_Button)
         }
         $Header = 'Rescan Library'
         if($synchash.LocalMedia_Actions_Button.items -notcontains $Header){
           $synchash.Refresh_LocalMedia_Button = [System.Windows.Controls.MenuItem]::new()
-          $synchash.Refresh_LocalMedia_Button.IsCheckable = $false    
+          $synchash.Refresh_LocalMedia_Button.IsCheckable = $false
           $synchash.Refresh_LocalMedia_Button.Header = $Header
           $synchash.Refresh_LocalMedia_Button.ToolTip = 'Performs full rescan of media and rebuild of library'
           $synchash.Refresh_LocalMedia_Button.Name = 'Refresh_LocalMedia_Button'
           $menuItem_imagecontrol = [MahApps.Metro.IconPacks.PackIconMaterial]::new()
           $menuItem_imagecontrol.width = '14'
           $menuItem_imagecontrol.Height = '14'
-          $menuItem_imagecontrol.Kind = 'DatabaseRefreshOutline'        
+          $menuItem_imagecontrol.Kind = 'DatabaseRefreshOutline'
           $synchash.Refresh_LocalMedia_Button.Icon = $menuItem_imagecontrol
-          $synchash.Refresh_LocalMedia_Button.Add_Click({   
-              try{  
-                $synchash.Refresh_LocalMedia_timer.tag = 'Refresh_LocalMedia_Button'  
-                $synchash.Refresh_LocalMedia_timer.start()             
+          $synchash.Refresh_LocalMedia_Button.Add_Click({
+              try{
+                $synchash.Refresh_LocalMedia_timer.tag = 'Refresh_LocalMedia_Button'
+                $synchash.Refresh_LocalMedia_timer.start()
               }catch{
                 write-ezlogs -text 'An exception occurred in LocalMedia_Actions_Button_menuitem.Add_Click' -showtime -CatchError $_
               }
-          })                                               
+          })
           [Void]$synchash.LocalMedia_Actions_Button.items.add($synchash.Refresh_LocalMedia_Button)
-        }                     
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in LocalMedia_Actions_Button.add_Loaded' -CatchError $_
       }
@@ -8957,13 +9038,13 @@ if($synchash.LocalMedia_Actions_Button){
 
 if($synchash.OpenButton_Button){
   try{
-    $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.Current_Folder)\Resources\Skins\OpenButton.png") 
+    $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.Current_Folder)\Resources\Skins\OpenButton.png")
     $image = [System.Windows.Media.Imaging.BitmapImage]::new()
     [void]$image.BeginInit()
     $image.CacheOption = 'OnLoad'
     $image.DecodePixelWidth = '86'
     $image.StreamSource = $stream_image
-    [void]$image.EndInit() 
+    [void]$image.EndInit()
     [void]$stream_image.Close()
     [void]$stream_image.Dispose()
     $stream_image = $null
@@ -8981,11 +9062,11 @@ if($synchash.OpenButton_Button){
     }
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Add/Open Media Button
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Progress Slider Controls
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -8993,14 +9074,14 @@ if($thisApp.Config.startup_perf_timer){
 }
 [System.Windows.RoutedEventHandler]$synchash.MediaPlayer_SliderValueChanged_Command = {
   param($sender,[System.Windows.RoutedPropertyChangedEventArgs[Double]]$e)
-  try{  
+  try{
     $CurrentValue = $sender.Value
     $LeftMouseButtonState = ([KeyStates.MyHelper]::GetAsyncKeyState(1) -eq -32767)
     $MediaPlayer_SliderMouseOver = ($synchash.MediaPlayer_Slider.IsMouseOver -and $LeftMouseButtonState)
     $Mini_Progress_SliderMouseOver = ($synchash.Mini_Progress_Slider.IsMouseOver -and $LeftMouseButtonState)
     $VideoView_Progress_SliderMouseOver = ($synchash.VideoView_Progress_Slider.IsMouseOver -and $LeftMouseButtonState)
     if(($MediaPlayer_SliderMouseOver -or $Mini_Progress_SliderMouseOver -or $VideoView_Progress_SliderMouseOver) -and $synchash.vlc.IsPlaying -and $([timespan]::FromMilliseconds($synchash.VLC.Time)).TotalSeconds -ne $synchash.MediaPlayer_Slider.Value){
-      if($thisApp.Config.Dev_mode){write-ezlogs -text "Updating vlc time: $($synchash.MediaPlayer_Slider.Value * 1000)" -Dev_mode}    
+      if($thisApp.Config.Dev_mode){write-ezlogs -text "Updating vlc time: $($synchash.MediaPlayer_Slider.Value * 1000)" -Dev_mode}
       if($thisApp.Config.Libvlc_Version -eq '4'){
         $synchash.VLC.setTime($synchash.MediaPlayer_Slider.Value * 1000)
       }else{
@@ -9009,7 +9090,7 @@ if($thisApp.Config.startup_perf_timer){
       $total_time = $synchash.MediaPlayer_CurrentDuration
       [int]$b = [int]$synchash.MediaPlayer_Slider.Value
       [int]$d = $b / 60
-      #min 
+      #min
       [int]$hrs = $($([timespan]::FromSeconds($b)).Hours)
       [int]$mins = $($([timespan]::FromSeconds($b)).Minutes)
       [int]$secs = $($([timespan]::FromSeconds($b)).Seconds)
@@ -9033,13 +9114,13 @@ if($thisApp.Config.startup_perf_timer){
       }
       if($synchash.MiniPlayer_Media_Length_Label){
         $synchash.MiniPlayer_Media_Length_Label.Content = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
-      }               
+      }
     }elseif($synchash.MediaPlayer_Slider.IsMouseOver -and !$synchash.vlc.IsPlaying -and $synchash.MediaPlayer_Slider.IsFocused){
       #do nothing?
     }
     if([int]$synchash.MediaPlayer_Slider.Maximum -ne 0){
       $synchash.Main_TaskbarItemInfo.ProgressValue = [int]$synchash.MediaPlayer_Slider.Value / [int]$synchash.MediaPlayer_Slider.Maximum
-    }            
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in MediaPlayer_SliderValueChanged_Command' -showtime -CatchError $_
   }
@@ -9047,8 +9128,8 @@ if($thisApp.Config.startup_perf_timer){
 
 [System.Windows.RoutedEventHandler]$synchash.MediaPlayer_SliderMouseUp_Command = {
   param($sender,[System.Windows.Input.MouseButtonEventArgs]$e)
-  try{   
-    if ($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Left -and $e.ButtonState -eq [System.Windows.Input.MouseButtonState]::Released){    
+  try{
+    if ($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Left -and $e.ButtonState -eq [System.Windows.Input.MouseButtonState]::Released){
       $newvalue = $e.Source.value
       $e.Handled = $true
       $MediaPlayer_SliderMouseOver = ($synchash.MediaPlayer_Slider.IsMouseOver)
@@ -9068,8 +9149,8 @@ if($thisApp.Config.startup_perf_timer){
    console.log('New Position',SpotifyWeb.currState.position);
 "@
           $synchash.WebView2.ExecuteScriptAsync(
-            $synchash.Spotify_Webview2_SeekScript      
-          ) 
+            $synchash.Spotify_Webview2_SeekScript
+          )
           $synchash.MediaPlayer_CurrentDuration = $newvalue
           Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -start
         }elseif($synchash.Spotify_Status -ne 'Stopped' -and $synchash.current_playing_media.url -match 'spotify\:'){
@@ -9117,9 +9198,9 @@ if (state) {
   window.chrome.webview.postMessage(ErrorObject);
 }
 
-"@             
+"@
           }else{
-            
+
             $synchash.YoutubeWebView2_SeekScript = @"
 try {
   var player = document.getElementById('movie_player');
@@ -9135,9 +9216,9 @@ try {
   window.chrome.webview.postMessage(ErrorObject);
 }
 
-"@         
+"@
             $synchash.YoutubeWebView2.ExecuteScriptAsync(
-              $synchash.YoutubeWebView2_SeekScript      
+              $synchash.YoutubeWebView2_SeekScript
             )
           }
           $synchash.MediaPlayer_CurrentDuration = $newvalue
@@ -9148,13 +9229,13 @@ try {
           }
         }
       }elseif($synchash.vlc.IsPlaying -and $([timespan]::FromMilliseconds($synchash.VLC.Time)).TotalSeconds -ne $newvalue){
-        if($thisApp.Config.Verbose_logging){write-ezlogs -text "Updating vlc time: $($synchash.MediaPlayer_Slider.Value * 1000)" -showtime}   
+        if($thisApp.Config.Verbose_logging){write-ezlogs -text "Updating vlc time: $($synchash.MediaPlayer_Slider.Value * 1000)" -showtime}
         if($thisApp.Config.Libvlc_Version -eq '4'){
           $synchash.VLC.setTime($newvalue * 1000)
         }else{
           $synchash.VLC.Time = ($newvalue * 1000)
           $synchash.VLC.SeekTo([timespan]::FromSeconds($newvalue))
-        }         
+        }
         $total_time = $synchash.MediaPlayer_CurrentDuration
         [int]$b = [int]$newvalue
         [int]$d = $b / 60
@@ -9181,9 +9262,9 @@ try {
         }
         if($synchash.MiniPlayer_Media_Length_Label){
           $synchash.MiniPlayer_Media_Length_Label.Content = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
-        }              
+        }
       }
-    }            
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in MediaPlayer_SliderMouseUp_Command' -showtime -CatchError $_
   }
@@ -9200,24 +9281,24 @@ if($synchash.VideoView_Progress_Slider){
 if($synchash.Mini_Progress_Slider){
   [Void]$synchash.Mini_Progress_Slider.AddHandler([System.Windows.Controls.Slider]::PreviewMouseUpEvent,$synchash.MediaPlayer_SliderMouseUp_Command)
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Progress Slider Controls
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Volume Controls
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.MediaPlayer_Volume_SliderMouseUp_Command = {
   param([Parameter(Mandatory)]$sender,[Parameter(Mandatory)][System.Windows.Input.MouseButtonEventArgs]$e)
-  try{     
+  try{
     #When playing with Spotify Client, only update on mouse up
-    if ((Get-Process -Name Spotify*) -and $e.ChangedButton -eq [System.Windows.Input.MouseButton]::Left -and $e.ButtonState -eq [System.Windows.Input.MouseButtonState]::Released -and $thisApp.Config.Import_Spotify_Media -and -not [string]::IsNullOrEmpty($synchash.Spotify_Status) -and $synchash.Spotify_Status -ne 'Stopped'){      
+    if ((Get-Process -Name Spotify*) -and $e.ChangedButton -eq [System.Windows.Input.MouseButton]::Left -and $e.ButtonState -eq [System.Windows.Input.MouseButtonState]::Released -and $thisApp.Config.Import_Spotify_Media -and -not [string]::IsNullOrEmpty($synchash.Spotify_Status) -and $synchash.Spotify_Status -ne 'Stopped'){
       if($thisApp.config.Use_Spicetify -and ((NETSTAT.EXE -an) | Where-Object -FilterScript {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'})){
         Invoke-RestMethod -Uri "http://127.0.0.1:8974/SETVOLUME?$($synchash.Volume_Slider.Value)" -UseBasicParsing
       }else{
         Set-PlaybackVolume -VolumePercent $($synchash.Volume_Slider.Value) -ApplicationName $thisApp.config.App_Name
-      }   
-    }            
+      }
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in MediaPlayer_SliderMouseUp_Command' -showtime -CatchError $_
   }
@@ -9229,7 +9310,7 @@ if($synchash.Mini_Progress_Slider){
     $newvalue = $e.newvalue
     #Set config to current volume value
     $thisApp.Config.Media_Volume = $newvalue
-    if($synchash.Vlc.isPlaying -or $synchash.Vlc.state -match 'Paused'){ 
+    if($synchash.Vlc.isPlaying -or $synchash.Vlc.state -match 'Paused'){
       if($synchash.vlc.Volume -ne $newvalue){
         if($thisApp.Config.Dev_mode){write-ezlogs -text ">>>> Setting vlc volume: $($newvalue)" -Dev_mode}
         if($thisApp.Config.Libvlc_Version -eq '4'){
@@ -9244,38 +9325,38 @@ if($synchash.Mini_Progress_Slider){
         $synchash.Webview2_VolumeScript = @"
    console.log('Setting Spotify Volume to $($newvalue / 100)');
   SpotifyWeb.player.setVolume($($newvalue / 100))
-"@             
+"@
         $synchash.WebView2.ExecuteScriptAsync(
-          $synchash.Webview2_VolumeScript      
+          $synchash.Webview2_VolumeScript
         )
       }else{
         if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
-          $synchash.YoutubeWebView2_VolumeScript = @"       
+          $synchash.YoutubeWebView2_VolumeScript = @"
         var volume = player.volume();
         console.log('Invidious volume',volume)
         if(volume !== $($newvalue / 100)){
           console.log('Setting Invidious volume',$($newvalue / 100))
           player.volume($($newvalue / 100));
-        }       
-"@             
+        }
+"@
           $synchash.YoutubeWebView2.ExecuteScriptAsync(
-            $synchash.YoutubeWebView2_VolumeScript      
+            $synchash.YoutubeWebView2_VolumeScript
           )
         }elseif($synchash.Youtube_WebPlayer_URL -match 'youtube\.com' -or $synchash.Youtube_WebPlayer_URL -match 'youtu\.be' -or $synchash.WebBrowser_Youtube_URL -match 'youtube\.com' -or $synchash.WebBrowser_Youtube_URL -match 'youtu\.be'){
           $synchash.YoutubeWebView2_VolumeScript = @"
   var player = document.getElementById('movie_player');
   console.log('Setting volume',$($newvalue))
   player.setVolume($($newvalue));
-"@             
+"@
 
           if(($synchash.WebBrowser_Youtube_URL -match 'youtube\.com' -or $synchash.WebBrowser_Youtube_URL -match 'youtu\.be') -and $synchash.WebBrowser){
             $synchash.WebBrowser.ExecuteScriptAsync(
-              $synchash.YoutubeWebView2_VolumeScript      
+              $synchash.YoutubeWebView2_VolumeScript
             )
           }
           if($synchash.YoutubeWebView2){
             $synchash.YoutubeWebView2.ExecuteScriptAsync(
-              $synchash.YoutubeWebView2_VolumeScript      
+              $synchash.YoutubeWebView2_VolumeScript
             )
           }
         }
@@ -9285,9 +9366,9 @@ if($synchash.Mini_Progress_Slider){
   var player = document.getElementById('movie_player');
   console.log('Setting volume',$($newvalue))
   player.setVolume($($newvalue));
-"@ 
+"@
       $synchash.WebBrowser.ExecuteScriptAsync(
-        $synchash.YoutubeWebView2_VolumeScript      
+        $synchash.YoutubeWebView2_VolumeScript
       )
     }
     if($sender.value -ge 75){
@@ -9302,7 +9383,7 @@ if($synchash.Mini_Progress_Slider){
     }elseif($sender.value -le 0){
       $synchash.VideoView_Mute_Icon.kind = 'Volumeoff'
       $synchash.MuteButton_ToggleButton.isChecked = $true
-    }        
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in Volume_Slider.Add_ValueChanged' -CatchError $_
   }
@@ -9331,15 +9412,15 @@ if($thisApp.Config.startup_perf_timer){
   $Slider_Controls_Measure = $null
 }
 
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Volume Controls
 #----------------------------------------------
 
-############################################### 
+###############################################
 #region VLC Routed Event Handlers
 ###############################################
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Restart Media
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.RestartMedia_Command = {
@@ -9351,11 +9432,11 @@ if($thisApp.Config.startup_perf_timer){
     write-ezlogs -text 'An exception occurred in Restart_Media click event' -showtime -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Restart Media
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Prev Media
 #----------------------------------------------
 $synchash.PrevMedia_Command = {
@@ -9364,7 +9445,7 @@ $synchash.PrevMedia_Command = {
     write-ezlogs -text '>>>> Received Prev Command' -showtime
     $PrevMedia_Measure = [system.diagnostics.stopwatch]::StartNew()
     if($synchash.vlc.IsPlaying -or $synchash.Vlc.state -match 'Paused'){
-      write-ezlogs -text '>>>> Stopping VLC Playback' -showtime 
+      write-ezlogs -text '>>>> Stopping VLC Playback' -showtime
       if($synchash.vlc.media){
         write-ezlogs -text '| Disposing vlc.media' -showtime
         $synchash.vlc.media = $null
@@ -9372,7 +9453,7 @@ $synchash.PrevMedia_Command = {
       [Void]$synchash.VLC.stop()
       $synchash.VLC_IsPlaying_State = $synchash.Vlc.isPlaying
     }
-    if($thisApp.config.History_Playlist.values){ 
+    if($thisApp.config.History_Playlist.values){
       $HistoryList = [SerializableDictionary[int,string]]::new($thisApp.config.History_Playlist)
       if($synchash.timer.isEnabled){
         $synchash.timer.stop()
@@ -9383,11 +9464,11 @@ $synchash.PrevMedia_Command = {
       if($Last_played.key -and !$Last_played.value){
         write-ezlogs -text "Found history playlist item with index $($Last_played.name) but does not have a valid value - removing from history" -Warning
         [Void]$thisApp.config.History_Playlist.Remove($Last_played.name)
-      } 
+      }
       if(!$Last_played.value){
         $index_toget = $HistoryList.keys | Sort-Object | Select-Object -Last 1
         write-ezlogs -text ">>>> Looking again for last played media from history playlist with new index $($index_toget)" -showtime
-        $Last_played = (($HistoryList.GetEnumerator()) | Where-Object -FilterScript {$_.name -eq $index_toget}) 
+        $Last_played = (($HistoryList.GetEnumerator()) | Where-Object -FilterScript {$_.name -eq $index_toget})
       }
       if(!$Last_played){
         write-ezlogs -text 'Unable to find any valid items in playlist history' -showtime -Warning -AlertUI -AlertAudio:$false
@@ -9407,52 +9488,52 @@ $synchash.PrevMedia_Command = {
           if($thisApp.Config.Verbose_logging){write-ezlogs -text "| Importing All Playlist Cache: $($thisApp.Config.Playlists_Profile_Path)" -showtime}
           $Available_Playlists = Import-SerializedXML -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
         }
-        if($Available_Playlists.PlayList_tracks.values | Where-Object -FilterScript {$_.id -eq $last_Played_ID}){                     
+        if($Available_Playlists.PlayList_tracks.values | Where-Object -FilterScript {$_.id -eq $last_Played_ID}){
           $last_media = $Available_Playlists.PlayList_tracks.values | Where-Object -FilterScript {$_.id -eq $last_Played_ID} | Select-Object -First 1
           write-ezlogs -text "| Found last media in Playlist cache ($($last_media.playlist)) - meaning its missing from primary media profiles!" -showtime -Warning -LogLevel 2
           if($last_media.Source -match 'Youtube'){
-            try{  
+            try{
               write-ezlogs -text '| Adding last media to Youtube media profiles' -showtime -LogLevel 2 -logtype Youtube
-              $Link = $last_media.url 
+              $Link = $last_media.url
               if(-not [string]::IsNullOrEmpty($Link) -and (Test-url -address $Link)){
                 if($Link -match 'twitch.tv'){
                   $twitch_channel = $((Get-Culture).textinfo.totitlecase(($Link | split-path -Leaf).tolower()))
-                  write-ezlogs -text ">>>> Adding Twitch channel $twitch_channel - $Link" -showtime -color cyan -LogLevel 2 -logtype Twitch  
-                  Import-Twitch -Twitch_URL $Link -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace                  
+                  write-ezlogs -text ">>>> Adding Twitch channel $twitch_channel - $Link" -showtime -color cyan -LogLevel 2 -logtype Twitch
+                  Import-Twitch -Twitch_URL $Link -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace
                 }elseif($Link -match 'youtube\.com' -or $Link -match 'youtu\.be'){
                   write-ezlogs -text ">>>> Adding Youtube link $Link" -showtime -color cyan -LogLevel 2 -logtype Youtube
-                  Import-Youtube -Youtube_URL $Link -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace 
-                }                      
+                  Import-Youtube -Youtube_URL $Link -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace
+                }
               }else{
                 write-ezlogs -text "The provided URL is not valid or was not provided! -- $Link" -showtime -Warning -LogLevel 2 -logtype Youtube
-              }                        
+              }
             }catch{
               write-ezlogs -text "An exception occurred adding media $($last_media.title) with Import-Youtube" -showtime -CatchError $_
             }
-          } 
+          }
         }elseif($last_media.Source -eq 'Twitch'){
-          try{  
+          try{
             write-ezlogs -text '| Adding last media to Twitch media profiles' -showtime -LogLevel 2 -logtype Twitch
-            $Link = $last_media.url 
+            $Link = $last_media.url
             if(-not [string]::IsNullOrEmpty($Link) -and (Test-url -address $Link)){
               if($last_media.Channel_Name){
                 $twitch_channel = $last_media.Channel_Name
               }elseif($Link -match 'twitch.tv'){
                 $twitch_channel = $((Get-Culture).textinfo.totitlecase(($Link | split-path -Leaf).tolower()))
-                write-ezlogs -text ">>>> Adding Twitch channel $twitch_channel - $Link" -showtime -color cyan -LogLevel 2 -logtype Twitch                     
+                write-ezlogs -text ">>>> Adding Twitch channel $twitch_channel - $Link" -showtime -color cyan -LogLevel 2 -logtype Twitch
               }
-              Import-Twitch -Twitch_URL $Link -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace       
+              Import-Twitch -Twitch_URL $Link -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace
             }else{
               write-ezlogs -text "The provided URL is not valid or was not provided! -- $Link" -showtime -Warning -LogLevel 2 -logtype Twitch
-            }                        
+            }
           }catch{
             write-ezlogs -text "An exception occurred adding media $($last_media) with Import-Twitch" -showtime -CatchError $_
           }
-        }            
-      } 
+        }
+      }
       if(!$last_media){
-        write-ezlogs -text "| Unable to get media information about the last media item $($last_Played_ID)! - Removing from history" -showtime -Warning -LogLevel 2    
-        [Void]$thisApp.config.History_Playlist.Remove($Last_played.name)       
+        write-ezlogs -text "| Unable to get media information about the last media item $($last_Played_ID)! - Removing from history" -showtime -Warning -LogLevel 2
+        [Void]$thisApp.config.History_Playlist.Remove($Last_played.name)
         return
       }elseif(@($last_media).count -eq 1){
         if(-not [string]::IsNullOrEmpty($last_media.title)){
@@ -9464,27 +9545,27 @@ $synchash.PrevMedia_Command = {
         $synchash.Current_playing_media = $last_media
         if($thisApp.config.History_Playlist.values -contains $last_media.id){
           try{
-            $index_toremove = $thisApp.config.History_Playlist.GetEnumerator() | Where-Object -FilterScript {$_.value -eq $last_media.id} | Select-Object -Property * -ExpandProperty key 
+            $index_toremove = $thisApp.config.History_Playlist.GetEnumerator() | Where-Object -FilterScript {$_.value -eq $last_media.id} | Select-Object -Property * -ExpandProperty key
             if(($index_toremove).count -gt 1){
               write-ezlogs -text "| Found multiple items in History Playlist matching id $($last_media.id) - $($index_toremove | out-string)" -showtime -Warning -LogLevel 2
               foreach($index in $index_toremove){
-                [Void]$thisApp.config.History_Playlist.Remove($index) 
-              }  
+                [Void]$thisApp.config.History_Playlist.Remove($index)
+              }
             }else{
               write-ezlogs -text "| Removing $($last_media.id) from Play Queue" -showtime -LogLevel 2
               [Void]$thisApp.config.History_Playlist.Remove($index_toremove)
-            }                              
+            }
           }catch{
             write-ezlogs -text 'An exception occurred updating History playlist' -showtime -CatchError $_
-          }                          
+          }
         }
         if($last_media.source -eq 'Spotify' -or $last_media.url -match 'spotify\:'){
-          Start-SpotifyMedia -Media $last_media -thisApp $thisApp -synchash $synchash -use_WebPlayer:$thisApp.config.Spotify_WebPlayer -Show_notifications:$thisApp.config.Show_notifications -RestrictedRunspace:$thisApp.config.Spotify_WebPlayer                                      
+          Start-SpotifyMedia -Media $last_media -thisApp $thisApp -synchash $synchash -use_WebPlayer:$thisApp.config.Spotify_WebPlayer -Show_notifications:$thisApp.config.Show_notifications -RestrictedRunspace:$thisApp.config.Spotify_WebPlayer
         }elseif($last_media.id){
           if(Get-Process -Name 'Spotify*' -ErrorAction SilentlyContinue){
             write-ezlogs -text 'Spotify is running, closing it' -showtime -Warning -LogLevel 2 -logtype Spotify
             Get-Process -Name 'Spotify*' | Stop-Process -Force -ErrorAction SilentlyContinue
-          }                   
+          }
           Start-Media -Media $last_media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification
         }
       }else{
@@ -9508,16 +9589,16 @@ $synchash.PrevMedia_Command = {
     $Available_Playlists = $null
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Prev Media
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Stop-Media
 #----------------------------------------------
 $synchash.StopMedia_Command = {
   param($sender)
-  try{  
+  try{
     if($synchash.Stop_media_timer -and !$synchash.Stop_media_timer.isEnabled){
       $synchash.Stop_media_timer.start()
     }
@@ -9525,46 +9606,46 @@ $synchash.StopMedia_Command = {
     write-ezlogs -text 'An exception occurred in StopMedia_Command event' -showtime -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Stop-Media
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Pause-Media
 #----------------------------------------------
 $synchash.PauseMedia_Command = {
   param($sender)
-  try{  
+  try{
     Pause-Media -synchash $synchash -thisApp $thisApp -Update_MediaTransportControls
   }catch{
     write-ezlogs -text 'An exception occurred in Pause_media click event' -showtime -CatchError $_
   }
 }
 $synchash.PauseMedia_Timer = [System.Windows.Threading.DispatcherTimer]::new()
-$synchash.PauseMedia_Timer.add_tick({    
+$synchash.PauseMedia_Timer.add_tick({
     try{
       Pause-Media -synchash $synchash -thisApp $thisApp
     }catch{
       write-ezlogs -text 'An exception occurred executing PauseMedia_Timer' -showtime -CatchError $_
     }finally{
       $this.stop()
-    }       
+    }
 })
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Pause-Media
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Next-Media
 #----------------------------------------------
 $synchash.SkipMedia_Timer = [System.Windows.Threading.DispatcherTimer]::new()
-$synchash.SkipMedia_Timer.add_tick({    
+$synchash.SkipMedia_Timer.add_tick({
     try{
       Skip-Media -synchash $synchash -thisApp $thisApp
     }catch{
       write-ezlogs -text 'An exception occurred executing SkipMedia_Timer' -showtime -CatchError $_
     }finally{
-      $this.stop()  
+      $this.stop()
     }
 })
 
@@ -9573,20 +9654,20 @@ $synchash.PrevMedia_Timer.add_tick($synchash.PrevMedia_Command)
 
 $synchash.NextMedia_Command = {
   param($sender)
-  try{  
-    $synchash.SkipMedia_Timer.start()        
+  try{
+    $synchash.SkipMedia_Timer.start()
   }catch{
     write-ezlogs -text 'An exception occurred in Skip_media click event' -showtime -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Next-Media
 #----------------------------------------------
-############################################### 
+###############################################
 #endregion VLC Routed Event Handlers
 ###############################################
-                  
-#---------------------------------------------- 
+
+#----------------------------------------------
 #region Media Control Handlers
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -9674,8 +9755,8 @@ if($synchash.Volume_Slider -and $synchash.VideoView_Volume_Slider){
   $VideoView_Volume_Slider_Binding.Source = $synchash.Volume_Slider
   $VideoView_Volume_Slider_Binding.Path = 'ToolTip'
   $VideoView_Volume_Slider_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Volume_Slider,[System.Windows.Controls.Slider]::ToolTipProperty, $VideoView_Volume_Slider_Binding)  
-} 
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Volume_Slider,[System.Windows.Controls.Slider]::ToolTipProperty, $VideoView_Volume_Slider_Binding)
+}
 
 if($synchash.VideoView_Overlay_Grid){
   #VideoView_Overlay_Grid binding
@@ -9683,7 +9764,7 @@ if($synchash.VideoView_Overlay_Grid){
   $VideoView_Overlay_Grid_Binding.Source = $synchash.VideoView
   $VideoView_Overlay_Grid_Binding.Path = 'Visibility'
   $VideoView_Overlay_Grid_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Overlay_Grid,[System.Windows.Controls.Grid]::VisibilityProperty, $VideoView_Overlay_Grid_Binding)  
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Overlay_Grid,[System.Windows.Controls.Grid]::VisibilityProperty, $VideoView_Overlay_Grid_Binding)
 }
 
 #Progress Slider binding
@@ -9693,21 +9774,21 @@ if($synchash.VideoView_Progress_Slider){
   $ProgressSlider_Binding.Source = $synchash.MediaPlayer_Slider
   $ProgressSlider_Binding.Path = 'Value'
   $ProgressSlider_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::ValueProperty, $ProgressSlider_Binding) 
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::ValueProperty, $ProgressSlider_Binding)
 
   #VideoView_Progress_Slider Tooltip binding
   $ProgressSliderTooltip_Binding = [System.Windows.Data.Binding]::new()
   $ProgressSliderTooltip_Binding.Source = $synchash.MediaPlayer_Slider
   $ProgressSliderTooltip_Binding.Path = 'ToolTip'
   $ProgressSliderTooltip_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::ToolTipProperty, $ProgressSliderTooltip_Binding) 
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::ToolTipProperty, $ProgressSliderTooltip_Binding)
 
   #MediaPlayer_Slider Ticks binding
   $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
   $ProgressSliderTick_Binding.Source = $synchash.MediaPlayer_Slider
   $ProgressSliderTick_Binding.Path = 'Ticks'
   $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::TicksProperty, $ProgressSliderTick_Binding) 
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::TicksProperty, $ProgressSliderTick_Binding)
 
   #MediaPlayer_Slider Maximum binding
   $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
@@ -9729,13 +9810,13 @@ if($synchash.VideoView_Progress_Slider){
   $ProgressSliderTick_Binding.Path = 'IsEnabled'
   $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
   [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::IsEnabledProperty, $ProgressSliderTick_Binding)
-} 
+}
 if($synchash.Volume_Slider_Toolip){
   #Volume_Slider Value binding
   $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
   $ProgressSliderTick_Binding.Source = $synchash.Volume_Slider
   $ProgressSliderTick_Binding.Path = 'Value'
-  $ProgressSliderTick_Binding.Converter = $synchash.Window.TryFindResource('valueTextConverter') 
+  $ProgressSliderTick_Binding.Converter = $synchash.Window.TryFindResource('valueTextConverter')
   $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
   [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Volume_Slider_Toolip,[System.Windows.Controls.ToolTip]::ContentProperty, $ProgressSliderTick_Binding)
 }
@@ -9803,7 +9884,7 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
   $ProgressSliderTick_Binding.Path = 'Visibility'
   $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
   [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Sep2_Label,[System.Windows.Controls.TextBox]::VisibilityProperty, $ProgressSliderTick_Binding)
-  
+
   $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
   $ProgressSliderTick_Binding.Source = $synchash.VideoView_ViewCount_Label
   $ProgressSliderTick_Binding.Path = 'Visibility'
@@ -9814,20 +9895,20 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
 #VideoView Cast Events
 [System.Windows.RoutedEventHandler]$synchash.CastMedia_Command  = {
   param($sender)
-  try{  
+  try{
     if($thisApp.Config.Use_MediaCasting){
       if($($sender.header) -and $(Test-URL -address $sender.tag) -and $($sender.isChecked)){
-        write-ezlogs -text "##### Staring Cast to device: $($sender.header) - $($sender.tag)" -linesbefore 1       
+        write-ezlogs -text "##### Staring Cast to device: $($sender.header) - $($sender.tag)" -linesbefore 1
         if($synchash.vlc.isPlaying){
           Update-LibVLC -thisApp $thisApp -synchash $synchash -EnableCasting -force
           $mediaurl = "$($synchash.vlc.media.mrl)"
-          if([system.io.file]::Exists($(([uri]$mediaurl).LocalPath))){            
+          if([system.io.file]::Exists($(([uri]$mediaurl).LocalPath))){
             Start-MediaCast -synchash $synchash -thisApp $thisApp -devicename $sender.header -deviceurl $sender.tag -launch -Use_Runspace -RunspaceName "$((New-Guid).Guid)_MediaCastRunspace" -LocalMediaURL ([uri]$mediaurl).LocalPath
           }else{
             Start-MediaCast -synchash $synchash -thisApp $thisApp -devicename $sender.header -deviceurl $sender.tag -launch -Use_Runspace -RunspaceName "$((New-Guid).Guid)_MediaCastRunspace"
-          }          
+          }
         }else{
-          write-ezlogs -text 'Cannot start Media Casting - no media is currently playing!' -Warning -AlertUI 
+          write-ezlogs -text 'Cannot start Media Casting - no media is currently playing!' -Warning -AlertUI
         }
       }elseif($($sender.header) -and $(Test-URL -address $sender.tag) -and !$($sender.isChecked)){
         write-ezlogs -text ">>>> Disable casting for device: $($sender.header) - $($sender.tag)"
@@ -9840,7 +9921,7 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
       }
     }else{
       write-ezlogs -text 'Media Casting Support is not enabled! Cannot continue' -Warning -AlertUI
-    }      
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in CastMedia_Command' -showtime -CatchError $_
   }
@@ -9848,29 +9929,29 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
 
 [System.Windows.RoutedEventHandler]$synchash.ScanMediaRenderers_Command  = {
   param($sender)
-  try{  
- 
+  try{
+
     if($thisApp.Config.Use_MediaCasting -and $synchash.VideoView_Cast_Button.IsExpanded){
       if($synchash.MediaRenderStatus_TextBox){
         $synchash.MediaRenderStatus_TextBox.Header = 'Scanning..........'
       }
       if($synchash.VideoView_Cast_rescan){
         $synchash.VideoView_Cast_rescan.isEnabled = $false
-      }      
+      }
       if($synchash.PackIconFontAwesome_Spinner){
-        $synchash.PackIconFontAwesome_Spinner.Spin = $true 
-      }              
+        $synchash.PackIconFontAwesome_Spinner.Spin = $true
+      }
       Start-MediaCast -synchash $synchash -thisApp $thisApp -scan -Use_Runspace
     }else{
       write-ezlogs -text 'Media Casting Support is not enabled! Cannot continue' -Warning
-    }     
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in CastMedia_Command' -showtime -CatchError $_
     if($synchash.VideoView_Cast_rescan){
       $synchash.VideoView_Cast_rescan.isEnabled = $true
-    }  
+    }
     if($synchash.PackIconFontAwesome_Spinner){
-      $synchash.PackIconFontAwesome_Spinner.Spin = $false 
+      $synchash.PackIconFontAwesome_Spinner.Spin = $false
     }
     if($synchash.MediaRenderStatus_TextBox){
       $synchash.MediaRenderStatus_TextBox.Header = 'Scanning Error!!!!'
@@ -9882,26 +9963,26 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
 #region Subtitle Handlers
 [System.Windows.RoutedEventHandler]$synchash.FetchSubtitles_Command = {
   param($sender)
-  try{   
+  try{
     if($thisApp.Config.Enable_Subtitles -and $synchash.Current_playing_media.source -in 'Local','TOR' -and $synchash.vlc.media.state -in 'Playing','Paused'){
       if($synchash.MediaSubtitles_TextBox){
         $synchash.MediaSubtitles_TextBox.Header = 'Fetching..........'
       }
       if($sender.isEnabled){
         $sender.isEnabled = $false
-      }      
+      }
       if($synchash.PackIconFontAwesome_Subtitle_Spinner){
-        $synchash.PackIconFontAwesome_Subtitle_Spinner.Spin = $true 
-      } 
-      $Subtitles_Path = Get-OpenSubtitles -synchash $synchash -mediafile $synchash.Current_playing_media.url -thisApp $thisApp -Use_Runspace            
+        $synchash.PackIconFontAwesome_Subtitle_Spinner.Spin = $true
+      }
+      $Subtitles_Path = Get-OpenSubtitles -synchash $synchash -mediafile $synchash.Current_playing_media.url -thisApp $thisApp -Use_Runspace
     }else{
       write-ezlogs -text '[FetchSubtitles_Command] Enable_Subtitles is not enabled or no valid media is playing! Cannot continue' -Warning
-    }     
+    }
   }catch{
     write-ezlogs -text '[FetchSubtitles_Command] An exception occurred in FetchSubtitles_Command' -showtime -CatchError $_
-    $sender.isEnabled = $true  
+    $sender.isEnabled = $true
     if($synchash.PackIconFontAwesome_Subtitle_Spinner){
-      $synchash.PackIconFontAwesome_Subtitle_Spinner.Spin = $false 
+      $synchash.PackIconFontAwesome_Subtitle_Spinner.Spin = $false
     }
     if($synchash.MediaSubtitles_TextBox){
       $synchash.MediaSubtitles_TextBox.Header = 'Fetching Error!!!!'
@@ -9911,10 +9992,10 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
 
 [System.Windows.RoutedEventHandler]$synchash.DelaySubtitles_Command = {
   param($sender)
-  try{   
+  try{
     if($thisApp.Config.Enable_Subtitles -and $synchash.Current_playing_media.source -in 'Local','TOR' -and $synchash.vlc.media.state -in 'Playing','Paused'){
       $existing = $synchash.vlc.SpuDelay
-      if(-not [string]::IsNullOrEmpty($existing)){      
+      if(-not [string]::IsNullOrEmpty($existing)){
         if($this.Header -eq 'Increase Delay'){
           #increase by .5 seconds
           $existing = $existing + 500000
@@ -9932,21 +10013,21 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
             write-ezlogs -text "[DelaySubtitles_Command] >>>> Decreased delay to: $($existing)"
           }else{
             write-ezlogs -text "[DelaySubtitles_Command] >>>>  >>>> Unable to confirm decrease of delay to $existing" -Warning
-          }   
+          }
         }
       }else{
         write-ezlogs -text '[DelaySubtitles_Command] Unable to find SPU delay in loaded vlc session -- Cannot continue!' -Warning
       }
     }else{
       write-ezlogs -text "[DelaySubtitles_Command] Enable_Subtitles is not enabled or no valid media is playing! - Enable_Subtitles: $($thisApp.Config.Enable_Subtitles) - Vlc.media.state is playing or paused: $($synchash.vlc.media.state -in 'Playing','Paused') - Current_playing_media.source: $($synchash.Current_playing_media.source -eq 'Local')" -Warning
-    }     
+    }
   }catch{
     write-ezlogs -text '[EnableSubtitles_Command] An exception occurred in DelaySubtitles_Command' -showtime -CatchError $_
     if($synchash.VideoView_Subtitles_Fetch){
       $synchash.VideoView_Subtitles_Fetch.isEnabled = $true
-    }  
+    }
     if($synchash.PackIconFontAwesome_Subtitle_Spinner){
-      $synchash.PackIconFontAwesome_Subtitle_Spinner.Spin = $false 
+      $synchash.PackIconFontAwesome_Subtitle_Spinner.Spin = $false
     }
     if($synchash.MediaSubtitles_TextBox){
       $synchash.MediaSubtitles_TextBox.Header = 'Subtitle Error!!!!'
@@ -9961,7 +10042,7 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
 
 [System.Windows.RoutedEventHandler]$synchash.EnableSubtitles_Command = {
   param($sender)
-  try{   
+  try{
     if($thisApp.Config.Enable_Subtitles -and $synchash.Current_playing_media.source -in 'Local','TOR' -and $synchash.vlc.media.state -in 'Playing','Paused'){
       $subtitleID = $this.Tag
       $isEnabled = $this.isChecked
@@ -9980,7 +10061,7 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
             write-ezlogs -text "[EnableSubtitles_Command] >>>> Enabled subtitle track with ID: $subtitleID - Description: $($this.header)"
           }else{
             write-ezlogs -text "[EnableSubtitles_Command] >>>> Unable to confirm enabling of subtitles with ID: $subtitleID  - Description: $($this.header) -- existing ID: $existing" -Warning
-          }   
+          }
         }
         Update-Subtitles -synchash $synchash -thisApp $thisApp -UpdateSubtitles
       }else{
@@ -9988,14 +10069,14 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
       }
     }else{
       write-ezlogs -text "[EnableSubtitles_Command] Enable_Subtitles is not enabled or no valid media is playing! - Enable_Subtitles: $($thisApp.Config.Enable_Subtitles) - Vlc.media.state is playing or paused: $($synchash.vlc.media.state -in 'Playing','Paused') - Current_playing_media.source: $($synchash.Current_playing_media.source -eq 'Local')" -Warning
-    }     
+    }
   }catch{
     write-ezlogs -text '[EnableSubtitles_Command] An exception occurred in EnableSubtitles_Command' -showtime -CatchError $_
     if($synchash.VideoView_Subtitles_Fetch){
       $synchash.VideoView_Subtitles_Fetch.isEnabled = $true
-    }  
+    }
     if($synchash.PackIconFontAwesome_Subtitle_Spinner){
-      $synchash.PackIconFontAwesome_Subtitle_Spinner.Spin = $false 
+      $synchash.PackIconFontAwesome_Subtitle_Spinner.Spin = $false
     }
     if($synchash.MediaSubtitles_TextBox){
       $synchash.MediaSubtitles_TextBox.Header = 'Subtitle Error!!!!'
@@ -10003,9 +10084,9 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
   }finally{
     if($synchash.VideoView_Subtitles_Fetch){
       $synchash.VideoView_Subtitles_Fetch.isEnabled = $true
-    }  
+    }
     if($synchash.PackIconFontAwesome_Subtitle_Spinner){
-      $synchash.PackIconFontAwesome_Subtitle_Spinner.Spin = $false 
+      $synchash.PackIconFontAwesome_Subtitle_Spinner.Spin = $false
     }
   }
 }
@@ -10015,7 +10096,7 @@ if($MediaControl_Handlers_Measure){
   write-ezlogs -text 'Buttons And Event Handlers - Media Control Handlers Startup' -PerfTimer $MediaControl_Handlers_Measure
   $MediaControl_Handlers_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Media Control Handlers
 #----------------------------------------------
 
@@ -10029,12 +10110,12 @@ if($thisApp.Config.startup_perf_timer){
 #############################################################################
 
 #############################################################################
-#region UI Event Handlers 
+#region UI Event Handlers
 #############################################################################
 if($thisApp.Config.startup_perf_timer){
   $UI_EventHandler_Measure = [system.diagnostics.stopwatch]::StartNew()
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #region Set-WPFButtons
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -10049,11 +10130,11 @@ if($Set_WPFButtons_Measure){
   write-ezlogs -text '>>>> UI and Event Handlers - Set_WPFButtons Startup' -PerfTimer $Set_WPFButtons_Measure
   $Set_WPFButtons_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Set-WPFButtons
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Main Window Event Handlers
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -10063,8 +10144,8 @@ if($synchash.Window){
   $synchash.Window.Add_loaded({
       try{
         if($thisApp.Config.startup_perf_timer){
-          $Window_Loaded_measure = [system.diagnostics.stopwatch]::StartNew() 
-        }                           
+          $Window_Loaded_measure = [system.diagnostics.stopwatch]::StartNew()
+        }
         #Set Window Position
         if(-not [string]::IsNullOrEmpty($thisApp.Config.MainWindow_Top) -and -not [string]::IsNullOrEmpty($thisApp.Config.MainWindow_Left) -and $thisApp.Config.Remember_Window_Positions -and !$OpentoPrimaryScreen){
           write-ezlogs "Setting Main Window to saved position -- Top: $($thisApp.Config.MainWindow_Top) -- Left: $($thisApp.Config.MainWindow_Left)" -Dev_mode
@@ -10076,11 +10157,11 @@ if($synchash.Window){
         if($thisApp.config.Auto_UpdateCheck -and $thisApp.Enable_Update_Features){
           Get-Updates -thisApp $thisApp -synchash $synchash -AutoCheck -AutoInstall:$thisApp.Config.Auto_UpdateInstall
         }
-                 
+
         #Load Main Window Color Theme
         if($thisApp.Config.startup_perf_timer){
-          $Themes_Measure = [system.diagnostics.stopwatch]::StartNew() 
-        }  
+          $Themes_Measure = [system.diagnostics.stopwatch]::StartNew()
+        }
         Import-Module -Name "$Current_folder\Modules\Set-WPFSkin\Set-WPFSkin.psm1" -NoClobber -DisableNameChecking -Scope Local
         Set-WPFTheme -thisApp $thisApp -synchash $synchash -DPlayer
         if($Themes_Measure){
@@ -10091,7 +10172,7 @@ if($synchash.Window){
 
         #Set Main UI Skin
         if($thisApp.Config.startup_perf_timer){
-          $WPFSkin_Measure = [system.diagnostics.stopwatch]::StartNew() 
+          $WPFSkin_Measure = [system.diagnostics.stopwatch]::StartNew()
         }
         Set-WPFSkin -thisApp $thisApp -synchash $synchash -DPlayer
         if($WPFSkin_Measure){
@@ -10132,13 +10213,13 @@ if($synchash.Window){
                   if($synchash.TitleMenuGrid.children -notcontains $synchash.LeftWindow_Button){
                     write-ezlogs -text 'Adding Leftwindow button to TitleMenuGrid'
                     $synchash.TitleMenuGrid.addChild($synchash.LeftWindow_Button)
-                  } 
-                  $synchash.MainGrid_Background_Image_Source2.Visibility = 'Visible'           
+                  }
+                  $synchash.MainGrid_Background_Image_Source2.Visibility = 'Visible'
                 }else{
                   $thisApp.Config.ShowTitleBar = $false
                   if($synchash.window){
                     $synchash.window.ShowTitleBar = $false
-                  }    
+                  }
                   if($synchash.TitleMenuGrid.children -contains $synchash.LeftWindow_Button){
                     write-ezlogs -text 'Removing Leftwindow button from TitleMenuGrid'
                     $synchash.TitleMenuGrid.Children.Remove($synchash.LeftWindow_Button)
@@ -10173,7 +10254,7 @@ if($synchash.Window){
             }
           }
         }
-        #PlayIcon Storyboard           
+        #PlayIcon Storyboard
         $synchash.PlayIcon1_Storyboard = $synchash.PlayIcon.TryFindResource('PlayIcon1_Storyboard')
         if($synchash.PlayIcon1_Storyboard){
           [void][System.Windows.Media.Animation.Storyboard]::SetTargetProperty($synchash.PlayIcon1_Storyboard,'(RotateTransform.Angle)')
@@ -10181,14 +10262,14 @@ if($synchash.Window){
         $synchash.PlayIcon2_Storyboard = $synchash.PlayIcon2.TryFindResource('PlayIcon2_Storyboard')
         if($synchash.PlayIcon2_Storyboard){
           [void][System.Windows.Media.Animation.Storyboard]::SetTargetProperty($synchash.PlayIcon2_Storyboard,'(RotateTransform.Angle)')
-        }               
+        }
         if($synchash.MediaPlayer_Slider){
           $Slider1_Style = $synchash.Window.TryFindResource('Slider1')
           if($Slider1_Style){
             $Slider1_ImageControl = $Slider1_Style.FindName('Slider1_ImageControl',$synchash.MediaPlayer_Slider)
             $MainProgressSlider_Back = "$($thisApp.Config.Current_folder)\Resources\Skins\MainProgressSlider_Back.png"
             if([system.io.file]::Exists($MainProgressSlider_Back)){
-              $stream_image = [System.IO.File]::OpenRead($MainProgressSlider_Back) 
+              $stream_image = [System.IO.File]::OpenRead($MainProgressSlider_Back)
               $image = [System.Windows.Media.Imaging.BitmapImage]::new()
               [void]$image.BeginInit()
               $image.CacheOption = 'OnLoad'
@@ -10223,7 +10304,7 @@ if($synchash.Window){
         $RenderTier = [System.Windows.Media.RenderCapability]::Tier -shr 16
         if($thisApp.Config.ForceSoftwareRender -or $ForceSoftwareRender -or $RenderTier -eq 0){
           write-ezlogs -text ">>>> Setting ProcessRenderMode to SoftwareOnly and force enabling performance mode - current rendertier: $RenderTier" -Warning
-          [System.Windows.Media.RenderOptions]::ProcessRenderMode = [System.Windows.Interop.RenderMode]::SoftwareOnly      
+          [System.Windows.Media.RenderOptions]::ProcessRenderMode = [System.Windows.Interop.RenderMode]::SoftwareOnly
           $thisApp.Force_Performance_Mode = $true
         }
         Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\PSGlobalHotKeys\PSGlobalHotKeys.psm1" -Force
@@ -10246,7 +10327,7 @@ if($synchash.Window){
   $synchash.VideoViewDoubleAnimation = $synchash.VideoViewstoryboard.Children[0]
   $synchash.VideoViewHeightstoryboard = $synchash.Window.TryFindResource('VideoViewHeightstoryboard')
   $synchash.VideoViewHeightDoubleAnimation = $synchash.VideoViewHeightstoryboard.Children[0]
- 
+
   $synchash.VideoViewstoryboard.add_Completed({
       param($sender)
       try{
@@ -10273,11 +10354,11 @@ if($synchash.Window){
     })
   }
   $synchash.WindowChromeStyle = $synchash.Window.TryFindResource('WindowChromeStyle')
-  $synchash.Window.add_SizeChanged({    
+  $synchash.Window.add_SizeChanged({
       try{
-        if($synchash.Window.WindowState -ne 'Maximized' -and $synchash.Window.Style -ne $synchash.WindowChromeStyle){            
+        if($synchash.Window.WindowState -ne 'Maximized' -and $synchash.Window.Style -ne $synchash.WindowChromeStyle){
           $synchash.Window.Style = $synchash.WindowChromeStyle
-        }           
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in window sizechanged event' -showtime -CatchError $_
       }
@@ -10286,7 +10367,7 @@ if($synchash.Window){
   #DPI Changed Event
   $synchash.Window.Add_DpiChanged({
       param($sender,[System.Windows.DpiChangedEventArgs]$e)
-      try{     
+      try{
         if($e.OldDpi.PixelsPerInchX -ne $e.NewDpi.PixelsPerInchX -or $e.OldDpi.PixelsPerInchY -ne $e.NewDpi.PixelsPerInchY -or $e.OldDpi.PixelsPerDip -ne $e.NewDpi.PixelsPerDip){
           if($e.OriginalSource.Name){
             $OGSourceName = $e.OriginalSource.Name
@@ -10302,41 +10383,41 @@ if($synchash.Window){
         }
       }catch{
         write-zlogs 'An exception occurred in window DpiChanged event' -showtime -catcherror $_
-      }      
-  }) 
+      }
+  })
 
   #Window Resize Event
   $synchash.Window.Add_StateChanged({
-      try{     
-        if($thisApp.config.Minimize_To_Tray){    
+      try{
+        if($thisApp.config.Minimize_To_Tray){
           if($synchash.Window.WindowState -eq 'Minimized'){
-            $synchash.window.Hide()                
+            $synchash.window.Hide()
             if($thisApp.Config.Dev_mode){
               write-ezlogs -text "Window state $($synchash.Window.WindowState)" -showtime -Dev_mode
               write-ezlogs -text "Window is Active: $($synchash.window.IsActive)" -showtime -Dev_mode
-            }   
+            }
           }
           if($thisApp.Config.Dev_mode){
             write-ezlogs -text ">>>> Window State changed: $($args[1] | out-string)" -logtype Perf -GetMemoryUsage -forceCollection -PriorityLevel 3
-          }         
+          }
         }
       }catch{
         write-zlogs 'An exception occurred in window sizechanged event' -showtime -catcherror $_
-      }      
-  }) 
+      }
+  })
 }
 if($Main_Window_Events_Measure){
   $Main_Window_Events_Measure.stop()
   write-ezlogs -text '>>>> UI and Event Handlers - Main Window Events Startup' -PerfTimer $Main_Window_Events_Measure
   $Main_Window_Events_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Main Window Event Handlers
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
   $Title_Menu_Events_Measure = [system.diagnostics.stopwatch]::StartNew()
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #region Feedback
 #----------------------------------------------
 if($synchash.Submit_Feedback -and $thisApp.Enable_Feedback_Features){
@@ -10351,11 +10432,11 @@ if($synchash.Submit_Feedback -and $thisApp.Enable_Feedback_Features){
   $synchash.Submit_Feedback.isEnabled = $false
   $synchash.Submit_Feedback.Visibility = 'Collapsed'
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Feedback
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Check_Updates
 #----------------------------------------------
 if($synchash.Check_Updates -and $thisApp.Enable_Update_Features){
@@ -10376,11 +10457,11 @@ if($synchash.Check_Updates -and $thisApp.Enable_Update_Features){
   $synchash.Check_Updates.isEnabled = $false
   $synchash.Check_Updates.Visibility = 'Collapsed'
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Check_Updates
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region About_Menu
 #----------------------------------------------
 if($synchash.About_Menu){
@@ -10401,11 +10482,11 @@ if($synchash.About_Menu){
       }
   })
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion About_Menu
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Dedication_Menu
 #----------------------------------------------
 if([system.io.file]::Exists("$($Current_folder)\Resources\Docs\About\About_FirstRun.md") -and $synchash.dedication_menu){
@@ -10420,7 +10501,7 @@ if([system.io.file]::Exists("$($Current_folder)\Resources\Docs\About\About_First
           if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Docs\About\About_FirstRun.md")){
             $markdownfile = "$($thisApp.Config.Current_Folder)\Resources\Docs\About\About_FirstRun.md"
             $windowtitle = "Dedication -  $($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version)"
-          }   
+          }
           Show-ChildWindow -synchash $synchash -thisApp $thisApp -WindowTitle $windowtitle -Logo "$($thisApp.Config.Current_Folder)\Resources\Skins\Samson_Logo_Title.png" -MarkDownFile $markdownfile -sendername $sendername
         }
       }catch{
@@ -10430,7 +10511,7 @@ if([system.io.file]::Exists("$($Current_folder)\Resources\Docs\About\About_First
 }elseif($synchash.Dedication_Menu){
   [Void]$synchash.Title_menu_title.items.Remove($synchash.Dedication_Menu)
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion About_Menu
 #----------------------------------------------
 if($Title_Menu_Events_Measure){
@@ -10442,7 +10523,7 @@ if($Title_Menu_Events_Measure){
 if($thisApp.Config.startup_perf_timer){
   $VolumeScreen_Events_Measure = [system.diagnostics.stopwatch]::StartNew()
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #region Circle Volume Knob
 #----------------------------------------------
 if($synchash.Volumeknob){
@@ -10467,11 +10548,11 @@ if($synchash.Volumeknob){
       }
   })
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Circle Volume Knob
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region FullScreen Button
 #----------------------------------------------
 #Fullscreen Window
@@ -10491,7 +10572,7 @@ if($synchash.Volumeknob){
         $synchash.MediaViewAnchorable.float()
         if($sender.tooltip){
           $sender.tooltip = 'Dock Video Player'
-        }      
+        }
       }elseif($synchash.MediaViewAnchorable.isFloating){
         if($sender.tooltip){
           $sender.tooltip = 'UnDock Video Player'
@@ -10512,7 +10593,7 @@ if($synchash.Volumeknob){
         $synchash.MediaLibraryAnchorable.float()
         if($sender.tooltip){
           $sender.tooltip = 'Dock Media Library'
-        }      
+        }
       }elseif($synchash.MediaLibraryAnchorable.isFloating){
         if($sender.tooltip){
           $sender.tooltip = 'UnDock Media Library'
@@ -10532,7 +10613,7 @@ if($synchash.Volumeknob){
         $synchash.TorBrowserAnchorable.float()
         if($sender.tooltip){
           $sender.tooltip = 'Dock Tor Browser'
-        }      
+        }
       }elseif($synchash.TorBrowserAnchorable.isFloating){
         if($sender.tooltip){
           $sender.tooltip = 'UnDock Tor Browser'
@@ -10548,11 +10629,11 @@ if($synchash.Volumeknob){
           $synchash.WebBrowserAnchorable.FloatingTop = $synchash.Window.Top
         }else{
           $synchash.WebBrowserAnchorable.FloatingTop = 0
-        }    
+        }
         $synchash.WebBrowserAnchorable.float()
         if($sender.tooltip){
           $sender.tooltip = 'Dock Web Browser'
-        }      
+        }
       }elseif($synchash.WebBrowserAnchorable.isFloating){
         if($sender.tooltip){
           $sender.tooltip = 'UnDock Web Browser'
@@ -10566,18 +10647,18 @@ if($synchash.Volumeknob){
 }
 [System.Windows.RoutedEventHandler]$synchash.FloatFullScreen_Command = {
   param($sender)
-  try{  
+  try{
     if(($sender.tag -eq 'VideoView' -or $sender.Uid -eq 'VideoView' -or $sender.name -eq 'VideoView_LargePlayer_Button')){
       if($synchash.MediaViewAnchorable -and !$synchash.MediaViewAnchorable.isFloating){
         if($thisApp.Config.Dev_mode){write-ezlogs -text 'Not floating, floating then fullscreen' -Dev_mode}
         Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action FullScreen
       }elseif($synchash.MediaViewAnchorable.isFloating -and $synchash.VideoViewFloat.WindowState -eq 'Maximized'){
-        write-ezlogs -text '>>>> MediaViewAnchorable is Floating, maximized, setting to normal'
+        write-ezlogs -text '>>>> MediaViewAnchorable is Floating, maximized, setting to normal' -LogLevel 0 -Verboselog:$Verboselog
         Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Normal
       }elseif($synchash.MediaViewAnchorable.isFloating -and $synchash.VideoViewFloat.WindowState -ne 'Maximized'){
-        write-ezlogs -text '>>>> MediaViewAnchorable is Floating, Normal, setting to Maximized'
+        write-ezlogs -text '>>>> MediaViewAnchorable is Floating, Normal, setting to Maximized' -LogLevel 0 -Verboselog:$Verboselog
         Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Maximized
-      } 
+      }
     }elseif(($sender.tag -eq 'MediaLibrary' -or $sender.Uid -eq 'MediaLibrary')){
       if($synchash.MediaLibraryAnchorable -and !$synchash.MediaLibraryAnchorable.isFloating){
         if($thisApp.Config.Dev_mode){write-ezlogs -text 'MediaLibrary Not floating, floating then fullscreen' -Dev_mode}
@@ -10602,14 +10683,14 @@ if($synchash.Volumeknob){
         if($thisApp.Config.Dev_mode){write-ezlogs -text 'WebBrowser Floating, maximized, setting to normal'-Dev_mode}
         $synchash.WebBrowserFloat.WindowState -eq 'Maximized'
       }
-    }  
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in FloatFullScreen_Command' -showtime -CatchError $_
   }
 }
 
 if($synchash.VideoView_LargePlayer_Button){
-  [Void]$synchash.VideoView_LargePlayer_Button.AddHandler([Windows.Controls.Button]::ClickEvent,$synchash.FloatFullScreen_Command) 
+  [Void]$synchash.VideoView_LargePlayer_Button.AddHandler([Windows.Controls.Button]::ClickEvent,$synchash.FloatFullScreen_Command)
 }
 
 if($synchash.VideoView_Dock_Button){
@@ -10618,7 +10699,7 @@ if($synchash.VideoView_Dock_Button){
 if($synchash.Web_Button){
   [Void]$synchash.Web_Button.AddHandler([Windows.Controls.Button]::ClickEvent,$synchash.Float_Command)
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion FullScreen Button
 #----------------------------------------------
 if($VolumeScreen_Events_Measure){
@@ -10627,7 +10708,7 @@ if($VolumeScreen_Events_Measure){
   $VolumeScreen_Events_Measure = $null
 }
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Chat View
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -10636,14 +10717,12 @@ if($thisApp.Config.startup_perf_timer){
 [System.Windows.RoutedEventHandler]$synchash.ChatView_Command = {
   param($sender)
   try{
-    if($synchash.chat_WebView2.isVisible -or $synchash.Comments_Grid.Visibility -ne 'Collapsed'){
+    if($synchash.chat_WebView2.isVisible -or $synchash.Comments_Grid.Visibility -notin 'Hidden','Collapsed'){
       Update-ChatView -synchash $synchash -thisApp $thisApp -sender $sender -hide
-      Add-Member -InputObject $thisApp.config -Name 'Chat_View' -Value $false -MemberType NoteProperty -Force
+      $thisApp.Config.Chat_View = $false
     }else{
       Update-ChatView -synchash $synchash -thisApp $thisApp -sender $sender -show
-    } 
-    #write-ezlogs "Comments_Grid.Visibility: $($synchash.Comments_Grid.Visibility)" -Dev_mode
-    #write-ezlogs "chat_WebView2.isVisible: $($synchash.chat_WebView2.isVisible)" -Dev_mode
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in ChatView_Command' -showtime -CatchError $_
   }
@@ -10662,23 +10741,23 @@ if($synchash.Chat_GridSplitter){
   #Calculate width of chatview after manually resizing with gridsplitter
   $synchash.Chat_GridSplitter.add_DragCompleted({
       Param($sender,[System.Windows.Controls.Primitives.DragCompletedEventArgs]$e)
-      try{      
+      try{
         if($e.HorizontalChange -lt 0){
-          $Change = [int]($synchash.chat_column.ActualWidth + ($e.HorizontalChange * -1))         
+          $Change = [int]($synchash.chat_column.ActualWidth + ($e.HorizontalChange * -1))
         }else{
-          $Change = $synchash.chat_column.ActualWidth - $e.HorizontalChange 
+          $Change = $synchash.chat_column.ActualWidth - $e.HorizontalChange
         }
         if($synchash.chat_column.Width.Value){
           $synchash.Chat_Splitter_Value = $Change
         }elseif($synchash.chat_column.Width -is [int] -or $synchash.chat_column.Width -is [double]){
           $synchash.Chat_Splitter_Value = $synchash.chat_column.Width
-        }      
+        }
         #$synchash.Chat_Splitter_Value = $synchash.chat_column.Width
         #$e.Handled = $true
         write-ezlogs -text "Chat_GridSplitter HorizontalChange: $($e.HorizontalChange) - chat_column.Width: $($synchash.chat_column.Width) -  Change: $($Change) - Chat_Splitter_Value: $($synchash.Chat_Splitter_Value)" -Warning -Dev_mode
       }catch{
         write-ezlogs -text 'An exception occurred in PowerButton_ToggleButton.add_Checked  event' -CatchError $_ -showtime
-      }  
+      }
   })
 }
 if($ChatView_Events_Measure){
@@ -10686,32 +10765,32 @@ if($ChatView_Events_Measure){
   write-ezlogs -text '>>>> UI and Event Handlers - Chat View Events Startup' -PerfTimer $ChatView_Events_Measure
   $ChatView_Events_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Chat View
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Spicetify Options
 #----------------------------------------------
 $synchash.pode_server_scriptblock = {
-  try{        
-    try{  
+  try{
+    try{
       write-ezlogs -text '>>>> Importing Module PODE and starting PODE server' -showtime
       Import-Module -Name "$($thisApp.Config.Current_folder)\Modules\Pode\Pode.psm1" -Force -NoClobber -DisableNameChecking
     }catch{
       write-ezlogs -text 'An exception occurred Importing required module Pode' -showtime -CatchError $_
-    }        
-    try{  
+    }
+    try{
       $podestate = Get-PodeServerPath  -ErrorAction SilentlyContinue
       if($podestate){
         write-ezlogs -text ">>>> Current PODE Server state: $($podestate | out-string)"
-        if((NETSTAT.EXE -an) | Where-Object -FilterScript {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'}){Invoke-RestMethod -Uri 'http://127.0.0.1:8974/CLOSEPODE' -UseBasicParsing -ErrorAction SilentlyContinue} 
-      }       
+        if((NETSTAT.EXE -an) | Where-Object -FilterScript {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'}){Invoke-RestMethod -Uri 'http://127.0.0.1:8974/CLOSEPODE' -UseBasicParsing -ErrorAction SilentlyContinue}
+      }
     }catch{
       write-ezlogs -text 'An exception occurred closing existing pode server' -showtime -CatchError $_
-    }          
+    }
     Start-PodeServer -Name "$($thisApp.Config.App_Name)_PODE" -Threads 2 {
-      write-ezlogs -text "[Start-PodeServer] >>>> Starting PodeServer $($thisApp.Config.App_Name)_PODE on http://127.0.0.1:8974" -thisApp $thisApp   
+      write-ezlogs -text "[Start-PodeServer] >>>> Starting PodeServer $($thisApp.Config.App_Name)_PODE on http://127.0.0.1:8974" -thisApp $thisApp
       Add-PodeEndpoint -Address 127.0.0.1 -Port 8974 -Protocol Ws -PassThru -Force
       Add-PodeEndpoint -Address 127.0.0.1 -Port 8974 -Protocol Http -PassThru -Force
       Add-PodeRoute -Method Get -Path '/PLAY' -PassThru -ScriptBlock {
@@ -10720,7 +10799,7 @@ $synchash.pode_server_scriptblock = {
         #$synchash = $using:synchash
         Send-PodeSignal -Value 'PLAY'
         write-ezlogs -text '>>>> Spotify PODE webevent sent [PLAY]' -showtime -logtype Spotify -LogLevel 2 -thisApp $thisApp
-      }    
+      }
       Add-PodeRoute -Method Get -Path '/PAUSE' -PassThru -ScriptBlock {
         #$logfile = $using:logfile
         $thisApp = $using:thisApp
@@ -10758,34 +10837,34 @@ $synchash.pode_server_scriptblock = {
         $URI = ($WebEvent.Request.URL -split '\?')[1]
         if($URI -match 'spotify:'){Send-PodeSignal -Value $URI}
         write-ezlogs -text ">>>> Spotify PODE webevent sent [PLAYURI]: $($URI)" -showtime -logtype Spotify -LogLevel 2 -thisApp $thisApp
-      }    
+      }
       Add-PodeRoute -Method Get -Path '/CLOSEPODE' -PassThru -ScriptBlock {
         #$logfile = $using:logfile
         $thisApp = $using:thisApp
         #$synchash = $using:synchash
         write-ezlogs -text '>>>> Spotify PODE webevent sent [CLOSEPODE]: Close-PodeServer' -showtime -logtype Spotify -LogLevel 2 -thisApp $thisApp
         Close-PodeServer
-      }    
-      Add-PodeSignalRoute -Path '/' -ScriptBlock {        
-        try{  
+      }
+      Add-PodeSignalRoute -Path '/' -ScriptBlock {
+        try{
           $spicetify = ($SignalEvent.data.message | ConvertFrom-Json)
           #$logfile = $using:logfile
           $thisApp = $using:thisApp
           $synchash = $using:synchash
           $synchash.Spicetify = $spicetify
-          #write-ezlogs ">>>> Spotify Playing: $($synchash.Spicetify)" -showtime -logtype Spotify -LogLevel 3       
+          #write-ezlogs ">>>> Spotify Playing: $($synchash.Spicetify)" -showtime -logtype Spotify -LogLevel 3
         }catch{
           write-ezlogs -text "An exception occurred in PodeSignalRoute '/'" -showtime -CatchError $_
         }
-      }            
-    } 
+      }
+    }
   }catch{
     write-ezlogs -text 'An exception occurred in pode_server_scriptblock' -showtime -CatchError $_
     $thisApp.config.Use_Spicetify = $false
   }
   if($error){
     write-ezlogs -showtime -PrintErrors -ErrorsToPrint $error
-  }  
+  }
 }
 if($thisApp.config.Use_Spicetify -and $thisApp.Config.Import_Spotify_Media){
   if($thisApp.Config.startup_perf_timer){
@@ -10802,18 +10881,18 @@ if($thisApp.config.Use_Spicetify -and $thisApp.Config.Import_Spotify_Media){
     $Spicetify_Startup_Measure = $null
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Spicetify Options
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #TODO: REFACTOR AND FINISH
 #region Friends Button
 #----------------------------------------------
 if($synchash.FriendsFlyout -and $thisApp.Config.Dev_mode){
   if($thisApp.Config.Startup_perf_timer){
-    $Get_Friends_Measure = [system.diagnostics.stopwatch]::StartNew() 
-  } 
+    $Get_Friends_Measure = [system.diagnostics.stopwatch]::StartNew()
+  }
   $synchash.Friends_FlyoutControl.isEnabled = $true
   $synchash.Friends_FlyoutControl.Visibility = 'Visible'
   $synchash.Friends_ToggleButton.Visibility = 'Visible'
@@ -10824,52 +10903,52 @@ if($synchash.FriendsFlyout -and $thisApp.Config.Dev_mode){
           $synchash.YoutubeWebview2_Visibility = $synchash.YoutubeWebView2.isVisible -and !$synchash.MediaViewAnchorable.isFloating
           $synchash.VideoView_Visibility = $synchash.VideoView.isVisible -and !$synchash.MediaViewAnchorable.isFloating
           $synchash.chat_WebView2_Visibility = $synchash.chat_WebView2.isVisible -and !$synchash.MediaViewAnchorable.isFloating
-          $synchash.Comments_Grid_Visibility = $synchash.Comments_Grid.isVisible -and !$synchash.MediaViewAnchorable.isFloating         
+          $synchash.Comments_Grid_Visibility = $synchash.Comments_Grid.isVisible -and !$synchash.MediaViewAnchorable.isFloating
           $synchash.WebView2_Visibility = $synchash.WebView2.isVisible -and !$synchash.MediaViewAnchorable.isFloating
           $synchash.WebBrowser_Visibility = $synchash.WebBrowser.isVisible -and !$synchash.WebBrowserAnchorable.isFloating
           $synchash.VideoView_Overlay_Visibility = $synchash.VideoView_Overlay_Grid.isVisible -and !$synchash.MediaViewAnchorable.isFloating
           if($synchash.YoutubeWebview2_Visibility -and $synchash.YoutubeWebView2){
-            $synchash.YoutubeWebView2.Visibility = 'Collapsed'    
+            $synchash.YoutubeWebView2.Visibility = 'Collapsed'
           }
           if($synchash.VideoView_Visibility -and $synchash.VideoView){
-            $synchash.VideoView.Visibility = 'Collapsed'    
+            $synchash.VideoView.Visibility = 'Collapsed'
           }
           if($synchash.VideoView_Overlay_Visibility -and $synchash.VideoView_Overlay_Grid){
             $synchash.VideoView_Overlay_Grid.Visibility = 'Collapsed'
           }
           if($synchash.chat_WebView2_Visibility -and $synchash.chat_WebView2){
-            $synchash.chat_WebView2.Visibility = 'Collapsed'    
+            $synchash.chat_WebView2.Visibility = 'Collapsed'
           }
           if($synchash.Comments_Grid_Visibility -and $synchash.Comments_Grid){
-            $synchash.Comments_Grid.Visibility = 'Collapsed'    
+            $synchash.Comments_Grid.Visibility = 'Collapsed'
           }
           if($synchash.WebView2_Visibility -and $synchash.WebView2){
-            $synchash.WebView2.Visibility = 'Collapsed'    
+            $synchash.WebView2.Visibility = 'Collapsed'
           }
           if($synchash.WebBrowser_Visibility -and $synchash.WebBrowser){
-            $synchash.WebBrowser.Visibility = 'Collapsed'    
+            $synchash.WebBrowser.Visibility = 'Collapsed'
           }
         }else{
           if($synchash.YoutubeWebview2_Visibility -and $synchash.YoutubeWebView2){
-            $synchash.YoutubeWebView2.Visibility = 'Visible'    
-          }    
+            $synchash.YoutubeWebView2.Visibility = 'Visible'
+          }
           if($synchash.VideoView_Visibility -and $synchash.VideoView){
-            $synchash.VideoView.Visibility = 'Visible'    
-          } 
+            $synchash.VideoView.Visibility = 'Visible'
+          }
           if($synchash.VideoView_Overlay_Visibility -and $synchash.VideoView_Overlay_Grid){
             $synchash.VideoView_Overlay_Grid.Visibility = 'Visible'
-          }           
+          }
           if($synchash.chat_WebView2_Visibility -and $synchash.chat_WebView2){
-            $synchash.chat_WebView2.Visibility = 'Visible'    
-          } 
+            $synchash.chat_WebView2.Visibility = 'Visible'
+          }
           if($synchash.Comments_Grid_Visibility -and $synchash.Comments_Grid){
-            $synchash.Comments_Grid.Visibility = 'Visible'    
+            $synchash.Comments_Grid.Visibility = 'Visible'
           }
           if($synchash.WebView2_Visibility -and $synchash.WebView2){
-            $synchash.WebView2.Visibility = 'Visible'    
+            $synchash.WebView2.Visibility = 'Visible'
           }
           if($synchash.WebBrowser_Visibility -and $synchash.WebBrowser){
-            $synchash.WebBrowser.Visibility = 'Visible'    
+            $synchash.WebBrowser.Visibility = 'Visible'
           }
         }
       }catch{
@@ -10882,18 +10961,18 @@ if($synchash.FriendsFlyout -and $thisApp.Config.Dev_mode){
     $Get_Friends_Measure = $null
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Friends Button
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #TODO: REFACTOR TO MODULE
 #region Dismiss Notifications Button
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
   $Notifications_Grid_Measure = [system.diagnostics.stopwatch]::StartNew()
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #region Notification Button
 #----------------------------------------------
 if($synchash.NotificationFlyout){
@@ -10907,41 +10986,41 @@ if($synchash.NotificationFlyout){
           $synchash.WebView2_Visibility = $synchash.WebView2.isVisible -and !$synchash.MediaViewAnchorable.isFloating
           $synchash.WebBrowser_Visibility = $synchash.WebBrowser.isVisible -and !$synchash.WebBrowserAnchorable.isFloating
           if($synchash.YoutubeWebview2_Visibility -and $synchash.YoutubeWebView2){
-            $synchash.YoutubeWebView2.Visibility = 'Collapsed'    
+            $synchash.YoutubeWebView2.Visibility = 'Collapsed'
           }
           if($synchash.VideoView_Visibility -and $synchash.VideoView){
-            $synchash.VideoView.Visibility = 'Collapsed'    
+            $synchash.VideoView.Visibility = 'Collapsed'
           }
           if($synchash.chat_WebView2_Visibility -and $synchash.chat_WebView2){
-            $synchash.chat_WebView2.Visibility = 'Collapsed'   
+            $synchash.chat_WebView2.Visibility = 'Collapsed'
           }
           if($synchash.Comments_Grid_Visibility -and $synchash.Comments_Grid){
-            $synchash.Comments_Grid.Visibility = 'Collapsed'     
+            $synchash.Comments_Grid.Visibility = 'Collapsed'
           }
           if($synchash.WebView2_Visibility -and $synchash.WebView2){
-            $synchash.WebView2.Visibility = 'Collapsed'    
+            $synchash.WebView2.Visibility = 'Collapsed'
           }
           if($synchash.WebBrowser_Visibility -and $synchash.WebBrowser){
-            $synchash.WebBrowser.Visibility = 'Collapsed'    
+            $synchash.WebBrowser.Visibility = 'Collapsed'
           }
         }else{
           if($synchash.YoutubeWebview2_Visibility -and $synchash.YoutubeWebView2){
-            $synchash.YoutubeWebView2.Visibility = 'Visible'    
-          }    
+            $synchash.YoutubeWebView2.Visibility = 'Visible'
+          }
           if($synchash.VideoView_Visibility -and $synchash.VideoView){
-            $synchash.VideoView.Visibility = 'Visible'    
-          }  
+            $synchash.VideoView.Visibility = 'Visible'
+          }
           if($synchash.chat_WebView2_Visibility -and $synchash.chat_WebView2){
-            $synchash.chat_WebView2.Visibility = 'Visible'  
-          } 
+            $synchash.chat_WebView2.Visibility = 'Visible'
+          }
           if($synchash.Comments_Grid_Visibilityy -and $synchash.Comments_Grid){
-            $synchash.Comments_Grid.Visibility = 'Visible'     
-          } 
+            $synchash.Comments_Grid.Visibility = 'Visible'
+          }
           if($synchash.WebView2_Visibility -and $synchash.WebView2){
-            $synchash.WebView2.Visibility = 'Visible'    
+            $synchash.WebView2.Visibility = 'Visible'
           }
           if($synchash.WebBrowser_Visibility -and $synchash.WebBrowser){
-            $synchash.WebBrowser.Visibility = 'Visible'    
+            $synchash.WebBrowser.Visibility = 'Visible'
           }
         }
       }catch{
@@ -10980,7 +11059,7 @@ if($synchash.Notifications_Button){
       }
   })
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Notification Button
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$DismissclickEvent = {
@@ -11008,16 +11087,16 @@ if($synchash.Notifications_Button){
   }catch{
     write-ezlogs -text 'An exception occurred for notifications DismissclickEvent' -showtime -CatchError $_
   }
-}  
+}
 if($synchash.Notifications_Grid -and $synchash.Notifications_Grid.Columns.count -lt 6){
-  try{  
+  try{
     $buttonColumn = [System.Windows.Controls.DataGridTemplateColumn]::new()
     $buttonFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.Button])
     [Void]$buttonFactory.SetValue([System.Windows.Controls.Button]::ContentProperty, 'Dismiss')
     [Void]$buttonFactory.SetValue([System.Windows.Controls.Button]::StyleProperty, $synchash.Window.TryFindResource('GridButtonStyle'))
     [Void]$buttonFactory.SetValue([System.Windows.Controls.Button]::NameProperty, 'Notification_dismiss_button')
     [Void]$buttonFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$DismissclickEvent)
-    [Void]$buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$DismissclickEvent)  
+    [Void]$buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$DismissclickEvent)
     $dataTemplate = [System.Windows.DataTemplate]::new()
     $dataTemplate.VisualTree = $buttonFactory
     $buttonHeaderFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.Button])
@@ -11025,14 +11104,14 @@ if($synchash.Notifications_Grid -and $synchash.Notifications_Grid.Columns.count 
     [Void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::StyleProperty, $synchash.Window.TryFindResource('DetailButtonStyle'))
     [Void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::NameProperty, 'Notification_dismissAll_button')
     [Void]$buttonHeaderFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$DismissAllclickEvent)
-    [Void]$buttonHeaderFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$DismissAllclickEvent)   
+    [Void]$buttonHeaderFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$DismissAllclickEvent)
     $headerdataTemplate = [System.Windows.DataTemplate]::new()
-    $headerdataTemplate.VisualTree = $buttonHeaderFactory 
+    $headerdataTemplate.VisualTree = $buttonHeaderFactory
     $buttonColumn.HeaderTemplate = $headerdataTemplate
     $buttonColumn.CellTemplate = $dataTemplate
     $buttonColumn.Width = 'SizeToHeader'
-    $buttonColumn.DisplayIndex = 0  
-    [Void]$synchash.Notifications_Grid.Columns.add($buttonColumn)     
+    $buttonColumn.DisplayIndex = 0
+    [Void]$synchash.Notifications_Grid.Columns.add($buttonColumn)
   }catch{
     write-ezlogs -text 'An exception occurred configuring notification grid columns' -CatchError $_
   }
@@ -11042,11 +11121,11 @@ if($Notifications_Grid_Measure){
   write-ezlogs -text '>>>> UI and Event Handlers - Notifications Grid Startup' -PerfTimer $Notifications_Grid_Measure
   $Notifications_Grid_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Dismiss Notifications Button
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Set-WebPlayerTimer
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -11064,11 +11143,11 @@ if($WebPlayerTimer_Measure){
   write-ezlogs -text '>>>> UI and Event Handlers - WebPlayerTimer/WebBrowser Startup' -PerfTimer $WebPlayerTimer_Measure
   $WebPlayerTimer_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Set-WebPlayerTimer
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region SlideText_StackPanel
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -11087,11 +11166,11 @@ if($synchash.DisplayPanel_Storyboard.Storyboard -and $thisApp.Config.Dev_mode){
 
 if($synchash.SlideText_StackPanel){
   $synchash.SlideText_StackPanel.Add_SizeChanged({
-      try{                 
+      try{
         if($synchash.DisplayPanel_Storyboard -and $synchash.SlideText_StackPanel.ActualWidth -gt 500){
           $synchash.DisplayPanel_Slide_Animation.To = 0
           $synchash.DisplayPanel_Slide_Animation.From = $($synchash.SlideText_StackPanel.ActualWidth + 30)
-          $synchash.SlideText_StackPanel2.SetValue([System.Windows.Controls.Canvas]::LeftProperty,$(-($synchash.SlideText_StackPanel.ActualWidth) - 30)) 
+          $synchash.SlideText_StackPanel2.SetValue([System.Windows.Controls.Canvas]::LeftProperty,$(-($synchash.SlideText_StackPanel.ActualWidth) - 30))
           $synchash.SlideText_StackPanel2.Visibility = 'Visible'
           $synchash.DisplayPanel_Storyboard.Storyboard.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
           $synchash.DisplayPanel_Storyboard.Storyboard.AutoReverse = $false
@@ -11099,7 +11178,7 @@ if($synchash.SlideText_StackPanel){
             $synchash.DisplayPanel_Storyboard.Storyboard.SetValue([System.Windows.Media.MediaTimeline]::DesiredFrameRateProperty,5)
           }else{
             $synchash.DisplayPanel_Storyboard.Storyboard.SetValue([System.Windows.Media.MediaTimeline]::DesiredFrameRateProperty,$null)
-          }         
+          }
           $synchash.DisplayPanel_Storyboard.Storyboard.Begin($synchash.DisplayPanel_Text_StackPanel,[System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace,$true)
           #$synchash.DisplayPanel_Storyboard.Storyboard.Begin()
         }elseif($synchash.DisplayPanel_Storyboard){
@@ -11109,7 +11188,7 @@ if($synchash.SlideText_StackPanel){
         }
       }catch{
         write-ezlogs -text 'An exception occurred in SlideText_StackPanel.Add_SizeChanged event' -CatchError $_ -showtime
-      }  
+      }
   })
 }
 
@@ -11148,6 +11227,16 @@ $NowPlayingDataContext = {
     if($synchash.MediaViewAnchorable.ToolTip -ne $tag){
       $synchash.MediaViewAnchorable.ToolTip = $tag
     }
+    if($synchash.Window.Title){
+      if($Playstate){
+        $synchash.Window.Title = "$($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version) - $($synchash.Now_Playing_Label.DataContext)"
+      }else{
+        $synchash.Window.Title = "$($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version)"
+      }
+      if($synchash.window.TaskbarItemInfo){
+        $synchash.window.TaskbarItemInfo.Description = $synchash.Window.Title
+      }
+    }
     if($synchash.TrayPlayer){
       $TrayText = "$Playstate$($TrayTitle)$($artist) - $($thisApp.Config.App_Name) Media Player"
       if($TrayTitle){
@@ -11155,7 +11244,7 @@ $NowPlayingDataContext = {
       }else{
         $synchash.TrayPlayer.ToolTipText = $synchash.Window.Title
       }
-    } 
+    }
   }catch{
     write-ezlogs -text "An exception occurred in $($sender.Name).Add_DataContextChanged event" -CatchError $_ -showtime
   }
@@ -11176,14 +11265,14 @@ if($synchash.Now_Playing_Artist_Label){
 if($synchash.DisplayPanel_Title_TextBlock){
   $synchash.DisplayPanel_Title_TextBlock.Add_TargetUpdated({
       try{
-        if($synchash.Now_Playing_Title_Label.DataContext -in 'LOADING...','SKIPPING ADS...','OPENING...','LOADING...Waiting for Pre-Roll ADs to Finish...' -and !$thisApp.Config.Enable_Performance_Mode -and !$thisApp.Force_Performance_Mode){        
-          $synchash.TextBlockLoading_Storyboard.Storyboard.Pause()  
+        if($synchash.Now_Playing_Title_Label.DataContext -in 'LOADING...','SKIPPING ADS...','OPENING...','LOADING...Waiting for Pre-Roll ADs to Finish...' -and !$thisApp.Config.Enable_Performance_Mode -and !$thisApp.Force_Performance_Mode){
+          $synchash.TextBlockLoading_Storyboard.Storyboard.Pause()
           $synchash.TextBlockLoading_Storyboard.Storyboard.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
           $synchash.TextBlockLoading_Storyboard.Storyboard.Begin()
         }else{
           $synchash.TextBlockLoading_Storyboard.Storyboard.RepeatBehavior = '1x'
-          $synchash.TextBlockLoading_Storyboard.Storyboard.Stop()    
-        } 
+          $synchash.TextBlockLoading_Storyboard.Storyboard.Stop()
+        }
         if($thisApp.Config.Current_Theme.PrimaryAccentColor){
           $color = [System.Windows.Media.SolidColorBrush]::new($thisApp.Config.Current_Theme.PrimaryAccentColor.ToString())
         }else{
@@ -11204,11 +11293,11 @@ if($synchash.DisplayPanel_Title_TextBlock){
           $synchash.DisplayPanel_STOP_Border.BorderBrush = $color
           $synchash.DisplayPanel_STOP_TextBlock.Foreground = $color
           $synchash.DisplayPanel_STOP_Border.Opacity = '1'
-        }   
+        }
         $color = $null
       }catch{
         write-ezlogs -text 'An exception occurred in DisplayPanel_Title_TextBlock.Add_TargetUpdated event' -CatchError $_ -showtime
-      }  
+      }
   })
 }
 #Get MiniDisplayPanel Storyboard Animation
@@ -11228,14 +11317,14 @@ if($synchash.DisplayPanel_Artist_TextBlock){
         }else{
           if($synchash.DisplayPanel_Sep2_Label -and $synchash.DisplayPanel_Sep2_Label.Visibility -ne 'Hidden'){
             $synchash.DisplayPanel_Sep2_Label.Visibility = 'Hidden'
-          }          
+          }
           if($synchash.MiniDisplayPanel_Sep2_Label -and $synchash.MiniDisplayPanel_Sep2_Label.Visibility -ne 'Hidden'){
             $synchash.MiniDisplayPanel_Sep2_Label.Visibility = 'Hidden'
           }
-        }      
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in DisplayPanel_Title_TextBlock.Add_TargetUpdated event' -CatchError $_ -showtime
-      }  
+      }
   })
 }
 
@@ -11252,10 +11341,10 @@ if($synchash.DisplayPanel_Bitrate_TextBlock){
           if($synchash.MiniDisplayPanel_Sep3_Label){
             $synchash.MiniDisplayPanel_Sep3_Label.Visibility = 'Hidden'
           }
-        }         
+        }
       }catch{
         write-ezlogs -text 'An exception occurred in DisplayPanel_Bitrate_TextBlock.Add_TargetUpdated event' -CatchError $_ -showtime
-      }  
+      }
   })
 }
 if($SlideText_Measure){
@@ -11263,11 +11352,11 @@ if($SlideText_Measure){
   write-ezlogs -text '>>>> UI and Event Handlers - SlideText/Display Event Startup' -PerfTimer $SlideText_Measure
   $SlideText_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion SlideText_StackPanel
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region AvalonDock
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -11280,11 +11369,11 @@ if($Avalondock_Measure){
   write-ezlogs -text '>>>> UI and Event Handlers - Avalondock Startup' -PerfTimer $Avalondock_Measure
   $Avalondock_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion AvalonDock
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Set-DiscordPresense
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -11297,11 +11386,11 @@ if($Set_DiscordPresense_Measure){
   write-ezlogs -text '>>>> UI and Event Handlers - Set_DiscordPresense Startup' -PerfTimer $Set_DiscordPresense_Measure
   $Set_DiscordPresense_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Set-DiscordPresense
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region TorManager
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -11313,8 +11402,8 @@ if($synchash.TorBrowserAnchorable -and $synchash.TorTable -and $synchash.Tor_Sea
     param($sender)
     $media = $_.OriginalSource.DataContext
     if(!$media.url){$media = $sender.tag}
-    if(!$media.url){$media = $sender.tag.Media} 
-    if(!$media.url){$media = $_.OriginalSource.tag.media}  
+    if(!$media.url){$media = $sender.tag.Media}
+    if(!$media.url){$media = $_.OriginalSource.tag.media}
     try{
       write-ezlogs -text ">>>> Stopping torrent for $($media | out-string)" -Warning
       $thisApp.Cancel_Tor_Download = $true
@@ -11325,13 +11414,13 @@ if($synchash.TorBrowserAnchorable -and $synchash.TorTable -and $synchash.Tor_Sea
 
   [System.Windows.RoutedEventHandler]$synchash.Tor_ContextMenu = {
     $sender = $args[0]
-    [System.Windows.Input.MouseButtonEventArgs]$e = $args[1]  
+    [System.Windows.Input.MouseButtonEventArgs]$e = $args[1]
     $Torrent = $e.OriginalSource.datacontext.Record
     write-ezlogs -text "[ContextMenu] Torrent: $($Torrent | out-string)" -Dev_mode
     try{
-      if($e.OriginalSource){    
+      if($e.OriginalSource){
         $items = [System.Collections.Generic.List[object]]::new()
-        if(($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right) -and ($Torrent.ID)){                    
+        if(($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right) -and ($Torrent.ID)){
           write-ezlogs -text "[ContextMenu] Creating context menu for a media item -- e.OriginalSource.datacontext: $($e.OriginalSource | out-string)" -Dev_mode
           if($e.OriginalSource){
             $e.OriginalSource.focus()
@@ -11347,7 +11436,7 @@ if($synchash.TorBrowserAnchorable -and $synchash.TorTable -and $synchash.Tor_Sea
               'Enabled'   = $true
               'IsCheckable' = $false
             }
-            [Void]$items.Add($Play_Media) 
+            [Void]$items.Add($Play_Media)
           }
           $Stream_Torrent = @{
             'Header'    = 'Stream'
@@ -11361,7 +11450,7 @@ if($synchash.TorBrowserAnchorable -and $synchash.TorTable -and $synchash.Tor_Sea
             'Enabled'   = $true
             'IsCheckable' = $false
           }
-          [Void]$items.Add($Stream_Torrent) 
+          [Void]$items.Add($Stream_Torrent)
           if($Torrent.State -in 'Downloading','Started' ){
             $Stop_Torrent = @{
               'Header'    = 'Stop Download'
@@ -11374,7 +11463,7 @@ if($synchash.TorBrowserAnchorable -and $synchash.TorTable -and $synchash.Tor_Sea
               'Enabled'   = $true
               'IsCheckable' = $false
             }
-            [Void]$items.Add($Stop_Torrent) 
+            [Void]$items.Add($Stop_Torrent)
           }else{
             $Download_Torrent = @{
               'Header'    = 'Download'
@@ -11388,19 +11477,19 @@ if($synchash.TorBrowserAnchorable -and $synchash.TorTable -and $synchash.Tor_Sea
               'IsCheckable' = $false
             }
             [Void]$items.Add($Download_Torrent)
-          }                          
-          if($items -and $e.OriginalSource){   
+          }
+          if($items -and $e.OriginalSource){
             Add-WPFMenu -control $e.OriginalSource -items $items -AddContextMenu -sourceWindow $synchash
           }else{
             $e.Handled = $false
-          }                                        
+          }
         }
       }else{
         write-ezlogs -text "Contextmenu already set for $($e.OriginalSource)" -Warning
-      }      
+      }
     }catch{
       write-ezlogs -text "An exception occurred creating contextmenu for $($e.Source.Name)" -showtime -CatchError $_
-    }  
+    }
   }
   [Void]$synchash.TorTable.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Tor_ContextMenu)
   #[Void]$syncHash.TorTable.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
@@ -11413,13 +11502,13 @@ if($synchash.TorBrowserAnchorable -and $synchash.TorTable -and $synchash.Tor_Sea
         }
       }catch{
         write-ezlogs -text 'An exception occurred in Tor_Search_Go_Button.Add_Click' -CatchError $_ -showtime
-      }  
+      }
   })
   $synchash.Tor_Search_Textbox.Add_PreviewKeyDown({
       param([Parameter(Mandatory)][Object]$sender,[Parameter(Mandatory)][Windows.Input.KeyEventArgs]$e)
       try{
         if($e.Key -eq 'Enter'){
-          $synchash.Tor_Search_Go_Button.RaiseEvent([System.Windows.RoutedEventArgs]::New([System.Windows.Controls.Button]::ClickEvent)) 
+          $synchash.Tor_Search_Go_Button.RaiseEvent([System.Windows.RoutedEventArgs]::New([System.Windows.Controls.Button]::ClickEvent))
         }
       }catch{
         write-ezlogs -text 'An exception occurred in Tor_Search_Textbox.Add_PreviewKeyDown' -CatchError $_
@@ -11436,11 +11525,11 @@ if($TorBrowser_Measure){
   write-ezlogs -text '>>>> UI and Event Handlers - TorBrowser Startup' -PerfTimer $TorBrowser_Measure
   $TorBrowser_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion TorManager
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Fonts
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -11487,7 +11576,7 @@ if($synchash.Media_Total_Length_TextBox){
     try{
       if($synchash.Media_Total_Length_TextBox.DataContext -eq '00:00:00' -or $synchash.Media_Total_Length_TextBox.DataContext -eq '0:0:0'){
         $synchash.Media_Length_Sep.Text = ''
-        $synchash.Media_Total_Length_TextBox.DataContext = ''      
+        $synchash.Media_Total_Length_TextBox.DataContext = ''
       }
     }catch{
       write-ezlogs -text "An exception occurred in $($sender.Name).Add_DataContextChanged event" -CatchError $_ -showtime
@@ -11503,11 +11592,11 @@ if($LoadFonts_Startup_Measure){
   write-ezlogs -text '>>>> UI and Event Handlers - LoadFonts Startup' -PerfTimer $LoadFonts_Startup_Measure
   $LoadFonts_Startup_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Fonts
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region New-RelayCommand
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -11519,7 +11608,7 @@ if($New_RelayCommand_Measure){
   write-ezlogs -text '>>>> UI and Event Handlers - New-RelayCommand Startup' -PerfTimer $New_RelayCommand_Measure
   $New_RelayCommand_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion New-RelayCommand
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -11528,14 +11617,14 @@ if($thisApp.Config.startup_perf_timer){
   $UI_EventHandler_Measure = $null
 }
 #############################################################################
-#endregion UI Event Handlers 
+#endregion UI Event Handlers
 #############################################################################
 
 #############################################################################
-#region Execute and Display Output 
-############################################################################# 
+#region Execute and Display Output
+#############################################################################
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Start InterProcessPipes
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -11548,11 +11637,11 @@ if($Start_InterProcessPipes_Measure){
   write-ezlogs -text 'Start_InterProcessPipes_Measure' -PerfTimer $Start_InterProcessPipes_Measure
   $Start_InterProcessPipes_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Start InterProcessPipes
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Start MediaTransportControls
 #----------------------------------------------
 if($thisApp.Config.startup_perf_timer){
@@ -11565,11 +11654,11 @@ if($Set_MediaTransportControls_Measure){
   write-ezlogs -text 'Set_MediaTransportControls' -PerfTimer $Set_MediaTransportControls_Measure
   $Set_MediaTransportControls_Measure = $null
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Start MediaTransportControls
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Window Focus
 #----------------------------------------------
 if($synchash.Window){
@@ -11577,8 +11666,8 @@ if($synchash.Window){
       Param($sender,[System.Windows.Input.KeyboardFocusChangedEventArgs]$e)
       try{
         if($thisApp.Config.Dev_mode){write-ezlogs -text ">>>> Main Window got keyboard focus event: oldfocus: [$($e.oldfocus)]:$($e.oldfocus.name) - NewFocus: [$($e.newFocus)]:$($e.newFocus.name)" -Dev_mode}
-        if($sender.isVisible -and !$e.oldFocus -and $e.newFocus -and $e.Source.Parent -isnot [AvalonDock.DockingManager] -and $e.Source -isnot [AvalonDock.DockingManager]){   
-          $e.Handled = $false 
+        if($sender.isVisible -and !$e.oldFocus -and $e.newFocus -and $e.Source.Parent -isnot [AvalonDock.DockingManager] -and $e.Source -isnot [AvalonDock.DockingManager]){
+          $e.Handled = $false
           if(!$sender.Topmost){
             $isNotTopMost = $true
             $sender.Topmost = $true
@@ -11592,14 +11681,14 @@ if($synchash.Window){
             write-ezlogs -text '| Activating AudioOptions_Viewer window' -Dev_mode
             $synchash.AudioOptions_Viewer.Topmost = $true
             $synchash.AudioOptions_Viewer.Topmost = $false
-          } 
+          }
           if($hashsetup.Window){
             write-ezlogs -text "| Activating settings window: $($hashsetup.Window.isVisible) - $($hashsetup.Window.Visibility)" -Dev_mode
             Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -BringToFront
-          } 
+          }
           if($isNotTopMost){
             $sender.Topmost = $false
-          }                             
+          }
         }
       }catch{
         write-ezlogs -text 'An exception occurred in Window.add_PreviewGotKeyboardFocus' -showtime -CatchError $_
@@ -11610,14 +11699,14 @@ if($synchash.Window){
 #endregion Window Focus
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Window Close
 #----------------------------------------------
 if($synchash.Window){
   $synchash.Window.Add_Closing({
       Param($sender,[System.ComponentModel.CancelEventArgs]$e)
       try{
-        write-ezlogs -text '#### App is Shutting Down' -LogLevel 2 -linesbefore 1
+        write-ezlogs -text '#### App is Shutting Down' -linesbefore 1
         $synchash.MainWindow_IsClosing = $true
         [Void]$synchash.timer.stop()
         if($synchash.VLC){
@@ -11625,16 +11714,14 @@ if($synchash.Window){
         }
         if($synchash.YoutubeWebview2.coreWebview2){
           try{
-            #write-ezlogs -text '| Disposing YoutubeWebview2 Session' -LogLevel 2
             Remove-YoutubeWebPlayer -synchash $syncHash
-            #[Void]$synchash.YoutubeWebview2.dispose()
           }catch{
             write-ezlogs -text 'An exception occurred disposing YoutubeWebview2' -CatchError $_
           }
         }
-        if($synchash.Webview2.coreWebview2){       
+        if($synchash.Webview2.coreWebview2){
           try{
-            write-ezlogs -text '| Disposing Spotify Webview2 Session' -LogLevel 2
+            write-ezlogs -text '| Disposing Spotify Webview2 Session' -LogLevel 0 -Verboselog:$Verboselog
             [Void]$synchash.Webview2.dispose()
           }catch{
             write-ezlogs -text 'An exception occurred disposing Spotify Webview2' -CatchError $_
@@ -11643,36 +11730,34 @@ if($synchash.Window){
         if($synchash.WebBrowser.coreWebview2){
           try{
             Remove-WebBrowser -synchash $synchash
-            #write-ezlogs -text '| Disposing WebBrowser Webview2 Session' -LogLevel 2
-            #[Void]$synchash.WebBrowser.dispose()
           }catch{
             write-ezlogs -text 'An exception occurred disposing WebBrowser Webview2' -CatchError $_
-          }             
+          }
         }
         try{
           #Close Anchorables to collapse all window owners - Prevents exceptions caused when exiting dispatcher thread
           if($synchash.MediaViewAnchorable.isFloating){
-            write-ezlogs -text '| Docking MediaViewAnchorable' -LogLevel 2
+            write-ezlogs -text '| Docking MediaViewAnchorable' -LogLevel 0 -Verboselog:$Verboselog
             [Void]$synchash.MediaViewAnchorable.Dock()
-          } 
+          }
           if($synchash.WebBrowserAnchorable.isFloating){
-            write-ezlogs -text '| Docking WebBrowserAnchorable' -LogLevel 2
+            write-ezlogs -text '| Docking WebBrowserAnchorable' -LogLevel 0 -Verboselog:$Verboselog
             [Void]$synchash.WebBrowserAnchorable.Dock()
           }
           if($synchash.MediaLibraryAnchorable.isFloating){
-            write-ezlogs -text '| Docking MediaLibraryAnchorable' -LogLevel 2
+            write-ezlogs -text '| Docking MediaLibraryAnchorable' -LogLevel 0 -Verboselog:$Verboselog
             [Void]$synchash.MediaLibraryAnchorable.Dock()
           }
         }catch{
           write-ezlogs -text 'An exception occurred closing anchorables event' -showtime -CatchError $_
-        } 
+        }
         if($synchash.TrayPlayer){
           try{
             [Void]$synchash.TrayPlayer.dispose()
           }catch{
             write-ezlogs -text 'An exception occurred disposing TrayPlayer' -CatchError $_
-          }   
-        } 
+          }
+        }
         if($synchash.VLC){
           try{
             Close-LibVLC -synchash $synchash -thisApp $thisApp
@@ -11681,11 +11766,11 @@ if($synchash.Window){
           }
         }
         if($synchash.WebBrowserGrid.Children -contains $synchash.AirControl){
-          write-ezlogs -text '| Removing Aircontrol from WebBrowserGrid' -LogLevel 2
+          write-ezlogs -text '| Removing Aircontrol from WebBrowserGrid' -LogLevel 0 -Verboselog:$Verboselog
           [Void]$synchash.WebBrowserGrid.children.Remove($synchash.AirControl)
         }
         if($synchash.VLC_Grid.Children -contains $synchash.VideoViewAirControl){
-          Write-EZLogs -text '| Removing VideoViewAirControl from VLC_Grid' -LogLevel 2
+          Write-EZLogs -text '| Removing VideoViewAirControl from VLC_Grid' -LogLevel 0 -Verboselog:$Verboselog
           [Void]$synchash.VLC_Grid.children.Remove($synchash.VideoViewAirControl)
           $synchash.VideoViewAirControl.Front = $null
           $synchash.VideoViewAirControl.Back = $null
@@ -11740,39 +11825,39 @@ if($synchash.Window){
         #Close thirdparty processes but only if they are ours
         if(-not ((get-process -Name *p*) | Where-Object -FilterScript {$_.MainWindowTitle -match "$($thisApp.Config.App_name) Media Player - $($thisApp.Config.App_version)" -or $_.MainWindowTitle -match "Video Player - $($thisApp.Config.App_name)"})){
           if((Get-Process -Name Spotify*) -and !$thisApp.Config.Spotify_WebPlayer){
-            write-ezlogs -text '| Closing Spotify' -LogLevel 2
+            write-ezlogs -text '| Closing Spotify'
             Get-Process -Name Spotify* | Stop-Process -Force
           }
-          if((Get-Process -Name streamlink*) -and !($dev_mode)){           
-            write-ezlogs -text '| Closing Streamlink process' -LogLevel 2
+          if((Get-Process -Name streamlink*) -and !($dev_mode)){
+            write-ezlogs -text '| Closing Streamlink process'
             Get-Process -Name streamlink* | Stop-Process -Force
           }
-        }  
+        }
         if($synchash.Current_Audio_Session -and !$synchash.Current_Audio_Session.IsDisposed){
-          write-ezlogs -text '| Disposing Main App Audio Session' -LogLevel 2
+          write-ezlogs -text '| Disposing Main App Audio Session' -LogLevel 0 -Verboselog:$Verboselog
           [Void]$synchash.Current_Audio_Session.Dispose()
-        }      
+        }
         if($synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled){
           $synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled = $false
         }
         if($synchash.DSClient.IsInitialized){
           try{
-            write-ezlogs -text "| Stopping existing DSClient $($synchash.DSClient.CurrentPresence)" -showtime -logtype Discord -LogLevel 2
-            Stop-DSClient     
+            write-ezlogs -text "| Stopping existing DSClient: $($synchash.DSClient.CurrentPresence)" -logtype Discord
+            Stop-DSClient
             $synchash.DsClient = $null
           }catch{
             write-ezlogs -text "An exception occurred diposing dsclient $($synchash.DSClient | out-string)" -showtime -CatchError $_
           }
-        } 
+        }
         if($thisApp.Config.Enable_LocalMedia_Monitor -and ($thisApp.ProfileManagerEnabled -or $thisApp.LocalMedia_Monitor_Enabled)){
-          Stop-FileWatcher -thisApp $thisApp -synchash $synchash -use_Runspace -Stop_ProfileManager -force 
-        }                    
+          Stop-FileWatcher -thisApp $thisApp -synchash $synchash -use_Runspace -Stop_ProfileManager -force
+        }
         [Void][System.Windows.Threading.Dispatcher]::ExitAllFrames()
         [Void][System.Windows.Threading.Dispatcher]::CurrentDispatcher.InvokeShutdown()
-        Write-ezlogs -text '>>>> Exited app CurrentDispatcher threading' -showtime -LogLevel 2
+        Write-ezlogs -text '>>>> Exited app CurrentDispatcher threading' -LogLevel 0 -Verboselog:$Verboselog
       }catch{
         Write-ezlogs -text 'An exception occurred during add_closed cleanup' -showtime -CatchError $_
-      } 
+      }
   })
 }
 #----------------------------------------------
@@ -11786,7 +11871,7 @@ try{
   #Add Validation Control
   if($thisApp.Config.startup_perf_timer){
     $synchash.Show_UI_Measure = [system.diagnostics.stopwatch]::StartNew()
-  } 
+  }
   #Disable Transparency - fixes issues such as visualizations not displaying
   if($synchash.Window -and $thisApp.Config.DisableTransparency -or $DisableTransparency){
     $synchash.Window.AllowsTransparency = $false
@@ -11796,7 +11881,7 @@ try{
 
   if($trayMenu -and !$thisApp.Config.Disable_Tray){
     try{
-      $Update_TrayMenu_Measure = [system.diagnostics.stopwatch]::StartNew() 
+      $Update_TrayMenu_Measure = [system.diagnostics.stopwatch]::StartNew()
       Import-Module -Name "$Current_folder\Modules\Add-TrayMenu\Add-TrayMenu.psm1" -NoClobber -DisableNameChecking -Scope Local
       Add-TrayMenu -synchash $synchash -thisApp $thisApp -addJumplist -StartMini:$StartMini
     }catch{
@@ -11813,21 +11898,21 @@ try{
   if($synchash.Window){
     $synchash.Window.add_IsVisibleChanged({
         try{
-          if(!$synchash.Window.isVisible -and !$synchash.MediaViewAnchorable.isfloating -and $synchash.MiniPlayer_Viewer.isVisible -and $synchash.VideoView.Visibility -eq 'Visible'){ 
+          if(!$synchash.Window.isVisible -and !$synchash.MediaViewAnchorable.isfloating -and $synchash.MiniPlayer_Viewer.isVisible -and $synchash.VideoView.Visibility -eq 'Visible'){
             write-ezlogs -text '>>>> Miniplayer window is visible, mediaviewanchorable is not floating and main window is not visible, hiding video view' -Warning
             $synchash.VideoView.Visibility = 'Collapsed'
           }else{
             if(!$synchash.MiniPlayer_Viewer.isVisible -and $synchash.VideoView.Visibility -in 'Hidden','Collapsed' -and (!$synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio) -and $synchash.WebPlayer_State -eq 0 -and !$synchash.Youtube_WebPlayer_title -and ($synchash.VideoButton_ToggleButton.isChecked -or $synchash.MediaViewAnchorable.isFloating)){
               write-ezlogs -text '>>>> Video view is visible and Main window is not hidden, Youtube webplayer not playing, unhiding video view' -Warning
               $synchash.VideoView.Visibility = 'Visible'
-            }      
+            }
           }
         }catch{
           write-ezlogs -text 'An exception occurred in Window.add_IsVisibleChanged' -showtime -CatchError $_
         }
     })
     $synchash.Window.add_ContentRendered({
-        try{                      
+        try{
           if($synchash.Show_UI_Measure){
             $synchash.Show_UI_Measure.stop()
             write-ezlogs -text 'Show_UI' -PerfTimer $synchash.Show_UI_Measure
@@ -11853,11 +11938,11 @@ try{
       if($WindowHandle -and $appid){
         $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
         if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Registering Main window handle: $($WindowHandle) -- to appid: $appid" -Dev_mode}
-        $taskbarinstance.SetApplicationIdForSpecificWindow($WindowHandle,$appid)   
+        $taskbarinstance.SetApplicationIdForSpecificWindow($WindowHandle,$appid)
         if($thisApp.Config.Installed_AppID -ne $appid){
           $thisApp.Config.Installed_AppID = $appid
         }
-      } 
+      }
     }catch{
       write-ezlogs -text "An exception occurred registering main window handle: $($WindowHandle) -- to appid: $appid" -CatchError $_
     }
@@ -11869,7 +11954,7 @@ try{
     }
     if(!$thisApp.config.Start_Tray_only -and !$hashDedicationWindow.Window.isVisible){
       if($thisApp.config.Start_Mini_only -or $StartMini){
-        try{             
+        try{
           Open-MiniPlayer -thisApp $thisApp -synchash $synchash -Startup
           #Trick to prerender window without showing it - Set opacity to 0, show to render, then hide
           #$synchash.window.ShowActivated = $false #Prevent window from activating/taking focus while rendering
@@ -11879,7 +11964,7 @@ try{
           #$synchash.window.Hide()
           #$synchash.window.Opacity = 1
           #$synchash.window.ShowActivated = $true
-          if($synchash.Show_UI_Measure){   
+          if($synchash.Show_UI_Measure){
             $synchash.Show_UI_Measure.stop()
             write-ezlogs -text 'Show_UI' -PerfTimer $synchash.Show_UI_Measure
             write-ezlogs -text "`n----------------------------------------------------------`n    | Total UI startup: $($startup_stopwatch.Elapsed.Seconds) seconds - $($startup_stopwatch.Elapsed.Milliseconds) Milliseconds |`n----------------------------------------------------------" -CallBack:$false -showtime:$false -GetMemoryUsage -logfile $thisApp.Config.Perf_Log_File
@@ -11892,7 +11977,7 @@ try{
         [Void]$synchash.Window.Show()
       }
     }
-  }elseif($synchash.Show_UI_Measure){   
+  }elseif($synchash.Show_UI_Measure){
     $synchash.Show_UI_Measure.stop()
     write-ezlogs -text 'Show_UI' -PerfTimer $synchash.Show_UI_Measure
     write-ezlogs -text "`n----------------------------------------------------------`n    | Total UI startup: $($startup_stopwatch.Elapsed.Seconds) seconds - $($startup_stopwatch.Elapsed.Milliseconds) Milliseconds |`n----------------------------------------------------------" -CallBack:$false -showtime:$false -GetMemoryUsage -logfile $thisApp.Config.Perf_Log_File
@@ -11905,9 +11990,9 @@ try{
   #----------------------------------------------
   #region Show-SettingsWindow hidden
   #----------------------------------------------
-  if(!$No_SettingsPreload -and $synchash.Window){   
+  if(!$No_SettingsPreload -and $synchash.Window){
     Show-SettingsWindow -PageTitle "Settings - $($thisApp.Config.App_Name) Media Player" -PageHeader 'Settings' -Logo "$($thisApp.Config.Current_Folder)\Resources\Skins\Samson_Logo_Title.png" -synchash $synchash -thisApp $thisApp -hashsetup $hashsetup -Update -First_Run:$false -use_runspace -startHidden -globalstopwatch $startup_stopwatch
-  }  
+  }
   #----------------------------------------------
   #endregion Show-SettingsWindow hidden
   #----------------------------------------------
@@ -11956,11 +12041,11 @@ try{
           }
         }catch{
           $error.clear()
-        }  
+        }
       }
       #Ok it apparently wasnt something stupid, let the user know and try and restart
       [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms')
-      $oReturn = [System.Windows.Forms.MessageBox]::Show("An exception occurred and the primary Dispatcher thread ended for ($($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version) - PID: $($pid)). Recommend reviewing logs for details.`n`nERROR: $($_ | out-string)`n`nDo you wish to try and restart the app?","CRITICAL ERROR - $($thisApp.Config.App_Name) Media Player",[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Error)  
+      $oReturn = [System.Windows.Forms.MessageBox]::Show("An exception occurred and the primary Dispatcher thread ended for ($($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version) - PID: $($pid)). Recommend reviewing logs for details.`n`nERROR: $($_ | out-string)`n`nDo you wish to try and restart the app?","CRITICAL ERROR - $($thisApp.Config.App_Name) Media Player",[System.Windows.Forms.MessageBoxButtons]::YesNo,[System.Windows.Forms.MessageBoxIcon]::Error)
       if($oReturn -eq 'Yes'){
         use-runas -ForceReboot -RestartAsUser
       }
@@ -11977,20 +12062,20 @@ try{
       #----------------------------------------------
       if($thisApp.JobCleanup.Flag){
         $thisApp.JobCleanup.Flag = $false
-      }         
+      }
     }catch{
       [System.IO.File]::AppendAllText($thisApp.Config.Log_file, "[$([datetime]::Now)] [ERROR] An exception occurred during final cleanup: $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
     }finally{
       #While I dont condone suicide powershell, we need to make sure your console/process is closed
-      if($pid -and !$NoExit){ 
+      if($pid -and !$NoExit){
         Stop-Process $pid -Force
       }
     }
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Display Main Window
 #----------------------------------------------
 #############################################################################
-#endregion Execute and Display Output 
+#endregion Execute and Display Output
 #############################################################################

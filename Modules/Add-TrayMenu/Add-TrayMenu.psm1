@@ -85,11 +85,9 @@ function Add-TrayMenu
           $synchash.window.ShowActivated = $true
           $synchash.window.ShowInTaskbar = $true
           $synchash.Window.Show()
-          $synchash.Window.Activate()
           if($SyncHash.Window.WindowState -ne 'Normal'){
             $SyncHash.Window.WindowState = 'Normal'
           }
-          $window_active = $synchash.Window.Activate()
           if($synchash.MediaLibraryFloat.isVisible){
             $synchash.MediaLibraryFloat.Activate()
           } 
@@ -98,7 +96,8 @@ function Add-TrayMenu
           }
           if($hashsetup.window.IsInitialized -and ($hashsetup.Window.Visibility -eq 'Visible')){
             Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -Show
-          }                       
+          }
+          $synchash.Window.Activate()
           write-ezlogs "[TRAYMENU] Open app command executed from tray menu" -GetMemoryUsage -forceCollection
         }catch{
           write-ezlogs "An exception occurred in EditProfile_Command routed event" -showtime -catcherror $_
@@ -1042,7 +1041,7 @@ function Add-JumpList
         $thisApp.Config.Installed_AppID = $appid
       } 
       if($appid -and -not [string]::IsNullOrEmpty($Handle) -and $Handle -ne 0){
-        write-ezlogs ">>>> Creating new jumplist for window with handle: $($Handle)"
+        write-ezlogs ">>>> Creating new jumplist for window with handle: $($Handle)" -LogLevel 0 -Verboselog:$Verboselog
         $synchash.jumplist = [Microsoft.WindowsAPICodePack.Taskbar.JumpList]::CreateJumpListForIndividualWindow($appid,$Handle)
         #$synchash.jumplist.KnownCategoryToDisplay = [Microsoft.WindowsAPICodePack.Taskbar.JumpListKnownCategoryType]::Recent
         #$synchash.jumplist.KnownCategoryOrdinalPosition = 1
@@ -1083,7 +1082,7 @@ function Add-JumpList
       if($synchash.jumplist){
         #Tasks
         if($Startup -and [System.IO.File]::Exists($thisApp.Config.App_Exe_Path)){
-          write-ezlogs ">>>> Adding New Jumplist" -loglevel 2 
+          write-ezlogs ">>>> Adding New Jumplist" -loglevel 0 -Verboselog:$Verboselog
           $category = [Microsoft.WindowsAPICodePack.Taskbar.JumpListCustomCategory]::new('Tasks')
           $jumptask = [Microsoft.WindowsAPICodePack.Taskbar.JumpListLink]::new($($thisApp.Config.App_Exe_Path),"Move $($thisApp.Config.App_Name) to Current Screen")
           #Move/Start app to Primary Monitor
@@ -1114,7 +1113,7 @@ function Add-JumpList
           $method = $synchash.jumplist_categoryRecent.gettype().GetMethod('get_JumpListItems',[System.Reflection.BindingFlags]::NonPublic -bor [System.Reflection.BindingFlags]::Instance)
           $JumplistItems = $method.Invoke($synchash.jumplist_categoryRecent,$Null)
           if($thisApp.Config.App_Exe_Path -in $JumplistItems.path){
-            write-ezlogs ">>>> Clearing jumpitems with Path: $($thisApp.Config.App_Exe_Path)"
+            write-ezlogs ">>>> Clearing jumpitems with Path: $($thisApp.Config.App_Exe_Path)" -LogLevel 0 -Verboselog:$VerboseLog
             $JumplistItems.clear()
             $Removemethod = $synchash.jumplist_categoryRecent.gettype().GetMethod('RemoveJumpListItem',[System.Reflection.BindingFlags]::NonPublic -bor [System.Reflection.BindingFlags]::Instance)
             if($Removemethod){

@@ -160,20 +160,24 @@ function Invoke-DownloadMedia{
         #$format = "bestvideo+bestaudio"
         if($AudioOnly){
           $format = "bestaudio"
+          $ExtractAudio = "--extract-audio --audio-format flac --audio-quality 0"
         }else{
-          $format = "bv+ba/b"
+          #$format = "bv+ba/b"
+          $format = "bestvideo*+bestaudio/best"
+          $ExtractAudio = $Null
         }       
         $media_Link = "https://www.youtube.com/watch?v=$youtube_id"
       }else{
         $sponserblock = $Null
         $format = "bestaudio"
       }
+      $ExtractorArgs = "--extractor-args `"youtube:player_client=default,ios`""
       $MetaDataReplace = "--windows-filenames --replace-in-metadata title `"[\U0000002A\U0000005C\U0000002F\U0000003A\U00000022\U0000003F\U0000007C\U00010000-\U0010FFFF]`" `" `" --replace-in-metadata title `"[\U00000027]`" `"`" --replace-in-metadata title `"’`" `"`""
       #$OutputFormat = '`"%(uploader)s-%(title)s.%(ext)s`"'
       if(-not [string]::IsNullOrEmpty($thisApp.config.Youtube_Browser)){
-        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f $format $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --cookies-from-browser $($thisApp.config.Youtube_Browser) --audio-quality 0 --ffmpeg-location `"$ffmpeg_Path`" --extractor-args `"youtube:player_client=default,ios`" --embed-thumbnail --add-metadata $MetaDataReplace --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
+        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f $format $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" $ExtractAudio --cookies-from-browser $($thisApp.config.Youtube_Browser) --ffmpeg-location `"$ffmpeg_Path`" --embed-thumbnail --add-metadata $MetaDataReplace --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
       }else{
-        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f $format $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" --audio-quality 0 --embed-thumbnail --ffmpeg-location `"$ffmpeg_Path`" --add-metadata --extractor-args `"youtube:player_client=default,ios`" $MetaDataReplace --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
+        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f $format $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" $ExtractAudio --embed-thumbnail --ffmpeg-location `"$ffmpeg_Path`" --add-metadata $MetaDataReplace --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
       }
     }else{
       write-ezlogs "No valid youtube URL was provided!" -showtime -warning

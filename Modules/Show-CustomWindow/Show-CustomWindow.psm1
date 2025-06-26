@@ -44,7 +44,7 @@ function Show-CustomWindow{
     [string]$MessageTextHAlign,
     [string]$MarkDownFile,
     $OkActionScriptBlock,
-    $CustomWindow_hash,
+    $CustomWindow_hash = $CustomWindow_hash,
     [string]$Message_2,
     [ValidateSet('Info','YesNo','OkCancel','Options')]
     [string]$Type,
@@ -54,17 +54,22 @@ function Show-CustomWindow{
     $Options,
     [string]$OptionsHeader,
     [switch]$Verboselog = $thisApp.Config.Dev_mode,
-    $thisApp
+    $thisApp = $thisApp,
+    $synchash = $synchash
   )  
 
-
+  if($CustomWindow_hash.Window.isVisible){
+    write-ezlogs "Custom window is already open - activating" -Warning
+    $CustomWindow_hash.Window.Dispatcher.Invoke([Action]{$CustomWindow_hash.Window.Activate()},'Normal')
+    return
+  }
   if($PSBoundParameters["CustomWindow_hash"] -isnot [hashtable]){
-    #$Script:CustomWindow_hash = [hashtable]::Synchronized(@{})
     $PSBoundParameters["CustomWindow_hash"] = [hashtable]::Synchronized(@{})
   }
   if($CustomWindow_hash -isnot [hashtable]){
     $CustomWindow_hash = [hashtable]::Synchronized(@{})
   }
+
   $CustomWindow_Pwshell = {
     [CmdletBinding()]
     Param (
@@ -87,7 +92,8 @@ function Show-CustomWindow{
       $Options,
       [string]$OptionsHeader,
       [switch]$Verboselog,
-      $thisApp
+      $thisApp,
+      $synchash
     )
     try{
       $CustomWindowLoad_Measure = [system.diagnostics.stopwatch]::StartNew()
@@ -138,7 +144,7 @@ function Show-CustomWindow{
         if($HeaderText -and $CustomWindow_hash.HeaderText){
           $CustomWindow_hash.HeaderText.Content = $HeaderText
         }elseif($CustomWindow_hash.Header -and !$HeaderLogo){
-          write-ezlogs ">>>> No Header logo or text provided - hiding header..."
+          write-ezlogs ">>>> No Header logo or text provided - hiding header..." -LogLevel 0 -Verboselog:$VerboseLog
           $CustomWindow_hash.Header.Visibility = 'Collapsed'
           if($CustomWindow_hash.ContentGrid){
             $CustomWindow_hash.ContentGrid.SetValue([System.Windows.Controls.Grid]::RowProperty,0)
@@ -178,7 +184,7 @@ function Show-CustomWindow{
             $message = "$message`n`n$Message_2"
           }    
           if([system.io.file]::Exists($MarkDownFile)){
-            write-ezlogs ">>>> Opening Markdown Help File: $MarkDownFile" -loglevel 2
+            write-ezlogs ">>>> Opening Markdown Help File: $MarkDownFile"
             $Message += "`n`n" + ([system.io.file]::ReadAllText($MarkDownFile) -replace '\[USERNAME\]',$env:USERNAME -replace '\[appname\]',$thisApp.Config.App_Name -replace '\[appversion\]',$thisApp.Config.App_Version -replace '\[CURRENTFOLDER\]',$thisApp.Config.Current_Folder)
           }
           if($Message){
@@ -301,7 +307,7 @@ function Show-CustomWindow{
             $CustomWindow_hash."$($Option.Name)_Label".SetValue([System.Windows.Controls.Grid]::RowProperty,$Count)      
             $null = $grid.AddChild($CustomWindow_hash."$($Option.Name)_Label")
             if($Option.Type -eq 'CheckBox'){
-              if($VerboseLog){write-ezlogs ">>>> Creating CheckBox property ($($Option.name)) with value $($Option.value)" -showtime -VerboseDebug:$VerboseLog}
+              write-ezlogs ">>>> Creating CheckBox property ($($Option.name)) with value $($Option.value)" -LogLevel 0 -Verboselog:$VerboseLog
               $CustomWindow_hash."$($Option.Name)_Label".Margin="5,3,5,5"
               $CustomWindow_hash."$($Option.Name)_CheckBox" = [System.Windows.Controls.CheckBox]::new()
               $CustomWindow_hash."$($Option.Name)_CheckBox".Name = "$($Option.Name)_CheckBox"
@@ -309,13 +315,13 @@ function Show-CustomWindow{
               $CustomWindow_hash."$($Option.Name)_CheckBox".ToolTip = $Option.ToolTip            
               $CustomWindow_hash."$($Option.Name)_CheckBox".IsEnabled = $true
               $CustomWindow_hash."$($Option.Name)_CheckBox".isChecked = $($Option.value)
-              $CustomWindow_hash."$($Option.Name)_CheckBox".HorizontalAlignment="Left"             
+              $CustomWindow_hash."$($Option.Name)_CheckBox".HorizontalAlignment="Left"
               $CustomWindow_hash."$($Option.Name)_CheckBox".Background="Transparent"
               $CustomWindow_hash."$($Option.Name)_CheckBox".SetValue([System.Windows.Controls.Grid]::ColumnProperty,1)
               $CustomWindow_hash."$($Option.Name)_CheckBox".SetValue([System.Windows.Controls.Grid]::RowProperty,$Count)
               $null = $grid.AddChild($CustomWindow_hash."$($Option.Name)_CheckBox")
             }elseif($Option.Type -eq 'Textbox'){
-              if($VerboseLog){write-ezlogs ">>>> Creating Textbox property ($($Option.name)) with value $($Option.value)" -showtime -VerboseDebug:$VerboseLog}
+              write-ezlogs ">>>> Creating Textbox property ($($Option.name)) with value $($Option.value)" -LogLevel 0 -Verboselog:$VerboseLog
               $CustomWindow_hash."$($Option.Name)_textbox" = [System.Windows.Controls.Textbox]::new()
               $CustomWindow_hash."$($Option.Name)_textbox".Margin="5,5,0,5"
               $CustomWindow_hash."$($Option.Name)_textbox".ToolTip = $Option.ToolTip
@@ -326,6 +332,7 @@ function Show-CustomWindow{
               $CustomWindow_hash."$($Option.Name)_textbox".Background="Transparent"
               $CustomWindow_hash."$($Option.Name)_textbox".HorizontalAlignment="Left" 
               $CustomWindow_hash."$($Option.Name)_textbox".MinWidth="200"
+              $CustomWindow_hash."$($Option.Name)_textbox".MaxWidth="350"
               $CustomWindow_hash."$($Option.Name)_textbox".Name = "$($Option.Name)_textbox"
               $CustomWindow_hash."$($Option.Name)_textbox".SetValue([System.Windows.Controls.Grid]::ColumnProperty,1)
               $CustomWindow_hash."$($Option.Name)_textbox".SetValue([System.Windows.Controls.Grid]::RowProperty,$Count)
@@ -367,10 +374,10 @@ function Show-CustomWindow{
                         $FileDialog = [Bool]($Sender.Uid -match 'SaveFile|OpenFile')
                         $SaveDialog = [Bool]($Sender.Uid -match 'Save')
                         if($FileDialog){
-                          write-ezlogs ">>>> Executing Open-FileDialog for textbox control: $($Sender.Tag)"
-                          $result = Open-FileDialog -Title 'Select the file name' -SaveDialog:$SaveDialog -CheckPathExists:$SaveDialog
+                          write-ezlogs ">>>> Executing Open-FileDialog for textbox control: $($Sender.Tag)" -LogLevel 0 -Verboselog:$VerboseLog
+                          $result = (Open-FileDialog -Title 'Select the file name' -SaveDialog:$SaveDialog -CheckPathExists:$SaveDialog -MultiSelect:$FileDialog) -join ','
                         }else{
-                          write-ezlogs ">>>> Executing Open-FolderDialog for textbox control: $($Sender.Tag)"
+                          write-ezlogs ">>>> Executing Open-FolderDialog for textbox control: $($Sender.Tag)" -LogLevel 0 -Verboselog:$VerboseLog
                           $result = Open-FolderDialog -Title 'Select the directory'
                         }
                         if(-not [string]::IsNullOrEmpty($result)){
@@ -381,13 +388,12 @@ function Show-CustomWindow{
                       }                       
                     }catch{
                       write-ezlogs "An exception occurred in Youtube_Download_Browse.add_Click" -CatchError $_ -enablelogs
-                    }     
-                
+                    }
                 })
                 $null = $grid.AddChild($CustomWindow_hash."$($Option.Name)_textbox_Browse_$($Option.BrowseType)")
               }  
             }elseif($Option.Type -eq 'ComboBox'){
-              if($VerboseLog){write-ezlogs ">>>> Creating ComboBox property ($($Option.name)) with value $($Option.value)" -showtime -VerboseDebug:$VerboseLog}
+              write-ezlogs ">>>> Creating ComboBox property ($($Option.name)) with value $($Option.value)" -LogLevel 0 -Verboselog:$VerboseLog
               $CustomWindow_hash."$($Option.Name)_ComboBox" = [System.Windows.Controls.ComboBox]::new()
               $CustomWindow_hash."$($Option.Name)_ComboBox".Margin="5,5,0,5"
               $CustomWindow_hash."$($Option.Name)_ComboBox".ToolTip = $Option.ToolTip
@@ -409,7 +415,7 @@ function Show-CustomWindow{
               $CustomWindow_hash."$($Option.Name)_ComboBox".SetValue([System.Windows.Controls.Grid]::RowProperty,$Count)
               $null = $grid.AddChild($CustomWindow_hash."$($Option.Name)_ComboBox") 
             }elseif($Option.Type -eq 'ToggleSwitch'){
-              if($VerboseLog){write-ezlogs ">>>> Creating ToggleSwitch property ($($Option.name)) with value $($Option.value)" -showtime -VerboseDebug:$VerboseLog}
+              write-ezlogs ">>>> Creating ToggleSwitch property ($($Option.name)) with value $($Option.value)" -LogLevel 0 -Verboselog:$VerboseLog
               $CustomWindow_hash."$($Option.Name)_Label".Margin="5,7,5,5"
               $CustomWindow_hash."$($Option.Name)_ToggleSwitch" = [MahApps.Metro.Controls.ToggleSwitch]::new()
               $CustomWindow_hash."$($Option.Name)_ToggleSwitch".Margin="5,5,0,5"
@@ -461,7 +467,7 @@ function Show-CustomWindow{
       $CustomWindow_hash.Closed_Event = {
         param($sender)
         try{                                  
-          write-ezlogs ">>>> Show-CustomWindow Closed" -showtime                             
+          write-ezlogs ">>>> Show-CustomWindow Closed"        
         }catch{
           write-ezlogs "An exception occurred closing Show-Weblogin window" -showtime -catcherror $_
         }
@@ -483,7 +489,7 @@ function Show-CustomWindow{
           }
           if($Window_Helper.Handle -and $appid){
             $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
-            write-ezlogs ">>>> Registering WebLogin window handle: $($Window_Helper.Handle) -- to appid: $appid" -Dev_mode:$Verboselog
+            write-ezlogs ">>>> Registering WebLogin window handle: $($Window_Helper.Handle) -- to appid: $appid" -LogLevel 0 -Verboselog:$VerboseLog
             $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)  
             $thisapp.config.Installed_AppID = $appid
           }
@@ -568,11 +574,10 @@ function Show-CustomWindow{
                 [void]$CustomWindow_hash.Remove($_)  
               }       
           }}
-          #$CustomWindow_hash = $null
           $hashkeys = $Null
           [System.Windows.Threading.Dispatcher]::ExitAllFrames()
           [System.Windows.Threading.Dispatcher]::CurrentDispatcher.InvokeShutdown()
-          write-ezlogs ">>>> Custom Window Unloaded - disposed CurrentDispatcher thread"  
+          write-ezlogs ">>>> Custom Window Unloaded - disposed CurrentDispatcher thread"
         }catch{
           write-ezlogs "An exception occurred in CustomWindow_hash Window unloaded event" -catcherror $_
         }
@@ -594,101 +599,24 @@ function Show-CustomWindow{
       $null = $CustomWindow_hash.window.Show()
       $null = $CustomWindow_hash.Window.Activate()
       [System.Windows.Threading.Dispatcher]::Run()
-      return $CustomWindow_hash.output
+      if($WaitforOutput){
+        return $CustomWindow_hash.output
+      }elseif($synchash.CustomWindowResultTimer){
+        write-ezlogs ">>>> Starting CustomWindowResultTimer" -LogLevel 0 -Verboselog:$VerboseLog
+        $synchash.CustomWindowResultTimer.tag = $CustomWindow_hash.output
+        $synchash.CustomWindowResultTimer.start()
+      }     
     }catch{
       write-ezlogs "An exception occurred when opening main Show-WebLogin window" -showtime -CatchError $_
     } 
     #endregion Show Window  
   }
   $Output = Start-Runspace $CustomWindow_Pwshell -arguments $PSBoundParameters -StartRunspaceJobHandler -runspace_name 'Show_CustomWindow' -logfile $thisApp.Config.Log_File -thisApp $thisApp -synchash $synchash -verboselog -ApartmentState STA -CheckforExisting -AlertUIWarnings -ReturnOutput:$WaitforOutput -Wait:$WaitforOutput
-  return $Output
-  #return $PSBoundParameters["CustomWindow_hash"]
+  if($WaitforOutput){
+    return $Output
+  }
 }
 #---------------------------------------------- 
 #endregion Show-CustomWindow Function
 #----------------------------------------------
-<#
-    $Options = [System.Collections.Generic.List[PSCustomObject]]::new()
-    $Option = [PSCustomObject]@{
-    'Name' = 'AudioOnly'
-    'Label' = 'Audio Track Only'
-    'Type' = 'CheckBox'
-    'Value' = $false
-    'Output' = ''
-    }
-    [void]$Options.add($Option)
-    $Option = [PSCustomObject]@{
-    'Name' = 'FileName'
-    'Label' = 'Destination Folder'
-    'Type' = 'textbox'
-    'BrowseType' = 'SaveFolder'
-    'Value' = 'X:\Youtube'
-    'Output' = ''
-    }
-    [void]$Options.add($Option)
-    $Option = [PSCustomObject]@{
-    'Name' = 'SaveFormatOptions'
-    'Label' = 'Audio Format'
-    'Type' = 'Combobox'
-    'Value' = 'Default','FLAC','WAV','MP4'
-    'Output' = ''
-    }
-    [void]$Options.add($Option)
-    $Option = [PSCustomObject]@{
-    'Name' = 'SponserBlock'
-    'Label' = 'Apply SponserBlock'
-    'Type' = 'ToggleSwitch'
-    'Value' = $false
-    'Output' = ''
-    }
-    [void]$Options.add($Option)
-    $Option = [PSCustomObject]@{
-    'Name' = 'FileName'
-    'Label' = 'Local File'
-    'Type' = 'textbox'
-    'BrowseType' = 'SaveFile'
-    'Value' = ''
-    'Output' = ''
-    }
-    [void]$Options.add($Option)
-    $Options = [System.Collections.Generic.List[PSCustomObject]]::new()
-    $Option = [PSCustomObject]@{
-    'Name' = 'RemoteURL'
-    'Label' = 'Remote Network Stream or URL'
-    'Type' = 'textbox'
-    'SingleInputAllowed' = $true
-    'Value' = ''
-    'Output' = ''
-    }
-    [void]$Options.add($Option)
-    $Option = [PSCustomObject]@{
-    'Name' = 'FolderName'
-    'Label' = 'Local Folder'
-    'Type' = 'textbox'
-    'BrowseType' = 'SaveFolder'
-    'SingleInputAllowed' = $true
-    'Value' = ''
-    'Output' = ''
-    }
-    [void]$Options.add($Option)
-    $Option = [PSCustomObject]@{
-    'Name' = 'FileName'
-    'Label' = 'Local File'
-    'Type' = 'textbox'
-    'BrowseType' = 'OpenFile'
-    'SingleInputAllowed' = $true
-    'Value' = ''
-    'Output' = ''
-    }
-    [void]$Options.add($Option)
-    $Option = [PSCustomObject]@{
-    'Name' = 'StartPlayback'
-    'Label' = 'Start Playback'
-    'Type' = 'ToggleSwitch'
-    'Value' = $false
-    'Output' = ''
-    }
-    [void]$Options.add($Option)
-#>
-#SHow-CustomWindow -thisApp $thisApp -WindowTitle 'Test Window' -HeaderText 'Header Text' -Message 'This is a test message for you to read that is displayed in a XAML custom window running in Powershell. Yada yada yada' -Type Options -Options $Options -WaitforOutput -OkActionScriptBlock
 Export-ModuleMember -Function @('Show-CustomWindow')

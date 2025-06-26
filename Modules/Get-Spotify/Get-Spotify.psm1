@@ -1052,8 +1052,12 @@ function Get-SpotifyStatus
                 write-ezlogs "[Get-SpotifyStatus] An exception occurred saving config file to path $($thisApp.Config.Config_Path)" -showtime -catcherror $_
               }            
               $all_Spotifymedia_profile = $all_Spotifymedia_profile | where-Object {$SpotifyPlaylists_itemsArray.id -contains $_.playlist_id}
-              write-ezlogs "Updating All Spotify Media profile cache at $AllSpotify_Media_Profile_File_Path" -showtime -logtype Spotify
-              Export-SerializedXML -InputObject $all_Spotifymedia_profile -Path $AllSpotify_Media_Profile_File_Path
+              if($all_Spotifymedia_profile){
+                write-ezlogs "Updating All Spotify Media profile cache at $AllSpotify_Media_Profile_File_Path" -showtime -logtype Spotify
+                Export-SerializedXML -InputObject $all_Spotifymedia_profile -Path $AllSpotify_Media_Profile_File_Path
+              }else{
+                write-ezlogs "Unable to find spotify media profiles to save containing ids: $($SpotifyPlaylists_itemsArray.id)" -warning
+              }
             }
             if($newSpotifyMediaCount -gt 0 -or $playlists_toRemove -or $newtracks -gt 0 -or $removedtracks -gt 0){
               if($hashsetup.Spotify_Playlists_Import -and $hashsetup.window){

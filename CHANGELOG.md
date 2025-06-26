@@ -2,6 +2,42 @@
 
 ## [Unreleased]
 
+## 1.0.3 - PUBLIC
+> - Branch: Samson
+
+### Added
++ New custom dialog window for Add/Open media
+  + Now possible to select multiple files
++ Ability to set Invidious instance URL under Youtube settings
+  + No URL is set by default, one must be provided if enabling Invidious
+
+### Changes
++ Reduced logging verbosity in various places
++ Various code cleanup and refactoring (lots of whitespace cleanup)
++ Supressed non-error output when executing ffmpeg
++ Media profile property Current_Progress_Secs is now saved to profile
++ Miniplayer window title and TaskbarItemInfo are now bound to main window
++ Improvements to CustomWindow threading and responsiveness
++ Youtube webplayer using invidious now supports urls with time index
++ Various minor improvements to memory usage and cleanup
++ Readme Updates
+
+### Fixed
++ Reordering playlist items via dragdrop fails or puts items in wrong order
++ Sorting playlists by date added dont sort correctly
++ Clicking on Twitch live toast notifications when they appear doesnt start playback
++ Setting Discord presense sometimes fails due to missing default activity type
++ Unable to interact with miniplayer progress bar
++ Screeenshots fail for settings window
++ BetterTTV not working for Youtube stream chats
++ Chat view option in context menus closes but wont open chat view
++ Items sometimes fail to be added to playlists when selecting `Add to new playlist`
++ Auto sync of Youtube Playlists doesnt update when videos are removed from YT side
++ Youtube webplayer sometimes fails to load if extensions are installed on first playback
+
+### Comments
++ Will NOT trigger first time setup when upgrading
+
 ## 1.0.2 - PUBLIC
 > - Branch: Samson
 

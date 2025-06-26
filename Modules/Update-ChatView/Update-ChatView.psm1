@@ -141,7 +141,7 @@ function Update-ChatView
                 $synchash.Chat_View_Button.Opacity='1'
                 $synchash.Chat_View_Button.IsEnabled = $true
                 if($syncHash.chat_WebView2 -ne $null -and $syncHash.chat_WebView2.CoreWebView2 -ne $null){
-                  write-ezlogs "[ChatView_Timer] Navigating with CoreWebView2.Navigate: $($synchash.ChatView_URL)" -enablelogs -Color cyan -showtime
+                  write-ezlogs "[ChatView_Timer] Navigating with CoreWebView2.Navigate: $($synchash.ChatView_URL)"
                   $syncHash.chat_WebView2.CoreWebView2.Navigate($synchash.ChatView_URL)
                 }
                 else{
@@ -149,7 +149,7 @@ function Update-ChatView
                 }              
               }
               if($object.Show){
-                write-ezlogs "[ChatView_Timer] >>>> Showing Chat View" -loglevel 2
+                write-ezlogs "[ChatView_Timer] >>>> Showing Chat View"
                 $synchash.Chat_Icon.Kind = 'ChatRemove'
                 #$synchash.chat_column.Width="70*"
                 if($synchash.Chat_Splitter_Value -gt 0){
@@ -189,14 +189,14 @@ function Update-ChatView
                   write-ezlogs "[ChatView_Timer] >>>> Reloading chat_WebView2.CoreWebView2" -logtype Webview2
                   $synchash.chat_WebView2.Reload()                                                     
                 }else{
-                  write-ezlogs "[ChatView_Timer] Unable to Reload chat view, chat_webview2 is not initialized!" -loglevel 2 -warning
+                  write-ezlogs "[ChatView_Timer] Unable to Reload chat view, chat_webview2 is not initialized!" -warning
                 }
               }elseif($object.Reload -and -not [string]::IsNullOrEmpty($syncHash.Comments_TreeView.Nodes)){
                 write-ezlogs "[ChatView_Timer] [NOT_IMPLEMENTED]>>>> Reloading Comments_TreeView.Nodes" -logtype Webview2
             
               }            
               if($object.Hide){
-                write-ezlogs "[ChatView_Timer] >>>> Hiding Chat View" -loglevel 2
+                write-ezlogs "[ChatView_Timer] >>>> Hiding Chat View"
                 $synchash.Chat_View_Button.isChecked = $false
                 $synchash.Chat_Icon.Kind = 'Chat'
                 #$synchash.chat_column.Width="0"
@@ -217,17 +217,17 @@ function Update-ChatView
                 if($synchash.Comments_Grid.Visibility -eq 'Visible'){
                   $synchash.Comments_Grid.Visibility = 'Collapsed'
                 }else{
-                  write-ezlogs "[ChatView_Timer] Comments_Grid is already Hidden" -loglevel 2 -warning -Dev_mode
+                  write-ezlogs "[ChatView_Timer] Comments_Grid is already Hidden" -warning -loglevel 0 -Verboselog:$object.Verboselog
                 }
                 if($synchash.chat_WebView2.Visibility -eq 'Visible'){
                   $synchash.chat_WebView2.Visibility = 'Hidden'
                 }else{
-                  write-ezlogs "[ChatView_Timer] Chat_WebView2 is already Hidden" -loglevel 2 -warning -Dev_mode
+                  write-ezlogs "[ChatView_Timer] Chat_WebView2 is already Hidden" -warning -loglevel 0 -Verboselog:$object.Verboselog
                 }
               }             
               if($object.Disable){
                 try{
-                  write-ezlogs "[ChatView_Timer] >>>> Disabling Chat View" -loglevel 2
+                  write-ezlogs "[ChatView_Timer] >>>> Disabling Chat View" -loglevel 0 -Verboselog:$object.Verboselog
                   $synchash.Chat_View_Button.IsEnabled = $false
                   $synchash.Chat_View_Button.isChecked = $false
                   if($Object.Sender -is [Windows.Controls.Primitives.ToggleButton]){
@@ -246,7 +246,7 @@ function Update-ChatView
                     try{
                       $existing_Runspace = Stop-Runspace -thisApp $thisApp -runspace_name 'Get_YoutubeComments_RUNSPACE' -force
                     }catch{
-                      write-ezlogs " An exception occurred checking for existing runspace 'Get_YoutubeComments_RUNSPACE'" -showtime -catcherror $_
+                      write-ezlogs " An exception occurred checking for existing runspace 'Get_YoutubeComments_RUNSPACE'" -catcherror $_
                     }
                     $syncHash.Comments_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemsProperty)
                     $syncHash.Comments_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemProperty)
@@ -264,7 +264,7 @@ function Update-ChatView
                         $Null = $node.dispose()
                       }
                       $null = $synchash.Comments_TreeView.Nodes.dispose()
-                      write-ezlogs "[ChatView_Timer] >>>> Disposed $($count) nodes in Comments_TreeView"
+                      write-ezlogs "[ChatView_Timer] >>>> Disposed $($count) nodes in Comments_TreeView" -loglevel 0 -Verboselog:$object.Verboselog
                     }            
                     $synchash.Comments_Grid.Visibility = 'Collapsed'
                   }
@@ -290,6 +290,7 @@ function Update-ChatView
             'Hide' = $Hide
             'Sender' = $Sender
             'Disable' = $Disable
+            'Verboselog' = $Verboselog
       }))
       if(!$synchash.ChatView_timer.isEnabled){
         $synchash.ChatView_timer.start()

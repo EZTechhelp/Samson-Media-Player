@@ -179,7 +179,7 @@ function Start-AudioRecorder
             write-ezlogs "| Found raw converted wv $raw_wv" -showtime
             write-ezlogs "| Converting wv to flac with ffmpeg: $flac_output" -showtime
             try{
-              $null = ffmpeg -i $raw_wv -acodec flac $flac_output -y
+              $null = ffmpeg -i $raw_wv -acodec flac $flac_output -y -hide_banner -loglevel error
             }catch{
               write-ezlogs "An exception occurred converting $raw_wv to flac with ffmpeg" -showtime -catcherror $_
             }         

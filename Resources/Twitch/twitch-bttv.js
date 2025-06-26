@@ -12,6 +12,15 @@
 // @grant        none
 // ==/UserScript==
 
+//TrustedScriptURL
+if (window.trustedTypes && window.trustedTypes.createPolicy) { // Feature testing
+    window.trustedTypes.createPolicy('default', {
+        createHTML: string => string,
+        createScriptURL: string => string, // warning: this is unsafe!
+        createScript: string => string, // warning: this is unsafe!
+    });
+}
+
 (function betterttv() {
     var script = document.createElement('script');
     script.type = 'text/javascript';

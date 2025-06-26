@@ -96,7 +96,7 @@ function Register-WinRTEvent {
     $thisScript,  
     [switch]$Verboselog
   )
-  write-ezlogs ">>>> Registering SystemMediaTransportControl event: $eventName" -showtime
+  write-ezlogs ">>>> Registering SystemMediaTransportControl event: $eventName" -showtime -Dev_mode
   if($eventName -eq 'SessionsChanged'){
     $action = { 
       param($sender,[Windows.Media.Control.SessionChangedEventArgs]$e)

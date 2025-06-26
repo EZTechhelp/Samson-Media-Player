@@ -72,6 +72,8 @@ function Set-DiscordPresense {
           if($Start){   
             #Build variables for dsclient params from provided media
             if($thisApp.Config.Dev_mode){write-ezlogs "| Media for Discord Presense $($media | out-string)" -showtime -Dev_mode -logtype Discord }
+            #Default ActivityType
+            $ActivityType = 'Listening'
             switch ($media) {
               {$_.source -match 'Spotify' -or $_.url -match 'spotify:'} {
                 $SmallImageKey = 'spotify'

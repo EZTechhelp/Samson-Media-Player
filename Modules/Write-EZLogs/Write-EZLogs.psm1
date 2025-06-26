@@ -2,14 +2,14 @@
     .Name
     Write-EZLogs
 
-    .Version 
+    .Version
     0.3.2
 
     .SYNOPSIS
-    Module that provides advanced console output formating and multi-threaded log writing.  
+    Module that provides advanced console output formating and multi-threaded log writing.
 
     .DESCRIPTION
-       
+
     .Configurable Variables
 
     .Requirements
@@ -19,7 +19,6 @@
     Start-Runspace
 
     .EXAMPLE
-    - $logfile = Start-EZLogs -logfile_directory "C:\Logs" -- Creates log file and directory (if not exists) and returns path to the log file. Log file name is "ScriptName-ScriptVersion.log"
     - Write-EZLogs "Message text I want output to console (as yellow) and log file, both with a timestamp" -color yellow -showtime
 
     .OUTPUTS
@@ -27,19 +26,12 @@
 
     .Author
     EZTechhelp - https://www.eztechhelp.com
-
-    .NOTES
-    - Added ability to allow outputting to console only if no log file or directory is given vs trying to create a default log file
-    - Added parameter catcherror for write-logs for quick error handling and logging
-    - Added parameter verbosedebug to simulate write-verbose formatting
-    - Added output of 'hours' for StopWatch timer logging
-    - Set default of parameter LogDateFormat for Stop-EZLogs to match Start-EZLogs
 #>
 if(!$thisApp){
   $Global:thisapp = [hashtable]::Synchronized(@{})
 }
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Start EZLogs Function
 #----------------------------------------------
 function Start-EZLogs
@@ -65,7 +57,7 @@ function Start-EZLogs
     [string]$Encoding = 'unicode'
   )
 
-  #Create out logging queue if not already to store all messages to be dequeued and written by the log writing runspace
+  #Create logging queue if not already to store all messages to be dequeued and written by the log writing runspace
   if(!$thisApp.LogMessageQueue){
     $thisApp.LogMessageQueue = [System.Collections.Concurrent.ConcurrentQueue`1[object]]::New()
   }
@@ -73,7 +65,7 @@ function Start-EZLogs
   if($Start_Timer){$Global:globalstopwatch = [system.diagnostics.stopwatch]::StartNew()}
 
   #If no script path was provided, generate from pscommandpath
-  if(!$ScriptPath){$ScriptPath = $PSCommandPath} 
+  if(!$ScriptPath){$ScriptPath = $PSCommandPath}
 
   #Set default global log level if provided
   if((-not [string]::IsNullOrEmpty($Global_Log_Level) -and $thisApp.Config.Log_Level -eq $null -and $thisApp) -or ($thisApp.Dev)){
@@ -104,9 +96,8 @@ function Start-EZLogs
   #If name for log file not provided, generate from source script name
   if(!$logfile_name){
     $logfile_name = "$([System.IO.Path]::GetFileNameWithoutExtension($MyInvocation.ScriptName)).log"
-  } 
-  
-  #Set full logfile path and create directory if needed 
+  }
+  #Set full logfile path and create directory if needed
   if($logfile_directory -and $logfile_name){
     $logfile = [System.IO.Path]::Combine($logfile_directory, $logfile_name)
     if (!([System.IO.Directory]::Exists($logfile_directory))){
@@ -131,7 +122,7 @@ function Start-EZLogs
   }
 
   #Create/Set the logging header if enabled
-  if(!$noheader){  
+  if(!$noheader){
     Write-ezlogs -showtime:$false -CallBack:$false -logOnly -Logheader -logfile $logfile -thisApp $thisApp
   }
 
@@ -144,17 +135,17 @@ function Start-EZLogs
   #Give the people what they want!
   return $logfile
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Start EZLogs Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Write-EZLogs Function
 #----------------------------------------------
-function Write-EZLogs 
+function Write-EZLogs
 {
   <#
-      
+
       .CatchError
       Always Output to console/host and log file
 
@@ -178,7 +169,7 @@ function Write-EZLogs
     [switch]$Success,
     [switch]$Perf,
     [switch]$PrintErrors,
-    [array]$ErrorsToPrint,    
+    [array]$ErrorsToPrint,
     [switch]$CallBack = $true,
     [switch]$Logheader,
     [switch]$isError,
@@ -217,10 +208,11 @@ function Write-EZLogs
     [switch]$AlertAudio,
     [switch]$NoTypeHeader,
     [switch]$Verboselog,
+    $ActivatedAction,
     $synchash = $synchash
   )
   begin {
-    if($GetMemoryUsage -and $PriorityLevel -ge 3){
+    if($GetMemoryUsage -and ($PriorityLevel -ge 3 -or $Dev_mode)){
       $MemoryUsage = " | $(Get-MemoryUsage -forceCollection:$forceCollection)"
     }
     if($thisApp.Log_Level -ne $Null){
@@ -239,18 +231,18 @@ function Write-EZLogs
         $enablelogs = $true
         $logtype = 'Perf'
         $logOnly = $true
-      }elseif($GlobalLogLevel -eq '0' -or $loglevel -eq '0'){
+      }elseif(($GlobalLogLevel -eq '0' -or $loglevel -eq '0') -and !$Verboselog){
         $enablelogs = $false
         $done = $true
         return
       }elseif($LogLevel -eq '1' -and $LogLevel -le $GlobalLogLevel){
         $enablelogs = $false
-      }elseif($LogLevel -eq '2' -and $logLevel -le $GlobalLogLevel){
+      }elseif($LogLevel -eq '2' -and ($logLevel -le $GlobalLogLevel -or $Verboselog)){
         $enablelogs = $true
         $logOnly = $true
-      }elseif($LogLevel -eq '3' -and $logLevel -le $GlobalLogLevel){
+      }elseif($LogLevel -eq '3' -and ($logLevel -le $GlobalLogLevel -or $Verboselog)){
         $enablelogs = $true
-      }elseif($LogLevel -eq '4' -and $logLevel -le $GlobalLogLevel){
+      }elseif($LogLevel -eq '4' -and ($logLevel -le $GlobalLogLevel -or $Verboselog)){
         $enablelogs = $true
         $VerboseDebug = $true
       }elseif($LogLevel -gt $GlobalLogLevel -and -not [string]::IsNullOrEmpty($GlobalLogLevel)){
@@ -267,6 +259,7 @@ function Write-EZLogs
       }elseif($Verboselog){
         $enablelogs = $true
         $logOnly = $true
+        $VerboseDebug = $true
       }elseif($Dev_mode -and !$thisApp.Dev){
         $enablelogs = $false
         $done = $true
@@ -361,7 +354,7 @@ function Write-EZLogs
               $logfile = $thisApp.Config.Threading_Log_File
             }elseif(-not [string]::IsNullOrEmpty($thisApp.Config.Log_file)){
               $logfile = $thisApp.Config.Log_file
-            } 
+            }
           }
           'Tor' {
             $logfile = $thisApp.Config.Tor_Log_File
@@ -378,7 +371,7 @@ function Write-EZLogs
         }
       }
     }
-    
+
     if([string]::IsNullOrEmpty($thisApp.Config.Log_file) -and [string]::IsNullOrEmpty($logfile) -and [string]::IsNullOrEmpty($thisApp.Log_file) -and [string]::IsNullOrEmpty($thisApp)){
       $script:thisapp = [hashtable]::Synchronized(@{})
     }
@@ -400,10 +393,10 @@ function Write-EZLogs
           $AlertUI = $true
         }
       }
-    }  
+    }
     if([string]::IsNullOrEmpty($logfile) -and -not [string]::IsNullOrEmpty($thisApp.Log_file)){
       $logfile = $thisApp.Log_file
-    }elseif([string]::IsNullOrEmpty($logfile) -and -not [string]::IsNullOrEmpty($thisApp.Config.Log_file)){ 
+    }elseif([string]::IsNullOrEmpty($logfile) -and -not [string]::IsNullOrEmpty($thisApp.Config.Log_file)){
       $logfile = $thisApp.Config.Log_file
     }elseif([string]::IsNullOrEmpty($logfile)){
       $enablelogs = $false
@@ -452,7 +445,7 @@ function Write-EZLogs
               if($appid){
                 if($thisApp.Config){
                   $thisapp.config.Installed_AppID = $appid
-                }              
+                }
               }else{
                 $appid = (Get-AllStartApps -Name 'Powershell').AppID
               }
@@ -475,11 +468,12 @@ function Write-EZLogs
                 AppLogo = $applogo
                 Header = $Header
                 HeroImage = "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"
+                ActivatedAction = $ActivatedAction
               }
               Update-MainWindow -synchash $synchash -thisApp $thisApp -Toast $Toast
             }else{
-              New-BurntToastNotification -AppID $appid -Text "$AlertMessage" -AppLogo $AppLogo -Header $Header -HeroImage "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"
-            }           
+              New-BurntToastNotification -AppID $appid -Text "$AlertMessage" -AppLogo $AppLogo -Header $Header -HeroImage "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico" -ActivatedAction $ActivatedAction
+            }
           }catch{
             $Exception_MSG = $_.Exception
             $PositionMessage = $_.InvocationInfo.PositionMessage | out-string
@@ -522,7 +516,7 @@ function Write-EZLogs
       }
     }
     try{
-      if($CallBack){  
+      if($CallBack){
         if($callpath){
           if($callpath -notmatch "\:"){
             $callpath += ":$((Get-PSCallStack)[1].Position.StartLineNumber -join ':')"
@@ -543,8 +537,8 @@ function Write-EZLogs
           }else{
             $callpath = "[$((Get-PSCallStack)[1].FunctionName)]"
             $text = "$callpath $text"
-          }    
-        } 
+          }
+        }
       }
     }catch{
       if($logfile){[System.IO.File]::AppendAllText($logfile, "An exception occurred processing callpaths in Write-ezlogs: $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$Encoding)}else{throw $_}
@@ -579,7 +573,7 @@ function Write-EZLogs
               'foregroundcolor' = $foregroundcolor
               'showtime' = $showtime
               'logtime' = $logtime
-              'NoNewLine' = $NoNewLine    
+              'NoNewLine' = $NoNewLine
               'StartSpaces' = $StartSpaces
               'Separator' = $Separator
               'BackgroundColor' = $BackgroundColor
@@ -638,15 +632,15 @@ function Write-EZLogs
         if($CatchError){
           $text = "[ERROR] $text at: $($CatchError | out-string)`n";$color = "red"
         }
-        if($PrintErrors -and $ErrorsToPrint -is [array]){   
+        if($PrintErrors -and $ErrorsToPrint -is [array]){
           Write-Host -Object "$text$timestamp [PRINT ALL ERRORS]" -ForegroundColor Red
           $e_index = 0
           foreach ($e in $ErrorsToPrint)
           {
             $e_index++
-            Write-Host -Object "[$([datetime]::Now)] [ERROR $e_index Message] =========================================================================`n$($e.Exception | out-string)`n |+ $($e.InvocationInfo.PositionMessage)`n |+ $($e.ScriptStackTrace)`n`n" -ForegroundColor Red;        
+            Write-Host -Object "[$([datetime]::Now)] [ERROR $e_index Message] =========================================================================`n$($e.Exception | out-string)`n |+ $($e.InvocationInfo.PositionMessage)`n |+ $($e.ScriptStackTrace)`n`n" -ForegroundColor Red
           }
-          return  
+          return
         }
         if($Warning -and $VerboseDebug){
           if($showtime){
@@ -657,7 +651,7 @@ function Write-EZLogs
           if($showtime){
             Write-Host -Object "[$([datetime]::Now.ToString($DateTimeFormat))] " -NoNewline
           }
-          Write-Warning ($wrn = "$text")  
+          Write-Warning ($wrn = "$text")
         }elseif($Success){
           if($showtime){
             Write-Host -Object "[$([datetime]::Now.ToString($DateTimeFormat))] " -NoNewline
@@ -696,12 +690,12 @@ function Write-EZLogs
             Write-Host -Object $text -ForegroundColor:$Color -NoNewline:$NoNewLine -BackgroundColor:$BackGroundColor
           }else{
             Write-Host -Object $text -ForegroundColor:$Color -NoNewline:$NoNewLine
-          }    
-        }     
-        
+          }
+        }
+
         if($LinesAfter -ne 0){
           for ($i = 0; $i -lt $LinesAfter; $i++) {
-            write-host "`n" -NoNewline  
+            write-host "`n" -NoNewline
           }
         }
       }
@@ -709,11 +703,11 @@ function Write-EZLogs
     return
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Write-EZLogs Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Write-LogMessage Function
 #----------------------------------------------
 function Write-LogMessage {
@@ -727,7 +721,6 @@ function Write-LogMessage {
     [switch]$shutdown
   )
   try{
-    #TODO: Refactor all of this, most importantly implement StringBuilder to build entire string then only one scripblock needed to actually write to file
     $Message = @{}
     $ProcessMessage = $thisApp.LogMessageQueue.TryDequeue([ref]$message)
     $text = $($message.text)
@@ -741,7 +734,7 @@ function Write-LogMessage {
         }catch{
           start-sleep -Milliseconds 100
           [System.IO.File]::AppendAllText($message.logfile, "[ERROR] [WRITE-EZLOGS-LinesBefore]: $_ -- Original String: $($sb.ToString())" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
-        }       
+        }
       }
       if($message.Logheader){
         if([string]::IsNullOrEmpty($thisApp.Config.App_Name) -and -not [string]::IsNullOrEmpty($thisScript.Name)){
@@ -765,12 +758,11 @@ function Write-LogMessage {
         #ManagementObjectSearcher is faster than Get-CimInstance
         $query = [System.Management.ObjectQuery]::new("SELECT Caption,Version,FreePhysicalMemory,LastBootUpTime FROM Win32_OperatingSystem")
         $searcher = [System.Management.ManagementObjectSearcher]::new($query)
-        $results = $searcher.get()    
+        $results = $searcher.get()
         $searcher.Dispose()
         $LAST_UP_TIME = [DateTime]::Now.Subtract([Timespan]::FromSeconds([System.Diagnostics.Stopwatch]::GetTimestamp() / [System.Diagnostics.Stopwatch]::Frequency)).ToString()
-        #$LAST_UP_TIME = ($results | Select-Object @{LABEL='LastBootUpTime';EXPRESSION={$_.ConverttoDateTime($_.lastbootuptime)}}).LastBootUpTime
         if($LAST_UP_TIME){
-          $LAST_UP_TIME = $LAST_UP_TIME.toString()
+          $LAST_UP_TIME = $LAST_UP_TIME
         }else{
           $LAST_UP_TIME = $results.LastBootUpTime
         }
@@ -778,7 +770,7 @@ function Write-LogMessage {
           $query = [System.Management.ObjectQuery]::new("SELECT Manufacturer,Version FROM Win32_BIOS")
           $searcher = [System.Management.ManagementObjectSearcher]::new($query)
           $bios_info = $searcher.get()
-          $searcher.Dispose()    
+          $searcher.Dispose()
           $query = [System.Management.ObjectQuery]::new("SELECT name FROM Win32_Processor")
           $searcher = [System.Management.ManagementObjectSearcher]::new($query)
           $cpu_info = $searcher.get()
@@ -815,10 +807,10 @@ Last Boot Up Time    : $LAST_UP_TIME
 Windows Directory    : $env:windir
 Default Audio Device : $($default_output_Device.FriendlyName)
 ###################### Logging Started - [$([datetime]::Now)] ##########################
-"@          
+"@
         if($default_output_Device -is [System.IDisposable]){
           $default_output_Device.dispose()
-        }    
+        }
       }
       if($message.CatchError){
         try{
@@ -850,25 +842,23 @@ $(if(-not [string]::IsNullOrEmpty(($message.CatchError.InvocationInfo.UnboundArg
           if($message.ClearErrors){
             $error.clear()
           }
-        }  
+        }
       }
       if($message.PrintErrors -and $message.ErrorsToPrint -is [array]){
         try{
           $e_index = 0
-          foreach ($e in $message.ErrorsToPrint)
-          {
+          foreach ($e in $message.ErrorsToPrint){
             $e_index++
-            [void]$sb.AppendLine("[$([datetime]::Now)] [PRINT ERROR $e_index Message] =========================================================================`n[Exception]: $($e.Exception)`n`n|+ [PositionMessage]: $($e.InvocationInfo.PositionMessage)`n`n|+ [ScriptStackTrace]: $($e.ScriptStackTrace)`n-------------------------------------------------------------------------`n`n")      
+            [void]$sb.AppendLine("[$([datetime]::Now)] [PRINT ERROR $e_index Message] =========================================================================`n[Exception]: $($e.Exception)`n`n|+ [PositionMessage]: $($e.InvocationInfo.PositionMessage)`n`n|+ [ScriptStackTrace]: $($e.ScriptStackTrace)`n-------------------------------------------------------------------------`n`n")
           }
-          [System.IO.File]::AppendAllText($message.logfile, "$($sb.ToString())",[System.Text.Encoding]::Unicode) 
-        }catch{ 
+          [System.IO.File]::AppendAllText($message.logfile, "$($sb.ToString())",[System.Text.Encoding]::Unicode)
+        }catch{
           start-sleep -Milliseconds 100
           $e_index = 0
           $sb = [System.Text.StringBuilder]::new()
-          foreach ($e in $message.ErrorsToPrint)
-          {
+          foreach ($e in $message.ErrorsToPrint){
             $e_index++
-            [void]$sb.AppendLine("[$([datetime]::Now)] [PRINT ERROR $e_index Message] =========================================================================`n[Exception]: $($e.Exception)`n`n|+ [PositionMessage]: $($e.InvocationInfo.PositionMessage)`n`n|+ [ScriptStackTrace]: $($e.ScriptStackTrace)`n-------------------------------------------------------------------------`n`n")        
+            [void]$sb.AppendLine("[$([datetime]::Now)] [PRINT ERROR $e_index Message] =========================================================================`n[Exception]: $($e.Exception)`n`n|+ [PositionMessage]: $($e.InvocationInfo.PositionMessage)`n`n|+ [ScriptStackTrace]: $($e.ScriptStackTrace)`n-------------------------------------------------------------------------`n`n")
           }
           [System.IO.File]::AppendAllText($message.logfile, ("$text$($message.timestamp) [ERROR] [WRITE-EZLOGS] [$((Get-PSCallStack)[1].FunctionName)] `n $($_.Exception | out-string)`n |+ $($_.InvocationInfo.PositionMessage)`n |+ $($_.ScriptStackTrace)") + "Original String: $($sb.ToString())",[System.Text.Encoding]::Unicode)
         }finally{
@@ -877,7 +867,7 @@ $(if(-not [string]::IsNullOrEmpty(($message.CatchError.InvocationInfo.UnboundArg
           }
         }
         return
-      }  
+      }
       if($message.enablelogs){
         if(!$message.NoTypeHeader){
           if($message.VerboseDebug){
@@ -901,16 +891,16 @@ $(if(-not [string]::IsNullOrEmpty(($message.CatchError.InvocationInfo.UnboundArg
         if($message.PERF){
           try{
             if($message.Perftimer -is [system.diagnostics.stopwatch]){
-              $Time = $message.Perftimer.Elapsed                 
+              $Time = $message.Perftimer.Elapsed
             }elseif($message.Perftimer -is [Timespan]){
               $Time = $message.Perftimer
             }else{
               $Time -eq $null
             }
             if($Time.Minutes -gt 0 -or $Time.hours -gt 0){
-              $perfstate = '[+HIGHLOAD]: '
+              $perfstate = ' [+HIGHLOAD]:'
             }elseif($Time.Seconds -gt 0){
-              $perfstate = '[WARNING] '
+              $perfstate = ' [WARNING]'
             }else{
               $perfstate = ''
             }
@@ -922,12 +912,12 @@ $(if(-not [string]::IsNullOrEmpty(($message.CatchError.InvocationInfo.UnboundArg
           }catch{
             start-sleep -Milliseconds 100
             [System.IO.File]::AppendAllText($message.logfile, "$($message.timestamp)$MessageHeader $text`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS-LOGONLY-PERF] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
-          }     
+          }
         }
         #Append final built string
         try{
           [void]$sb.AppendLine("$($message.timestamp)$perfstate$MessageHeader $text$TimeText$($message.MemoryUsage)")
-        }catch{ 
+        }catch{
           start-sleep -Milliseconds 100
           [System.IO.File]::AppendAllText($message.logfile, "$($message.timestamp)$MessageHeader $text$($message.MemoryUsage)`n[ERROR] [WRITE-EZLOGS] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string)" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
         }
@@ -939,17 +929,17 @@ $(if(-not [string]::IsNullOrEmpty(($message.CatchError.InvocationInfo.UnboundArg
           }catch{
             start-sleep -Milliseconds 100
             [System.IO.File]::AppendAllText($message.logfile, "`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS-LinesAfter] [$((Get-PSCallStack)[1].FunctionName)] `n $($_ | out-string) -- Original String: $($sb.ToString())" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
-          }            
+          }
         }
         #Finally write built string to log file
         try{
           [System.IO.File]::AppendAllText($message.logfile, "$($sb.ToString())",[System.Text.Encoding]::$($message.Encoding))
-        }catch{ 
+        }catch{
           start-sleep -Milliseconds 100
           #Try small delay first
           try{
             [System.IO.File]::AppendAllText($message.logfile, "`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS +1] [$((Get-PSCallStack).ToString())] `n $($_ | out-string) -- Original String: $($sb.ToString())" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
-          }catch{ 
+          }catch{
             #Try falling back to global log file if available, else throw
             if($thisApp.Log_File){
               [System.IO.File]::AppendAllText($thisApp.Log_File, "`n[$([datetime]::Now)] [ERROR] [WRITE-EZLOGS +2] [$((Get-PSCallStack).ToString())] `n $($_ | out-string) -- Original String: $($sb.ToString())" + ([Environment]::NewLine),[System.Text.Encoding]::$($message.Encoding))
@@ -972,11 +962,11 @@ $(if(-not [string]::IsNullOrEmpty(($message.CatchError.InvocationInfo.UnboundArg
     $Text = $Null
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Write-LogMessage Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-LogWriter Function
 #----------------------------------------------
 function Get-LogWriter{
@@ -994,7 +984,7 @@ function Get-LogWriter{
   if(!$logfile){$logfile = $thisApp.Log_file}
   if($startup){
     try{
-      $log_Writer_ScriptBlock = {  
+      $log_Writer_ScriptBlock = {
         param (
           $thisApp = $thisApp,
           [string]$logfile = $logfile,
@@ -1017,15 +1007,12 @@ function Get-LogWriter{
           [System.IO.File]::AppendAllText($thisApp.Log_File, "$runspace_error_text" + "Original string: $($originalString)" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
         }
       }
-      #$keys = $PSBoundParameters.keys
-      #$Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant" -and $_.Name -in $keys){$_}}}     
       Start-Runspace $log_Writer_ScriptBlock -Variable_list $PSBoundParameters -StartRunspaceJobHandler -logfile $Logfile -runspace_name "Log_Writer_Runspace" -thisApp $thisapp -verboselog:$Verboselog -cancel_runspace -RestrictedRunspace -function_list Write-LogMessage
       if($StartupWait){
         while(!$thisApp.LogMessageQueue -or !$thisApp.LogWriterEnabled){
           start-sleep -Milliseconds 100
-        }   
+        }
       }
-      #$Variable_list = $Null
       $log_Writer_ScriptBlock = $Null
     }catch{
       throw $_
@@ -1041,11 +1028,11 @@ function Get-LogWriter{
     $thisApp.LogWriterEnabled = $false
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-LogWriter Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Stop EZLogs
 #----------------------------------------------
 function Stop-EZLogs
@@ -1065,13 +1052,13 @@ function Stop-EZLogs
     [switch]$PrintErrors,
     [ValidateSet('ascii','bigendianunicode','default','oem','string','unicode','unknown','utf32','utf7','utf8')]
     [string]$Encoding = 'unicode'
-  )  
+  )
   if($ErrorSummary -and $PrintErrors){
     write-ezlogs -PrintErrors:$PrintErrors -ErrorsToPrint $ErrorSummary
     if($clearErrors){
       $error.Clear()
     }
-  }  
+  }
   Get-LogWriter -shutdown -thisApp $thisApp -shutdownWait:$ShutdownWait -WaitSecs $WaitSecs
   if($stoptimer -and $globalstopwatch)
   {
@@ -1085,13 +1072,13 @@ function Stop-EZLogs
       [System.IO.File]::AppendAllText($logfile, "$days`Hours        : $($globalstopwatch.elapsed.hours)`nMinutes      : $($globalstopwatch.elapsed.Minutes)`nSeconds      : $($globalstopwatch.elapsed.Seconds)`nMilliseconds : $($globalstopwatch.elapsed.Milliseconds)" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
     }
     $($globalstopwatch.stop())
-    $($globalstopwatch.reset()) 
+    $($globalstopwatch.reset())
   }
   if($logfile){
-    [System.IO.File]::AppendAllText($logfile, "###################### Logging Finished - [$([datetime]::Now)] ######################`n" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)  
+    [System.IO.File]::AppendAllText($logfile, "###################### Logging Finished - [$([datetime]::Now)] ######################`n" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
   }
-}  
-#---------------------------------------------- 
+}
+#----------------------------------------------
 #endregion Stop EZLogs
 #----------------------------------------------
 #Export-ModuleMember -Function @('Start-EZLogs','Write-EZLogs','Stop-EZLogs','Get-LogWriter','Write-LogMessage')

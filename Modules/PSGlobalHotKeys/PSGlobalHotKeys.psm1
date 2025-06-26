@@ -35,7 +35,8 @@ function Get-GlobalHotKeys{
     $thisApp,
     [switch]$Register,
     [switch]$UnRegister,
-    [switch]$Shutdown
+    [switch]$Shutdown,
+    [switch]$Verboselog
   )
   try{
     if($thisApp.Config.startup_perf_timer){
@@ -45,28 +46,29 @@ function Get-GlobalHotKeys{
       [void][System.Reflection.Assembly]::LoadFrom("$($thisApp.Config.Current_folder)\Assembly\EZT-MediaPlayer\Hotkeys.dll")
     }
     if($UnRegister){
+      write-ezlogs "| Disposing and unregistering existing hot keys"
       if($synchash.VolUphotkey -is [System.IDisposable]){
-        write-ezlogs "| Disposing and unregistering existing VolUphotkey" -loglevel 2
+        write-ezlogs "| Disposing and unregistering existing VolUphotkey" -loglevel 0 -Verboselog:$Verboselog
         [Void]$synchash.VolUphotkey.dispose()
         $synchash.VolUphotkey = $null
       } 
       if($synchash.VolDownhotkey -is [System.IDisposable]){
-        write-ezlogs "| Disposing and unregistering existing VolDownhotkey" -loglevel 2
+        write-ezlogs "| Disposing and unregistering existing VolDownhotkey" -loglevel 0 -Verboselog:$Verboselog
         [Void]$synchash.VolDownhotkey.dispose()
         $synchash.VolDownhotkey = $null
       }  
       if($synchash.VolMutehotkey -is [System.IDisposable]){
-        write-ezlogs "| Disposing and unregistering existing VolMutehotkey" -loglevel 2
+        write-ezlogs "| Disposing and unregistering existing VolMutehotkey" -loglevel 0 -Verboselog:$Verboselog
         [Void]$synchash.VolMutehotkey.dispose()
         $synchash.VolMutehotkey = $null
       }
       if($synchash.Restarthotkey -is [System.IDisposable]){
-        write-ezlogs "| Disposing and unregistering existing Restarthotkeykey" -loglevel 2
+        write-ezlogs "| Disposing and unregistering existing Restarthotkeykey" -loglevel 0 -Verboselog:$Verboselog
         [Void]$synchash.Restarthotkey.dispose()
         $synchash.Restarthotkey = $null
       }
       if($synchash.Overlayhotkey -is [System.IDisposable]){
-        write-ezlogs "| Disposing and unregistering existing Overlayhotkey" -loglevel 2
+        write-ezlogs "| Disposing and unregistering existing Overlayhotkey" -loglevel 0 -Verboselog:$Verboselog
         [Void]$synchash.Overlayhotkey.dispose()
         $synchash.Overlayhotkey = $null
       }
@@ -86,7 +88,7 @@ function Get-GlobalHotKeys{
       }
     }
     if($Register){
-      write-ezlogs "#### Registering Global HotKeys ####" -color yellow -linesbefore 1 -LogLevel 2
+      write-ezlogs "#### Registering Global HotKeys ####" -color yellow -linesbefore 1
       if($synchash.MiniPlayer_Viewer.isInitialized){
         $Window = [System.Windows.Interop.WindowInteropHelper]::new($synchash.MiniPlayer_Viewer) 
       }elseif($synchash.Window.isInitialized){
@@ -96,7 +98,7 @@ function Get-GlobalHotKeys{
         [Action`1[mrousavy.HotKey]]$Action = {
           try{
             if($args -eq $synchash.VolUphotkey){
-              write-ezlogs ">>>> Global VolUphotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" -showtime      
+              write-ezlogs ">>>> Global VolUphotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)"   
               if($thisApp.Config.Media_Volume -lt 100){            
                 if($thisApp.Config.Media_Volume -ge 95){
                   $thisApp.Config.Media_Volume = 100
@@ -104,14 +106,14 @@ function Get-GlobalHotKeys{
                   $thisApp.Config.Media_Volume = ($thisApp.Config.Media_Volume + 1)
                 }
                 if($synchash.Volume_Slider -and $synchash.Volume_Slider.value -ne $thisApp.Config.Media_Volume){
-                  write-ezlogs "| Increasing volume by 1: $($thisApp.Config.Media_Volume)" -showtime
+                  write-ezlogs "| Increasing volume by 1: $($thisApp.Config.Media_Volume)" -loglevel 0 -Verboselog:$Verboselog
                   $synchash.Volume_Slider.value = $thisApp.Config.Media_Volume  
                 }       
               }else{
-                write-ezlogs "| Volume is already at max $($thisApp.Config.Media_Volume)" -showtime -warning
+                write-ezlogs "| Volume is already at max: $($thisApp.Config.Media_Volume)" -warning -loglevel 0 -Verboselog:$Verboselog
               }
             }elseif($args -eq $synchash.VolDownhotkey){
-              write-ezlogs ">>>> Global VolDownhotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" -showtime    
+              write-ezlogs ">>>> Global VolDownhotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)"
               if($thisApp.Config.Media_Volume -gt 0){             
                 if($thisApp.Config.Media_Volume -le 5){
                   $thisApp.Config.Media_Volume = 0
@@ -119,23 +121,23 @@ function Get-GlobalHotKeys{
                   $thisApp.Config.Media_Volume = ($thisApp.Config.Media_Volume - 1)
                 }
                 if($synchash.Volume_Slider -and $synchash.Volume_Slider.value -ne $thisApp.Config.Media_Volume){
-                  write-ezlogs "| Decreasing volume by 1: $($thisApp.Config.Media_Volume)" -showtime
+                  write-ezlogs "| Decreasing volume by 1: $($thisApp.Config.Media_Volume)" -loglevel 0 -Verboselog:$Verboselog
                   $synchash.Volume_Slider.value = $thisApp.Config.Media_Volume
                 }                            
               }else{
-                write-ezlogs "| Volume is already at lowest $($thisApp.Config.Media_Volume)" -showtime -warning
+                write-ezlogs "| Volume is already at lowest $($thisApp.Config.Media_Volume)" -warning -loglevel 0 -Verboselog:$Verboselog
               }
             }elseif($args -eq $synchash.VolMutehotkey){
-              write-ezlogs ">>>> Global VolMutehotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" -showtime  
+              write-ezlogs ">>>> Global VolMutehotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" 
               Set-Mute -thisApp $thisApp -synchash $synchash
             }elseif($args -eq $synchash.Restarthotkey){
-              write-ezlogs ">>>> Global Restarthotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" -showtime  
+              write-ezlogs ">>>> Global Restarthotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)"
               Restart-Media -thisApp $thisApp -synchash $synchash    
             }elseif($args -eq $synchash.Overlayhotkey){
-              write-ezlogs ">>>> Global Overlayhotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" -showtime  
+              write-ezlogs ">>>> Global Overlayhotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" 
               Open-MiniPlayer -thisApp $thisApp -synchash $synchash -Overlay         
             }else{
-              write-ezlogs "Pressed registered Hotkey with action assigned: $($args | out-string)" -showtime -Warning
+              write-ezlogs "Pressed registered Hotkey with action assigned: $($args | out-string)" -Warning
             }
           }catch{
             write-ezlogs "An exception occurred in global hotkey action" -CatchError $_
@@ -168,7 +170,7 @@ function Get-GlobalHotKeys{
               $Modifier = [System.Windows.Input.ModifierKeys]::None
             }
             if([System.Windows.Input.Key]::($hotkey.key)){
-              write-ezlogs "| Registering $($hotkey.Name) - Modifier: $($Modifier) + Key: $($hotkey.key)" -showtime
+              write-ezlogs "| Registering $($hotkey.Name) - Modifier: $($Modifier) + Key: $($hotkey.key)"
               try{
                 $synchash.$($hotkey.Name) = [mrousavy.HotKey]::New($Modifier,[System.Windows.Input.Key]::($hotkey.key),$Window,$Action)
               }catch{
@@ -201,7 +203,6 @@ $($thisApp.Config.GlobalHotKeys | out-string)
         if($synchash.Hotkeys_Icon.Kind -eq 'KeyboardOffOutline'){
           $synchash.Hotkeys_Icon.Kind = 'KeyboardOutline'
         }
-        #$synchash.VolUphotkey = [mrousavy.HotKey]::New([System.Windows.Input.ModifierKeys]::Alt -bor [System.Windows.Input.ModifierKeys]::Control,[System.Windows.Input.Key]::E,$Window,$Action)
       }
     }
     return

@@ -199,7 +199,8 @@ function Start-SplashScreen{
     [switch]$PlayAudio,
     [switch]$UseDll = $true,
     [string]$PlayAudio_FilePath,
-    [string]$SplashMessage
+    [string]$SplashMessage,
+    [string]$logdateformat
   )     
   $global:hash = [hashtable]::Synchronized(@{}) 
   if($Startup){
@@ -256,7 +257,8 @@ function Start-SplashScreen{
       [switch]$UseDll = $UseDll,
       $thisApp = $thisApp,
       $hash = $hash,
-      $synchash = $synchash
+      $synchash = $synchash,
+      [string]$logdateformat = $logdateformat
     )
     $splash_load_measure = [system.diagnostics.stopwatch]::StartNew()
     try{
@@ -592,7 +594,7 @@ function Start-SplashScreen{
       if($Splash_Load_Controls.Elapsed.Seconds -ge 1){
         $Splash_Load_Controls_Status = " [WARNING]"
       }
-      $datetime = "[$([datetime]::Now.ToString())]"
+      $datetime = "[$([datetime]::Now.ToString($logdateformat))]"
       $message = @"
 ####################### SPLASH SCREEN STARTUP #######################
 $datetime$Splash_dll_load_Status [PERF] Load Splash Assembly: | Time: $($Splash_dll_load_Measure.Elapsed.hours):$($Splash_dll_load_Measure.Elapsed.Minutes):$($Splash_dll_load_Measure.Elapsed.Seconds):$(([string]$Splash_dll_load_Measure.Elapsed.Milliseconds).PadLeft(3,'0'))
@@ -653,13 +655,13 @@ $datetime$Splash_Load_Controls_Status [PERF] Splash_Load_Controls: | Time: $($Sp
     if($dll_load_Measure.Elapsed.Seconds -ge 1){
       $perfstatus = ' [WARNING]'
     }   
-    $Start_SplashScreen_Perf = "[$([datetime]::Now.ToString())]$perfstatus [PERF] [Start-SplashScreen:432] >>>> Load Assembly Startup: | Time: $($dll_load_Measure.Elapsed.Minutes):$($dll_load_Measure.Elapsed.Seconds):$($dll_load_Measure.Elapsed.Milliseconds)"
+    $Start_SplashScreen_Perf = "[$([datetime]::Now.ToString($logdateformat))]$perfstatus [PERF] [Start-SplashScreen:432] >>>> Load Assembly Startup: | Time: $($dll_load_Measure.Elapsed.Minutes):$($dll_load_Measure.Elapsed.Seconds):$($dll_load_Measure.Elapsed.Milliseconds)"
     if($startup_perf_timer){ 
       $perfstatus = $null
       if($Start_RunSpace_Measure.Elapsed.Seconds -ge 1){
         $perfstatus = ' [WARNING]'
       }
-      return "[$([datetime]::Now.ToString())]$perfstatus [PERF] [Start-SplashScreen:540] Start_RunSpace Total: | Time: $($Start_RunSpace_Measure.Elapsed.Minutes):$($Start_RunSpace_Measure.Elapsed.Seconds):$($Start_RunSpace_Measure.Elapsed.Milliseconds)`n$Start_SplashScreen_Perf"
+      return "[$([datetime]::Now.ToString($logdateformat))]$perfstatus [PERF] [Start-SplashScreen:540] Start_RunSpace Total: | Time: $($Start_RunSpace_Measure.Elapsed.Minutes):$($Start_RunSpace_Measure.Elapsed.Seconds):$($Start_RunSpace_Measure.Elapsed.Milliseconds)`n$Start_SplashScreen_Perf"
     }            
   }catch{
     write-ezlogs "An exception occurred in Get-LoadScreen" -catcherror $_

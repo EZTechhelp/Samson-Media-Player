@@ -140,253 +140,221 @@ function Out-screenshot
     [switch]$getvideoimage,
     [int]$Width,
     [int]$height,
-    [switch]$captureCursor
+    [switch]$captureCursor,
+    $thisApp = $thisApp,
+    $synchash = $synchash,
+    $hashSetup = $hashSetup,
+    $MahDialog_hash = $MahDialog_hash
   )
-  #$bounds = [drawing.rectangle]::FromLTRB($horStart,$verStart,$horEnd,$verEnd)
-    
-  #$Screen = [System.Windows.Forms.SystemInformation]::VirtualScreen
-    
-  #$Width = $Screen.Width
-  #$Height = $Screen.Height
-  #$Left = $Screen.Left
-  #$Top = $Screen.Top
-  #$bitmap = New-Object System.Drawing.Bitmap $Width, $Height
-
-  #$horStart = get-EvenNumber $($($start.x * $scale))
-  #$verStart = get-EvenNumber $($($start.y * $scale))
-  #$horEnd = get-EvenNumber $($($end.x * $scale))
-  #$verEnd = get-EvenNumber $($($end.y * $scale))
-  #$boxSize = "box size: Xa: $horStart, Ya: $verStart, Xb: $horEnd, Yb: $verEnd, $($horEnd - $horStart) pixels wide, $($verEnd - $verStart) pixles tall"
-  $synchash = $synchash
-  $hashedit = $hashedit
-  $hashsetup = $hashSetup
-  $MahDialog_hash = $MahDialog_hash
-  if($getvideoimage){
-    $Width =  $synchash.videoview.ActualWidth
-    $Height = $synchash.videoview.ActualHeight
-    $Size = New-Object System.Drawing.Size($Width, $Height)
-    $translatepoint = $synchash.videoview.TranslatePoint([system.windows.point]::new(0,0),$this)
-    $locationfromscreen = $synchash.Window.PointToScreen($translatepoint)
-  }else{
-    $Width =  $synchash.Window.ActualWidth
-    $Height = $synchash.Window.ActualHeight
-    $Size = New-Object System.Drawing.Size($Width, $Height)
-    $translatepoint = $synchash.Window.TranslatePoint([system.windows.point]::new(0,0),$this)
-    $locationfromscreen = $synchash.Window.PointToScreen($translatepoint)
-  }
-
-  $Point = New-Object System.Drawing.Point($locationfromscreen.x,$locationfromscreen.y)
-  $ScreenshotObject = New-Object Drawing.Bitmap $Width, $Height
-  $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject)
-  #write-ezlogs "Position of video view $($translatepoint | out-string)" -showtime
-  #write-ezlogs "Position of video view $($locationfromscreen | out-string)" -showtime
-  #write-ezlogs "Position of video view $($Point | out-string)" -showtime
-  #write-ezlogs "size $($size | out-string)" -showtime
-  #write-ezlogs "Width $($Width | out-string)" -showtime
-  #write-ezlogs "Height $($Height | out-string)" -showtime
-  $DrawingGraphics.CopyFromScreen($Point, [Drawing.Point]::Empty, $Size)
-  #$jpg = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.height
-  #$graphics = [drawing.graphics]::FromImage($jpg)
-  #$graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-  # $graphics.CopyFromScreen($Left, $Top, 0, 0, $bitmap.Size)
-  #$graphics.CopyFromScreen($bounds.Location,[Drawing.Point]::Empty,$bounds.Size)
-  if($captureCursor)
-  {
-    #write-ezlogs "CaptureCursor is true" -showtime
-    $scale = get-screenScaling
-    $mousePos = [System.Windows.Forms.Cursor]::Position
-    $mouseX = $mousePos.x * $scale
-    $mouseY = $mousePos.y * $scale
-    if(($mouseX -gt $horStart)-and($mouseX -lt $horEnd)-and($mouseY -gt $verStart) -and ($mouseY -lt $verEnd))
+  try{
+    if($getvideoimage){
+      if($synchash.videoview){
+        $Width =  $synchash.videoview.ActualWidth
+        $Height = $synchash.videoview.ActualHeight
+        $Size = New-Object System.Drawing.Size($Width, $Height)
+        $translatepoint = $synchash.videoview.TranslatePoint([system.windows.point]::new(0,0),$this)
+        $locationfromscreen = $synchash.Window.PointToScreen($translatepoint)
+      }else{
+        write-ezlogs "Cannot get screenshot of video image, videoview not found!" -warning 
+        return
+      }
+    }else{
+      if($synchash.MiniPlayer_Viewer.isVisible){
+        $Width =  $synchash.MiniPlayer_Viewer.ActualWidth
+        $Height = $synchash.MiniPlayer_Viewer.ActualHeight
+        $Size = New-Object System.Drawing.Size($Width, $Height)
+        $translatepoint = $synchash.MiniPlayer_Viewer.TranslatePoint([system.windows.point]::new(0,0),$this)
+        $locationfromscreen = $synchash.MiniPlayer_Viewer.PointToScreen($translatepoint)
+      }elseif($synchash.Window.isVisible){
+        $Width =  $synchash.Window.ActualWidth
+        $Height = $synchash.Window.ActualHeight
+        $Size = New-Object System.Drawing.Size($Width, $Height)
+        $translatepoint = $synchash.Window.TranslatePoint([system.windows.point]::new(0,0),$this)
+        $locationfromscreen = $synchash.Window.PointToScreen($translatepoint)
+      }else{
+        write-ezlogs "Cannot get screenshot, miniplayer or main window not found!" -warning 
+        return
+      }
+    }
+    $Point = [System.Drawing.Point]::new($locationfromscreen.x,$locationfromscreen.y)
+    $ScreenshotObject = [Drawing.Bitmap]::new($Width,$Height)
+    $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject)
+    $DrawingGraphics.CopyFromScreen($Point, [Drawing.Point]::Empty, $Size)  
+    if($captureCursor)
     {
-      #write-verbose "Mouse is in the box"
-      #Get the position in the box
-      $x = $mouseX - $horStart
-      $y = $mouseY - $verStart
-      #write-verbose "X: $x, Y: $y"
-      #Add a 4 pixel red-dot
-      $pen = [drawing.pen]::new([drawing.color]::Red)
-      $pen.width = 5
-      $pen.LineJoin = [Drawing.Drawing2D.LineJoin]::Bevel
-      #$hand = [System.Drawing.SystemIcons]::Hand
-      #$arrow = [System.Windows.Forms.Cursors]::Arrow
-      #$graphics.DrawIcon($arrow, $x, $y)
-      $DrawingGraphics.DrawRectangle($pen,$x,$y, 5,5)
-      #$mousePos
+      #write-ezlogs "CaptureCursor is true" -showtime
+      $scale = get-screenScaling
+      $mousePos = [System.Windows.Forms.Cursor]::Position
+      $mouseX = $mousePos.x * $scale
+      $mouseY = $mousePos.y * $scale
+      if(($mouseX -gt $horStart)-and($mouseX -lt $horEnd)-and($mouseY -gt $verStart) -and ($mouseY -lt $verEnd))
+      {
+        #Get the position in the box
+        $x = $mouseX - $horStart
+        $y = $mouseY - $verStart
+        $pen = [drawing.pen]::new([drawing.color]::Red)
+        $pen.width = 5
+        $pen.LineJoin = [Drawing.Drawing2D.LineJoin]::Bevel
+        $DrawingGraphics.DrawRectangle($pen,$x,$y, 5,5)
+      }
     }
-  }
-  $ScreenshotObject.Save($path,"PNG")
-  if($synchash.MediaLibraryFloat.isVisible){
-    $newpathname = "MediaLibrary_$([System.io.path]::GetFileName($path))"
-    $pathdir = [System.io.directory]::GetParent($path)
-    $path = [system.io.path]::Combine($pathdir,$newpathname)
-    $before = $synchash.MediaLibraryFloat.TopMost
-    $synchash.MediaLibraryFloat.TopMost = $true
-    $synchash.MediaLibraryFloat.Activate() 
-    start-sleep -Milliseconds 200
-    write-ezlogs ">>>> Taking Snapshot of MediaLibrary_viewer" -showtime
-    $Width =  $synchash.MediaLibraryFloat.ActualWidth
-    $Height = $synchash.MediaLibraryFloat.ActualHeight
-    $Size = New-Object System.Drawing.Size($Width, $Height)
-    $translatepoint = $synchash.MediaLibraryFloat.TranslatePoint([system.windows.point]::new(0,0),$this)
-    $locationfromscreen = $synchash.MediaLibraryFloat.PointToScreen($translatepoint)
-    $Point = New-Object System.Drawing.Point($locationfromscreen.x,$locationfromscreen.y)
-    $ScreenshotObject = New-Object Drawing.Bitmap $Width, $Height
-    $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject)
-    $DrawingGraphics.CopyFromScreen($Point, [Drawing.Point]::Empty, $Size)
     $ScreenshotObject.Save($path,"PNG")
-    $synchash.MediaLibraryFloat.TopMost = $before
-  }
-  if($hashsetup.Window.isVisible){
-    $newpathname = "Setup_$([System.io.path]::GetFileName($path))"
-    $pathdir = [System.io.directory]::GetParent($path)
-    $path = [system.io.path]::Combine($pathdir,$newpathname)
-    $before = $hashsetup.Window.TopMost
-    $Width =  $hashsetup.Window.ActualWidth
-    $Height = $hashsetup.Window.ActualHeight
-    $Size = New-Object System.Drawing.Size($Width, $Height)
-    $ScreenshotObject = New-Object Drawing.Bitmap $Width, $Height
-    $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject)
-    
-    #$hashsetup.Window.Dispatcher.Invoke("Normal",[action]{     
-    try{
-      Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -Screenshot -TopMost "true"    
-    }catch{
-      write-ezlogs "An exception occurred getting snapshot of first run setup window" -showtime -catcherror $_
-    }   
-    #})
-    $screenshotwaittimer = 0
-    while(!$synchash.SnapshotPoint -and $screenshotwaittimer -lt 4){
-      start-sleep 1
-      $screenshotwaittimer++
-    }
-    $DrawingGraphics.CopyFromScreen($synchash.SnapshotPoint, [Drawing.Point]::Empty, $Size)
-    $ScreenshotObject.Save($path,"PNG")
-    Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -TopMost "$before"
-    #$hashsetup.Window.Dispatcher.Invoke("Normal",[action]{  
-    #    $hashsetup.Window.TopMost = $before 
-    #})
-  }
-  if($synchash.MahDialog_hash.window.isVisible){
-    try{
-      $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
-      $pattern = "[$illegal]"
-      if($MahDialog_hash.window.title){
-        $title = ([Regex]::Replace($($synchash.MahDialog_hash.window.title), $pattern, '')).trim()    
-      }else{
-        $title = "WebLogin_"
-      }
-      $Width =  $synchash.MahDialog_hash.window.ActualWidth
-      $Height = $synchash.MahDialog_hash.window.ActualHeight
-      $newpathname = "$($title)_$([System.io.path]::GetFileName($path))"
-      $pathdir = [System.io.directory]::GetParent($path)
-      $path = [system.io.path]::Combine($pathdir,$newpathname)
-      $before = $MahDialog_hash.window.TopMost
-      $Size = New-Object System.Drawing.Size($Width, $Height)
-      $ScreenshotObject = New-Object Drawing.Bitmap $Width, $Height
-      $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject)
-      $synchash.MahDialog_hash.Window.Dispatcher.Invoke("Normal",[action]{     
-          try{
-            $synchash.MahDialog_hash.window.TopMost = $true
-            $synchash.MahDialog_hash.window.Activate() 
-            start-sleep -Milliseconds 500
-            write-ezlogs ">>>> Taking Snapshot of Show-weblogon window - $before" -showtime
-            $translatepoint = $synchash.MahDialog_hash.window.TranslatePoint([system.windows.point]::new(0,0),$this)
-            $locationfromscreen = $synchash.MahDialog_hash.window.PointToScreen($translatepoint)
-            $synchash.SnapshotPoint = New-Object System.Drawing.Point($locationfromscreen.x,$locationfromscreen.y)
-           
-          }catch{
-            write-ezlogs "An exception occurred getting snapshot of Show-Weblogin window" -showtime -catcherror $_
-          }   
-      })
-      $DrawingGraphics.CopyFromScreen($synchash.SnapshotPoint, [Drawing.Point]::Empty, $Size)
-      $ScreenshotObject.Save($path,"PNG")
-      $synchash.MahDialog_hash.window.Dispatcher.Invoke("Normal",[action]{  
-          $synchash.MahDialog_hash.window.TopMost = $before 
-      })
-    }catch{
-      write-ezlogs "An exception occurred getting screenshot of Show-Weblogin window" -showtime -catcherror $_
-    }
-  }
-  if($hashedit.window.isVisible){
-    try{
-      $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
-      $pattern = "[$illegal]"
-      if($hashedit.window.title){
-        $title = ([Regex]::Replace($($hashedit.window.title), $pattern, '')).trim()    
-      }else{
-        $title = "Editor_"
-      }
-      $Width =  $hashedit.window.ActualWidth
-      $Height = $hashedit.window.ActualHeight
-      $newpathname = "$($title)_$([System.io.path]::GetFileName($path))"
-      $pathdir = [System.io.directory]::GetParent($path)
-      $path = [system.io.path]::Combine($pathdir,$newpathname)
-      $before = $hashedit.window.TopMost
-      $Size = New-Object System.Drawing.Size($Width, $Height)
-      $ScreenshotObject = New-Object Drawing.Bitmap $Width, $Height
-      $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject)
-      $hashedit.Window.Dispatcher.Invoke("Normal",[action]{     
-          try{
-            $hashedit.Window.TopMost = $true
-            $hashedit.Window.Activate() 
-            start-sleep -Milliseconds 500
-            write-ezlogs ">>>> Taking Snapshot of Show-ProfileEditor window - $before" -showtime
-            $translatepoint = $hashedit.Window.TranslatePoint([system.windows.point]::new(0,0),$this)
-            $locationfromscreen = $hashedit.Window.PointToScreen($translatepoint)
-            $synchash.SnapshotPoint = New-Object System.Drawing.Point($locationfromscreen.x,$locationfromscreen.y)
-           
-          }catch{
-            write-ezlogs "An exception occurred getting snapshot of Show-PorfileEditor window" -showtime -catcherror $_
-          }   
-      })
-      $DrawingGraphics.CopyFromScreen($synchash.SnapshotPoint, [Drawing.Point]::Empty, $Size)
-      $ScreenshotObject.Save($path,"PNG")
-      $hashedit.Window.Dispatcher.Invoke("Normal",[action]{  
-          $hashedit.Window.TopMost = $before 
-      })
-    }catch{
-      write-ezlogs "An exception occurred getting screenshot of editor window" -showtime -catcherror $_
-    }
-  }
-  if($synchash.AudioOptions_Viewer.isVisible){
-    try{
-      $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
-      $pattern = "[$illegal]"
-      if($synchash.AudioOptions_Viewer.title){
-        $title = ([Regex]::Replace($($synchash.AudioOptions_Viewer.title), $pattern, '')).trim()    
-      }else{
-        $title = "AudioOptions_"
-      }
-      $Width =  $synchash.AudioOptions_Viewer.ActualWidth
-      $Height = $synchash.AudioOptions_Viewer.ActualHeight
-      $newpathname = "$($title)_$([System.io.path]::GetFileName($path))"
-      $pathdir = [System.io.directory]::GetParent($path)
-      $path = [system.io.path]::Combine($pathdir,$newpathname)
-      $before = $synchash.AudioOptions_Viewer.TopMost
-      $Size = New-Object System.Drawing.Size($Width, $Height)
-      $ScreenshotObject = New-Object Drawing.Bitmap $Width, $Height
-      $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject)    
+    if($synchash.MediaLibraryFloat.isVisible){
       try{
-        $synchash.AudioOptions_Viewer.TopMost = $true
-        $synchash.AudioOptions_Viewer.Activate() 
-        start-sleep -Milliseconds 500
-        write-ezlogs ">>>> Taking Snapshot of Audio Options window - $before" -showtime
-        $translatepoint = $synchash.AudioOptions_Viewer.TranslatePoint([system.windows.point]::new(0,0),$this)
-        $locationfromscreen = $synchash.AudioOptions_Viewer.PointToScreen($translatepoint)
-        $synchash.SnapshotPoint = New-Object System.Drawing.Point($locationfromscreen.x,$locationfromscreen.y)          
+        $newpathname = "MediaLibrary_$([System.io.path]::GetFileName($path))"
+        $pathdir = [System.io.directory]::GetParent($path)
+        $path = [system.io.path]::Combine($pathdir,$newpathname)
+        $before = $synchash.MediaLibraryFloat.TopMost
+        $synchash.MediaLibraryFloat.TopMost = $true
+        $synchash.MediaLibraryFloat.Activate() 
+        start-sleep -Milliseconds 200
+        write-ezlogs ">>>> Taking Snapshot of MediaLibrary_viewer" -showtime
+        $Width =  $synchash.MediaLibraryFloat.ActualWidth
+        $Height = $synchash.MediaLibraryFloat.ActualHeight
+        $Size = [System.Drawing.Size]::new($Width, $Height)
+        $translatepoint = $synchash.MediaLibraryFloat.TranslatePoint([system.windows.point]::new(0,0),$this)
+        $locationfromscreen = $synchash.MediaLibraryFloat.PointToScreen($translatepoint)
+        $Point = [System.Drawing.Point]::new($locationfromscreen.x,$locationfromscreen.y)
+        $ScreenshotObject = [Drawing.Bitmap]::new($Width, $Height)
+        $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject)
+        $DrawingGraphics.CopyFromScreen($Point, [Drawing.Point]::Empty, $Size)
+        $ScreenshotObject.Save($path,"PNG")
+        $synchash.MediaLibraryFloat.TopMost = $before
       }catch{
-        write-ezlogs "An exception occurred getting snapshot of AudioOpions window" -showtime -catcherror $_
-      }   
-      $DrawingGraphics.CopyFromScreen($synchash.SnapshotPoint, [Drawing.Point]::Empty, $Size)
-      $ScreenshotObject.Save($path,"PNG")
-      $synchash.AudioOptions_Viewer.TopMost = $before 
-    }catch{
-      write-ezlogs "An exception occurred getting screenshot of Audio Options window" -showtime -catcherror $_
+        write-ezlogs "An exception occurred getting screenshot of MediaLibraryFloat" -showtime -catcherror $_
+      }
     }
-  }
-  if($DrawingGraphics){
-    $DrawingGraphics.Dispose()
+    if($hashsetup.Window.isVisible){
+      try{
+        Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -Screenshot -ScreenshotPath $path
+      }catch{
+        write-ezlogs "An exception occurred getting screenshot of settings window" -showtime -catcherror $_
+      }
+    }
+    if($synchash.MahDialog_hash.window.isVisible){
+      try{
+        $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
+        $pattern = "[$illegal]"
+        if($MahDialog_hash.window.title){
+          $title = ([Regex]::Replace($($synchash.MahDialog_hash.window.title), $pattern, '')).trim()    
+        }else{
+          $title = "WebLogin_"
+        }
+        $Width =  $synchash.MahDialog_hash.window.ActualWidth
+        $Height = $synchash.MahDialog_hash.window.ActualHeight
+        $newpathname = "$($title)_$([System.io.path]::GetFileName($path))"
+        $pathdir = [System.io.directory]::GetParent($path)
+        $path = [system.io.path]::Combine($pathdir,$newpathname)
+        $before = $MahDialog_hash.window.TopMost
+        $Size = [System.Drawing.Size]::new($Width, $Height)
+        $ScreenshotObject = [Drawing.Bitmap]::new($Width, $Height)
+        $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject)
+        $synchash.MahDialog_hash.Window.Dispatcher.Invoke("Normal",[action]{     
+            try{
+              $synchash.MahDialog_hash.window.TopMost = $true
+              $synchash.MahDialog_hash.window.Activate() 
+              start-sleep -Milliseconds 500
+              write-ezlogs ">>>> Taking Snapshot of Show-weblogon window - $before" -showtime
+              $translatepoint = $synchash.MahDialog_hash.window.TranslatePoint([system.windows.point]::new(0,0),$this)
+              $locationfromscreen = $synchash.MahDialog_hash.window.PointToScreen($translatepoint)
+              $synchash.SnapshotPoint = New-Object System.Drawing.Point($locationfromscreen.x,$locationfromscreen.y)
+           
+            }catch{
+              write-ezlogs "An exception occurred getting snapshot of Show-Weblogin window" -showtime -catcherror $_
+            }   
+        })
+        $DrawingGraphics.CopyFromScreen($synchash.SnapshotPoint, [Drawing.Point]::Empty, $Size)
+        $ScreenshotObject.Save($path,"PNG")
+        $synchash.MahDialog_hash.window.Dispatcher.Invoke("Normal",[action]{  
+            $synchash.MahDialog_hash.window.TopMost = $before 
+        })
+      }catch{
+        write-ezlogs "An exception occurred getting screenshot of Show-Weblogin window" -showtime -catcherror $_
+      }
+    }
+    if($hashedit.window.isVisible){
+      try{
+        $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
+        $pattern = "[$illegal]"
+        if($hashedit.window.title){
+          $title = ([Regex]::Replace($($hashedit.window.title), $pattern, '')).trim()    
+        }else{
+          $title = "Editor_"
+        }
+        $Width =  $hashedit.window.ActualWidth
+        $Height = $hashedit.window.ActualHeight
+        $newpathname = "$($title)_$([System.io.path]::GetFileName($path))"
+        $pathdir = [System.io.directory]::GetParent($path)
+        $path = [system.io.path]::Combine($pathdir,$newpathname)
+        $before = $hashedit.window.TopMost
+        $Size = [System.Drawing.Size]::new($Width, $Height)
+        $ScreenshotObject = [Drawing.Bitmap]::new($Width, $Height)
+        $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject)
+        $hashedit.Window.Dispatcher.Invoke("Normal",[action]{     
+            try{
+              $hashedit.Window.TopMost = $true
+              $hashedit.Window.Activate() 
+              start-sleep -Milliseconds 500
+              write-ezlogs ">>>> Taking Snapshot of Show-ProfileEditor window - $before" -showtime
+              $translatepoint = $hashedit.Window.TranslatePoint([system.windows.point]::new(0,0),$this)
+              $locationfromscreen = $hashedit.Window.PointToScreen($translatepoint)
+              $synchash.SnapshotPoint = New-Object System.Drawing.Point($locationfromscreen.x,$locationfromscreen.y)
+           
+            }catch{
+              write-ezlogs "An exception occurred getting snapshot of Show-PorfileEditor window" -showtime -catcherror $_
+            }   
+        })
+        $DrawingGraphics.CopyFromScreen($synchash.SnapshotPoint, [Drawing.Point]::Empty, $Size)
+        $ScreenshotObject.Save($path,"PNG")
+        $hashedit.Window.Dispatcher.Invoke("Normal",[action]{  
+            $hashedit.Window.TopMost = $before 
+        })
+      }catch{
+        write-ezlogs "An exception occurred getting screenshot of editor window" -showtime -catcherror $_
+      }
+    }
+    if($synchash.AudioOptions_Viewer.isVisible){
+      try{
+        $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
+        $pattern = "[$illegal]"
+        if($synchash.AudioOptions_Viewer.title){
+          $title = ([Regex]::Replace($($synchash.AudioOptions_Viewer.title), $pattern, '')).trim()    
+        }else{
+          $title = "AudioOptions_"
+        }
+        $Width =  $synchash.AudioOptions_Viewer.ActualWidth
+        $Height = $synchash.AudioOptions_Viewer.ActualHeight
+        $newpathname = "$($title)_$([System.io.path]::GetFileName($path))"
+        $pathdir = [System.io.directory]::GetParent($path)
+        $path = [system.io.path]::Combine($pathdir,$newpathname)
+        $before = $synchash.AudioOptions_Viewer.TopMost
+        $Size = [System.Drawing.Size]::new($Width, $Height)
+        $ScreenshotObject = [Drawing.Bitmap]::new($Width, $Height)
+        $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject)    
+        try{
+          $synchash.AudioOptions_Viewer.TopMost = $true
+          $synchash.AudioOptions_Viewer.Activate() 
+          start-sleep -Milliseconds 500
+          write-ezlogs ">>>> Taking Snapshot of Audio Options window - $before" -showtime
+          $translatepoint = $synchash.AudioOptions_Viewer.TranslatePoint([system.windows.point]::new(0,0),$this)
+          $locationfromscreen = $synchash.AudioOptions_Viewer.PointToScreen($translatepoint)
+          $synchash.SnapshotPoint = New-Object System.Drawing.Point($locationfromscreen.x,$locationfromscreen.y)          
+        }catch{
+          write-ezlogs "An exception occurred getting snapshot of AudioOpions window" -showtime -catcherror $_
+        }   
+        $DrawingGraphics.CopyFromScreen($synchash.SnapshotPoint, [Drawing.Point]::Empty, $Size)
+        $ScreenshotObject.Save($path,"PNG")
+        $synchash.AudioOptions_Viewer.TopMost = $before 
+      }catch{
+        write-ezlogs "An exception occurred getting screenshot of Audio Options window" -showtime -catcherror $_
+      }
+    }
+  }catch{
+    write-ezlogs "An exception occurred getting in Out-screenshot" -showtime -catcherror $_
+  }finally{
+    if($DrawingGraphics -is [System.IDisposable]){
+      $DrawingGraphics.Dispose()
+    }
   }
 }
 function get-EvenNumber
@@ -516,7 +484,7 @@ function New-ScreenShot
   [CmdletBinding()]
   PARAM(
     [Alias("name")]
-    [string]$videoName = 'out.mp4',
+    [string]$videoName,
     [Alias("framerate")]
     [string]$fps = 24,
     [int]$screen_Capture_Duration = 30,
@@ -529,17 +497,13 @@ function New-ScreenShot
     [Parameter(DontShow)]
     [bool]$startCapture = $true,
     [Parameter(DontShow)]
-    [switch]$leaveImages
+    [switch]$leaveImages,
+    $thisApp = $thisApp,
+    $synchash = $synchash,
+    $hashSetup = $hashSetup,
+    $MahDialog_hash = $MahDialog_hash
   )
   begin{
-
-
-    #Return the script name when running verbose, makes it tidier
-    #write-ezlogs "===========Executing $($MyInvocation.InvocationName)===========" -color yellow
-    #Return the sent variables when running debug
-    #Write-Debug "BoundParams: $($MyInvocation.BoundParameters|Out-String)"
-
-
     #Write-ezlogs 'Adding a new C# Assembly to get the Foreground Window' -showtime
     #This assembly is needed to get the current process
     #So we know when we have gone BACK to PowerShell
@@ -554,100 +518,11 @@ function New-ScreenShot
     )
 
     Add-Type $($typeDefinition -join "`n")
-
-    #write-ezlogs 'Loading other required assemblies' -showtime
-    #Add-Type -AssemblyName system.drawing
-    #add-type -AssemblyName system.windows.forms
-
-
-
-
-    #We need to calculate the sleep-time based on the FPS
-    #We want to know how many miliseconds to take a snap - as a whole number
-    #Based on the frame-rate
-    #This should be accurate enough
-    #write-ezlogs 'Calculating capture time' -showtime
-    #$msWait =[math]::Floor(1/$($fps/1000))
-
-    #write-ezlogs 'Checking videoName has extension' -showtime
-    if($videoName.EndsWith('.mp4') -ne $true)
-    {
-      write-ezlogs ' | Appending mp4 extension to video name since it was not supplied' -showtime
-      $videoName = "$videoName.mp4"
-    }
-
-
-    #write-ezlogs 'Generating output path' -showtime
-
-    $outputFilePath = "$outFolder\$videoName"
-    write-ezlogs " | outputFilePath: $outputFilePath" -showtime
-
-
   }process{
-
-    <#        write-ezlogs 'Checking for ffmpeg' -showtime
-        if(!$(test-path -Path $ffMPegPath -ErrorAction SilentlyContinue))
-        {
-        throw 'FFMPEG not found - either provide the path variable or run the install-ffmmpeg command'
-    }#>
-
-    <#        if(!$(test-path $tempPath))
-        {
-        write-ezlogs 'Creating ffmpeg temp directory' -showtime
-        try{
-        $outputDir = new-item -ItemType Directory -Path $tempPath -Force -ErrorAction Stop
-        write-ezlogs ' | Directory Created' -showtime
-        }catch{
-        throw "Unable to create ffmpeg temp directory $tempPath"
-        }
-        }else{
-        write-ezlogs 'Removing existing jpegs in folder and video file if it exists' -showtime
-        remove-item "$tempPath\*.jpg" -Force
-    }#>
-
-
-    #write-ezlogs 'Getting THIS POWERSHELL Session handle number so we know what to ignore' -showtime
-    #This is used in conjunction with the above service, to identify when we get back to the ps window
-    #$thisWindowHandle = $(Get-Process -Name *powershell* | Where-Object{$_.MainWindowHandle -eq $([userwindows]::GetForegroundWindow())}).MainWindowHandle
-
-    #write-ezlogs 'Ensuring output folder is ok' -showtime
-    if([system.io.directory]::Exists($outfolder))
-    {
-      #write-ezlogs ' | Output folder already exists.' -showtime
-      if([system.io.file]::Exists($outputFilePath))
-      {
-
-        if(!$force)
-        {
-          <#                    if($($Host.UI.PromptForChoice('Continue',"$outputFilePath already exists! Continue?", @('No','Yes'), 1)) -eq 1)
-              {
-              write-warning 'Removing file and continuing with screen capture'
-              }else{
-              return -1
-          }#>
-
-          remove-item $outputFilePath -Force -ErrorAction SilentlyContinue #SilentlyCont in case the file doesn't exist
-
-        }
-
-
-      }
-
-    }else{
+    if(![system.io.directory]::Exists($outfolder)){
       write-ezlogs 'Creating new output folder' -showtime
       new-item -Path $outFolder -ItemType Directory -Force
-
     }
-
-
-    #Get the window size
-    #write-ezlogs 'Getting the Window Size' -showtime
-    #Read-Host 'VIDEO RECORD, put mouse cursor in top left corner of capture area and press any key'
-    #$start = [System.Windows.Forms.Cursor]::Position
-    #Read-Host 'VIDEO RECORD, put mouse cursor in bottom right corner of capture area and press any key'
-    #$end = [System.Windows.Forms.Cursor]::Position
-
-    #$scale = get-screenScaling
     $VideoController = Get-CimInstance -Query 'SELECT VideoModeDescription FROM Win32_VideoController' | where {$_.VideoModeDescription} | select-object -Last 1
 
     if ($VideoController.VideoModeDescription -and $VideoController.VideoModeDescription -match '(?<ScreenWidth>^\d+) x (?<ScreenHeight>\d+) x .*$') {
@@ -655,128 +530,34 @@ function New-ScreenShot
       $Height = [Int] $Matches['ScreenHeight']
     } else {
       $ScreenBounds = [Windows.Forms.SystemInformation]::VirtualScreen
-
       $Width = $ScreenBounds.Width
       $Height = $ScreenBounds.Height
     }
-    #$horStart = get-EvenNumber $($($start.x * $scale))
-    #$verStart = get-EvenNumber $($($start.y * $scale))
-    #$horEnd = get-EvenNumber $($($end.x * $scale))
-    #$verEnd = get-EvenNumber $($($end.y * $scale))
-    #$boxSize = "box size: Xa: $horStart, Ya: $verStart, Xb: $horEnd, Yb: $verEnd, $($horEnd - $horStart) pixels wide, $($verEnd - $verStart) pixles tall"
-    #Write-Verbose $boxSize
-    #$startCapture = $true - Used to be used by confirm block
-    #But will leave it in here to quickly switch off capturing for debug purposes
-    #Wil move $startCapture = $true to be a hiidden boolean at the top though
-
     if($startCapture -eq $true -or $startCapture -eq 1)
     {
       write-ezlogs 'Starting screen capture' -showtime -Warning
       #Start up the capture process
       $num = 1 #Iteration number for screenshot naming
-      #$capture = $false #Switch to say when to stop capture
-      #Wait for PowerShell to loose focus
-      <#            while($capture -eq $false)
-          {
-          if([userwindows]::GetForegroundWindow() -eq $thisWindowHandle)
-          {
-          write-verbose 'Powershell still in focus'
-          Start-Sleep -Milliseconds 60
-          }else{
-          write-verbose 'Powershell lost focus'
-          Write-warning 'Focus Lost - Starting screen capture in 2 seconds'
-          Start-Sleep -Seconds 2
-          Write-Warning 'Capturing Screen'
-          $capture=$true
-          $stopwatch = [System.Diagnostics.stopwatch]::StartNew()
-          }
-      }#>
-      #Start-Sleep -Seconds 2
-      #write-ezlogs 'Capturing Screen' -showtime -color cyan
-            
-      #$capture=$true
-      #$stopwatch = [System.Diagnostics.stopwatch]::StartNew()
-            
-      #Do another loop until PowerShell regains focus
-      #while($capture -eq $true)
-      # {
-      <#                if([userwindows]::GetForegroundWindow() -eq $thisWindowHandle)
-          {
-          write-verbose 'Powershell has regained focus, so exit the loop'
-          $capture = $false
-      }#>
-      if($StopWatch.Elapsed.Seconds -eq $screen_Capture_Duration)
-      {
-        #write-ezlogs "Timer has reached $screen_Capture_Duration seconds. Ending screen capture" -showtime -Warning
-        $capture = $false
+      $x = "{0:D5}" -f $num
+      $path = "$tempPath\$($thisApp.Config.App_Name)_$(Get-date -Format 'MM-dd-yyyy_hh-mm-ss_tt').png"
+      $screenshotSplat = @{
+        Width = $Width
+        Height = $Height
+        path = $path
+        getvideoimage = $getvideoimage
+        captureCursor = $captureCursor
       }
-      else{
-        #write-verbose "Capturing - Seconds Elapsed: $($StopWatch.Elapsed.Seconds) -- Total Seconds to Capture: $screen_Capture_Duration"
-        $x = "{0:D5}" -f $num
-        $path = "$tempPath\$($thisApp.Config.App_Name)_$(Get-date -Format 'MM-dd-yyyy_hh-mm-ss_tt').png"
-        $screenshotSplat = @{
-          #horStart = $horStart
-          #vertStart = $verStart
-          #horEnd = $horEnd
-          #verEnd = $verEnd
-          Width = $Width
-          Height = $Height
-          path = $path
-          getvideoimage = $getvideoimage
-          captureCursor = $captureCursor
-        }
-        #Out-screenshot -horStart $horStart -verStart $verStart -horEnd $horEnd -verEnd $verEnd -path $path -captureCursor
-        out-screenShot @screenshotSplat
-        #$num++
-        #Start-Sleep -milliseconds 1
-      }
-      #}
-
+      out-screenShot @screenshotSplat
+      
     }else{
       return -1
     }
-
-
   }End{
-    #$stopwatch.stop()
-
-    #Gasp ... a write host appeared
-    #Since we aren't returning any objects this seems like a good option
-    #We are now returning objects, so this needs to be changed to a warning
-    #write-ezlogs 'Capture complete, compiling video' -showtime -color Cyan
-    #$actualFrameRate = $numberOfImages / $stopwatch.Elapsed.TotalSeconds
-    #$actualFrameRate = [math]::Ceiling($actualFrameRate)
-    #write-ezlogs " | Time Elapsed: $($stopwatch.Elapsed.ToString())" -showtime
-    #write-ezlogs " | Total Number of Images: $numberOfImages" -showtime
-    #write-ezlogs " | ActualFrameRate: $actualFrameRate" -showtime
-    #write-ezlogs 'Creating video using ffmpeg' -showtime
-    #write-ezlogs "Temp path - $tempPath" -showtime
-
-    return $path
-    #$ffmpegArg = "-framerate $actualFrameRate -i $tempPath\%05d.jpg -c:v libx264 -vf fps=$actualFrameRate -pix_fmt yuv420p $outputFilePath -y"
-    #Start-Process -FilePath $ffMPegPath -ArgumentList $ffmpegArg -Wait -NoNewWindow
-    <#        if(!$leaveImages)
-        {
-        write-ezlogs 'Cleaning up jpegs' -showtime
-        remove-item "$tempPath\*.jpg" -Force
-        }else{
-        write-ezlogs "Leaving images in: $tempPath" -showtime -Warning
-    }#>
-
-    if(test-path $tempPath)
-    {
-      return $tempPath
-    }else{
-      throw 'Error - Unable to find newly created file'
-    }
-
-
+    return $outFolder
   }
-
 }
 #---------------------------------------------- 
 #endregion Update-MediaTimer Function
 #----------------------------------------------
 #New-ScreenShot -outFolder $Capture_Output_Path -tempPath $thisScript.TempFolder -ffMPegPath "C:\ProgramData\chocolatey\lib\ffmpeg\tools\ffmpeg\bin\ffmpeg.exe" -fps 60 -screen_Capture_Duration $Capture_Duration_Seconds -captureCursor 1 -Verbose
 Export-ModuleMember -Function @('New-ScreenShot')
-

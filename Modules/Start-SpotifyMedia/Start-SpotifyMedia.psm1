@@ -37,7 +37,8 @@ function Start-SpotifyMedia{
     $thisApp,
     [switch]$use_WebPlayer = $thisapp.config.Spotify_WebPlayer,
     [switch]$Show_notifications = $thisApp.config.Show_notifications,
-    [switch]$RestrictedRunspace = $thisapp.config.Spotify_WebPlayer
+    [switch]$RestrictedRunspace = $thisapp.config.Spotify_WebPlayer,
+    [switch]$Verboselog
   )
   try{
     $Start_SpotifyMedia_Measure = [system.diagnostics.stopwatch]::StartNew()
@@ -83,7 +84,6 @@ function Start-SpotifyMedia{
       }
     }
     #Reset UI
-    #Update-MainPlayer -synchash $synchash -thisApp $thisApp -Now_Playing_Title "LOADING..." -Clear_Now_Playing_Artist -Clear_DisplayPanel_Bitrate
     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'Now_Playing_Title_Label' -Property 'DataContext' -value 'LOADING...'
     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'DisplayPanel_Bitrate_TextBlock' -Property 'text' -value '' -NullValue
     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'Now_Playing_Artist_Label' -Property 'DataContext' -value '' -NullValue
@@ -116,8 +116,7 @@ function Start-SpotifyMedia{
     write-ezlogs " An exception occurred resetting media or UI states" -showtime -catcherror $_
   }
   try{
-    if($Media){ 
-      #$synchash.update_Queue_timer.start()
+    if($Media){
       $spotify_scriptblock = {
         param (
           $Media = $Media,
@@ -125,7 +124,8 @@ function Start-SpotifyMedia{
           $thisApp = $thisApp,
           [switch]$use_WebPlayer = $use_WebPlayer,
           [switch]$Show_notifications = $Show_notifications,
-          [switch]$RestrictedRunspace = $RestrictedRunspace
+          [switch]$RestrictedRunspace = $RestrictedRunspace,
+          [switch]$Verboselog = $Verboselog
         )
         try{
           write-ezlogs ">>>> Selected Spotify Media to play $($Media.title)" -showtime
@@ -160,17 +160,16 @@ function Start-SpotifyMedia{
             }
           }        
           if($RestrictedRunspace){
-            write-ezlogs ">>>> Using restricted runspace, importing required modules"
+            write-ezlogs ">>>> Using restricted runspace, importing required modules" -LogLevel 0 -Verboselog:$Verboselog
             Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\Get-HelperFunctions\Get-HelperFunctions.psm1" -NoClobber -DisableNameChecking -Scope Local
             Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\EZT-AudioManager\EZT-AudioManager.psm1" -NoClobber -DisableNameChecking -Scope Local
             Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\Spotishell\Spotishell.psm1" -NoClobber -DisableNameChecking -Scope Local
           }
-          #$netstat = (NETSTAT.EXE -an) | Where-Object {($_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974') -and ($_ -match 'LISTENING' -or $_ -match 'ESTABLISHED')}
           if($thisApp.config.Use_Spicetify -and $netstat){
             try{   
-              write-ezlogs ">>>> Spicetify in use - Netstat Status: $($netstat | out-string)" -showtime
+              write-ezlogs ">>>> Spicetify in use - Netstat Status: $($netstat | out-string)" -LogLevel 0 -Verboselog:$Verboselog
               write-ezlogs "| Stopping Spotify playback with Invoke-RestMethod to 'http://127.0.0.1:8974/PAUSE' -- Spicetify.is_paused: $($synchash.Spicetify.is_paused)" -showtime
-              Invoke-RestMethod -Uri 'http://127.0.0.1:8974/PAUSE' -UseBasicParsing  
+              Invoke-RestMethod -Uri 'http://127.0.0.1:8974/PAUSE' -UseBasicParsing
               $synchash.Spicetify = ''
             }catch{
               write-ezlogs "An exception occurred executing Invoke-RestMethod to 'http://127.0.0.1:8974/PAUSE'" -showtime -catcherror $_
@@ -207,21 +206,6 @@ function Start-SpotifyMedia{
             }      
           }  
           Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -Add_First $media.id -RefreshQueue
-          <#      [array]$existingitems = $thisApp.config.Current_Playlist.values 
-              if(!$thisApp.config.Current_Playlist){
-              $thisApp.config.Current_Playlist = [SerializableDictionary[int,string]]::new()
-              }
-              if($thisApp.config.Current_Playlist.values -notcontains $media.id){
-              $null = $thisApp.config.Current_Playlist.clear()
-              $index = 0
-              write-ezlogs "[Start-SpotifyMedia] | Adding $($media.id) to Play Queue" -showtime -logtype Spotify
-              $null = $thisApp.config.Current_Playlist.add($index,$media.id) 
-              foreach($id in $existingitems){
-              $index = ($thisApp.config.Current_Playlist.keys | measure -Maximum).Maximum
-              $index++
-              $null = $thisApp.config.Current_Playlist.add($index,$id)
-              }    
-          }#>
         }catch{
           write-ezlogs "[Start-SpotifyMedia] An exception occurred updating current_playlist" -showtime -catcherror $_
         } 
@@ -275,7 +259,7 @@ function Start-SpotifyMedia{
             }        
           }
           if($use_WebPlayer){
-            write-ezlogs ">>>> Using Spotify Web Player with playback url $playback_url" -showtime
+            write-ezlogs ">>>> Using Spotify Web Player with playback url: $playback_url" -showtime
             if($syncHash.WebView2 -eq $null -or $synchash.Webview2.CoreWebView2 -eq $null){
               $synchash.Initialize_WebPlayer_timer.start()
             }
@@ -289,22 +273,17 @@ function Start-SpotifyMedia{
               Update-Notifications -Level 'WARNING' -Message "Unable to get Spotify_ID and Playback_URL, cannot continue! See logs" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout
               $synchash.Stop_media_timer.start()           
               return
-            }                                                             
-            #$synchash.Window.Dispatcher.invoke([action]{     
+            }
             if($media.duration_ms){
               $synchash.MediaPlayer_CurrentDuration = $media.duration_ms 
               [int]$hrs = $($([timespan]::FromMilliseconds($media.duration_ms)).Hours)
               [int]$mins = $($([timespan]::FromMilliseconds($media.duration_ms)).Minutes)
               [int]$secs = $($([timespan]::FromMilliseconds($media.duration_ms)).Seconds)   
-            }  
-            #$total_time = "$mins`:$secs" 
+            }
             if($hrs -lt 1){
               $hrs = '0'
             }  
-            $total_time = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
-            <#            if($playback_url -and $synchash.txtUrl){
-                Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'txtUrl' -Property 'text' -value $playback_url
-            }#>                    
+            $total_time = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"         
             $synchash.Media_Current_Title = $title 
             $synchash.Spotify_WebPlayer_title = $title      
             $synchash.Spotify_WebPlayer_URL = [Uri]$playback_url
@@ -345,7 +324,7 @@ function Start-SpotifyMedia{
               try{
                 if($psversiontable.PSVersion.Major -gt 5){
                   try{
-                    write-ezlogs "Running PowerShell $($psversiontable.PSVersion.Major), Importing Module Appx with parameter -usewindowspowershell" -showtime -warning
+                    write-ezlogs "Running PowerShell $($psversiontable.PSVersion.Major), Importing Module Appx with parameter -usewindowspowershell" -warning
                     Import-module Appx -usewindowspowershell
                   }catch{
                     write-ezlogs "An exception occurred executing import-module appx -usewindowspowershell" -CatchError $_
@@ -361,9 +340,9 @@ function Start-SpotifyMedia{
             }elseif([System.IO.File]::Exists($Spotify_Path)){
               $Spotify_Process = [System.Diagnostics.Process]::GetProcessesByName('Spotify')
               if($Spotify_Process){
-                write-ezlogs ">>>> Spotify process is currently running" -showtime -color cyan                          
+                write-ezlogs ">>>> Spotify process is currently running"                      
               }else{   
-                write-ezlogs ">>>> Spotify is installed but not running, starting process minimized" -showtime
+                write-ezlogs ">>>> Spotify is installed but not running, starting process minimized"
                 if($thisApp.Config.Dev_mode){
                   #$Spotify_Process = Start $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --enable-developer-mode --show-console --remote-debugging-port=9222 --no-default-browser-check" -PassThru  
                   $Spotify_Process = Start-Process $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --uri=$playback_url --enable-developer-mode --show-console --remote-debugging-port=9222 --no-default-browser-check" -PassThru
@@ -374,41 +353,39 @@ function Start-SpotifyMedia{
               }
               $Spotify_Process = [System.Diagnostics.Process]::GetProcessesByName('Spotify')
               Set-WindowState -InputObject $Spotify_Process -State HIDE
-              #wait for spotify to launch
-              #start-sleep 1
             }else{
-              write-ezlogs "Unable to find Spotify installed!" -showtime -Warning
+              write-ezlogs "Unable to find Spotify installed!" -Warning -logtype Spotify
               if($thisApp.Config.Install_Spotify){
-                write-ezlogs ">>>> Attempting to installing Spotify via chocolatey" -showtime    
+                write-ezlogs ">>>> Attempting to installing Spotify via chocolatey" -logtype Spotify
                 Update-Notifications -Level 'WARNING' -Message "Spotify is not installed! Attempting to install latest version via chocolatey" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout
                 if(!$(get-command choco*)){
                   $null = confirm-requirements -thisApp $thisApp -noRestart
                 }
                 write-ezlogs "----------------- [START] Install Spotify via chocolatey [START] -----------------" -showtime  -logtype Spotify
                 $chocoappmatch = choco list Spotify
-                write-ezlogs "$($chocoappmatch)" -showtime -logtype Spotify
+                write-ezlogs "$($chocoappmatch)" -logtype Spotify
                 $appinstalled = $($chocoappmatch | Select-String Spotify | out-string).trim()
                 if(-not [string]::IsNullOrEmpty($appinstalled) -and $appinstalled -notmatch 'Removing incomplete install for'){               
                   if([System.IO.Directory]::Exists("$($env:APPDATA)\Spotify")){
                     $appinstalled_Version = (Get-ItemProperty "$($env:APPDATA)\Spotify\Spotify.exe").VersionInfo.ProductVersion
                     if($appinstalled_Version){
-                      write-ezlogs "Chocolatey says Spotify is installed (Version: $($appinstalled)). Also detected installed exe: $($appinstalled_Version). Will continue to attemp to update Spotify..." -showtime -warning -logtype Spotify
+                      write-ezlogs "Chocolatey says Spotify is installed (Version: $($appinstalled)). Also detected installed exe: $($appinstalled_Version). Will continue to attemp to update Spotify..." -warning -logtype Spotify
                     }
                   }else{
-                    write-ezlogs "Chocolatey says Spotify is installed (Version: $($appinstalled)), yet it does not exist. Choco database likely corrupted or out-dated, performing remove of Spotify via Chocolately.." -showtime -warning -logtype Spotify
+                    write-ezlogs "Chocolatey says Spotify is installed (Version: $($appinstalled)), yet it does not exist. Choco database likely corrupted or out-dated, performing remove of Spotify via Chocolately.." -warning -logtype Spotify
                     $chocoremove = choco uninstall Spotify --confirm --force
-                    write-ezlogs "Verifying if Choco still thinks Spotify is installed..." -showtime -logtype Spotify
+                    write-ezlogs "Verifying if Choco still thinks Spotify is installed..." -logtype Spotify
                     $chocoappmatch = choco list Spotify
                     $appinstalled = $($chocoappmatch | Select-String Spotify | out-string).trim()
                     if(-not [string]::IsNullOrEmpty($appinstalled)){
-                      write-ezlogs "Choco still thinks Spotify is installed, unable to continue! Check choco logs at: $env:ProgramData\chocolatey\logs\chocolatey.log" -showtime -warning -logtype Spotify
+                      write-ezlogs "Choco still thinks Spotify is installed, unable to continue! Check choco logs at: $env:ProgramData\chocolatey\logs\chocolatey.log" -warning -logtype Spotify
                       return
                     }
                   }
                 }
                 $choco_install = choco upgrade Spotify --confirm --force --acceptlicense 4>&1 | Out-File -FilePath $thisApp.Config.SpotifyMedia_logfile -Encoding unicode -Append
-                write-ezlogs "----------------- [END] Install Spotify via chocolatey [END] -----------------" -showtime -logtype Spotify
-                write-ezlogs "Verifying if Spotify was installed successfully...." -showtime
+                write-ezlogs "----------------- [END] Install Spotify via chocolatey [END] -----------------" -logtype Spotify
+                write-ezlogs "Verifying if Spotify was installed successfully...." -logtype Spotify
                 $chocoappmatch = choco list Spotify
                 if($chocoappmatch){
                   $appinstalled = $($chocoappmatch | Select-String Spotify | out-string).trim()
@@ -417,14 +394,13 @@ function Start-SpotifyMedia{
                   if($appinstalled -match 'spotify'){
                     $appinstalled = $appinstalled.replace('spotify','').trim()
                     if([System.IO.File]::Exists("$($env:APPDATA)\Spotify\Spotify.exe")){
-                      write-ezlogs ">>>> Checking for spotify at $($env:APPDATA)\Spotify\Spotify.exe" -showtime
-                      $Spotify_directory = $("$($env:APPDATA)\Spotify\Spotify.exe") | Split-Path -parent
+                      write-ezlogs ">>>> Checking for spotify at $($env:APPDATA)\Spotify\Spotify.exe" -logtype Spotify
                       $Spotify_Path = $("$($env:APPDATA)\Spotify\Spotify.exe")
                     }
                   }                                
                 }                      
                 if([System.IO.File]::Exists($Spotify_Path)){
-                  write-ezlogs "Spotify is now installed, continuing to launch process" -showtime -Success
+                  write-ezlogs "Spotify is now installed, continuing to launch process" -Success
                   Update-Notifications -Level 'INFO' -Message "Spotify installed successfully! Attempting to start, you may need to login with your Spotify account!" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout
                   if($playback_url){
                     $Spotify_Process = Start-Process $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --uri=$playback_url --enable-developer-mode --show-console --remote-debugging-port=9222 --no-default-browser-check" -PassThru
@@ -447,13 +423,12 @@ function Start-SpotifyMedia{
             if(!$device){
               $device = $devices | Select-Object -last 1
             } 
-            write-ezlogs ">>>> Getting available spotify devices for app $($thisApp.config.App_Name) - Device: $device" -showtime           
-            #$Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name
+            write-ezlogs ">>>> Getting available spotify devices for app $($thisApp.config.App_Name) - Device: $device"
             if(!$device){
-              write-ezlogs "| No spotify devices available from api, waiting for spotify to start" -showtime
+              write-ezlogs "| No spotify devices available from api, waiting for spotify to start"
               if(!$Spotify_Process.MainWindowHandle){ 
                 while(!$Spotify_Process.MainWindowHandle -and $start_waittimer -le 120){
-                  write-ezlogs "....Waiting for Spotify Process" -showtime
+                  write-ezlogs "....Waiting for Spotify Process"
                   $start_waittimer++
                   $Spotify_Process = (Get-Process -Name 'Spotify*')
                   start-sleep -Milliseconds 100
@@ -466,7 +441,7 @@ function Start-SpotifyMedia{
                 $device = $devices | Select-Object -last 1
               }         
               if($device){
-                write-ezlogs "| Found Spotify device $($device | out-string)" -showtime 
+                write-ezlogs "| Found Spotify device: $($device | out-string)"
                 if(!$thisApp.config.Use_Spicetify){
                   $current_track = Get-CurrentTrack -ApplicationName $thisApp.config.App_Name -DeviceId $device.id  
                 }       
@@ -476,56 +451,57 @@ function Start-SpotifyMedia{
               $Spotify_Process = (Get-Process -Name 'Spotify*')            
             }
             if($Spotify_Process.id){
-              write-ezlogs ">>>> Found Spotify Process $($Spotify_Process.Id)" -showtime
+              write-ezlogs ">>>> Found Spotify Process: $($Spotify_Process.Id)" -showtime
               try{
-                write-ezlogs "| Hiding Spotify Process window" -showtime    
+                write-ezlogs "| Hiding Spotify Process window"
                 Set-WindowState -InputObject $Spotify_Process -State HIDE
               }catch{
-                write-ezlogs "An exception occurred in Set-WindowState" -showtime -catcherror $_
+                write-ezlogs "An exception occurred in Set-WindowState" -catcherror $_
               } 
               if($thisApp.Config.Enable_EQ){
                 try{
                   Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchash -start -wait -Startlibvlc -ProcessName 'spotify.exe'
                 }catch{
-                  write-ezlogs "An exception occurred executing Set-ApplicationAudioDevice for Spotify" -showtime -catcherror $_
+                  write-ezlogs "An exception occurred executing Set-ApplicationAudioDevice for Spotify" -catcherror $_
                 }           
               }                            
             }elseif($start_waittimer -ge 120){
-              write-ezlogs "Timed out waiting for Spotify process to start, cannot continue!" -showtime -warning -AlertUI
+              write-ezlogs "Timed out waiting for Spotify process to start, cannot continue!" -warning -AlertUI
               return
             }              
             #$current_track = $Null 
             $waittimer = 0      
             if($thisApp.config.Use_Spicetify){
               try{
-                write-ezlogs ">>>> Using Spicetify - starting playback with command http://127.0.0.1:8974/PLAYURI?$($playback_url)" -showtime
+                write-ezlogs ">>>> Using Spicetify - starting playback with command http://127.0.0.1:8974/PLAYURI?$($playback_url)"
                 Invoke-RestMethod -Uri "http://127.0.0.1:8974/PLAYURI?$($playback_url)" -UseBasicParsing                                
               }catch{
-                write-ezlogs "An exception occurred in Start-Playback using Invoke-RestMethod for url http://127.0.0.1:8974/PLAYURI?$($playback_url)" -showtime -catcherror $_
+                write-ezlogs "An exception occurred in Start-Playback using Invoke-RestMethod for url http://127.0.0.1:8974/PLAYURI?$($playback_url)" -catcherror $_
               }                                          
               while((!$synchash.Spicetify.is_playing -or $synchash.Spicetify.title -notmatch $media.title) -and $waittimer -lt 60){
-                write-ezlogs "| Waiting for Spotify Playback to begin...Spicetify: $($synchash.Spicetify | out-string)" -showtime
+                write-ezlogs "| Waiting for Spotify Playback to begin...Spicetify: $($synchash.Spicetify | out-string)"
                 if($waittimer -eq 10 -and !(Get-Process Spotify*)){
-                  write-ezlogs "Spotify should have started by now, lets restart Spotify" -showtime -warning
+                  write-ezlogs "Spotify should have started by now, lets restart Spotify" -warning
                   $Spotify_Process = Start-Process $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --enable-developer-mode --show-console --remote-debugging-port=9222 --no-default-browser-check" -PassThru
                 }
                 if((Get-Process Spotify*) -and $waittimer -eq 5){
                   try{
                     Invoke-RestMethod -Uri "http://127.0.0.1:8974/PLAYURI?$($playback_url)" -UseBasicParsing                                         
                   }catch{
-                    write-ezlogs "[Start-SpotifyMedia] An exception occurred in Start-Playback using Invoke-RestMethod for url http://127.0.0.1:8974/PLAYURI?$($playback_url)" -showtime -catcherror $_
+                    write-ezlogs "[Start-SpotifyMedia] An exception occurred in Start-Playback using Invoke-RestMethod for url http://127.0.0.1:8974/PLAYURI?$($playback_url)" -catcherror $_
                   }
                 }
                 $waittimer++
                 start-sleep 1
               }
+              #Hiding again to make sure as its not always at this point
               if($Spotify_Process){
                 try{
-                  write-ezlogs "| Hiding Spotify Process window..again?" -showtime    
+                  write-ezlogs "| Hiding Spotify Process window...again"
                   $Spotify_Process = [System.Diagnostics.Process]::GetProcessesByName('Spotify')
                   Set-WindowState -InputObject $Spotify_Process -State HIDE
                 }catch{
-                  write-ezlogs "An exception occurred in Set-WindowState" -showtime -catcherror $_
+                  write-ezlogs "An exception occurred in Set-WindowState" -catcherror $_
                 } 
               }
             }else{
@@ -536,7 +512,7 @@ function Start-SpotifyMedia{
                   }elseif($($Media.url)){
                     $url = $($Media.url)
                   }
-                  write-ezlogs ">>>> Starting playback of spotify playlist: $($url)" -showtime
+                  write-ezlogs ">>>> Starting playback of spotify playlist: $($url)"
                   Start-Playback -ContextUri $url -ApplicationName $thisApp.config.App_Name -DeviceId $device.id
                 }catch{
                   write-ezlogs "An exception occurred in Start-Playback for url $($url)" -showtime -catcherror $_
@@ -698,12 +674,12 @@ function Start-SpotifyMedia{
           if([System.IO.File]::Exists($stamped_image)){
             $Background_cached_image = $stamped_image
             if($synchash.MediaView_Image){
-              write-ezlogs ">>>> Setting MediaView_Image source to Spotify media image: $stamped_image"
+              write-ezlogs ">>>> Setting MediaView_Image source to Spotify media image: $stamped_image" -LogLevel 0 -Verboselog:$Verboselog
               Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaView_Image' -Property 'Source' -value $stamped_image
               Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'VLC_Grid_Row1' -Property 'Height' -value "100*"
             }
           }else{
-            write-ezlogs "No Spotify media image available, clearing MediaView_image source" -showtime -warning
+            write-ezlogs "No Spotify media image available, clearing MediaView_image source" -warning
             Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaView_Image' -Property 'Source' -value $Null -ClearValue
             Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'VLC_Grid_Row1' -Property 'Height' -value "*"
           }                                            
@@ -718,7 +694,7 @@ function Start-SpotifyMedia{
               [int]$mins = $($([timespan]::FromMilliseconds($current_track.item.duration_ms)).Minutes)
               [int]$secs = $($([timespan]::FromMilliseconds($current_track.item.duration_ms)).Seconds)                 
               $total_time = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
-              $Message = "Song : $($Name) - $($Artist)`nPlay Duration : $total_time`nSource : Spotify"                    
+              $Message = "Song : $($Name) - $($Artist)`nPlay Duration : $total_time`nSource : Spotify"                  
               if($thisApp.Config.Installed_AppID){
                 $appid = $thisApp.Config.Installed_AppID
               }else{
@@ -756,10 +732,10 @@ function Start-SpotifyMedia{
             $synchash.current_track_playing = $current_track
             if($thisApp.Config.Verbose_logging){
               if($thisApp.Config.Use_Spicetify){
-                write-ezlogs ">>>> Spicetify Current Track Playing: $($synchash.Spicetify | out-string)" -showtime
+                write-ezlogs ">>>> Spicetify Current Track Playing: $($synchash.Spicetify | out-string)"
               }else{
-                write-ezlogs ">>>> Current Track Playing: $($current_track | out-string)" -showtime
-              }         
+                write-ezlogs ">>>> Current Track Playing: $($current_track | out-string)"
+              }
             }              
             if($thisApp.Config.Use_Spicetify){
               while((!$synchash.Spicetify.is_playing -or $synchash.Spicetify.title -notmatch $media.Title)){
@@ -769,7 +745,7 @@ function Start-SpotifyMedia{
                   $status = $synchash.Spicetify.is_Playing
                   $pause = $synchash.Spicetify.is_paused 
                   $synchash.Last_Played_title = $Name                    
-                  write-ezlogs "| Waiting for Spicetify (Status: $status) - (Pause: $pause) - (Title: $($Name) - (Track Name: $($media.title)))" -showtime -warning                            
+                  write-ezlogs "| Waiting for Spicetify (Status: $status) - (Pause: $pause) - (Title: $($Name) - (Track Name: $($media.title)))" -warning                            
                 }catch{
                   write-ezlogs "An exception occurred getting the current track" -showtime -catcherror $_
               
@@ -780,7 +756,7 @@ function Start-SpotifyMedia{
               $current_Track_wait = 0
               while((!$Name -or !$current_track.is_playing -and ($current_Track_wait -lt 60))){
                 try{    
-                  write-ezlogs "Waiting for Get-CurrentTrack status to indicate Spotify is playing and responding with playing title $name..." -showtime -warning
+                  write-ezlogs "Waiting for Get-CurrentTrack status to indicate Spotify is playing and responding with playing title $name..." -warning
                   $current_track = Get-CurrentTrack -ApplicationName $thisApp.config.App_Name -DeviceId $device.id
                   write-ezlogs "| Current Track: $($Current_Track | out-string)"
                   $Name = $current_track.item.name
@@ -794,18 +770,17 @@ function Start-SpotifyMedia{
                   Start-sleep -Milliseconds 500
                   $current_Track_wait++        
                 }catch{
-                  write-ezlogs "An exception occurred getting the current track" -showtime -catcherror $_           
+                  write-ezlogs "An exception occurred getting the current track" -catcherror $_           
                 }
                 start-sleep -Milliseconds 500
               }
               if($current_Track_wait -ge 60){
-                write-ezlogs "Timed out waiting for status of current playing Spotify media!" -showtime -warning
+                write-ezlogs "Timed out waiting for status of current playing Spotify media!" -warning
                 Update-Notifications -Level 'WARNING' -Message "Timed out waiting to get status of current playing Spotify media!" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout
                 return
               
               }
-            }             
-            #$synchash.Window.Dispatcher.invoke([action]{    
+            }   
             if($thisApp.Config.Use_Spicetify){
               $Name = $synchash.Spicetify.title
               $Artist = $synchash.Spicetify.ARTIST             
@@ -823,7 +798,6 @@ function Start-SpotifyMedia{
             [int]$mins = $($([timespan]::FromMilliseconds($current_track.item.duration_ms)).Minutes)
             [int]$secs = $($([timespan]::FromMilliseconds($current_track.item.duration_ms)).Seconds)     
             $total_time = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
-            #$total_time = "$mins`:$secs" 
             if($Current_track.item.external_urls.spotify -and $synchash.txtUrl.text){
               Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'txtUrl' -Property 'text' -value $Current_track.item.external_urls.spotify
             }                       
@@ -833,7 +807,7 @@ function Start-SpotifyMedia{
             Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'Now_Playing_Label' -Property 'Visibility' -value 'Visible'
             Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'Now_Playing_Label' -Property 'DataContext' -value "PLAYING"   
             Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'Now_Playing_Artist_Label' -Property 'text' -value "$($Artist)"
-            write-ezlogs ">>>> Updating UI for media state" -showtime
+            write-ezlogs ">>>> Updating UI for media state" -LogLevel 0 -Verboselog:$Verboselog
             if($synchash.update_Queue_timer -and !$synchash.update_Queue_timer.isEnabled -and !$synchash.Playlists_Update_Timer.isEnabled){
               $synchash.update_Queue_timer.Tag = 'UpdatePlaylists'
               [void]$synchash.update_Queue_timer.start() 
@@ -870,21 +844,20 @@ function Start-SpotifyMedia{
                   Invoke-RestMethod -Uri 'http://127.0.0.1:8974/PLAY' -UseBasicParsing  
                 }         
               }else{
-                write-ezlogs "| Setting playback volume for Spotify to $($thisApp.Config.Media_Volume)"
+                write-ezlogs "| Setting playback volume for Spotify to: $($thisApp.Config.Media_Volume)"
                 Set-PlaybackVolume -VolumePercent $($thisApp.Config.Media_Volume) -ApplicationName $thisapp.config.App_Name
               }
             }catch{
               write-ezlogs "An exception occurred setting volume for spotify to $($thisApp.Config.Media_Volume)" -catcherror $_
             }
             if($Synchash.Timer){
-              write-ezlogs ">>>> Starting Media Timer" -showtime
+              write-ezlogs ">>>> Starting Media Timer" -LogLevel 0 -Verboselog:$Verboselog
               $Synchash.Timer.start()      
             }                       
             $Name = $media.title
             $progress = 1
             start-sleep 1   
-            $synchash.Spotify_Status = 'Playing'                                                   
-            #while($current_track.is_playing -and $synchash.Spicetify.is_paused -eq $false -and $synchash.Spicetify.is_playing -and ($thisApp.Config.Spotify_Status -ne 'Stopped' -or $thisApp.Config.Spotify_Status -ne $null) ){
+            $synchash.Spotify_Status = 'Playing'
             while(($synchash.Spotify_Status -ne 'Stopped') -and ($progress -ne $null) -and $media.title -match $Name -and  ($progress -ne 0)){
               try{
                 if($thisApp.Config.Use_Spicetify){
@@ -894,13 +867,12 @@ function Start-SpotifyMedia{
                   $Artist = $synchash.Spicetify.ARTIST
                   try{
                     if($synchash.Spicetify.POSITION -ne $Null){
-                      #$progress = [timespan]::Parse($synchash.Spicetify.POSITION).TotalMilliseconds
                       $progress = [timespan]::ParseExact($synchash.Spicetify.POSITION, "%m\:%s",[System.Globalization.CultureInfo]::InvariantCulture).TotalMilliseconds
                     }else{
                       $progress = $($([timespan]::FromMilliseconds(0)).TotalMilliseconds)
                     }
                   }catch{
-                    write-ezlogs "An exception occurred parsing Spicetify position timespan" -showtime -catcherror $_
+                    write-ezlogs "An exception occurred parsing Spicetify position timespan" -catcherror $_
                   }                 
                 }else{
                   $current_track = Get-CurrentTrack -ApplicationName $thisApp.config.App_Name  -DeviceId $device.id            
@@ -910,23 +882,22 @@ function Start-SpotifyMedia{
                   $progress = $current_track.progress_ms
                   $synchash.current_track_playing = $current_track
                 } 
-                $synchash.Last_Played_title = $name                          
-                #$synchash.current_track = $current_track         
+                $synchash.Last_Played_title = $name    
                 if($thisApp.Config.Dev_mode){write-ezlogs "Track '$($Name)' (Should be Name: $($media.title)) is playing (Status: $status) - (Pause: $pause) - (State: $($synchash.Spicetify.state)) with progress $($progress)" -showtime -Dev_mode}
               }catch{
-                write-ezlogs "An exception occurred getting the current track" -showtime -catcherror $_
+                write-ezlogs "An exception occurred getting the current track" -catcherror $_
               
               }
               start-sleep -Milliseconds 250
             }
             if($media.title -notmatch [regex]::Escape($Name)){
-              write-ezlogs ">>>> A different track is now playing (og: $($media.title)) - (Now: $Name)" -showtime
+              write-ezlogs ">>>> A different track is now playing (og: $($media.title)) - (Now: $Name)"
             }
             if(!$progress){
-              write-ezlogs ">>>> Progress is now null or 0: $progress" -showtime
+              write-ezlogs ">>>> Progress is now null or 0: $progress"
             }
             if($synchash.Spotify_Status -eq 'Stopped'){
-              write-ezlogs ">>>> Spotify_Status is now 'Stopped'" -showtime
+              write-ezlogs ">>>> Spotify_Status is now 'Stopped'"
             }
             if(!$synchash.Timer.isEnabled){
               write-ezlogs ">>> Media timer isn't running, starting to make sure auto-advance or stop media occurs" -warning
@@ -935,18 +906,15 @@ function Start-SpotifyMedia{
             $synchash.current_track_playing = $null
             $synchash.Spotify_Status = 'Stopped'
             $synchash.current_track = $null          
-            write-ezlogs ">>>> Playback of track '$($media.title)' finished" -showtime
+            write-ezlogs ">>>> Playback of track '$($media.title)' finished"
             if($thisApp.config.Use_Spicetify -and $synchash.Spicetify){
-              write-ezlogs "| Stopping Spotify playback with command http://127.0.0.1:8974/PAUSE" -showtime
+              write-ezlogs "| Stopping Spotify playback with command http://127.0.0.1:8974/PAUSE"
               Invoke-RestMethod -Uri 'http://127.0.0.1:8974/PAUSE' -UseBasicParsing  
               if($thisapp.Config.Enable_EQ -and $([string]$synchash.vlc.media.Mrl).StartsWith("dshow://") -and $synchash.VLC_IsPlaying_State){
                 write-ezlogs "| Stopping vlc playback for Spotify routed audio dshow://" -Warning
                 $synchash.VLC_IsPlaying_State = $false
                 $synchash.vlc.stop()           
               }               
-            }else{
-              #write-ezlogs "[Start-SpotifyMedia] Stopping Spotify playback with Suspend-Playback -ApplicationName $($thisApp.config.App_Name) -DeviceId $($device.id)" -showtime -color cyan
-              #Suspend-Playback -ApplicationName $thisApp.config.App_Name -DeviceId $device.id          
             }             
           }elseif($use_WebPlayer){
             if($synchash.update_Queue_timer -and !$synchash.update_Queue_timer.isEnabled -and !$synchash.Playlists_Update_Timer.isEnabled){
@@ -955,7 +923,7 @@ function Start-SpotifyMedia{
             }
             Update-MediaState -thisApp $thisApp -synchash $synchash -Background_cached_image $Background_cached_image          
           }else{
-            write-ezlogs "Unable to get current playing Spotify track info!" -showtime -warning
+            write-ezlogs "Unable to get current playing Spotify track info!" -warning
             Update-Notifications -Level 'WARNING' -Message "Unable to get current playing Spotify track info!" -VerboseLog -thisApp $thisApp -synchash $synchash -Open_Flyout       
           } 
         }catch{
@@ -965,8 +933,7 @@ function Start-SpotifyMedia{
       }    
     }else{
       write-ezlogs "Provided media is null or invalid! Cannot continue!" -showtime -warning -AlertUI
-    }
-    #$Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}  
+    } 
     $Runspace_Args = @{
       'scriptblock' = $spotify_scriptblock
       'arguments' = $PSBoundParameters
@@ -998,9 +965,8 @@ function Start-SpotifyMedia{
       'Set-SpotifyWebPlayerTimer'
     }
     Start-Runspace @Runspace_Args
-    #Start-Runspace $spotify_scriptblock -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -logfile $thisApp.Config.Log_file -runspace_name "Spotify_Play_media" -thisApp $thisApp -ApartmentState STA
   }catch{
-    write-ezlogs " An exception occurred in Start-SpotifyMedia" -showtime -catcherror $_
+    write-ezlogs " An exception occurred in Start-SpotifyMedia" -catcherror $_
   }finally{
     if($Start_SpotifyMedia_Measure){
       $Start_SpotifyMedia_Measure.stop()

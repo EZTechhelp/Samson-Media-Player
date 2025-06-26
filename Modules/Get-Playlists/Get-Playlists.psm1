@@ -131,7 +131,7 @@ function Update-Playlists {
                         $syncHash.LocalMedia_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemProperty)
                         #$syncHash.LocalMedia_TreeView.Nodes.dispose()
                       }
-                      write-ezlogs ">>>> Binding new all_playlists_View to Playlists_TreeView.Itemssource"
+                      write-ezlogs ">>>> Binding new all_playlists_View to Playlists_TreeView.Itemssource" -LogLevel 0 -Verboselog:$verboselog
                       if($Synchash.all_playlists_View -and $syncHash.Playlists_TreeView.Itemssource.IsInUse){
                         [void]$syncHash.Playlists_TreeView.Itemssource.DetachFromSourceCollection()
                       }
@@ -313,8 +313,11 @@ function Update-Playlist
         $synchashWeak = $synchashWeak,
         $thisApp = $thisApp,
         [switch]$clear_lastplayed = $clear_lastplayed,
+        [switch]$VerboseLog = $VerbloseLog,
         [switch]$Update_Playlist_Order = $Update_Playlist_Order,
-        $playlist_to_modify = $playlist_to_modify
+        $playlist_to_modify = $playlist_to_modify,
+        [switch]$SortItems = $SortItems,
+        $MediaPropertyNames = $MediaPropertyNames
       )
       try{   
         if($Playlist -in 'Play Queue','Remove from Play Queue'){ 
@@ -337,7 +340,7 @@ function Update-Playlist
               $index_toremove = $playlist_to_modify.Playlist_tracks.GetEnumerator() | Where-Object {$_.value.id -eq $id} | Select-Object * -ExpandProperty key
               foreach($index in $index_toremove){
                 $removeCount++
-                write-ezlogs "[Update-Playlist] | Removing index $($index_toremove) - Media: $($id) from Playlist $($Playlist)" -showtime
+                write-ezlogs "[Update-Playlist] | Removing index $($index_toremove) - Media: $($id) from Playlist $($Playlist)" -LogLevel 0 -Verboselog:$verboselog
                 $null = $playlist_to_modify.Playlist_tracks.Remove($index)
               }  
             }
@@ -379,7 +382,7 @@ function Update-Playlist
           }
         }
         if($clear_lastplayed){
-          write-ezlogs "| Clearing last played media" -showtime
+          write-ezlogs "| Clearing last played media" -LogLevel 0 -Verboselog:$verboselog
           $synchashWeak.Target.Current_playing_media = $Null
         } 
         if(!$no_UIRefresh){
@@ -387,7 +390,7 @@ function Update-Playlist
           Get-PlayQueue -verboselog:$false -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace   
         } 
       }catch{
-        write-ezlogs "An exception occurred removing $($Media.id) from Playlist $($Playlist)" -showtime -catcherror $_
+        write-ezlogs "An exception occurred removing $($Media.id) from Playlist $($Playlist)" -catcherror $_
       } 
     }
     if($use_Runspace){
@@ -432,6 +435,24 @@ function Update-Playlist
     }
   }elseif($updateall){
     $update_playlists_scriptblock = {
+      param (
+        [string]$Playlist = $Playlist,
+        [System.Object]$media = $media,
+        [switch]$Remove = $Remove,
+        [switch]$RemoveFromAll = $RemoveFromAll,
+        [switch]$use_Runspace = $use_Runspace,
+        [switch]$no_UIRefresh = $no_UIRefresh,
+        [string]$media_lookupid = $media_lookupid,
+        [string]$Playlist_ID = $Playlist_ID,
+        $synchashWeak = $synchashWeak,
+        $thisApp = $thisApp,
+        [switch]$clear_lastplayed = $clear_lastplayed,
+        [switch]$VerboseLog = $VerbloseLog,
+        [switch]$Update_Playlist_Order = $Update_Playlist_Order,
+        $playlist_to_modify = $playlist_to_modify,
+        [switch]$SortItems = $SortItems,
+        $MediaPropertyNames = $MediaPropertyNames
+      )
       try{
         if(-not [string]::IsNullOrEmpty($media_lookupid)){
           $lookupid = $media_lookupid
@@ -452,17 +473,17 @@ function Update-Playlist
             if($lookupid -ne $Null){
               $index_toupdate = $Playlist.PlayList_tracks.GetEnumerator() | Where-Object {$_.value.id -eq $lookupid} | Select-Object * -ExpandProperty key
               if(-not [string]::IsNullOrEmpty($index_toupdate)){
-                write-ezlogs "| Removing index $($index_toupdate) - Media: $($lookupid) from Playlist $($Playlist.name)" -showtime
+                write-ezlogs "| Removing index $($index_toupdate) - Media: $($lookupid) from Playlist $($Playlist.name)" -LogLevel 0 -Verboselog:$verboselog
                 $null = $Playlist.Playlist_tracks.Remove($index_toupdate)
               }
               if($Playlist.Playlist_tracks.values.id -notcontains $lookupid){
-                write-ezlogs "| Adding updated Track $($media.title)" -showtime
+                write-ezlogs "| Adding updated Track $($media.title)" -LogLevel 0 -Verboselog:$verboselog
                 $null = $Playlist.PlayList_tracks.add($index_toupdate,$media) 
               }
             }
             if($SortItems){
               if($Playlist.SortItemsBy -and $Playlist.SortItemsBy -in $MediaPropertyNames){
-                write-ezlogs "| Sorting playlists ($($Playlist.title)) items by: $($Playlist.SortItemsBy)"
+                write-ezlogs "| Sorting playlists ($($Playlist.title)) items by: $($Playlist.SortItemsBy)" -LogLevel 0 -Verboselog:$verboselog
                 [array]$existingitems = ($Playlist.Playlist_tracks.values | Sort-Object -Property $Playlist.SortItemsBy -Descending:$([bool]$Playlist.SortItemsDirection -eq 'Descending'))
                 $Count = 0
                 [void]$Playlist.Playlist_Tracks.clear()
@@ -474,7 +495,7 @@ function Update-Playlist
             }
           }                 
         }          
-        write-ezlogs ">>>> Saving updated all playlists profile: $($thisApp.Config.Playlists_Profile_Path)" -showtime -color cyan
+        write-ezlogs ">>>> Saving updated all playlists profile: $($thisApp.Config.Playlists_Profile_Path)"
         Export-SerializedXML -InputObject $synchashWeak.Target.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
         if(!$no_UIRefresh){
           Get-Playlists -verboselog:$thisapp.Config.Verbose_logging -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace -Full_Refresh
@@ -562,7 +583,6 @@ function Get-Playlists
         try{
           $Get_Playlists_Measure = [system.diagnostics.stopwatch]::StartNew()
           #$SortItems = $true
-          #Import-Module "$($thisApp.Config.Current_Folder)\Modules\PSSerializedXML\PSSerializedXML.psm1"
           if(!$Startup){
             Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'PlayLists_Progress_Ring' -Property 'IsActive' -value $true
             if($synchashWeak.Target.Playlists_TreeView){
@@ -592,7 +612,7 @@ function Get-Playlists
             }catch{
               write-ezlogs "An exception occurred importing $($thisApp.config.Playlists_Profile_Path)" -showtime -catcherror $_
             }
-          }elseif(!$synchashWeak.Target.all_playlists.SyncRoot){
+          }elseif(!$synchashWeak.Target.all_playlists.Count){
             write-ezlogs "Unable to find All playlists cache, generating new one" -showtime -warning
             $synchashWeak.Target.all_playlists = [System.Collections.ObjectModel.ObservableCollection[playlist]]::new()
           }elseif($synchashWeak.Target.all_playlists.count -gt 0 -and ![System.IO.File]::Exists($thisApp.config.Playlists_Profile_Path)){
@@ -603,39 +623,59 @@ function Get-Playlists
             $Process_Playlists_Measure = [system.diagnostics.stopwatch]::StartNew()
             $synchashWeak.Target.Get_Playlists_Changes = 0
             if($Startup -or $synchashWeak.Target.all_playlists -isnot [System.Collections.ObjectModel.ObservableCollection[playlist]]){
-              write-ezlogs ">>>> Creating new ObservableCollection from all_playlists profile"
-              #$synchashWeak.Target.all_playlists_View = $Null
-              #$synchashWeak.Target.All_Playlists = [System.Collections.Generic.List[playlist]]::new($synchashWeak.Target.all_playlists)
-              #$synchashWeak.Target.all_playlists = [System.Windows.Data.CollectionViewSource]::GetDefaultView($synchashWeak.Target.all_playlists)
+              write-ezlogs ">>>> Creating new ObservableCollection from all_playlists profile" -LogLevel 0 -Verboselog:$VerboseLog
               $synchashWeak.Target.all_playlists = [System.Collections.ObjectModel.ObservableCollection[playlist]]::new($synchashWeak.Target.all_playlists)
+              #$synchashWeak.Target.all_playlists = [System.Windows.Data.CollectionViewSource]::GetDefaultView($synchashWeak.Target.all_playlists)
             }
             if(!$SortBy -and $thisApp.Config.Playlists_SortBy.Count -gt 0){
               $SortBy = $thisApp.Config.Playlists_SortBy[0]
             }
             if($SortBy -and $SortBy -in $synchashWeak.Target.all_playlists[0].psobject.properties.name){
-              write-ezlogs "| Sorting playlists by: $SortBy"
-              if($SortDirection -eq 'Descending'){
-                [System.Collections.ObjectModel.ObservableCollection[playlist]]$synchashWeak.Target.all_playlists = ($synchashWeak.Target.all_playlists | Sort-Object -Property $SortBy -Descending)
+              write-ezlogs "| Sorting playlists by: $SortBy - SortDirection: $SortDirection"
+              if($SortBy -eq 'playlist_date_added'){
+                [System.Collections.ObjectModel.ObservableCollection[playlist]]$synchashWeak.Target.all_playlists = ($synchashWeak.Target.all_playlists | Sort-Object -Property @{Expression = {$_."$SortBy" -as [Datetime]}; Ascending = $($SortDirection -eq 'Ascending')})
               }else{
-                [System.Collections.ObjectModel.ObservableCollection[playlist]]$synchashWeak.Target.all_playlists = ($synchashWeak.Target.all_playlists | Sort-Object -Property $SortBy)
-              } 
-            }
-<#            $MediaPropertyNames = ([Media].GetProperties()).Name
-            if($SortItems){
-              $synchashWeak.Target.All_Playlists | & { process {
-                  if($_.SortItemsBy -and $_.SortItemsBy -in $MediaPropertyNames){
-                    write-ezlogs "| Sorting playlists ($($_.title)) items by: $($_.SortItemsBy)"
-                    [array]$existingitems = ($_.Playlist_tracks.values | Sort-Object -Property $_.SortItemsBy -Descending:$([bool]$_.SortItemsDirection -eq 'Descending'))
-                    $Count = 0
-                    [void]$_.Playlist_Tracks.clear()
-                    $Playlist = $_
-                    $existingitems | & { process {
-                        [void]$Playlist.Playlist_Tracks.add($Count,$_)
-                        $Count++
-                    }}
-                    $_ = $Playlist
+                [System.Collections.ObjectModel.ObservableCollection[playlist]]$synchashWeak.Target.all_playlists = ($synchashWeak.Target.all_playlists | Sort-Object -Property $SortBy -Descending:$($SortDirection -eq 'Descending'))
+              }
+              <#              if(!$SortDirection){
+                  $SortDirection = 'Ascending'
                   }
-              }}
+                  if($synchashWeak.Target.all_playlists.CanSort){
+                  $sortdescription = [System.ComponentModel.SortDescription]::new($SortBy,$SortDirection)
+                  if($synchashWeak.Target.all_playlists.SortDescriptions.count -gt 0){
+                  Update-MainWindow -thisApp $thisApp -synchash $synchashWeak.Target -Control 'all_playlists' -Property 'SortDescriptions' -Method 'Clear'
+                  }
+                  Update-MainWindow -thisApp $thisApp -synchash $synchashWeak.Target -Control 'all_playlists' -Property 'SortDescriptions' -Method 'Add' -Method_Value $sortdescription
+                  }else{
+                  write-ezlogs "| All_playlists cannot be sorted -- $($synchashWeak.Target.all_playlists)" -Warning
+              }#>
+
+            }
+            <#            $synchashWeak.Target.all_playlists.Filter = {
+                param ($item) 
+                if(-not [string]::IsNullOrEmpty('Pigeons')){
+                $text = $(('Pigeons')).trim()
+                }
+                $SearchPattern = "$([regex]::Escape($text))"
+                $($item.name) -match $SearchPattern -or $($item.Title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.Artist) -match $SearchPattern -or $($item.Album) -match $SearchPattern -or $($item.playlist_tracks.values.title) -match $SearchPattern
+            }#>
+
+            <#            $MediaPropertyNames = ([Media].GetProperties()).Name
+                if($SortItems){
+                $synchashWeak.Target.All_Playlists | & { process {
+                if($_.SortItemsBy -and $_.SortItemsBy -in $MediaPropertyNames){
+                write-ezlogs "| Sorting playlists ($($_.title)) items by: $($_.SortItemsBy)"
+                [array]$existingitems = ($_.Playlist_tracks.values | Sort-Object -Property $_.SortItemsBy -Descending:$([bool]$_.SortItemsDirection -eq 'Descending'))
+                $Count = 0
+                [void]$_.Playlist_Tracks.clear()
+                $Playlist = $_
+                $existingitems | & { process {
+                [void]$Playlist.Playlist_Tracks.add($Count,$_)
+                $Count++
+                }}
+                $_ = $Playlist
+                }
+                }}
             }#>
             $PlaylistIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\PlaylistMusic.png"
             $HardDiskIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\Material-Harddisk.png"
@@ -707,14 +747,10 @@ function Get-Playlists
                     }                      
                     if($_.NumberVisibility -ne 'Hidden'){
                       $_.NumberVisibility = 'Hidden'
-                    }                      
-                    <#                    if($_.NumberFontSize -ne '0.1'){
-                        $_.NumberFontSize = '0.1'
-                    }#>                      
+                    }                   
                     if($_.AllowDrop -ne $true){
                       $_.AllowDrop = $true
-                    }
-                    #$Playlist = $_                                
+                    }                               
                     $count = 0
                     $PlaylistTracks = $_.Playlist_tracks
                     $_.Playlist_tracks.keys | & { process {

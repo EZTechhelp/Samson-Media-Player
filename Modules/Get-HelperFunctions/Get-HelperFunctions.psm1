@@ -2,14 +2,14 @@
     .Name
     Get-HelperFunctions
 
-    .Version 
+    .Version
     0.1.2
 
     .SYNOPSIS
     Collection of various helper functions for tasks like conversions, matching...etc
 
     .DESCRIPTION
-       
+
     .Configurable Variables
 
     .Requirements
@@ -26,18 +26,18 @@
 
 #>
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region ConvertTo-OrderedDictionary Function
 #----------------------------------------------
 Function ConvertTo-OrderedDictionary {
   <#
       .SYNOPSIS
       Converts a HashTable, Array, or an OrderedDictionary to an OrderedDictionary.
- 
+
       .DESCRIPTION
       ConvertTo-OrderedDictionary takes a HashTable, Array, or an OrderedDictionary
       and returns an ordered dictionary.
- 
+
       If you enter a hash table, the keys in the hash table are ordered
       alphanumerically in the dictionary. If you enter an array, the keys
       are integers 0 - n.
@@ -54,12 +54,12 @@ Function ConvertTo-OrderedDictionary {
       .NOTES
       source: https://gallery.technet.microsoft.com/scriptcenter/ConvertTo-OrderedDictionary-cf2404ba
       converted to function and added ability to copy OrderedDictionary
- 
+
       .EXAMPLE
       PS C:\> $myHash = @{a=1; b=2; c=3}
       PS C:\> .\ConvertTo-OrderedDictionary.ps1 -Hash $myHash
 
- 
+
   #>
 
   #Requires -Version 3
@@ -104,12 +104,12 @@ Function ConvertTo-OrderedDictionary {
     #write-ezlogs ">>>> Ending: $($MyInvocation.Mycommand)" -Dev_mode
   } #close end block
 
-} 
-#---------------------------------------------- 
+}
+#----------------------------------------------
 #endregion ConvertTo-OrderedDictionary Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Convert-Color Function
 #----------------------------------------------
 function Convert-Color {
@@ -125,11 +125,11 @@ function Convert-Color {
       .Example
       .\convert-color -hex FFFFFF
       Converts hex value FFFFFF to RGB
- 
+
       .Example
       .\convert-color -RGB 123,200,255
       Converts Red = 123 Green = 200 Blue = 255 to Hex value
- 
+
   #>
   param(
     [Parameter(ParameterSetName = "RGB", Position = 0)]
@@ -171,11 +171,11 @@ function Convert-Color {
     }
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Convert-Color Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Test-URL Function
 #----------------------------------------------
 function Test-URL
@@ -195,7 +195,7 @@ function Test-URL
         }
         $HTTPResponse = $HTTPRequest.GetResponse()
         $HTTPStatus = [Int]$HTTPResponse.StatusCode
-        
+
         If($HTTPStatus -ne 200 -and $HTTPStatus -ne 401) {
           Return $False
         }
@@ -207,29 +207,29 @@ function Test-URL
         }else{
           Return $False
         }
-      }	
-      Return $True    
+      }
+      Return $True
     }
     else{
       Return $true
-    }    
+    }
   }
   else{
     return $false
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Test-URL Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Test-ValidPath Function
 #----------------------------------------------
 function Test-ValidPath
 {
   Param(
     $path,
-    [ValidateNotNullOrEmpty()] [ValidateSet("File", "Directory", "URL", "Any", "URLorFile")] [string]$Type = "Any", 
+    [ValidateNotNullOrEmpty()] [ValidateSet("File", "Directory", "URL", "Any", "URLorFile")] [string]$Type = "Any",
     [switch]$ReturnType,
     [switch]$IncludeSpecialFolders,
     [switch]$TestConnection,
@@ -244,7 +244,7 @@ function Test-ValidPath
       $isValidDirectory = [system.io.Directory]::Exists($path)
     }else{
       $isValidDirectory = [system.io.Directory]::Exists($path) -and ![System.environment+SpecialFolder]::"$path"
-    }    
+    }
   }
   if($type -eq 'URL' -or $type -eq 'Any' -or $type -eq "URLorFile"){
     #$urlpattern = "(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])"
@@ -273,12 +273,12 @@ function Test-ValidPath
           }
           $HTTPResponse = $HTTPRequest.GetResponse()
           $HTTPStatus = [Int]$HTTPResponse.StatusCode
-        
+
           If($HTTPStatus -ne 200 -and $HTTPStatus -ne 401) {
             $isValidURL =  $False
           }
           $HTTPResponse.Close()
-          $isValidURL =  $True    
+          $isValidURL =  $True
         }Catch{
           if($_ -match '\(401\) Unauthorized'){
             $isValidURL =  $true
@@ -291,28 +291,28 @@ function Test-ValidPath
         }
       }else{
         $isValidURL =  $true
-      }    
+      }
     }else{
       $isValidURL =  $false
     }
   }
   switch ($Type){
     'File'{
-      if($ReturnType -and $isValidFile){        
+      if($ReturnType -and $isValidFile){
         return 'File'
       }else{
         return $isValidFile
-      } 
+      }
     }
     'Directory'{
-      if($ReturnType -and $isValidDirectory){        
+      if($ReturnType -and $isValidDirectory){
         return 'Directory'
       }else{
         return $isValidDirectory
-      }     
+      }
     }
     'URL'{
-      if($ReturnType -and $isValidURL){        
+      if($ReturnType -and $isValidURL){
         return 'URL'
       }else{
         return $isValidURL
@@ -320,20 +320,20 @@ function Test-ValidPath
     }
     'URLorFile'{
       if($isValidFile -or $isValidURL){
-        if($ReturnType -and $isValidFile){        
+        if($ReturnType -and $isValidFile){
           return 'File'
         }elseif($ReturnType -and $isValidURL){
           return 'URL'
         }else{
           return $true
-        }      
+        }
       }else{
         return $false
       }
     }
     'Any'{
       if($isValidFile -or $isValidDirectory -or $isValidURL){
-        if($ReturnType -and $isValidFile){        
+        if($ReturnType -and $isValidFile){
           return 'File'
         }elseif($ReturnType -and $isValidDirectory){
           return 'Directory'
@@ -341,18 +341,18 @@ function Test-ValidPath
           return 'URL'
         }else{
           return $true
-        }      
+        }
       }else{
         return $false
       }
     }
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Test-ValidPath Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Open-FolderDialog Function
 #----------------------------------------------
 function Open-FolderDialog
@@ -372,11 +372,11 @@ function Open-FolderDialog
     write-ezlogs "An exception occurred displaying Open-FolderDialog" -showtime -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Open-FolderDialog Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Open-FileDialog Function
 #----------------------------------------------
 function Open-FileDialog
@@ -389,7 +389,7 @@ function Open-FileDialog
     [switch]$SaveDialog,
     [string]$InitialDirectory,
     [switch]$CheckPathExists
-  )  
+  )
   $AssemblyFullName = 'System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
   $Assembly = [System.Reflection.Assembly]::Load($AssemblyFullName)
   if($SaveDialog){
@@ -404,21 +404,21 @@ function Open-FileDialog
     $OpenFileDialog.CheckPathExists = $CheckPathExists
   }
   $OpenFileDialog.AddExtension = $true
-  #$OpenFileDialog.InitialDirectory = [environment]::getfolderpath('mydocuments')  
+  #$OpenFileDialog.InitialDirectory = [environment]::getfolderpath('mydocuments')
   $OpenFileDialog.InitialDirectory = $InitialDirectory
-  $OpenFileDialog.Filter = $filter 
+  $OpenFileDialog.Filter = $filter
   $OpenFileDialog.Title = $Title
   $results = $OpenFileDialog.ShowDialog()
-  if ($results -eq [System.Windows.Forms.DialogResult]::OK) 
+  if ($results -eq [System.Windows.Forms.DialogResult]::OK)
   {
     $OpenFileDialog.FileNames
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Open-FileDialog Function
 #----------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Get-CurrentWindows Function
 #---------------------------------------------
 function Get-CurrentWindows {
@@ -442,11 +442,11 @@ function Get-CurrentWindows {
 
   }
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Get-CurrentWindows Function
 #---------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Set-DrawingControl Function
 #---------------------------------------------
 function Set-DrawingControl {
@@ -467,15 +467,15 @@ function Set-DrawingControl {
  using System.Runtime.InteropServices;
  using System.Text;
  using System.Windows.Forms;
- using System.Collections.Generic; 
+ using System.Collections.Generic;
 
 public class DrawingControls
 {
     [DllImport("user32.dll")]
     public static extern int SendMessage(IntPtr hWnd, Int32 wMsg, bool wParam, Int32 lParam);
 
-    private const int WM_SETREDRAW = 11; 
-    
+    private const int WM_SETREDRAW = 11;
+
     public static void SuspendDrawing( Control parent )
     {
         SendMessage(parent.Handle, WM_SETREDRAW, false, 0);
@@ -496,18 +496,18 @@ public class DrawingControls
         return [DrawingControls]::SuspendDrawing($SuspendDrawing)
       }elseif($ResumeDrawing){
         return $([DrawingControls]::ResumeDrawing($ResumeDrawing))
-      }      
+      }
     }catch{
       write-ezlogs "An exception occurred in Set-DrawingControl" -showtime -catcherror $_
     }
 
   }
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Set-DrawingControl Function
 #---------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Set-ChildWindow Function
 #---------------------------------------------
 function Set-ChildWindow {
@@ -540,11 +540,11 @@ function Set-ChildWindow {
     }
   }
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Set-ChildWindow Function
 #---------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Set-WindowState Function
 #---------------------------------------------
 function Set-WindowState {
@@ -644,11 +644,11 @@ function Set-WindowState {
     }
   }
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Set-WindowState Function
 #---------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-IniFile
 #----------------------------------------------
 Function Get-IniFile ($file) {
@@ -680,33 +680,33 @@ Function Get-IniFile ($file) {
   }
 
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-IniFile
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Use Run-As Function
 #----------------------------------------------
 function Use-RunAs
-{    
-  # Check if script is running as Adminstrator and if not use RunAs 
-  # Use Check Switch to check if admin 
+{
+  # Check if script is running as Adminstrator and if not use RunAs
+  # Use Check Switch to check if admin
   # http://gallery.technet.microsoft.com/scriptcenter/63fd1c0d-da57-4fb4-9645-ea52fc4f1dfb
 
-  param([Switch]$Check,[Switch]$ForceReboot,[Switch]$uninstall_Module,[switch]$FreshStart,[string]$logfile = $logfile,[switch]$RestartAsUser) 
-  $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator') 
-  if ($Check) { return $IsAdmin }    
+  param([Switch]$Check,[Switch]$ForceReboot,[Switch]$uninstall_Module,[switch]$FreshStart,[string]$logfile = $logfile,[switch]$RestartAsUser)
+  $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')
+  if ($Check) { return $IsAdmin }
   $ScriptPath = [System.IO.Path]::Combine($thisApp.Config.Current_folder,"$($thisApp.Config.App_Name).ps1")
   if(![System.IO.File]::Exists($ScriptPath)){
     $ScriptPath = $((Get-PSCallStack).ScriptName | where {$_ -notmatch '.psm1'} | select -First 1)
-  }  
+  }
   write-ezlogs "[USE-RUNAS] >>>> Checking if running as administrator"
-  if([System.IO.File]::Exists($ScriptPath)) 
-  {  
-    if (-not $IsAdmin -or $ForceReboot -or $RestartAsUser)  
-    {  
-      try 
-      {                
+  if([System.IO.File]::Exists($ScriptPath))
+  {
+    if (-not $IsAdmin -or $ForceReboot -or $RestartAsUser)
+    {
+      try
+      {
         if($uninstall_Module){
           $arg = "-NoProfile -NoLogo -ExecutionPolicy Bypass -file `"$($ScriptPath)`" -NonInteractive"
         }else{
@@ -731,15 +731,15 @@ function Use-RunAs
             if($Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$_").GetValue('DisplayName') -match $($thisApp.Config.App_Name)){
               $install_folder = $Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$_").GetValue('InstallLocation')
             }
-          }  
+          }
           if(!$install_folder){
             $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser', 'Default')
-            $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\").GetSubKeyNames() | foreach {  
+            $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\").GetSubKeyNames() | foreach {
               if($Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$_").GetValue('DisplayName') -match $($thisApp.Config.App_Name)){
                 $install_folder = $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$_").GetValue('InstallLocation')
               }
             }
-          } 
+          }
           $null = $Registry.Dispose()
           $ExePath = [System.IO.Path]::Combine($install_folder,"$($thisApp.Config.App_Name).exe")
           if([System.IO.File]::Exists($ExePath)){
@@ -757,10 +757,10 @@ function Use-RunAs
             #runas /trustlevel:0x20000 "$ExePath $arg"
             if([System.IO.File]::Exists("$env:ProgramW6432\PowerShell\7\pwsh.exe")){
               $processpath = "$env:ProgramW6432\PowerShell\7\pwsh.exe"
-            }else{         
+            }else{
               $processpath = "$psHome\powershell.exe"
             }
-            write-ezlogs "Restarting as user with Path: $($processpath)" -warning       
+            write-ezlogs "Restarting as user with Path: $($processpath)" -warning
             #runas /trustlevel:0x20000 "$processpath $arg"
             $newProc = new-object System.Diagnostics.ProcessStartInfo "PowerShell"
             # Specify what to run, you need the full path after explorer.exe
@@ -772,7 +772,7 @@ function Use-RunAs
           }else{
             write-ezlogs "[USE-RUNAS] Cant find exe path to restart as user: $($ExePath) - Args: $($arg)" -warning
             [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
-            $oReturn=[System.Windows.Forms.MessageBox]::Show("Cant find exe path to restart as user: $($ExePath) - ($($appname) Media Player - $($thisScript.Version) - PID: $($process.id))`n`nIt is likely that this installation is corrupt!`n`nThe app will close and you will need to launch it manually again, making sure not to run as administrator","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
+            $oReturn=[System.Windows.Forms.MessageBox]::Show("Cant find exe path to restart as user: $($ExePath) - ($($appname) Media Player - $($thisScript.Version) - PID: $($process.id))`n`nIt is likely that this installation is corrupt!`n`nThe app will close and you will need to launch it manually again, making sure not to run as administrator","[ERROR] - $($thisScript.name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
             exit
           }
         }else{
@@ -780,33 +780,33 @@ function Use-RunAs
           $verb = 'RunAs'
           if([System.IO.File]::Exists("$env:ProgramW6432\PowerShell\7\pwsh.exe")){
             $process = Start-Process "$env:ProgramW6432\PowerShell\7\pwsh.exe" -Verb $verb -ArgumentList $arg -ErrorAction SilentlyContinue -WindowStyle Hidden
-          }else{         
+          }else{
             Start-Process "$psHome\powershell.exe" -Verb $verb -ArgumentList $arg -ErrorAction SilentlyContinue -WindowStyle Hidden
           }
         }
-      } 
-      catch 
-      { 
+      }
+      catch
+      {
         write-ezlogs "[USE-RUNAS] An exception occurred attempting to restart script" -catcherror $_
-        break               
-      } 
+        break
+      }
       if($pid){
         stop-process $pid -Force -ErrorAction SilentlyContinue
-      }      
-      exit # Quit this session of powershell 
-    }  
-  }  
-  else  
-  {   
+      }
+      exit # Quit this session of powershell
+    }
+  }
+  else
+  {
     write-ezlogs "[USE-RUNAS] Could not find Scriptpath: $ScriptPath -- MyInvocation: $($MyInvocation | out-string)" -warning
-    break  
-  }  
+    break
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Use Run-As Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Confirm Requirements
 #----------------------------------------------
 function confirm-requirements
@@ -831,7 +831,7 @@ function confirm-requirements
         if($hash.Window){
           Update-SplashScreen -hash $hash -SplashMessage 'Installing/Upgrading Components' -More_Info_Visibility 'Visible' -Splash_More_Info 'Installing Required App: Chocolatey'
         }
-        try{   
+        try{
           write-ezlogs "[Confirm-Requirements] Chocolatey is not installed, installing...." -showtime -warning
           Set-ExecutionPolicy Bypass -Scope Process -Force
           [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
@@ -840,19 +840,19 @@ function confirm-requirements
             write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey -- restarting app" -showtime -Success
             if(!$noRestart){
               Use-RunAs -RestartAsUser -logfile $logfile
-            }        
+            }
           }else{
             if($(get-command choco*)){
               choco upgrade chocolatey --confirm --force *>&1 | write-ezlogs -CallBack:$false
               if([System.IO.File]::Exists("$env:ChocolateyInstall\redirects\Choco.exe")){
-                write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey" -showtime -Success        
+                write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey" -showtime -Success
                 if(!$noRestart){
                   Use-RunAs -RestartAsUser -logfile $logfile
-                } 
+                }
               }
             }else{
               write-ezlogs "Unable to verify successfully installation of chocolatey -- see logs for details!" -showtime -warning
-            }        
+            }
           }
         }catch{
           write-ezlogs "[Confirm-Requirements] An exception occurred installing Chocolatey" -showtime -catcherror $_
@@ -867,7 +867,7 @@ function confirm-requirements
         }
       }
       else
-      {   
+      {
         $testchoco = [System.IO.FileInfo]::new("$env:ChocolateyInstall\redirects\Choco.exe").VersionInfo.ProductVersion
         write-ezlogs "[Confirm-Requirements] >>>> Chocolatey is installed. Version $testchoco" -showtime
       }
@@ -880,7 +880,7 @@ function confirm-requirements
         $Net4Version = (get-itemproperty "hklm:software\microsoft\net framework setup\ndp\v4\full" -ea silentlycontinue | Select -Expand Release -ea silentlycontinue)
         if ($Net4Version -lt $MinimumNet4Version)
         {
-          write-ezlogs "[Confirm-Requirements] .NET Framework 4.5.2 or later required.  Use package named `"dotnet4.5` to upgrade. Your .NET Release is `"$MinimumNet4Version`" but needs to be at least `"$MinimumNet4Version`"." -warning -LogLevel 2 
+          write-ezlogs "[Confirm-Requirements] .NET Framework 4.5.2 or later required.  Use package named `"dotnet4.5` to upgrade. Your .NET Release is `"$MinimumNet4Version`" but needs to be at least `"$MinimumNet4Version`"." -warning -LogLevel 2
         }
         else
         {
@@ -890,8 +890,8 @@ function confirm-requirements
           write-ezlogs "[Confirm-Requirements] This machine does not meet the minimum requirements to use this script. Your Powershell version is $($PSVersionTable.psversion) and the minimum required is 3`n | Attempting to update Powershell via Chocolatey...." -warning -LogLevel 2
           if($hash.Window){
             Update-SplashScreen -hash $hash -SplashMessage 'Attempting to update Powershell' -More_Info_Visibility 'Visible' -Splash_More_Info 'Installing Required App: Chocolatey'
-          } 
-          choco upgrade powershell -confirm -force 
+          }
+          choco upgrade powershell -confirm -force
           if($($PSVersionTable.PSVersion.Major) -ge 3)
           {
             write-ezlogs "[Confirm-Requirements] | Powershell was updated successfully" -Success -LogLevel 2
@@ -900,7 +900,7 @@ function confirm-requirements
           {
             write-ezlogs "[Confirm-Requirements] | Powershell was either not updated successfully, or the system may require a restart. Restart and try again, otherwise update Powershell manually on this system" -warning -LogLevel 2
           }
-     
+
         }
       }
       #endregion Update Powershell
@@ -930,13 +930,13 @@ function confirm-requirements
                   $appinstalled = ''
                 }
               }
-              $Do_Install = $thisApp.Config.Install_Spotify  
+              $Do_Install = $thisApp.Config.Install_Spotify
             }else{
               $Do_Install = $false
               write-ezlogs ">>>> Skipping install check for Spotify" -loglevel 3 -logtype Setup
-            }          
+            }
             write-ezlogs ">>>> Auto Install $app`: $($thisApp.Config.Install_Spotify)" -showtime -loglevel 3 -logtype Setup
-          }elseif($app -eq 'Spicetify'){             
+          }elseif($app -eq 'Spicetify'){
             if($thisApp.Config.Import_Spotify_Media -and $thisApp.Config.use_Spicetify -and !$thisApp.Config.Spotify_WebPlayer){
               if([System.IO.File]::Exists("$($env:USERPROFILE)\spicetify-cli\spicetify.exe") -and [System.IO.File]::Exists("$($env:USERPROFILE)\.spicetify\config-xpui.ini")){
                 $Spicetify_Install_Dir = "$($env:USERPROFILE)\spicetify-cli\"
@@ -945,25 +945,25 @@ function confirm-requirements
                 if(!$appinstalled){
                   $appinstalled = "$($env:USERPROFILE)\spicetify-cli\spicetify.exe"
                 }
-              }elseif([System.IO.File]::Exists("$($env:LOCALAPPDATA)\spicetify\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){    
+              }elseif([System.IO.File]::Exists("$($env:LOCALAPPDATA)\spicetify\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){
                 $Spicetify_Install_Dir = "$($env:LOCALAPPDATA)\spicetify"
-                $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"  
+                $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"
                 $appinstalled = (Get-iniFile "$Spicetify_Config_Dir\config-xpui.ini").Backup.with
                 if(!$appinstalled){
                   $appinstalled = "$($env:LOCALAPPDATA)\spicetify\spicetify.exe"
-                }    
-              }elseif([System.IO.File]::Exists("$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){    
-                $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"  
+                }
+              }elseif([System.IO.File]::Exists("$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){
+                $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"
                 $appinstalled = (Get-iniFile "$Spicetify_Config_Dir\config-xpui.ini").Backup.with
                 if(!$appinstalled){
                   $appinstalled = "$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\spicetify.exe"
-                }    
+                }
               }else{
                 $Do_Install = $true
-              }        
+              }
             }else{
               $Do_Install = $false
-            }                           
+            }
           }elseif($app -eq 'Streamlink'){
             $latestversion = ([system.io.fileinfo]::new("$($thisApp.Config.Current_Folder)\Resources\Streamlink\streamlink-installer.exe")).VersionInfo.FileVersion
             if([System.IO.File]::Exists("${env:ProgramFiles(x86)}\Streamlink\uninstall.exe")){
@@ -978,7 +978,7 @@ function confirm-requirements
             }
             if($latestversion -match '-'){
               $latestversion = $latestversion -replace '-','.'
-            } 
+            }
             if($appinstalled -match '-'){
               $appinstalled = $appinstalled -replace '-','.'
             }
@@ -1003,16 +1003,16 @@ function confirm-requirements
               write-ezlogs ">>>> Enable Web EQ Support is disabled -- skipping install of VB-Audio" -Warning
               $Do_Install = $false
             }
-          }else{        
+          }else{
             $chocoappmatch = choco list $app
             $appinstalled = $($chocoappmatch | Select-String $app | out-string).trim()
-            $Do_Install = $true       
-          }     
+            $Do_Install = $true
+          }
           if($appinstalled -and !$Do_Update){
             write-ezlogs ">>>> $app is installed. Version $appinstalled" -showtime
           }elseif(!$Do_Install){
-            write-ezlogs ">>>> $app is not installed! Auto installation skipped!" -showtime -warning      
-          }else{        
+            write-ezlogs ">>>> $app is not installed! Auto installation skipped!" -showtime -warning
+          }else{
             try{
               if(!$noRestart){
                 #Use-RunAs
@@ -1025,10 +1025,10 @@ function confirm-requirements
               $app_install_scriptblock = {
                 if($hash.Window){
                   Update-SplashScreen -hash $hash -SplashMessage $splashmessage -More_Info_Visibility 'Visible'
-                } 
+                }
                 if($app -eq 'Spicetify'){
                   try{
-                    write-ezlogs ">>>> Installing Spicetify" -showtime -loglevel 2          
+                    write-ezlogs ">>>> Installing Spicetify" -showtime -loglevel 2
                     #Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-cli/master/install.ps1" | Invoke-Expression -Verbose
                     #Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-marketplace/master/install.ps1" | Invoke-Expression -Verbose
                     #Invoke-WebRequest -UseBasicParsing "https://raw.githubusercontent.com/spicetify/spicetify-marketplace/main/resources/install.ps1" | Invoke-Expression -Verbose
@@ -1041,20 +1041,20 @@ function confirm-requirements
                       if(!$appinstalled){
                         $appinstalled = "$($env:USERPROFILE)\spicetify-cli\spicetify.exe"
                       }
-                    }elseif([System.IO.File]::Exists("$($env:LOCALAPPDATA)\spicetify\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){    
+                    }elseif([System.IO.File]::Exists("$($env:LOCALAPPDATA)\spicetify\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){
                       $Spicetify_Install_Dir = "$($env:LOCALAPPDATA)\spicetify"
-                      $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"  
+                      $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"
                       $appinstalled = (Get-iniFile "$Spicetify_Config_Dir\config-xpui.ini").Backup.with
                       if(!$appinstalled){
                         $appinstalled = "$($env:LOCALAPPDATA)\spicetify\spicetify.exe"
-                      }    
+                      }
                     }
                   }catch{
                     write-ezlogs "An exception occurred attempting to install Spicetify" -showtime -catcherror $_
                   }
-                }elseif($app -eq 'Streamlink'){ 
+                }elseif($app -eq 'Streamlink'){
                   if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Streamlink\streamlink-installer.exe")){
-                    write-ezlogs "$app is not installed or out of date! Attempting to install from $($thisApp.Config.Current_Folder)\Resources\Streamlink\streamlink-installer.exe" -showtime -warning  
+                    write-ezlogs "$app is not installed or out of date! Attempting to install from $($thisApp.Config.Current_Folder)\Resources\Streamlink\streamlink-installer.exe" -showtime -warning
                     Start-Process "$($thisApp.Config.Current_Folder)\Resources\Streamlink\streamlink-installer.exe" -ArgumentList '/S' -Wait
                     if([System.IO.File]::Exists("$("${env:ProgramFiles(x86)}\Streamlink\uninstall.exee")")){
                       $appinstalled = [System.IO.FileInfo]::new("$("${env:ProgramFiles(x86)}\Streamlink\uninstall.exee")").versioninfo.fileversion
@@ -1062,24 +1062,24 @@ function confirm-requirements
                       $appinstalled = [System.IO.FileInfo]::new("$env:ProgramW6432\Streamlink\uninstall.exe").versioninfo.fileversion
                     }
                   }else{
-                    write-ezlogs "$app is not installed! Attempting to install from chocolatey" -showtime -warning  
+                    write-ezlogs "$app is not installed! Attempting to install from chocolatey" -showtime -warning
                     if(!$env:ChocolateyInstall -or (!([System.IO.File]::Exists("$env:ChocolateyInstall\redirects\Choco.exe")))){
-                      try{   
+                      try{
                         write-ezlogs "[Confirm-Requirements] Chocolatey is not installed, installing...." -showtime -warning
                         Set-ExecutionPolicy Bypass -Scope Process -Force
                         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
                         iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex *>&1 | write-ezlogs -CallBack:$false
                         if([System.IO.File]::Exists("$env:ChocolateyInstall\redirects\Choco.exe")){
-                          write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey -- restarting app" -showtime -Success        
+                          write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey -- restarting app" -showtime -Success
                         }else{
                           if($(get-command choco*)){
                             choco upgrade chocolatey --confirm --force *>&1 | write-ezlogs -CallBack:$false
                             if([System.IO.File]::Exists("$env:ChocolateyInstall\redirects\Choco.exe")){
-                              write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey" -showtime -Success         
+                              write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey" -showtime -Success
                             }
                           }else{
                             write-ezlogs "Unable to verify successfully installation of chocolatey -- see logs for details!" -showtime -warning
-                          }        
+                          }
                         }
                       }catch{
                         write-ezlogs "[Confirm-Requirements] An exception occurred installeding Chocolatey" -showtime -catcherror $_
@@ -1090,16 +1090,16 @@ function confirm-requirements
                     $chocoappmatch = choco list $app
                     if($chocoappmatch){
                       $appinstalled = $($chocoappmatch | Select-String $app | out-string).trim()
-                    } 
+                    }
                   }
-                }elseif($app -eq 'vb-cable'){ 
+                }elseif($app -eq 'vb-cable'){
                   #uninstall: Start-Process "$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -ArgumentList '-u -h' -Wait
                   $Vbsetup_path = "$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe"
                   if([system.io.file]::Exists($Vbsetup_path)){
                     try{
-                      write-ezlogs "$app is not installed or out of date! Attempting to install from $Vbsetup_path" -showtime -warning  
-                      $default_output_Device = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::DefaultAudioEndpoint([CSCore.CoreAudioAPI.DataFlow]::Render,[CSCore.CoreAudioAPI.Role]::Multimedia)   
-                      write-ezlogs "| Current Default Audio Device: $($default_output_Device | out-string)"            
+                      write-ezlogs "$app is not installed or out of date! Attempting to install from $Vbsetup_path" -showtime -warning
+                      $default_output_Device = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::DefaultAudioEndpoint([CSCore.CoreAudioAPI.DataFlow]::Render,[CSCore.CoreAudioAPI.Role]::Multimedia)
+                      write-ezlogs "| Current Default Audio Device: $($default_output_Device | out-string)"
                       #Start-Process "$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -ArgumentList '-i -h' -Wait
                       Start-Process "$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -ArgumentList '-i -h' -Wait -Verb RunAs
                       write-ezlogs "| Resetting Default Audio Device to: $($default_output_Device.FriendlyName)"
@@ -1126,20 +1126,20 @@ function confirm-requirements
                     }
                   }else{
                     if($(get-command choco*)){
-                      write-ezlogs "$app is not installed! Attempting to install from chocolatey" -showtime -warning  
+                      write-ezlogs "$app is not installed! Attempting to install from chocolatey" -showtime -warning
                       $choco_install = choco upgrade $app --confirm --force --acceptlicense
                       write-ezlogs ">>>> Verifying if $app was installed successfully...." -showtime -loglevel 2
                       $chocoappmatch = choco list $app
                       if($chocoappmatch){
                         $appinstalled = $($chocoappmatch | Select-String $app | out-string).trim()
-                      } 
+                      }
                     }else{
                       write-ezlogs "Unable to verify successfully installation of chocolatey -- cannot continue with install of app: $app!" -showtime -warning
-                    }       
+                    }
                   }
                 }else{
                   if($(get-command choco*)){
-                    write-ezlogs "$app is not installed! Attempting to install via chocolatey" -showtime -warning   
+                    write-ezlogs "$app is not installed! Attempting to install via chocolatey" -showtime -warning
                     $choco_install = choco upgrade $app --confirm --force --acceptlicense
                     write-ezlogs ">>>> Verifying if $app was installed successfully...." -showtime -loglevel 2
                     $chocoappmatch = choco list $app
@@ -1148,17 +1148,17 @@ function confirm-requirements
                     }
                   }else{
                     write-ezlogs "Unable to verify successfully installation of chocolatey -- cannot continue with install of app: $app!" -showtime -warning
-                  } 
-                }        
+                  }
+                }
                 if($appinstalled){
                   write-ezlogs "$app was successfully installed. Version: $appinstalled" -showtime -Success -loglevel 2
                 }else{
-                  write-ezlogs "Unable to verify if $app installed successfully! Choco output: $($choco_install | out-string)" -showtime -warning 
+                  write-ezlogs "Unable to verify if $app installed successfully! Choco output: $($choco_install | out-string)" -showtime -warning
                 }
               }
               if($app -match 'streamlink'){
                 $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
-                #$Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"} 
+                #$Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"}
                 Start-Runspace -scriptblock $app_install_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'App_install__RUNSPACE' -thisApp $thisApp -synchash $synchash
                 Remove-Variable Variable_list
                 Remove-Variable app_install_scriptblock
@@ -1177,31 +1177,31 @@ function confirm-requirements
     }
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Confirm Requirements
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Convert-TimespanToInt Function
 #----------------------------------------------
 function Convert-TimespanToInt {
   <#
       .SYNOPSIS
       Converts ISO Duration only to Time Int
-	
+
       .PARAMETER Timespan
       Example "P1Y2M10DT2H30M"
-	
+
       .EXAMPLE
       Convert-TimepanToInt -Timespan $time
-	
+
       .NOTES
       Please see for standards https://en.m.wikipedia.org/wiki/ISO_8601
 
       .Credit
       Woody
   #>
-	
+
   [OutputType([int64])]
   param
   (
@@ -1214,7 +1214,7 @@ function Convert-TimespanToInt {
       try{
         $TDays = ($Timespan.split("T")[0]).trimstart("P")
         $TTime = $Timespan.split("T")[1]
-			
+
         #region Days
         if (-not [string]::IsNullOrEmpty($TDays)) {
           # Checking for Year
@@ -1243,7 +1243,7 @@ function Convert-TimespanToInt {
           }
         }
         #endregion
-			
+
         #region Time
         if (-not [string]::IsNullOrEmpty($TTime)) {
           # Checking for Hours
@@ -1282,44 +1282,44 @@ function Convert-TimespanToInt {
   }
   Return $Results
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Convert-TimespanToInt Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-DDGSearchQuery Function
 #----------------------------------------------
 function Get-DDGSearchQuery {
-    
+
   param([string[]] $Query)
   if(-not [string]::IsNullOrEmpty($Query)){
     try{
       Add-Type -AssemblyName System.Web # To get UrlEncode()
       $QueryString = ($Query | %{ [Web.HttpUtility]::UrlEncode($_)}) -join '+'
-    
+
       # Return the query string
       $urlQuery =  "https://api.duckduckgo.com/?q=$QueryString&format=json"
-    
+
       $search = Invoke-restmethod $urlQuery -UseBasicParsing
       if(-not [string]::IsNullOrEmpty($search.Heading)){
         return $search
       }else{
         write-ezlogs "No results found matching query: $QueryString" -showtime -warning
-      }      
+      }
     }catch{
       Write-ezlogs "An exception occurred processing DDG Search query url: $urlQuery" -showtime -catcherror $_
     }
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-DDGSearchQuery Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Optimize-Assemblies Function
 #----------------------------------------------
 function Optimize-Assemblies {
-    
+
   param(
     [switch]$UpdateGAC,
     $thisApp,
@@ -1338,8 +1338,8 @@ function Optimize-Assemblies {
           write-ezlogs ">>>> Installing Assemblies into the GAC" -showtime -color cyan
           if($hash.window.isVisible){
             Update-SplashScreen -hash $hash -SplashMessage "Installing Assemblies into the GAC..."
-          } 
-          $Assemblies = [System.IO.Directory]::EnumerateFiles("$($thisApp.config.Current_Folder)\Assembly",'*.dll','AllDirectories')   
+          }
+          $Assemblies = [System.IO.Directory]::EnumerateFiles("$($thisApp.config.Current_Folder)\Assembly",'*.dll','AllDirectories')
           foreach ($a in $Assemblies)
           {
             if($a -notmatch 'WebView2' -and $a -notmatch 'XInputInterface'){
@@ -1363,20 +1363,20 @@ function Optimize-Assemblies {
       }
       if(!(use-runas -Check)){
         write-ezlogs "$($thisApp.Config.App_name) Media Player must be run as administrator in order to optimize Powershell Assemblies, cannot continue" -showtime -warning
-        if($hashsetup.Window.isVisible -and $hashsetup.Update_Optimize_Timer){        
+        if($hashsetup.Window.isVisible -and $hashsetup.Update_Optimize_Timer){
           $hashsetup.Update_Optimize_Timer.tag = "Requires Reboot"
           $hashsetup.Update_Optimize_Timer.start()
         }elseif($synchash.Window.isVisible){
           write-ezlogs "Optimization of Assemblies has finished! It is recommended to close and restart the app" -showtime -Success -AlertUI
         }
         return
-      } 
+      }
       $ngen_Measure = [system.diagnostics.stopwatch]::StartNew()
       $env:PATH += ";$ngen_path"
       $CurrentDomain_Assemblies = [AppDomain]::CurrentDomain.GetAssemblies()
       $CurrentDomain_Assemblies | ForEach {
         $path = $_.Location
-        if ([system.io.file]::Exists($path)) { 
+        if ([system.io.file]::Exists($path)) {
           $name = [system.io.path]::GetFileName($path)
           write-ezlogs ">>>> Running ngen.exe on '$name'" -showtime
           try{
@@ -1388,7 +1388,7 @@ function Optimize-Assemblies {
             }
           }catch{
             write-ezlogs "An exception occurred running ngen install for assembly path $path" -showtime -catcherror $_
-          }      
+          }
         }
       }
       $ngen_Measure.stop()
@@ -1404,7 +1404,7 @@ function Optimize-Assemblies {
     }
   }
   try{
-    #$Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"} 
+    #$Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"}
     $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
     Start-Runspace -scriptblock $Optimize_Assemblines_Scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'Optimize_Assemblies_RUNSPACE' -thisApp $thisApp
     Remove-Variable Variable_list
@@ -1413,11 +1413,11 @@ function Optimize-Assemblies {
     write-ezlogs "An exception occurred executing Optimize_Assemblies_RUNSPACE" -showtime -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Optimize-Assemblies Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Lock-Object Function
 #----------------------------------------------
 function Lock-Object
@@ -1437,14 +1437,14 @@ function Lock-Object
       lock $hashTable.SyncRoot {
       $hashTable.Add("Key", "Value")
       }
- 
+
       This is an example of using the "lock" alias to Lock-Object, in a manner that most closely resembles the similar C# syntax with positional parameters.
       .EXAMPLE
       $hashTable = @{}
       Lock-Object -InputObject $hashTable.SyncRoot -ScriptBlock {
       $hashTable.Add("Key", "Value")
       }
- 
+
       This is the same as Example 1, but using the full PowerShell command and parameter names.
       .INPUTS
       None.  This command does not accept pipeline input.
@@ -1455,7 +1455,7 @@ function Lock-Object
       .LINK
       http://learn-powershell.net/2013/04/19/sharing-variables-and-live-objects-between-powershell-runspaces/
   #>
- 
+
   [CmdletBinding()]
   param (
     [Parameter(Mandatory = $true, Position = 0)]
@@ -1463,12 +1463,12 @@ function Lock-Object
     [AllowEmptyCollection()]
     [object]
     $InputObject,
- 
+
     [Parameter(Mandatory = $true, Position = 1)]
     [scriptblock]
     $ScriptBlock
   )
-  
+
   if([string]::IsNullOrEmpty($ScriptBlock)){
     Write-ezlogs 'Lock-Object: Scriptblock was null or empty! Cannot continue' -isError
     return
@@ -1478,7 +1478,7 @@ function Lock-Object
     {
       Write-ezlogs 'Lock-Object: InputObject cannot be a value type.' -isError
       return
-    } 
+    }
     $lockTaken = $false
     [System.Threading.Monitor]::Enter($InputObject)
     $lockTaken = $true
@@ -1491,12 +1491,12 @@ function Lock-Object
     }
   }
 }
- 
-#---------------------------------------------- 
+
+#----------------------------------------------
 #endregion Lock-Object Function
 #----------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Clear-WorkingMemory Function
 #---------------------------------------------
 function Clear-WorkingMemory {
@@ -1538,11 +1538,11 @@ public static extern IntPtr GetCurrentProcess();
     }
   }
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Clear-WorkingMemory Function
 #---------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Get-MemoryUsage Function
 #---------------------------------------------
 $Global:last_memory_usage_byte = 0
@@ -1585,11 +1585,11 @@ function Get-MemoryUsage
   return ('Memory: {0:n1} MB ({1:n0} Bytes{2}){3}' -f  $memusageMB, $memusagebyte, $difftext, $Collectiontext)
 
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Get-MemoryUsage Function
 #---------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Get-AllStartApps Function
 #---------------------------------------------
 function Get-AllStartApps
@@ -1603,7 +1603,7 @@ function Get-AllStartApps
     $All,
     [string]$Name
   )
-  try{   
+  try{
     $com= (New-Object -ComObject Shell.Application).NameSpace("shell:::{4234d49b-0245-4df3-b780-3893943456e1}") # FOLDERID_AppsFolder
     if($All -or [string]::IsNullOrEmpty($Name)){
       foreach($c in $com.Items()){
@@ -1630,11 +1630,11 @@ function Get-AllStartApps
     }
   }
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Get-AllStartApps Function
 #---------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Get-VisualParent Function
 #---------------------------------------------
 function Get-VisualParentUp {
@@ -1643,19 +1643,19 @@ function Get-VisualParentUp {
     [Windows.DependencyObject]$source,
     [System.Reflection.TypeInfo]$type
   )
-    
+
   process {
     while ($source -ne $Null -and !($source -is $type)) {
-      $source = [Windows.Media.VisualTreeHelper]::GetParent($source)         
-    }  
-    return $source -as $type  
+      $source = [Windows.Media.VisualTreeHelper]::GetParent($source)
+    }
+    return $source -as $type
   }
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Get-VisualParent Function
 #---------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Use-Object Function
 #---------------------------------------------
 function Use-Object
@@ -1684,11 +1684,11 @@ function Use-Object
     }
   }
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Use-Object Function
 #---------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Get-ChildProcesses Function
 #---------------------------------------------
 function Get-ChildProcesses {
@@ -1705,7 +1705,7 @@ function Get-ChildProcesses {
       $Processfilter = "parentprocessid = '$($ParentProcessId)' AND $filter"
     }else{
       $Processfilter = "parentprocessid = '$($ParentProcessId)'"
-    }   
+    }
     if($Full){
       Get-CIMInstance -ClassName win32_process -filter $Processfilter | & { process {
           $_
@@ -1720,14 +1720,14 @@ function Get-ChildProcesses {
     write-ezlogs "An exception occurred in Get-ChildProcesses" -CatchError $_
   }
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Get-ChildProcesses Function
 #---------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Await Function
-#---------------------------------------------  
-function Wait-Task { 
+#---------------------------------------------
+function Wait-Task {
   [cmdletbinding()]
   Param (
     [parameter(ValuefromPipeline=$True)]
@@ -1736,15 +1736,15 @@ function Wait-Task {
   process {
     while (-not $task.AsyncWaitHandle.WaitOne(200)) { }
     return $task.GetAwaiter().GetResult()
-  } 
+  }
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Await Function
-#---------------------------------------------  
+#---------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Set-Window Function
-#---------------------------------------------  
+#---------------------------------------------
 Function Set-Window {
   <#
       .SYNOPSIS
@@ -1787,7 +1787,7 @@ Function Set-Window {
 
       ProcessName Size     TopLeft  BottomRight
       ----------- ----     -------  -----------
-      powershell  1262,642 2040,142 3302,784   
+      powershell  1262,642 2040,142 3302,784
 
       Description
       -----------
@@ -1839,10 +1839,10 @@ Function Set-Window {
       $Handle = $WindowHandle
     }else{
       $Handle = (Get-Process -id $ProcessName).MainWindowHandle
-    }            
+    }
     $Return = [Window]::GetWindowRect($Handle,[ref]$Rectangle)
-    If (-NOT $PSBoundParameters.ContainsKey('Width')) {            
-      $Width = $Rectangle.Right - $Rectangle.Left            
+    If (-NOT $PSBoundParameters.ContainsKey('Width')) {
+      $Width = $Rectangle.Right - $Rectangle.Left
     }
     If (-NOT $PSBoundParameters.ContainsKey('Height')) {
       $Height = $Rectangle.Bottom - $Rectangle.Top
@@ -1869,16 +1869,16 @@ Function Set-Window {
           BottomRight = $BottomRight
         }
         $Object.PSTypeNames.insert(0,'System.Automation.WindowInfo')
-        $Object            
+        $Object
       }
     }
   }
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Set-Window Function
-#--------------------------------------------- 
+#---------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-AllIndexesOf Function
 #----------------------------------------------
 function Get-AllIndexesOf
@@ -1894,7 +1894,7 @@ function Get-AllIndexesOf
   if($InputObject){
     try{
       return [Linq.Enumerable]::Where(
-        [Linq.Enumerable]::Range(0, $InputObject.Length), 
+        [Linq.Enumerable]::Range(0, $InputObject.Length),
         [Func[int, bool]] { param($i) $InputObject[$i] -eq $SearchString }
       )
     }catch{
@@ -1902,75 +1902,75 @@ function Get-AllIndexesOf
     }
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-AllIndexesOf Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-IndexesOf Function
 #----------------------------------------------
 function Get-IndexesOf($Array, $Value) {
   $i = 0
-  foreach ($el in $Array) { 
-    if ($el -eq $Value) { $i } 
+  foreach ($el in $Array) {
+    if ($el -eq $Value) { $i }
     ++$i
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-IndexesOf Function
 #----------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Convert-Size Function
 #---------------------------------------------
-function Convert-Size {            
-  [cmdletbinding()]            
-  param(            
-    [validateset("Bytes","KB","MB","GB","TB")]            
-    [string]$From,            
-    [validateset("Bytes","KB","MB","GB","TB")]            
-    [string]$To,            
-    [Parameter(Mandatory=$true)]            
-    [double]$Value,            
-    [int]$Precision = 4            
-  )         
+function Convert-Size {
+  [cmdletbinding()]
+  param(
+    [validateset("Bytes","KB","MB","GB","TB")]
+    [string]$From,
+    [validateset("Bytes","KB","MB","GB","TB")]
+    [string]$To,
+    [Parameter(Mandatory=$true)]
+    [double]$Value,
+    [int]$Precision = 4
+  )
   try{
-   
-    switch($From) {            
-      "Bytes" {$value = $Value }            
-      "KB" {$value = $Value * 1024 }            
-      "MB" {$value = $Value * 1024 * 1024}            
-      "GB" {$value = $Value * 1024 * 1024 * 1024}            
-      "TB" {$value = $Value * 1024 * 1024 * 1024 * 1024}            
-    }            
-            
-    switch ($To) {            
-      "Bytes" {return $value}            
-      "KB" {$Value = $Value/1KB}            
-      "MB" {$Value = $Value/1MB}            
-      "GB" {$Value = $Value/1GB}            
-      "TB" {$Value = $Value/1TB}            
-            
-    }            
-            
-    return [Math]::Round($value,$Precision,[MidPointRounding]::AwayFromZero)            
+
+    switch($From) {
+      "Bytes" {$value = $Value }
+      "KB" {$value = $Value * 1024 }
+      "MB" {$value = $Value * 1024 * 1024}
+      "GB" {$value = $Value * 1024 * 1024 * 1024}
+      "TB" {$value = $Value * 1024 * 1024 * 1024 * 1024}
+    }
+
+    switch ($To) {
+      "Bytes" {return $value}
+      "KB" {$Value = $Value/1KB}
+      "MB" {$Value = $Value/1MB}
+      "GB" {$Value = $Value/1GB}
+      "TB" {$Value = $Value/1TB}
+
+    }
+
+    return [Math]::Round($value,$Precision,[MidPointRounding]::AwayFromZero)
   }catch{
     write-ezlogs "An exception occurred in Convert-Size" -catcherror $_
-  }           
-}      
-#--------------------------------------------- 
+  }
+}
+#---------------------------------------------
 #endregion Convert-Size Function
-#--------------------------------------------- 
+#---------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Convertto-RelativeTime Function
 #---------------------------------------------
-function Convertto-RelativeTime {            
-  [cmdletbinding()]            
-  param(                      
-    [DateTime]$Time            
-  )         
-  try{   
+function Convertto-RelativeTime {
+  [cmdletbinding()]
+  param(
+    [DateTime]$Time
+  )
+  try{
     if($Time){
       $SECOND = 1;
       $MINUTE = 60 * $SECOND;
@@ -1996,7 +1996,7 @@ function Convertto-RelativeTime {
           $RelativeTime = "$($ts.Days) day ago"
         }else{
           $RelativeTime = "$($ts.Days) days ago"
-        }        
+        }
       }elseif($delta -lt 12 * $Month){
         $months = [Convert]::ToInt32([Math]::Floor([double]$ts.Days / 30));
         if($months -eq 1){
@@ -2012,15 +2012,15 @@ function Convertto-RelativeTime {
           $RelativeTime = "$($years) years ago"
         }
       }
-    }       
-    return $RelativeTime            
+    }
+    return $RelativeTime
   }catch{
     write-ezlogs "An exception occurred in Convertto-RelativeTime" -catcherror $_
-  }           
-}      
-#--------------------------------------------- 
+  }
+}
+#---------------------------------------------
 #endregion Convertto-RelativeTime Function
-#--------------------------------------------- 
+#---------------------------------------------
 
 #---------------------------------------------
 #region Wait-OnMutex Function
@@ -2030,13 +2030,13 @@ function Wait-OnMutex
   <#
       .SYNOPSIS
       Process/thread locking using Named Mutex
-    
+
       .PARAMETER MutexId
       The string of mutex ID to assign/retrieve
-    
+
       .EXAMPLE
       $MutexInstance = Wait-OnMutex -MutexId 'SomeMutexId12345'
-    
+
       .NOTES
       Objects will be returned as Hashtables and not as pscustomobjects
   #>
@@ -2054,8 +2054,8 @@ function Wait-OnMutex
     }
 
     return $MutexInstance
-  } 
-  catch [System.Threading.AbandonedMutexException] 
+  }
+  catch [System.Threading.AbandonedMutexException]
   {
     $MutexInstance = [System.Threading.Mutex]::new($false, $MutexId)
     return Wait-OnMutex -MutexId $MutexId
@@ -2065,7 +2065,7 @@ function Wait-OnMutex
 #endregion Wait-OnMutex Function
 #---------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region ConvertFrom-Roman Function
 #----------------------------------------------
 function ConvertFrom-Roman {
@@ -2108,11 +2108,11 @@ function ConvertFrom-Roman {
 
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion ConvertFrom-Roman Function
 #----------------------------------------------
 
-#--------------------------------------------- 
+#---------------------------------------------
 #region Set-WindowTopMost Function
 #---------------------------------------------
 function Set-WindowTopMost {
@@ -2133,7 +2133,7 @@ function Set-WindowTopMost {
       [void][System.Reflection.Assembly]::LoadFrom("$($thisApp.Config.Current_Folder)\Assembly\EZT-MediaPlayer\EZT_MediaPlayer.dll")
     }
   }
-  Process { 
+  Process {
     try{
       if($Window -is [System.Windows.Window]){
         if($Window.GetValue([WindowExtensions]::WindowTopMostProperty) -eq $null){
@@ -2162,16 +2162,16 @@ function Set-WindowTopMost {
               $Window.Topmost = $true
             }
           }
-        }  
+        }
       }else{
         write-ezlogs "Cannot set AlwaysOnTop -- no valid Window provided" -Warning
-      }     
+      }
     }catch{
       write-ezlogs "An exception occurred setting AlwaysOnTop for window: $($Window.Name) - $($Window)" -showtime -catcherror $_
     }
   }
 }
-#--------------------------------------------- 
+#---------------------------------------------
 #endregion Set-WindowTopMost Function
 #---------------------------------------------
 

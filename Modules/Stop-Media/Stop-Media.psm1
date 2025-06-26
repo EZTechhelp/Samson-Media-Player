@@ -77,13 +77,8 @@ function Stop-Media
       }
     }
     Set-DiscordPresense -synchash $synchashWeak.Target -thisapp $thisApp -stop
-    <#    try{
-        $existing_Runspace = Stop-Runspace -thisApp $thisApp -runspace_name 'Spotify_Play_media' -force
-        }catch{
-        write-ezlogs " An exception occurred stopping existing runspace 'Spotify_Play_media'" -showtime -catcherror $_
-    } #>
     if($synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.IsEnabled){
-      write-ezlogs "| Setting SystemMediaTransportControls status to Stopped" -LogLevel 2
+      write-ezlogs "| Setting SystemMediaTransportControls status to Stopped" -LogLevel 0 -Verboselog:$Verboselog
       $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus = 'Stopped'
       $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.ClearAll()
       $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Type = 'Music'
@@ -115,9 +110,6 @@ function Stop-Media
     if($synchashWeak.Target.VideoView_Play_Icon.kind){
       $synchashWeak.Target.VideoView_Play_Icon.kind = 'PlayCircleOutline'
     }
-    <#    if($synchashWeak.Target.Media_Length_Label){
-        $synchashWeak.Target.Media_Length_Label.text = "00:00:00"
-    }#>
     if($synchashWeak.Target.DisplayPanel_VideoQuality_TextBlock){
       $synchashWeak.Target.DisplayPanel_VideoQuality_TextBlock.text = $Null
     }
@@ -148,22 +140,15 @@ function Stop-Media
       $synchashWeak.Target.VLC_IsPlaying_State = $false
       $synchashWeak.Target.VLC.stop()
       $current_track = $null
-      <#      if((Get-Process streamlink*) -and !$thisApp.Config.Dev_mode){
-          write-ezlogs ">>>> Closing Streamlink Processs" -loglevel 2
-          Get-Process streamlink* | Stop-Process -Force
-      }#>
     }
     if($synchashWeak.Target.Youtube_WebPlayer_title -and $synchashWeak.Target.Youtube_WebPlayer_URL){
       $synchashWeak.Target.Youtube_WebPlayer_URL = $null
       $synchashWeak.Target.Youtube_WebPlayer_title = $null     
     }
-    #Set-YoutubeWebPlayerTimer -synchash $synchashWeak.Target -thisApp $thisApp -Stop
     if($synchashWeak.Target.Spotify_WebPlayer_title -and $synchashWeak.Target.Spotify_WebPlayer_URL){
       $synchashWeak.Target.Spotify_WebPlayer_URL = $null
       $synchashWeak.Target.Spotify_WebPlayer_title = $null     
     }
-    #Set-SpotifyWebPlayerTimer -synchash $synchashWeak.Target -thisApp $thisApp -Stop
-
     if($thisApp.Config.Import_Spotify_Media -and (($thisapp.config.Spotify_WebPlayer -and $synchashWeak.Target.Spotify_WebPlayer_State.current_track.id) -or (Get-Process 'Spotify*'))){
       if($thisApp.Config.Use_Spicetify){
         $current_track = $synchashWeak.Target.Spicetify
@@ -171,34 +156,31 @@ function Stop-Media
         $current_track = (Get-CurrentTrack -ApplicationName $thisapp.config.App_Name)
       }  
     }
-
     Reset-MainPlayer -synchash $synchashWeak.Target -thisApp $thisApp -SkipDiscord
-
     Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchashWeak.Target -stop
-
     if($synchashWeak.Target.vlc -is [System.IDisposable]){
       $null = $synchashWeak.Target.VLC.stop()
       $synchashWeak.Target.VLC_IsPlaying_State = $false
-      write-ezlogs "| Disposing vlc" -Warning
+      write-ezlogs "| Disposing vlc" -Warning -LogLevel 0 -Verboselog:$Verboselog
       $synchashWeak.Target.vlc.dispose()
       $synchashWeak.Target.vlc = $Null
       if($synchashWeak.Target.VideoView.MediaPlayer -is [System.IDisposable]){
-        write-ezlogs "| Disposing VideoView.MediaPlayer" -Warning
+        write-ezlogs "| Disposing VideoView.MediaPlayer" -Warning -LogLevel 0 -Verboselog:$Verboselog
         $synchashWeak.Target.VideoView.MediaPlayer.Dispose()
         $synchashWeak.Target.VideoView.MediaPlayer = $Null
       }      
     }
     try{
       if($synchashWeak.Target.libvlc -is [System.IDisposable]){
-        write-ezlogs "| Disposing Libvlc instance" -showtime -warning
+        write-ezlogs "| Disposing Libvlc instance" -warning -LogLevel 0 -Verboselog:$Verboselog
         $synchashWeak.Target.libvlc.dispose()
         $synchashWeak.Target.libvlc = $Null
       }      
     }catch{
-      write-ezlogs "An exception occurred An exception occurred Dispose libvlc" -showtime -catcherror $_
+      write-ezlogs "An exception occurred An exception occurred Dispose libvlc" -catcherror $_
     }
     if($synchashWeak.Target.Equalizer -is [System.IDisposable]){
-      write-ezlogs "| Disposing Equalizer" -Warning
+      write-ezlogs "| Disposing Equalizer" -Warning -LogLevel 0 -Verboselog:$Verboselog
       $synchashWeak.Target.Equalizer.Dispose()
       $synchashWeak.Target.Equalizer = $Null
     }
@@ -272,6 +254,7 @@ function Stop-Media
     }
     ######
     #TODO: Setting video view to visible here potentially contributes towards Layout measurement override crash if video view is currently collapsed
+    #UPDATE - This should now be resolved with Libvclsharp 3.9.3 - leaving notes for now but should be cleaned up at some point
     #Mostly only occurs if miniplayer is open but can still occur even if not
     #Does not occur if video view is hidden. If collapsed, it basically sets the height/width to 0 (and any controls inside it, specifically airhack and those used to get around wpf airspace issues)
     #When its set to visible, various layout measurement events trigger but if the height and width is 0 (due to being collapsed) we get the crash

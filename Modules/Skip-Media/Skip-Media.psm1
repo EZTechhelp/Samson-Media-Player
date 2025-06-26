@@ -56,15 +56,19 @@ function Skip-Media
     $synchash.Current_playing_media = $null 
     $synchash.Youtube_webplayer_current_Media = $Null
     write-ezlogs "[Caller: $((Get-PSCallStack)[1].Location -replace '.ps1')] >>>> Skip-Media received" -showtime
-    write-ezlogs ">>>> Stopping play timers" -showtime         
-    $Synchash.Timer.stop()
-    $synchash.Start_media_timer.stop()
+    write-ezlogs ">>>> Stopping play timers" -LogLevel 0 -Verboselog:$Verboselog   
+    if($Synchash.Timer){
+      $Synchash.Timer.stop()
+    }
+    if($synchash.Start_media_timer){
+      $synchash.Start_media_timer.stop()
+    }  
     Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop    
     if($synchash.vlc.IsPlaying -or $synchash.Vlc.state -match 'Paused'){
-      write-ezlogs ">>>> Stopping VLC Playback" -showtime
+      write-ezlogs ">>>> Stopping VLC Playback"
       $Null = $synchash.VLC.stop()
       if($synchash.vlc.media -is [System.IDisposable]){
-        write-ezlogs "| Unsetting vlc.media" -showtime
+        write-ezlogs "| Unsetting vlc.media" -LogLevel 0 -Verboselog:$Verboselog 
         #TODO: This was commented out due to some crashes when disposing libvlc here. Need to recheck - likely was issue disposing from difference runspace
         #$synchash.libvlc_media.dispose()
         #$synchash.libvlc_media = $Null
@@ -132,10 +136,10 @@ function Skip-Media
           $index_toget = ($thisApp.config.Current_Playlist.keys | Sort-Object) | Where-Object {$_ -gt $last_played_index} | select-Object -first 1 
           $next_item = (($thisApp.config.Current_Playlist.GetEnumerator()) | Where-Object {$_.name -eq $index_toget}).value   
         }else{
-          write-ezlogs "| Getting next item from lowest current index" -showtime -LogLevel 2
+          write-ezlogs "| Getting next item from lowest current index" -showtime -LogLevel 0 -Verboselog:$Verboselog
           $index_toget = ($thisApp.config.Current_Playlist.keys | Measure-Object -Minimum).Minimum 
         }
-        write-ezlogs "| Next item to get with index $($index_toget)" -showtime -LogLevel 2  
+        write-ezlogs "| Next item to get with index $($index_toget)" -showtime -LogLevel 0 -Verboselog:$Verboselog
         $next_item = (($thisApp.config.Current_Playlist.GetEnumerator()) | Where-Object {$_.name -eq $index_toget}).value          
       }  
       if(!$next_item){

@@ -148,12 +148,12 @@ function Start-FileWatcher{
                 if($changetype -eq 'Changed' -and [System.IO.File]::Exists($path)){
                   $mediainfo = [System.IO.FileInfo]::new($path)
                   if(-not [string]::IsNullOrEmpty($mediainfo.Length) -and $mediainfo.Length -gt 0 -and $Media.Size -ne $mediainfo.Length){
-                    write-ezlogs " | Media has changed size from '$($Media.Size)' to '$($mediainfo.Length)'"
+                    write-ezlogs "| Media has changed size from '$($Media.Size)' to '$($mediainfo.Length)'"
                     $MediaChanged = $true
                   }
                 }
                 if($changetype -in 'Deleted','Renamed' -or $MediaChanged){
-                  write-ezlogs " | Updating $($media.url) in local media profile"
+                  write-ezlogs "| Updating $($media.url) in local media profile"
                   [void]$synchash.ProfileManager_Queue.Enqueue([PSCustomObject]@{
                       'Media' = $media
                       'ActionType' = $changetype
@@ -175,7 +175,7 @@ function Start-FileWatcher{
                   }
                   #Sleep first - file may be still copying
                   Start-sleep 1
-                  write-ezlogs " | Add new media path $path to local media profile - length: $($mediainfo.Length)"
+                  write-ezlogs "| Add new media path $path to local media profile - length: $($mediainfo.Length)"
                   [void]$synchash.ProfileManager_Queue.Enqueue([PSCustomObject]@{
                       'FullName' = $mediainfo.FullName
                       'BaseName' = $mediainfo.BaseName

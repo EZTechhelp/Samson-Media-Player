@@ -2,14 +2,14 @@
     .Name
     Get-LocalMedia
 
-    .Version 
+    .Version
     0.1.0
 
     .SYNOPSIS
-    Retrieves all media files from local provided sources  
+    Retrieves all media files from local provided sources
 
     .DESCRIPTION
-       
+
     .Configurable Variables
 
     .Requirements
@@ -26,7 +26,7 @@
 
 #>
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-Taglib Function
 #----------------------------------------------
 function Get-Taglib {
@@ -36,7 +36,7 @@ function Get-Taglib {
     [switch]$dev_mode
   )
   if($Path){
-    try{ 
+    try{
       $taginfo = [taglib.file]::create($Path)
       return $taginfo
     }catch{
@@ -53,11 +53,11 @@ function Get-Taglib {
     write-ezlogs "Cannot get taglib metadata for invalid file path: $($path)" -warning -logtype LocalMedia
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-Taglib Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-SongInfo Function
 #----------------------------------------------
 function Get-SongInfo {
@@ -66,11 +66,12 @@ function Get-SongInfo {
     [string]$Path,
     [switch]$use_FFPROBE,
     [switch]$use_FFPROBE_Fallback,
-    [switch]$dev_mode
+    [switch]$dev_mode,
+    [switch]$Verboselog
   )
   if($Path){
-    try{ 
-      try{       
+    try{
+      try{
         $duration = $Null
         $taginfo = $Null
         $artist = $Null
@@ -92,7 +93,7 @@ function Get-SongInfo {
         }
       }
       if($Retry){
-        try{       
+        try{
           $taginfo = $Null
           $waittimer = 0
           if($synchash.All_Tor_Results.State -match 'Started|Downloading'){
@@ -100,7 +101,7 @@ function Get-SongInfo {
           }else{
             while((Get-Taglib -Path $Path -ErrorAction SilentlyContinue) -eq 'Locked' -and $waittimer -lt 30){
               $waittimer++
-              write-ezlogs "| File locked....Waiting up to 30 seconds: $($waittimer)" -showtime -warning -logtype LocalMedia
+              write-ezlogs "| File locked....Waiting up to 30 seconds: $($waittimer)" -warning -logtype LocalMedia -LogLevel 0 -Verboselog:$Verboselog
               start-Sleep 1
             }
             if($waittimer -ge 30){
@@ -111,8 +112,8 @@ function Get-SongInfo {
           }
         }catch{
           write-ezlogs "Retry of taglib failed for path: $Path -- moving on" -showtime -logtype LocalMedia
-        }   
-      }                   
+        }
+      }
       if(($taginfo.tag.IsEmpty -or !$taginfo)){
         if($use_FFPROBE_Fallback){
           if($thisApp.Config.Dev_mode){
@@ -136,11 +137,6 @@ function Get-SongInfo {
               $Process.dispose()
             }
           }
-          <#          try{
-              $ffprobe = ffprobe -hide_banner -loglevel quiet -show_error -select_streams v:0 -show_optional_fields always -show_entries format -print_format json $Path | convertfrom-json
-              }catch{
-              write-ezlogs "An exception occurred executing ffprobe fallback method to get info about $($Path)" -catcherror $_ -ClearErrors
-          } #>        
           try{
             if($ffprobe.format){
               if(-not [string]::IsNullOrEmpty($ffprobe.format.tags.ARTIST)){
@@ -150,7 +146,6 @@ function Get-SongInfo {
               }else{
                 $rootdir = [System.IO.directory]::GetParent($Path)
                 $artist = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($rootdir))).trim()
-                #$artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($rootdir))).trim() 
               }
               if(-not [string]::IsNullOrEmpty($ffprobe.format.tags.TITLE)){
                 $title = $ffprobe.format.tags.TITLE
@@ -161,17 +156,17 @@ function Get-SongInfo {
                 $duration = [timespan]::FromSeconds($ffprobe.format.duration)
                 if($thisApp.Config.Dev_mode -and $thisApp.config.Debug_mode){
                   write-ezlogs "| Found duration -- FFProbe: $($ffprobe.format.duration) -- Timespan: $($duration)" -Dev_mode -LogLevel 3
-                }                
+                }
               }elseif($taginfo.properties.duration){
                 if($thisApp.Config.Dev_mode -and $thisApp.config.Debug_mode){
                   write-ezlogs "| Found duration -- taginfo.properties: $($taginfo.properties.duration)" -Dev_mode -LogLevel 3
-                }                
+                }
                 $duration = $taginfo.properties.duration
               }
-              if(-not [string]::IsNullOrEmpty($ffprobe.format.bit_rate)){         
+              if(-not [string]::IsNullOrEmpty($ffprobe.format.bit_rate)){
                 $bitrate = (Convert-Size -From Bytes -To KB -Value $ffprobe.format.bit_rate -Precision 2)
               }
-              if(-not [string]::IsNullOrEmpty($ffprobe.format.tags.DESCRIPTION)){         
+              if(-not [string]::IsNullOrEmpty($ffprobe.format.tags.DESCRIPTION)){
                 $description = $ffprobe.format.tags.DESCRIPTION
               }
             }elseif($ffprobe.error){
@@ -181,11 +176,11 @@ function Get-SongInfo {
             }
           }catch{
             write-ezlogs "An exception occurred processing ffprobe properties of media path: $($Path)" -catcherror $_ -ClearErrors
-          }   
+          }
         }else{
           $title = ([System.IO.Path]::GetFileNameWithoutExtension($Path))
         }
-      }else{ 
+      }else{
         if(-not [string]::IsNullOrEmpty($taginfo.tag.Artists)){
           $artist = $taginfo.tag.Artists -join '/'
         }elseif(-not [string]::IsNullOrEmpty($taginfo.tag.AlbumArtists)){
@@ -198,21 +193,20 @@ function Get-SongInfo {
           $artist = $taginfo.tag.FirstAlbumArtist
         }elseif(-not [string]::IsNullOrEmpty($taginfo.tag.FirstPerformer)){
           $artist = $taginfo.tag.FirstPerformer
-        }     
+        }
         $title = $taginfo.tag.title
-        $Description = $taginfo.tag.Description  
+        $Description = $taginfo.tag.Description
         $Length = $taginfo.FileAbstraction.ReadStream.Length
       }
       if(-not [string]::IsNullOrEmpty($artist)){
         $artist = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase($artist.ToLower()).trim()
-        #$artist = (Get-Culture).TextInfo.ToTitleCase($artist.ToLower()).trim() 
       }else{
         $artist = 'Unknown'
       }
       #TODO: Dont use parent folder as artist name by default - maybe as option
       <#      if(-not[string]::IsNullOrEmpty($artist)) {
           $rootdir = [System.IO.directory]::GetParent($Path)
-          $artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($rootdir))).trim() 
+          $artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($rootdir))).trim()
       }#>
       if([string]::IsNullOrEmpty($title)) {
         $rootdir = [System.IO.directory]::GetParent($Path)
@@ -221,13 +215,13 @@ function Get-SongInfo {
       if(-not [string]::IsNullOrEmpty($taginfo.properties.duration) -and [string]::IsNullOrEmpty($duration)){
         if($thisApp.Config.Dev_mode -and $thisApp.config.Debug_mode){
           write-ezlogs "| Found duration -- taginfo.properties: $($taginfo.properties.duration)" -Dev_mode -LogLevel 3 -logOnly
-        }        
+        }
         $duration = $taginfo.properties.duration
-      }  
-      $hasVideo = if ($taginfo.properties.MediaTypes -match 'Video') { $true } else { $false }   
+      }
+      $hasVideo = if ($taginfo.properties.MediaTypes -match 'Video') { $true } else { $false }
       if($use_FFPROBE -and !$ffprobe){
         try{
-          $ffprobe = ffprobe -hide_banner -loglevel quiet -show_error -select_streams v:0 -show_optional_fields always -show_entries format -print_format json $Path | convertfrom-json 
+          $ffprobe = ffprobe -hide_banner -loglevel quiet -show_error -select_streams v:0 -show_optional_fields always -show_entries format -print_format json $Path | convertfrom-json
         }catch{
           write-ezlogs "An exception occurred executing ffprobe for $path" -catcherror $_
         }
@@ -240,14 +234,14 @@ function Get-SongInfo {
         }
       }else{
         $bitrate = $taginfo.properties.audiobitrate
-      } 
+      }
       if([string]::IsNullOrEmpty($Length)){
         $Length = [System.IO.FileInfo]::new($path).Length
       }
       $newObject = [PSCustomObject]::new(@{
           'Artist' = $artist
           'Title' = $title
-          'Album' = $taginfo.tag.Album 
+          'Album' = $taginfo.tag.Album
           'Year' = $taginfo.tag.Year
           'hasVideo' = $hasVideo
           'Comments' = $taginfo.tag.comment
@@ -270,17 +264,17 @@ function Get-SongInfo {
       if($taginfo -is [System.IDisposable]){
         [void]$taginfo.Dispose()
         $taginfo = $null
-      } 
+      }
     }
   }else{
     write-ezlogs "Cannot get taglib metadata for invalid file path: $($path)" -warning -logtype LocalMedia
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-SongInfo Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Set-SongInfo Function
 #----------------------------------------------
 function Set-SongInfo
@@ -306,26 +300,26 @@ function Set-SongInfo
   )
 
   if($Path){
-    try{ 
-      try{       
+    try{
+      try{
         if($dev_mode -and $thisApp.config.Debug_mode){
           write-ezlogs ">>>> Getting Taginfo for file: $($Path)" -Dev_mode -logOnly -LogLevel 3 -logtype $logtype
-        }        
-        $taginfo = [taglib.file]::create($Path) 
+        }
+        $taginfo = [taglib.file]::create($Path)
       }catch{
         write-ezlogs "An exception occurred getting taginfo for $Path - type $($path.gettype())" -showtime -catcherror $_
         [void]$error.clear()
-      }             
+      }
       if((!$taginfo)){
         write-ezlogs "Unable to get taginfo for file: $path -- Skipping" -warning -logtype $logtype
         return
-      }else{  
+      }else{
         if(-not [string]::IsNullOrEmpty($artist)) {
           $taginfo.tag.Artists = $artist
-        }    
+        }
         if(-not [string]::IsNullOrEmpty($title)) {
           $taginfo.tag.title = $title
-        } 
+        }
         if(-not [string]::IsNullOrEmpty($Description)) {
           $taginfo.tag.Description = $Description
         }
@@ -334,7 +328,7 @@ function Set-SongInfo
         }
         if(-not [string]::IsNullOrEmpty($Album)) {
           $taginfo.tag.Album = $album
-        } 
+        }
         if(-not [string]::IsNullOrEmpty($Year)){
           [System.Globalization.CultureInfo]$provider = [System.Globalization.CultureInfo]::InvariantCulture
           [System.DateTime]$parsedDate = [Datetime]::Now
@@ -349,7 +343,7 @@ function Set-SongInfo
         }
         if(-not [string]::IsNullOrEmpty($TrackCount)){
           $taginfo.tag.TrackCount = $TrackCount
-        }          
+        }
         if([System.IO.File]::Exists($Image)){
           write-ezlogs "| Adding image to tag pictures: $Image" -logtype $logtype
           try{
@@ -358,37 +352,32 @@ function Set-SongInfo
           }catch{
             write-ezlogs "An exception occurred setting taglib image from image path $Image" -showtime -catcherror $_
           }
-        } 
+        }
         if(-not [string]::IsNullOrEmpty($Genres)){
           $taginfo.tag.Genres = $Genres
-        }   
+        }
         if(-not [string]::IsNullOrEmpty($Lyrics)){
           $taginfo.tag.Lyrics = $Lyrics
-        } 
+        }
         if(-not [string]::IsNullOrEmpty($Copyright)){
           $taginfo.tag.Lyrics = $Copyright
-        } 
+        }
         if(-not [string]::IsNullOrEmpty($Disc)){
           $taginfo.tag.Disc = $Disc
-        } 
+        }
         if(-not [string]::IsNullOrEmpty($DiscCount)){
           $taginfo.tag.DiscCount = $DiscCount
         }
         if(-not [string]::IsNullOrEmpty($Subtitle)){
           $taginfo.tag.Subtitle = $Subtitle
-        }  
+        }
         try{
           write-ezlogs ">>>> Saving new tag info: $($path)"
           [void]$taginfo.Save()
         }catch{
           write-ezlogs "An exception occurred saving tag info to file: $path" -showtime -catcherror $_
-        }                                                                             
+        }
       }
-      <#      $taginfo.tag.psobject.properties.name | foreach {
-          if($_ -in $PSBoundParameters.keys){
-          $value = $PSBoundParameters[$_]
-          }
-      }#>                     
     }catch{
       write-ezlogs "An exception occurred parsing info about file $Path" -showtime -catcherror $_
       [void]$error.clear()
@@ -396,17 +385,17 @@ function Set-SongInfo
       if($taginfo){
         [void]$taginfo.Dispose()
         $taginfo = $null
-      } 
+      }
     }
   }else{
     write-ezlogs "Cannot get taglib metadata for invalid file path: $($path)" -warning -logtype $logtype
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Set-SongInfo Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-LocalMedia Function
 #----------------------------------------------
 function Get-LocalMedia
@@ -432,7 +421,7 @@ function Get-LocalMedia
     [switch]$Verboselog
   )
   write-ezlogs "#### Executing Get-LocalMedia ####" -linesbefore 1 -logtype LocalMedia
-  $GetLocalMedia_stopwatch = [system.diagnostics.stopwatch]::StartNew() 
+  $GetLocalMedia_stopwatch = [system.diagnostics.stopwatch]::StartNew()
   Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\PSSerializedXML\PSSerializedXML.psm1" -NoClobber -DisableNameChecking -Scope Local
   $AllMedia_Profile_Directory_Path = [System.IO.Path]::Combine($thisApp.Config.Media_Profile_Directory,"All-MediaProfile")
   if (!([System.IO.Directory]::Exists($AllMedia_Profile_Directory_Path))){
@@ -440,26 +429,16 @@ function Get-LocalMedia
       [void][System.IO.Directory]::CreateDirectory($AllMedia_Profile_Directory_Path)
     }catch{
       write-ezlogs "[Get-LocalMedia] An exception occurred creating new directory at: $AllMedia_Profile_Directory_Path" -catcherror $_
-    }   
+    }
   }
   $AllMedia_Profile_File_Path = [System.IO.Path]::Combine($AllMedia_Profile_Directory_Path,"All-Media-Profile.xml")
-  #$ffmpeg_Path = "$($thisApp.config.Current_folder)\Resources\flac"
-  #$envpaths2 = $env:path -split ';'
-  <#  if($ffmpeg_Path -notin $envpaths2){
-      if($thisApp.Config.Dev_mode){write-ezlogs "[Get-LocalMedia] >>>> Adding ffmpeg to user enviroment path $ffmpeg_Path" -Dev_mode}
-      $env:path += ";$ffmpeg_Path"
-      $envpaths = [Environment]::GetEnvironmentVariable('Path') -split ';'
-      if($ffmpeg_Path -notin $envpaths){
-      [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$ffmpeg_Path",[EnvironmentVariableTarget]::User)
-      }
-  }#>
-  if($startup -and $Import_Profile -and ([System.IO.FIle]::Exists($AllMedia_Profile_File_Path))){ 
+  if($startup -and $Import_Profile -and ([System.IO.FIle]::Exists($AllMedia_Profile_File_Path))){
     if($thisApp.Config.Dev_mode){write-ezlogs "[Get-LocalMedia] | Importing Local Media Profile: $AllMedia_Profile_File_Path" -showtime -logtype LocalMedia -Dev_mode}
     try{
-      $synchash.All_local_Media = Import-SerializedXML -Path $AllMedia_Profile_File_Path 
+      $synchash.All_local_Media = Import-SerializedXML -Path $AllMedia_Profile_File_Path
     }catch{
       write-ezlogs "[Get-LocalMedia] An exception occurred importing local media profile at: $AllMedia_Profile_File_Path" -catcherror $_
-    } 
+    }
     if($GetLocalMedia_stopwatch){
       $GetLocalMedia_stopwatch.stop()
       write-ezlogs "####################### Get-LocalMedia Finished" -PerfTimer $GetLocalMedia_stopwatch -Perf
@@ -470,32 +449,32 @@ function Get-LocalMedia
     write-ezlogs "[Get-LocalMedia] | Media Profile to import not found at $AllMedia_Profile_File_Path....Attempting to build new profile" -showtime -logtype LocalMedia
     Import-module "$($thisApp.Config.Current_Folder)\Modules\Get-HelperFunctions\Get-HelperFunctions.psm1" -NoClobber -DisableNameChecking -Scope Local
     Import-module "$($thisApp.Config.Current_Folder)\Modules\Find-FilesFast\Find-FilesFast.psm1" -NoClobber -DisableNameChecking -Scope Local
-  }  
+  }
   if($Media_Path){
     $directories = $Media_Path
-    if($Import_Profile -and ([System.IO.File]::Exists($AllMedia_Profile_File_Path))){ 
+    if($Import_Profile -and ([System.IO.File]::Exists($AllMedia_Profile_File_Path))){
       write-ezlogs "[Get-LocalMedia] | Importing Local Media Profile: $AllMedia_Profile_File_Path" -showtime -logtype LocalMedia
       try{
         $synchash.All_local_Media = Import-SerializedXML -Path $AllMedia_Profile_File_Path
       }catch{
         write-ezlogs "[Get-LocalMedia] An exception occurred importing local media profile at: $AllMedia_Profile_File_Path" -catcherror $_
-      } 
+      }
     }
   }else{
     $directories = $Media_directories
     if(!$Refresh_All_Media -and [System.IO.File]::Exists($AllMedia_Profile_File_Path)){
       write-ezlogs "[Get-LocalMedia] | Importing Local Media Profile: $AllMedia_Profile_File_Path" -showtime -logtype LocalMedia
       try{
-        $synchash.All_local_Media = Import-SerializedXML -Path $AllMedia_Profile_File_Path 
+        $synchash.All_local_Media = Import-SerializedXML -Path $AllMedia_Profile_File_Path
       }catch{
         write-ezlogs "[Get-LocalMedia] An exception occurred importing local media profile at: $AllMedia_Profile_File_Path" -catcherror $_
-      }    
+      }
     }
-  } 
+  }
   if(!$synchash.All_local_Media -or @($synchash.All_local_Media).count -lt 1){
     write-ezlogs "[Get-LocalMedia] | Creating new Generic list for Local_Available_Media" -showtime -logtype LocalMedia
     $synchash.All_local_Media = [System.Collections.Generic.List[Media]]::new()
-  } 
+  }
   try{
     if($directories){
       $media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)avi|(?i)wmv|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mov|(?i)h264|(?i)mpeg|(?i)mpg4|(?i)movie|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))',[System.Text.RegularExpressions.RegexOptions]::Compiled)
@@ -504,21 +483,20 @@ function Get-LocalMedia
       if($AddNewOnly -and !$Media_Path -and $synchash.All_local_Media){
         try{
           $directories = lock-object -InputObject $synchash.All_local_Media.SyncRoot -ScriptBlock {
-            $directories | & { process { 
+            $directories | & { process {
                 if(($synchash.All_local_Media.SourceDirectory.indexof("$_".ToUpper()) -eq -1 -and $synchash.All_local_Media.SourceDirectory.indexof("$_".ToLower()) -eq -1)){
                   $_
                 }
             }} | Select-Object -Unique
-            #$directories = $directories.where({($synchash.All_local_Media.SourceDirectory.indexof($_)) -eq -1}) | Select-Object -Unique
-          }         
+          }
           write-ezlogs "[Get-LocalMedia] | New directories not already included in media library: Count $($directories.count)" -showtime -logtype LocalMedia
         }catch{
           write-ezlogs "An exception occurred getting unique directories not already included in media library" -catcherror $_
         }
       }
       $total_directories = @($directories).count
-      $synchash.processed_directories = 0 
-      $synchash.processed_localMedia = 0    
+      $synchash.processed_directories = 0
+      $synchash.processed_localMedia = 0
       if($ImportMode -eq 'Slow'){
         $throttle = 1
       }elseif($total_directories -ge 128){
@@ -535,19 +513,19 @@ function Get-LocalMedia
             'Control' = 'LocalMedia_Progress_Label'
             'Property' = 'Visibility'
             'Value' = "Visible"
-        })            
-        [void]$Controls_to_Update.Add($newRow) 
+        })
+        [void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'LocalMedia_Progress2_Label'
             'Property' = 'Visibility'
             'Value' = "Visible"
-        })              
+        })
         [void]$Controls_to_Update.Add($newRow)
         $newRow = [PSCustomObject]::new(@{
             'Control' = 'LocalMedia_Progress_Label'
             'Property' = 'Text'
             'Value' = "Processed ($($synchash.processed_directories) of $($total_directories)) Directories"
-        })             
+        })
         [void]$Controls_to_Update.Add($newRow)
         Update-MainWindow -synchash $synchash -thisApp $thisApp -controls $Controls_to_Update
       }catch{
@@ -565,7 +543,7 @@ function Get-LocalMedia
         }
         $directories | Where-Object {-not [string]::IsNullOrEmpty($_)} | Invoke-Parallel -NoProgress -ThrottleLimit $throttle {
           $directory = $_
-          try{            
+          try{
             if(($directory).StartsWith("\\")){
               $isNetworkPath = $true
             }elseif([system.io.driveinfo]::new($directory).DriveType -eq 'Network' -and (Use-RunAs -Check)){
@@ -573,7 +551,7 @@ function Get-LocalMedia
             }
             if($isNetworkMappedDrive){
               $isEnableLinkedConnections = $(Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' -Name EnableLinkedConnections -ErrorAction SilentlyContinue).EnableLinkedConnections
-              if(!$isEnableLinkedConnections){
+              if(!$isEnableLinkedConnections ){
                 write-ezlogs "[Get-LocalMedia] A local media import path looks to be a network or mapped drive and this app is currently running as administrator. Importing and scanning for media from this path may fail. Read the help topic for 'Use Enablelinkedconnections' under settings for details`n`nNetwork Path: $directory" -warning
                 if($synchash.Window.isLoaded){
                   Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\Update-Notifications\Update-Notifications.psm1" -NoClobber -DisableNameChecking -Scope Local
@@ -581,13 +559,13 @@ function Get-LocalMedia
                     use-runas -RestartAsUser
                   }
                   New-DialogNotification -thisApp $thisapp -synchash $synchash -Message "A local media import path looks to be a network or mapped drive and this app is currently running as administrator. Importing and scanning for media from this path may fail. Read the help topic for 'Use Enablelinkedconnections' under settings for details`n`nNetwork Path: $directory" -DialogType Normal -ActionName 'Restart As User' -ActionScriptBlock $restartasuserScriptBlock
-                } 
-              }                 
+                }
+              }
             }
             if([System.IO.Directory]::Exists($directory) -or [System.IO.File]::Exists($directory)){
-              write-ezlogs "[Get-LocalMedia] | Scanning for media files in directory: $directory" -showtime -logtype LocalMedia -LogLevel 2          
+              write-ezlogs "[Get-LocalMedia] | Scanning for media files in directory: $directory" -showtime -logtype LocalMedia -LogLevel 2
               try{
-                $find_Files_Measure = [system.diagnostics.stopwatch]::StartNew()      
+                $find_Files_Measure = [system.diagnostics.stopwatch]::StartNew()
                 (Find-FilesFast -Path $directory -Recurse -Filter $media_pattern) | & { process {
                     if(!$_.isDirectory){
                       Add-LocalMedia -synchash $synchash -thisApp $thisApp -Media $_ -ImportMode $ImportMode -Directory $directory -image_pattern $image_pattern -media_pattern $media_pattern
@@ -598,18 +576,18 @@ function Get-LocalMedia
                 $find_Files_Measure = $Null
                 $synchash.processed_directories++
                 try{
-                  $Controls_to_Update = [System.Collections.Generic.List[object]]::new(2) 
+                  $Controls_to_Update = [System.Collections.Generic.List[object]]::new(2)
                   $newRow = [PSCustomObject]::new(@{
                       'Control' = 'LocalMedia_Progress_Label'
                       'Property' = 'Text'
                       'Value' = "Processed ($($synchash.processed_directories) of $($total_directories)) Directories"
-                  })             
-                  [void]$Controls_to_Update.Add($newRow) 
+                  })
+                  [void]$Controls_to_Update.Add($newRow)
                   $newRow = [PSCustomObject]::new(@{
                       'Control' = 'LocalMedia_Progress2_Label'
                       'Property' = 'Text'
                       'Value' = "Current Directory: $($directory)"
-                  })             
+                  })
                   [void]$Controls_to_Update.Add($newRow)
                   Update-MainWindow -synchash $synchash -thisApp $thisApp -controls $Controls_to_Update
                 }catch{
@@ -618,7 +596,7 @@ function Get-LocalMedia
               }catch{
                 write-ezlogs "An exception occurred attempting to enumerate files for directory $($_)" -showtime -catcherror $_
                 [void]$error.clear()
-              }                
+              }
             }else{
               write-ezlogs "The provided path is not valid: $($_)" -warning -logtype LocalMedia
             }
@@ -632,7 +610,7 @@ function Get-LocalMedia
     }else{
       write-ezlogs "No valid directory/path was provided to scan for media files!" -showtime -warning -logtype LocalMedia
       return
-    }  
+    }
     write-ezlogs "Number of local media duplicates skipped: $($synchash.LocalMediaDuplicates)" -showtime -warning -logtype LocalMedia -LogLevel 2
     if($export_profile -and $AllMedia_Profile_File_Path){
       write-ezlogs ">>>> Exporting All Media Profile cache to file $($AllMedia_Profile_File_Path)" -showtime -color cyan -logtype LocalMedia -LogLevel 3
@@ -657,11 +635,11 @@ function Get-LocalMedia
     }
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-LocalMedia Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Receive-LocalMedia Function
 #----------------------------------------------
 function Receive-LocalMedia{
@@ -679,7 +657,7 @@ function Receive-LocalMedia{
   )
   <#  if(!$synchash.LocalMedia_Queue){
       $synchash.LocalMedia_Queue = [System.Collections.Concurrent.ConcurrentQueue`1[object]]::New()
-      } 
+      }
       if($thisApp.LocalMedia_Queue_Enabled -and $shutdown){
       $thisApp.LocalMedia_Queue_Enabled = $false
       return
@@ -697,8 +675,8 @@ function Receive-LocalMedia{
       [switch]$StartupWait = $StartupWait,
       [switch]$shutdown = $shutdown
     )
-    try{   
-      #$thisApp.LocalMedia_Queue_Enabled = $true   
+    try{
+      #$thisApp.LocalMedia_Queue_Enabled = $true
       $media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)avi|(?i)wmv|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mov|(?i)h264|(?i)mpeg|(?i)mpg4|(?i)movie|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))')
       $exclude_Pattern = '\.temp\.|\.tmp\.'
       $image_pattern = [regex]::new('$(?<=\.((?i)jpg|(?i)png|(?i)jpeg|(?i)bmp|(?i)webp|(?i)gif))')
@@ -710,34 +688,34 @@ function Receive-LocalMedia{
           if($ProcessMessage -and $object){
             if($object.FullName -match $media_pattern -and $object.FullName -notmatch $exclude_Pattern -and !$object.isDirectory){
               Add-LocalMedia -synchash $synchash -thisApp $thisApp -Media $object -ImportMode $ImportMode -Directory $directory
-            }          
+            }
           }
           Remove-Variable object
           Remove-Variable ProcessMessage
         }catch{
           Start-Sleep -Milliseconds 500
           write-ezlogs "[Receive-LocalMedia] An exception occurred in ProfileManager_ScriptBlock while loop" -catcherror $_
-        } 
+        }
       } while(!$Queue.IsEmpty)
       write-ezlogs "[Receive-LocalMedia] LocalMedia_Queue for directory '$Directory' has ended!" -warning
     }catch{
       write-ezlogs "[Receive-LocalMedia] An exception occurred in LocalMedia_Queue_ScriptBlock for directory: $Directory" -catcherror $_
-    }  
+    }
   }
   if($Use_Runspace){
     $keys = $PSBoundParameters.keys
     $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant" -and $_.Name -in $keys){$_}}}
-    Start-Runspace $LocalMedia_Queue_ScriptBlock -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -runspace_name "LocalMedia_Queue_Runspace_$((New-Guid).Guid)" -thisApp $thisapp -CheckforExisting  
-    Remove-Variable Variable_list 
+    Start-Runspace $LocalMedia_Queue_ScriptBlock -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -runspace_name "LocalMedia_Queue_Runspace_$((New-Guid).Guid)" -thisApp $thisapp -CheckforExisting
+    Remove-Variable Variable_list
   }else{
     Invoke-Command -ScriptBlock $LocalMedia_Queue_ScriptBlock
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Receive-LocalMedia Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Add-LocalMedia Function
 #----------------------------------------------
 function Add-LocalMedia
@@ -758,9 +736,9 @@ function Add-LocalMedia
     [switch]$use_runspace,
     [switch]$use_Queue,
     [switch]$update_Library,
-    [switch]$VerboseLog 
+    [switch]$VerboseLog
   )
-  
+
   $Add_LocalMedia_scriptblock = {
     #$Add_LocalMedia_Measure = [system.diagnostics.stopwatch]::StartNew()
     $synchash = $synchash
@@ -772,15 +750,15 @@ function Add-LocalMedia
     $use_Queue = $use_Queue
     $exclude_Pattern = '\.temp\.|\.tmp\.'
     $image_pattern = $image_pattern
-    try{    
-      $sourcedirectory = $Null    
+    try{
+      $sourcedirectory = $Null
       $AllMedia_Profile_Directory_Path = [System.IO.Path]::Combine($thisApp.Config.Media_Profile_Directory,"All-MediaProfile")
       if (!([System.IO.Directory]::Exists($AllMedia_Profile_Directory_Path))){
         try{
           [void][System.IO.Directory]::CreateDirectory($AllMedia_Profile_Directory_Path)
         }catch{
           write-ezlogs "[Add-LocalMedia] An exception occurred creating new directory at: $AllMedia_Profile_Directory_Path" -catcherror $_
-        }   
+        }
       }
       $AllMedia_Profile_File_Path = [System.IO.Path]::Combine($AllMedia_Profile_Directory_Path,"All-Media-Profile.xml")
       if(!$synchash.All_local_Media -or $synchash.All_local_Media.count -lt 1){
@@ -808,20 +786,20 @@ function Add-LocalMedia
         $ParentFolderName = [system.io.directory]::GetParent($media.Fullname).name
       }elseif(-not [string]::IsNullOrEmpty($media.path)){
         $name = [system.io.path]::GetFileNameWithoutExtension($media.path)
-        $url = $media.path 
+        $url = $media.path
         $filename = $media.Name
         $mediadirectory = [system.io.path]::GetDirectoryName($media.path)
         $ParentFolderName = [system.io.directory]::GetParent($media.path).name
       }
-      if(($name) -and $length){      
+      if(($name) -and $length){
         if($Media.AlternateFileName){
           $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($Media.AlternateFileName)-$($Media.FileSize)")
         }elseif($Media.ShortName){
           $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($Media.ShortName)-$($Media.Size)")
         }else{
           $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($filename)-$($length)")
-        }        
-        $encodedid = [System.Convert]::ToBase64String($encodedBytes)          
+        }
+        $encodedid = [System.Convert]::ToBase64String($encodedBytes)
         if($thisApp.Config.LocalMedia_SkipDuplicates -and $synchash.All_local_Media.SyncRoot){
           $MediaNotAddedCheck = lock-object -InputObject $synchash.All_local_Media.SyncRoot -ScriptBlock {
             if(!$synchash.All_local_Media.id){
@@ -829,16 +807,16 @@ function Add-LocalMedia
             }else{
               return ($synchash.All_local_Media.id.IndexOf($encodedid) -eq -1)
             }
-          }  
+          }
         }else{
           $MediaNotAddedCheck = $encodedid
-        }   
-        if($MediaNotAddedCheck){                      
+        }
+        if($MediaNotAddedCheck){
           $type = [system.io.path]::GetExtension($filename).replace('.','')
           [string]$sourcedirectory = $directory
           if($ImportMode -ne 'Fast'){
-            $songinfo = Get-SongInfo -path $("$url") #-use_FFPROBE_Fallback  
-          }                                              
+            $songinfo = Get-SongInfo -path $("$url") #-use_FFPROBE_Fallback
+          }
           if($ImportMode -notin 'Fast','Slow'){
             if(!$songinfo.PictureData -and [System.IO.Directory]::Exists($mediadirectory)){
               $images = [System.IO.Directory]::EnumerateFiles($mediadirectory,'*.*','TopDirectoryOnly') | where-object {$_ -match $image_pattern}
@@ -848,28 +826,28 @@ function Add-LocalMedia
               $Subtitles_Path = $Subtitles_file
             }else{
               $Subtitles_Path = $null
-            }           
-          }                                   
+            }
+          }
           <#          if($songinfo -and !$songinfo.Artist -and $mediadirectory){
-              $songinfo.Artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($mediadirectory)).ToLower()).trim() 
-              $songinfo.Artist = (Get-Culture).TextInfo.ToTitleCase().trim()  
+              $songinfo.Artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($mediadirectory)).ToLower()).trim()
+              $songinfo.Artist = (Get-Culture).TextInfo.ToTitleCase().trim()
               }elseif($songinfo.Artist){
-              $songinfo.Artist = $(Get-Culture).TextInfo.ToTitleCase($songinfo.Artist).trim() 
+              $songinfo.Artist = $(Get-Culture).TextInfo.ToTitleCase($songinfo.Artist).trim()
           }#>
           if($images){
-            $covert_art = $images.where({$_ -match [regex]::Escape($name)})                  
+            $covert_art = $images.where({$_ -match [regex]::Escape($name)})
             if(!$covert_art){
               $covert_art = $images.where({$_ -match 'cover'})
-            }                  
+            }
             if(!$covert_art){
               $covert_art = $images.where({$_ -match 'album'})
-            }                  
-          }                                         
+            }
+          }
           if(-not [string]::IsNullOrEmpty($Songinfo.Artist)){
-            $artist = $songinfo.Artist          
-          }else{ 
+            $artist = $songinfo.Artist
+          }else{
             $artist = 'Unknown'
-          }  
+          }
           if($Songinfo.title){
             $Media_title = $Songinfo.title
           }elseif($name){
@@ -888,16 +866,16 @@ function Add-LocalMedia
               $Timespan = [timespan]::Parse($duration)
               if($Timespan){
                 $duration = "$(([string]$timespan.Hours).PadLeft(2,'0')):$(([string]$timespan.Minutes).PadLeft(2,'0')):$(([string]$timespan.Seconds).PadLeft(2,'0'))"
-              }                
+              }
             }catch{
               write-ezlogs "An exception occurred parsing timespan for duration $duration" -showtime -catcherror $_
-            }                
+            }
           }
           if(-not [string]::IsNullOrEmpty($thisApp.Config.LocalMedia_Display_Syntax) -and $ImportMode -ne 'Fast'){
             $DisplayName = $thisApp.Config.LocalMedia_Display_Syntax -replace '%artist%',$artist -replace '%title%',$Media_title -replace '%track%',$Songinfo.tracknumber -replace '%album%',$songinfo.album
           }else{
             $DisplayName = $Null
-          }                                        
+          }
           $newRow = [Media]@{
             'title' = [string]$Media_title
             'Display_Name' = $DisplayName
@@ -918,7 +896,7 @@ function Add-LocalMedia
             'PictureData' = ($songinfo.PictureData -eq $true)
             'Profile_Date_Added' = [DateTime]::Now.ToString()
             'Source' = 'Local'
-          } 
+          }
           try{
             lock-object -InputObject $synchash.All_local_Media.SyncRoot -ScriptBlock {
               if($synchash.All_local_Media.IsFixedSize){
@@ -926,20 +904,20 @@ function Add-LocalMedia
                 $synchash.All_local_Media = ConvertTo-Media -InputObject $synchash.All_local_Media -List
                 #$synchash.All_local_Media = [System.Collections.Generic.List[Media]]::new($synchash.All_local_Media)
               }
-              [void]$synchash.All_local_Media.add($newRow) 
-            }      
+              [void]$synchash.All_local_Media.add($newRow)
+            }
           }catch{
             write-ezlogs "An exception occurred adding new media to All_Local_Media -- Media url: $($newRow.url)" -showtime -catcherror $_
-          }                                                                                
-        }else{ 
+          }
+        }else{
           $synchash.LocalMediaDuplicates++
           if($thisApp.Config.Dev_mode){write-ezlogs "Skipping duplicate media: ($name) -- path: $($url)" -showtime -warning -logtype LocalMedia -Dev_mode}
-        } 
-        $name = $null 
-        $type = $null 
-        $images = $null          
+        }
+        $name = $null
+        $type = $null
+        $images = $null
         $url = $null
-        $encodedid = $Null  
+        $encodedid = $Null
         $artist = $Null
         $filesize = $null
         $duration = $Null
@@ -956,13 +934,13 @@ function Add-LocalMedia
                 'Control' = 'LocalMedia_RefreshProgress_Ring'
                 'Property' = 'isActive'
                 'Value' = $true
-            })              
-            [void]$Controls_to_Update.Add($newRow) 
+            })
+            [void]$Controls_to_Update.Add($newRow)
             $newRow = [PSCustomObject]::new(@{
                 'Control' = 'MediaTable_RefreshLabel'
                 'Property' = 'Visibility'
                 'Value' = "Visible"
-            })             
+            })
             [void]$Controls_to_Update.Add($newRow)
             $newRow = [PSCustomObject]::new(@{
                 'Control' = 'Refresh_LocalMedia_Button'
@@ -973,28 +951,28 @@ function Add-LocalMedia
                 'Control' = 'LocalMedia_Progress2_Label'
                 'Property' = 'Text'
                 'Value' = "Current Directory: $($directory) - Processed Files: $($synchash.processed_localMedia)"
-            })                         
+            })
             [void]$Controls_to_Update.Add($newRow)
             Update-MainWindow -synchash $synchash -thisApp $thisApp -controls $Controls_to_Update
             #Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'LocalMedia_RefreshProgress_Ring' -Property 'isActive' -value $true
             #Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'MediaTable_RefreshLabel' -Property 'Visibility' -value 'Visible'
             #Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'Refresh_LocalMedia_Button' -Property 'isEnabled' -value $false
             #Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'LocalMedia_Progress2_Label' -Property 'Text' -value "Current Directory: $($directory) - Processed Files: $($synchash.processed_localMedia)"
-          }      
+          }
         }catch{
           write-ezlogs "An exception occurred updating LocalMedia_Progress_Ring" -showtime -catcherror $_
         }
         if($update_Library){
           write-ezlogs "| ProfileManager_Queue.IsEmpty: $($synchash.ProfileManager_Queue.IsEmpty)"
           if($synchash.All_local_Media -and ($synchash.ProfileManager_Queue.IsEmpty)){
-            write-ezlogs ">>>> Exporting All Media Profile cache to file $($AllMedia_Profile_File_Path)" -showtime -color cyan -logtype LocalMedia 
+            write-ezlogs ">>>> Exporting All Media Profile cache to file $($AllMedia_Profile_File_Path)" -showtime -color cyan -logtype LocalMedia
             Export-SerializedXML -Path $AllMedia_Profile_File_Path -InputObject $synchash.All_local_Media
             if($synchash.Refresh_LocalMedia_timer -and !$synchash.Refresh_LocalMedia_timer.isEnabled){
-              $synchash.Refresh_LocalMedia_timer.tag = 'WatcherLocalRefresh'  
-              $synchash.Refresh_LocalMedia_timer.start()   
+              $synchash.Refresh_LocalMedia_timer.tag = 'WatcherLocalRefresh'
+              $synchash.Refresh_LocalMedia_timer.start()
             }
           }
-        }                             
+        }
       }else{
         write-ezlogs "[Add-LocalMedia] Provided media: $($url) is not a valid media file type - length: $($length)" -showtime -warning -logtype LocalMedia
       }
@@ -1012,11 +990,11 @@ function Add-LocalMedia
     Invoke-Command -ScriptBlock $Add_LocalMedia_scriptblock
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Add-LocalMedia Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-Media Function
 #----------------------------------------------
 function Update-Media
@@ -1041,7 +1019,7 @@ function Update-Media
     if(!$NoTagScan){
       $songinfo = Get-SongInfo -path $($InputObject.url) #-use_FFPROBE_Fallback
     }
-    if($songinfo){                
+    if($songinfo){
       if($songinfo.Artist -ne $Null -and $songinfo.Artist -ne '' -and $InputObject.artist -ne $songinfo.Artist){
         $InputObject.artist = [Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase($songinfo.Artist)
       }
@@ -1066,7 +1044,7 @@ function Update-Media
           write-ezlogs "An exception occurred parsing timespan for duration $duration" -showtime -catcherror $_
         }finally{
           $Timespan = $Null
-        }           
+        }
       }
       $mediadirectory = [system.io.path]::GetDirectoryName($InputObject.url)
       if(!(Test-ValidPath $InputObject.Subtitles_Path -Type File)){
@@ -1104,7 +1082,7 @@ function Update-Media
             $Changes = $false
             $track_index = $Null
             $track = $null
-            try{           
+            try{
               $urls = [System.Collections.Generic.list[object]]$playlist.PlayList_tracks.values.url
               if($urls){
                 $track_index = $urls.indexof($InputObject.url)
@@ -1139,7 +1117,7 @@ function Update-Media
                   if([bool]$track.psobject.properties['Cover_art']){
                     $Changes = $true
                     [void]$track.PSObject.Properties.Remove('Cover_art')
-                  } 
+                  }
                   if([bool]$track.psobject.properties['directory_filecount']){
                     $Changes = $true
                     [void]$track.PSObject.Properties.Remove('directory_filecount')
@@ -1158,10 +1136,10 @@ function Update-Media
             }finally{
               $track = $Null
             }
-        }}                 
+        }}
       }catch{
         write-ezlogs "[Update-LocalMedia] An exception occurred attempting to lookup and update playlist tracks with url: $($InputObject.url)" -CatchError $_
-      }      
+      }
     }
     $synchash.UpdateMediaCount++
     Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'MediaTable_RefreshProgress_Label' -Property 'Text' -value "[$($synchash.UpdateMediaCount)/$($TotalCount)]"
@@ -1169,11 +1147,11 @@ function Update-Media
     write-ezlogs "An exception occurred processing media item $($InputObject | out-string)" -CatchError $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-Media Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-LocalMedia Function
 #----------------------------------------------
 function Update-LocalMedia
@@ -1218,18 +1196,18 @@ function Update-LocalMedia
         $AllMedia_Profile_Directory_Path = [System.IO.Path]::Combine($thisApp.Config.Media_Profile_Directory,"All-MediaProfile")
         $AllMedia_Profile_File_Path = [System.IO.Path]::Combine($AllMedia_Profile_Directory_Path,"All-Media-Profile.xml")
         if($UpdateDirectory){
-          write-ezlogs ">>>> Updating local media for directories: $($UpdateDirectory)"    
+          write-ezlogs ">>>> Updating local media for directories: $($UpdateDirectory)"
           $media_to_Update = foreach($Directory in $UpdateDirectory){
             Get-IndexesOf $synchash.All_local_Media.SourceDirectory -Value $Directory | & { process {
                 $synchash.All_local_Media[$_]
-            }}    
+            }}
           }
         }elseif($UpdateMedia.id){
-          write-ezlogs ">>>> Updating local media with id: $($UpdateMedia.id)"  
+          write-ezlogs ">>>> Updating local media with id: $($UpdateMedia.id)"
           $media_to_Update = foreach($Media in $UpdateMedia){
             Get-IndexesOf $synchash.All_local_Media.id -Value $Media.id | & { process {
                 $synchash.All_local_Media[$_]
-            }}   
+            }}
           }
         }else{
           write-ezlogs ">>>> Updating all local media"
@@ -1239,7 +1217,7 @@ function Update-LocalMedia
         write-ezlogs "####################### Executing Update-LocalMedia for $($TotalCount) files" -linesbefore 1 -logtype LocalMedia
         if(!([System.IO.Directory]::Exists($AllMedia_Profile_Directory_Path))){
           [void][System.IO.Directory]::CreateDirectory($AllMedia_Profile_Directory_Path)
-        } 
+        }
         $synchash.UpdateMediaCount = 0
         Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'MediaTable_RefreshProgress_Label' -Property 'Text' -value "[$($synchash.UpdateMediaCount)/$($TotalCount)]"
         if($media_to_Update){

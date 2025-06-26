@@ -42,13 +42,14 @@ function Merge-Images
     [string]$StampIcon_Color = "#FF1ED760",
     [string]$StampIcon_Pack = "PackIconMaterial",
     [int]$StampIcon_Scale = 4,
-    [string]$StampIcon
+    [string]$StampIcon,
+    [switch]$Verboselog
 
   )
   
   try{
     if([system.io.file]::Exists($LargeImage)){
-      write-ezlogs ">>>> Getting stamped icon $StampIcon for source image: $LargeImage" -loglevel 2
+      write-ezlogs ">>>> Getting stamped icon $StampIcon for source image: $LargeImage" -loglevel 0 -Verboselog:$Verboselog
       $bigger_Filename = [System.IO.Path]::GetFileNameWithoutExtension($LargeImage)
       $bigger_Fileext = [System.IO.Path]::GetExtension($LargeImage)
       $bigger_Directory = [System.IO.Path]::GetDirectoryName($LargeImage)
@@ -60,7 +61,7 @@ function Merge-Images
         $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),"$($bigger_Filename)_$StampIcon$bigger_Fileext")
       } 
       if([system.io.file]::Exists($image_Cache_path)){
-        write-ezlogs "| Provided image has already been merged and cached to: $image_Cache_path)" -loglevel 2
+        write-ezlogs "| Provided image has already been merged and cached to: $image_Cache_path)" -loglevel 0 -Verboselog:$Verboselog
         return $image_Cache_path
       }       
       $stream_image = [System.IO.File]::OpenRead($LargeImage) 
@@ -120,7 +121,7 @@ function Merge-Images
 
       #Save it
       if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
-        write-ezlogs "| Creating image cache directory: $($thisApp.config.image_Cache_path)" -loglevel 3
+        write-ezlogs "| Creating image cache directory: $($thisApp.config.image_Cache_path)" -loglevel 0 -Verboselog:$Verboselog
         $null = New-item ($thisApp.config.image_Cache_path) -ItemType directory -Force
       }      
       write-ezlogs ">>>> Saving new merged Image to: $($image_Cache_path)" -loglevel 2

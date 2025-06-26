@@ -342,7 +342,7 @@ function Pause-Media
       return  
     }elseif(($synchash.VLC.state -match 'Paused' -or $synchash.VLC.state -match 'NothingSpecial' -or (($synchash.vlc.Media.State -eq 'Stopped' -or $synchash.VLC.state -eq 'Stopped') -and ($synchash.vlc.Media.IsParsed -or $synchash.vlc.Media.ParsedStatus -eq 'Done') -and -not [string]::IsNullOrEmpty($synchash.Current_playing_media.id) -and $synchash.Current_playing_media.Source -in 'Local','Youtube' -and $thisApp.Config.Remember_Playback_Progress)) -and ($libvlc_mediastate) -and !$([string]$synchash.vlc.media.Mrl).StartsWith("dshow://")){
       #$current_track = (Get-CurrentTrack -ApplicationName $thisapp.config.App_Name) 
-      write-ezlogs 'Resuming Vlc playback' -showtime -color cyan 
+      write-ezlogs '>>>> Resuming Vlc playback' -showtime -color cyan 
       $synchash.Now_Playing_Label.Visibility = 'Visible'
       $synchash.Now_Playing_Label.DataContext = ($synchash.Now_Playing_Label.DataContext) -replace 'PAUSED', 'PLAYING'
       if($synchash.VLC.Time -ne -1){

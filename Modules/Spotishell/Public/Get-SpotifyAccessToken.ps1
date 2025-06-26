@@ -74,7 +74,7 @@ function Get-SpotifyAccessToken {
       }
 
       # STEP 3 : Parse and save response
-      if ($Response) {
+      if ($Response.Content) {
         $ResponseContent = $Response.Content | ConvertFrom-Json
         $Token = @{
           access_token  = $ResponseContent.access_token
@@ -87,6 +87,8 @@ function Get-SpotifyAccessToken {
         Set-SpotifyApplication -Name $ApplicationName -Token $Token
         Write-ezlogs 'Successfully saved Refreshed Token' -showtime -Success -logtype Spotify
         return $Token.access_token
+      }else{
+        write-ezlogs "Did not receive response content -- Response: $($Response | out-string)" -Warning -logtype Spotify
       }
     }
   }else{

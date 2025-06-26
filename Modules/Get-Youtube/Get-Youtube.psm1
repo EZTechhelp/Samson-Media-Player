@@ -1053,7 +1053,7 @@ function Get-YoutubeStatus
             } 
             $newplaylists = 0
             $newvideos = 0
-            $removedvideos = 0
+            $synchash.removedvideos = 0
             $newchannels = 0   
             $YoutubePlaylists_itemsArray = [Collections.Generic.List[Object]]::new()
             $synchash.Youtube_Playlist_Update = [Collections.Generic.List[Object]]::new()
@@ -1100,10 +1100,10 @@ function Get-YoutubeStatus
                       write-ezlogs ">>>> Playlist $($playlistName) has new videos - New Count: $playlistcount - Existing: $existingplaylistcount - Playlist URL: $($playlisturl)" -logtype Youtube
                     }                
                   }elseif($existingplaylistcount -gt $playlistcount){
-                    $removedvideos += ($existingplaylistcount - $playlistcount)
+                    $synchash.removedvideos += ($existingplaylistcount - $playlistcount)
                     if($synchash.Youtube_Playlist_Update -notcontains $playlisturl){
                       $Null = $synchash.Youtube_Playlist_Update.add($playlisturl)
-                      write-ezlogs ">>>> Playlist $($playlistName) has removed videos - New Count: $playlistcount - Existing: $existingplaylistcount - Playlist URL: $($playlisturl)" -logtype Youtube
+                      write-ezlogs ">>>> Playlist $($playlistName) has removed videos - New Count: $playlistcount - Existing: $existingplaylistcount - RemovedVideos: $($synchash.removedvideos) - Playlist URL: $($playlisturl)" -logtype Youtube
                     }
                   }
               }}
@@ -1211,11 +1211,11 @@ function Get-YoutubeStatus
             }
             #Check for playlists that no longer exist   
             $playlists_toRemove = $thisApp.Config.Youtube_Playlists | Where-Object {$YoutubePlaylists_itemsArray.path -notcontains $_}                          
-            if($newplaylists -le 0 -and $newchannels -le 0 -and $playlists_toRemove.count -le 0 -and $newvideos -le 0 -and $removedvideos -le 0){
+            if($newplaylists -le 0 -and $newchannels -le 0 -and $playlists_toRemove.count -le 0 -and $newvideos -le 0 -and $synchash.removedvideos -le 0){
               write-ezlogs "No changes to Youtube playlists were found" -showtime -warning -logtype Youtube
               return
             }else{
-              write-ezlogs "Found $newplaylists playlists, $newchannels new channels, $($newvideos) new playlists videos, $removedvideos removed playlist videos -- found $($playlists_toRemove.count) playlists to remove" -showtime -logtype Youtube 
+              write-ezlogs "Found $newplaylists playlists, $newchannels new channels, $($newvideos) new playlists videos, $($synchash.removedvideos) removed playlist videos -- found $($playlists_toRemove.count) playlists to remove" -showtime -logtype Youtube 
               if($hashsetup.Update_YoutubePlaylists_Timer){
                 $hashsetup.Update_YoutubePlaylists_Timer.tag = $YoutubePlaylists_itemsArray
                 write-ezlogs ">>>> Starting Update_YoutubePlaylists_Timer" -showtime -logtype Youtube
@@ -1289,10 +1289,10 @@ function Get-YoutubeStatus
               write-ezlogs "Updating All Youtube Media profile cache at $AllYoutube_Media_Profile_File_Path" -showtime -logtype Youtube
               Export-SerializedXML -InputObject $all_youtubemedia_profile -path $AllYoutube_Media_Profile_File_Path      
             }
-            if($newYoutubeMediaCount -gt 0 -or $playlists_toRemove -or $newvideos -gt 0 -or $removedvideos -gt 0){
+            if($newYoutubeMediaCount -gt 0 -or $playlists_toRemove -or $newvideos -gt 0 -or $synchash.removedvideos -gt 0){
               write-ezlogs ">>>> Executing Import-Youtube to refresh Youtube library" -showtime -logtype Youtube
               if($synchash.All_Youtube_Media){
-                if([io.file]::Exists("$($thisApp.Config.Media_Profile_Directory)\All-Youtube_MediaProfile\All-Youtube_Media-Profile.xml") -and $newvideos -gt 0 -or $removedvideos -gt 0){
+                if([io.file]::Exists("$($thisApp.Config.Media_Profile_Directory)\All-Youtube_MediaProfile\All-Youtube_Media-Profile.xml") -and $newvideos -gt 0 -or $synchash.removedvideos -gt 0){
                   write-ezlogs ">>>> Removing existing Youtube Media Profile at: $($thisApp.Config.Media_Profile_Directory)\All-Youtube_MediaProfile\All-Youtube_Media-Profile.xml" -loglevel 2 -logtype Youtube 
                   try{
                     $null = Remove-item "$($thisApp.Config.Media_Profile_Directory)\All-Youtube_MediaProfile\All-Youtube_Media-Profile.xml" -Force
@@ -1367,7 +1367,7 @@ function Get-YoutubeURL
   process {
     try{
       if(!$Process){return}
-      write-ezlogs ">>>> Parsing Youtube ID from link: $URL" -showtime -color cyan
+      write-ezlogs ">>>> Parsing Youtube ID from link: $URL" -LogLevel 0 -Verboselog:$Verboselog
       if($URL -match '%3D%3D'){
         $URL = $URL -replace '%3D%3D'
       }

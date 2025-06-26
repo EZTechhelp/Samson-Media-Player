@@ -2305,19 +2305,7 @@ public class Media : INotifyPropertyChanged
         }
     }
     public string Stream_title { get; set; }
-    private string number;
-    public string Number
-    {
-        get
-        {
-            return number;
-        }
-        set
-        {
-            number = value;
-            RaisedOnPropertyChanged("Number");
-        }
-    }
+    public string Number { get; set; }
     private string statusmsg;
     public string Status_Msg
     {
@@ -2534,7 +2522,19 @@ public class Media : INotifyPropertyChanged
     public string url { get; set; }
     public string type { get; set; }
     public bool hasVideo { get; set; }
-    public string Current_Progress_Secs { get; set; }
+    private string current_progress_secs;
+    public string Current_Progress_Secs
+    {
+        get
+        {
+            return current_progress_secs;
+        }
+        set
+        {
+            current_progress_secs = value;
+            RaisedOnPropertyChanged("Current_Progress_Secs");
+        }
+    }
     public int Track { get; set; }
     private string duration;
     public string Duration
@@ -2716,6 +2716,7 @@ public class Config
     public bool Show_Notifications { get; set; }
     public List<WebExtension> Webview2_Extensions { get; set; }
     public bool Use_invidious { get; set; }
+    public string InvidiousURL { get; set; }
     public string Audio_OutputModule { get; set; }
     public bool Notification_Audio { get; set; }
     public ArrayList LocalMedia_Library_Columns { get; set; }

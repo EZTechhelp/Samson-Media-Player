@@ -89,142 +89,154 @@ function Import-Media
       write-ezlogs "An exception occurred updating LocalMedia_Progress_Ring" -showtime -catcherror $_
     }
     try{
-      if($Media_Path){       
-        if($Media_Path -match ','){
-          write-ezlogs ">>> Getting local media from paths $Media_Path" -showtime -color cyan -logtype LocalMedia -LogLevel 2
-          [array]$Media_Paths = $Media_Path -split ','
+      if($Media_Path){
+        if($Media_Path -match ',' -or [System.IO.File]::Exists($Media_Path)){
+          write-ezlogs ">>> Getting local media from paths: $Media_Path" -logtype LocalMedia -LogLevel 2
+          $StartPlaybackList = [System.Collections.Generic.List[Media]]::new()
+          $synchash.UpdatedLocalMedia = 0
+          try{
+            $Media_Path -split ',' | & { process {
+                try{
+                  if($file = ([System.IO.FileInfo]::new($_) | Where-Object{$_.Extension -match $media_pattern})){
+                    $media = Get-MediaProfile -thisApp $thisApp -synchash $synchash -Media_URL $_
+                    $directory = [system.io.path]::GetDirectoryName($_)
+                    $PathRoot = [system.io.path]::GetPathRoot($_)
+                    $PathSegments = [uri]::new($($_)).segments
+                    $SourceDirectory = $thisApp.Config.Media_Directories.where({$PathSegments -contains [uri]::new($($_)).AbsolutePath})
+                    if(!$SourceDirectory -and $thisApp.Config.Media_Directories -contains $PathRoot){
+                      $sourceDirectory = $PathRoot
+                    }elseif(!$SourceDirectory){
+                      $sourceDirectory = $directory
+                    }
+                    if($media.id){
+                      write-ezlogs ">>>> Media profile already exists -- Title: $($media.title) -- ID: $($media.id) -- URL: $($media.url)" -showtime -logtype LocalMedia -warning
+                      $PathToAdd = $Null
+                    }else{
+                      write-ezlogs ">>>> Adding new local media file: $_" -logtype LocalMedia -LogLevel 2
+                      $file = Find-FilesFast -Path $_
+                      Add-LocalMedia -synchash $synchash -thisApp $thisApp -Media $file -ImportMode 'Normal' -Directory $sourceDirectory #-update_Library
+                      $synchash.UpdatedLocalMedia++
+                    }
+                    if($StartPlayback){
+                      try{
+                        if(!$media){                                                                  
+                          $songinfo = Get-SongInfo -path $_
+                          $type = [system.io.path]::GetExtension($_).replace('.','')
+                          $name = [system.io.path]::GetFileNameWithoutExtension($_)
+                          if($file.ShortName){
+                            $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($file.ShortName)-$($file.Size)")
+                          }else{
+                            $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($_)")
+                          } 
+                          $encodedTitle = [System.Convert]::ToBase64String($encodedBytes) 
+                          if($songinfo -and !$songinfo.Artist -and $directory){
+                            $songinfo.Artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($directory))).trim()  
+                          }elseif($songinfo.Artist){
+                            $songinfo.Artist = $(Get-Culture).TextInfo.ToTitleCase($songinfo.Artist).trim() 
+                          }
+                          if($Songinfo.Artist){
+                            $artist = $Songinfo.Artist
+                            $artist = (Get-Culture).TextInfo.ToTitleCase($artist).trim()          
+                          }elseif([System.IO.Directory]::Exists($directory)){                   
+                            write-ezlogs "| Generating Artist name based on media directory $($directory) for $name" -showtime
+                            if(([System.IO.DirectoryInfo]::new($directory).parent)){
+                              $artist = ([System.IO.Path]::GetFileNameWithoutExtension($directory))
+                              $artist = (Get-Culture).TextInfo.ToTitleCase($artist).trim()   
+                            }else{
+                              $artist = $directory
+                            }                         
+                          }
+                          if($Songinfo.title){
+                            $Media_title = $Songinfo.title
+                          }elseif($name){
+                            $Media_title = $name
+                          }
+                          if($songinfo.duration_ms){
+                            $duration = $songinfo.duration_ms
+                          }elseif($songinfo.duration){
+                            $duration = $songinfo.duration
+                          }else{
+                            $duration = $Null
+                          }
+                          if($duration){
+                            try{
+                              $Timespan = [timespan]::Parse($duration)
+                              if($Timespan){
+                                $duration = "$(([string]$timespan.hours).PadLeft(2,'0')):$(([string]$timespan.Minutes).PadLeft(2,'0')):$(([string]$timespan.Seconds).PadLeft(2,'0'))"
+                              }                
+                            }catch{
+                              write-ezlogs "[Import-Media] An exception occurred parsing timespan for duration $duration" -showtime -catcherror $_
+                            }                
+                          }
+                          if(-not [string]::IsNullOrEmpty($Songinfo.Length) -and $Songinfo.Length -gt 0){
+                            $Size = $Songinfo.Length
+                          }
+                          $Subtitles_file = ([system.io.path]::Combine($directory,"$([system.io.path]::GetFileNameWithoutExtension($name)).srt"))
+                          if([system.io.file]::Exists($Subtitles_file)){
+                            $Subtitles_Path = $Subtitles_file
+                          }else{
+                            $Subtitles_Path = $null
+                          }
+                          $media = [Media]@{
+                            'title' = [string]$Media_title
+                            'Artist' = [string]$artist
+                            'Track' = [int]$Songinfo.tracknumber
+                            'Album' = [string]$songinfo.album
+                            'Bitrate' = $songinfo.bitrate
+                            'id' = [string]$encodedTitle
+                            'url' = ($_ -replace '\\\\','\')
+                            'type' = [string]$type
+                            'Duration' = $duration
+                            'Size' = $Size
+                            'directory' = [string]$directory
+                            'SourceDirectory' = [string]$sourceDirectory
+                            'Current_Progress_Secs' = ''
+                            'Subtitles_Path' = [string]$Subtitles_Path
+                            'hasVideo' = $songinfo.hasVideo
+                            'PictureData' = ($songinfo.PictureData -eq $true)
+                            'Profile_Date_Added' = [DateTime]::Now.ToString()
+                            'Source' = 'Local'
+                          } 
+                        }
+                        if($StartPlaybackList.id -notcontains $media.id){
+                          [void]$StartPlaybackList.add($media)
+                        }
+                      }catch{
+                        write-ezlogs "An exception occurred attempting to start playback for media $Media_Path" -CatchError $_
+                      }
+                    }
+                  }else{
+                    $PathToAdd = $Null
+                    write-ezlogs "Provided File ($Media_Path) is not a valid media type" -showtime -warning -logtype LocalMedia -LogLevel 2
+                  }
+                }catch{
+                  write-ezlogs "An exception occurred importing new media file: $file" -catcherror $_
+                }
+            }}
+            if($StartPlaybackList.count -gt 0){
+              write-ezlogs "| Adding $($StartPlaybackList.count) media items to queue" -logtype LocalMedia
+              Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -media $StartPlaybackList -RefreshQueue
+              $Media = $StartPlaybackList[0]
+              Start-Media -Media $media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash))
+            }
+            return
+          }catch{
+            write-ezlogs "An exception occurred importing new media path: $Media_Path" -catcherror $_
+          }finally{
+            if($synchash.Refresh_LocalMedia_timer -and $synchash.UpdatedLocalMedia -gt 0){
+              $synchash.Refresh_LocalMedia_timer.tag = 'Update-LocalMedia'
+              $synchash.Refresh_LocalMedia_timer.start()  
+            }else{
+              Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'LocalMedia_Progress_Ring' -Property 'isActive' -value $false
+              Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaTable' -Property 'isEnabled' -value $true
+            }
+            $synchash.Remove('UpdatedLocalMedia')
+          }
         }elseif(@($Media_Path).count -gt 1){
           [array]$Media_Paths = $Media_Path
           write-ezlogs ">>> Getting local media from paths $($Media_Paths)" -showtime -color cyan -logtype LocalMedia -LogLevel 2
-        }else{
-          if([System.IO.File]::Exists($Media_Path)){ 
-            try{
-              if(([System.IO.FileInfo]::new($Media_Path) | Where-Object{$_.Extension -match $media_pattern})){
-                $media = Get-MediaProfile -thisApp $thisApp -synchash $synchash -Media_URL $Media_Path
-                $directory = [system.io.path]::GetDirectoryName($Media_Path)
-                $PathRoot = [system.io.path]::GetPathRoot($Media_Path)
-                $PathSegments = [uri]::new($($Media_Path)).segments
-                $SourceDirectory = $thisApp.Config.Media_Directories.where({$PathSegments -contains [uri]::new($($_)).AbsolutePath})
-                if(!$SourceDirectory -and $thisApp.Config.Media_Directories -contains $PathRoot){
-                  $sourceDirectory = $PathRoot
-                }elseif(!$SourceDirectory){
-                  $sourceDirectory = $directory
-                }
-                if($media.id){
-                  write-ezlogs ">>>> Media profile already exists -- Title: $($media.title) -- ID: $($media.id) -- URL: $($media.url)" -showtime -logtype LocalMedia -warning
-                  $PathToAdd = $Null
-                }else{
-                  write-ezlogs ">>>> Adding new local media file $Media_Path" -showtime -color cyan -logtype LocalMedia -LogLevel 2
-                  $file = Find-FilesFast -Path $Media_Path   
-                  Add-LocalMedia -synchash $synchash -thisApp $thisApp -Media $file -ImportMode 'Normal' -Directory $sourceDirectory -update_Library                
-                }                               
-                if($StartPlayback){
-                  try{
-                    if(!$media){                                                                  
-                      $songinfo = Get-SongInfo -path $Media_Path
-                      $type = [system.io.path]::GetExtension($Media_Path).replace('.','')
-                      $name = [system.io.path]::GetFileNameWithoutExtension($Media_Path)
-                      #$ParentFolderName = [system.io.directory]::GetParent($Media_Path).name
-                      if($file.ShortName){
-                        $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($file.ShortName)-$($file.Size)")
-                      }else{
-                        $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($Media_Path)")
-                      } 
-                      $encodedTitle = [System.Convert]::ToBase64String($encodedBytes) 
-                      if($songinfo -and !$songinfo.Artist -and $directory){
-                        $songinfo.Artist = (Get-Culture).TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($directory))).trim()  
-                      }elseif($songinfo.Artist){
-                        $songinfo.Artist = $(Get-Culture).TextInfo.ToTitleCase($songinfo.Artist).trim() 
-                      }
-                      if($Songinfo.Artist){
-                        $artist = $Songinfo.Artist
-                        $artist = (Get-Culture).TextInfo.ToTitleCase($artist).trim()          
-                      }elseif([System.IO.Directory]::Exists($directory)){                   
-                        write-ezlogs "| Generating Artist name based on media directory $($directory) for $name" -showtime
-                        if(([System.IO.DirectoryInfo]::new($directory).parent)){
-                          $artist = ([System.IO.Path]::GetFileNameWithoutExtension($directory))
-                          $artist = (Get-Culture).TextInfo.ToTitleCase($artist).trim()   
-                        }else{
-                          $artist = $directory
-                        }                         
-                      }
-                      if($Songinfo.title){
-                        $Media_title = $Songinfo.title
-                      }elseif($name){
-                        $Media_title = $name
-                      }
-                      if($songinfo.duration_ms){
-                        $duration = $songinfo.duration_ms
-                        #$duration_ms = $songinfo.duration_ms
-                      }elseif($songinfo.duration){
-                        $duration = $songinfo.duration
-                        #$duration_ms = $Null
-                      }else{
-                        $duration = $Null
-                      }
-                      if($duration){
-                        try{
-                          $Timespan = [timespan]::Parse($duration)
-                          if($Timespan){
-                            $duration = "$(([string]$timespan.hours).PadLeft(2,'0')):$(([string]$timespan.Minutes).PadLeft(2,'0')):$(([string]$timespan.Seconds).PadLeft(2,'0'))"
-                          }                
-                        }catch{
-                          write-ezlogs "[Import-Media] An exception occurred parsing timespan for duration $duration" -showtime -catcherror $_
-                        }                
-                      }
-                      if(-not [string]::IsNullOrEmpty($Songinfo.Length) -and $Songinfo.Length -gt 0){
-                        $Size = $Songinfo.Length
-                      }
-                      $Subtitles_file = ([system.io.path]::Combine($directory,"$([system.io.path]::GetFileNameWithoutExtension($name)).srt"))
-                      if([system.io.file]::Exists($Subtitles_file)){
-                        $Subtitles_Path = $Subtitles_file
-                      }else{
-                        $Subtitles_Path = $null
-                      }
-                      $media = [Media]@{
-                        'title' = [string]$Media_title
-                        'Artist' = [string]$artist
-                        'Track' = [int]$Songinfo.tracknumber
-                        'Album' = [string]$songinfo.album
-                        'Bitrate' = $songinfo.bitrate
-                        'id' = [string]$encodedTitle
-                        'url' = ($Media_Path -replace '\\\\','\')
-                        'type' = [string]$type
-                        'Duration' = $duration
-                        'Size' = $Size
-                        'directory' = [string]$directory
-                        'SourceDirectory' = [string]$sourceDirectory
-                        'Current_Progress_Secs' = ''
-                        'Subtitles_Path' = [string]$Subtitles_Path
-                        'hasVideo' = $songinfo.hasVideo
-                        'PictureData' = ($songinfo.PictureData -eq $true)
-                        'Profile_Date_Added' = [DateTime]::Now.ToString()
-                        'Source' = 'Local'
-                      } 
-                    }    
-                    $synchash.Temporary_Playback_Media = $media
-                    Start-Media -Media $media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -Startup
-                  }catch{
-                    write-ezlogs "An exception occurred attempting to start playback for media $Media_Path"
-                  }
-                }
-                #if(!$PathToAdd){
-                #  return
-                #}
-              }else{
-                $PathToAdd = $Null
-                write-ezlogs "Provided File ($Media_Path) is not a valid media type" -showtime -warning -logtype LocalMedia -LogLevel 2
-              }
-            }catch{
-              write-ezlogs "An exception occurred importing new media path: $Media_Path" -catcherror $_
-            }finally{
-              if($synchash.Refresh_LocalMedia_timer){
-                $synchash.Refresh_LocalMedia_timer.tag = 'Update-LocalMedia'
-                $synchash.Refresh_LocalMedia_timer.start()  
-              }
-            }
-            return
-          }elseif([System.IO.Directory]::Exists($Media_Path)){   
+        }elseif([System.IO.Directory]::Exists($Media_Path)){
+          if([System.IO.Directory]::Exists($Media_Path)){   
             $Unique_Paths = $Media_Path | Where-Object {($synchash.All_local_Media.SourceDirectory.indexof($_)) -eq -1} | Select-Object -Unique
             if(!$Unique_Paths){
               write-ezlogs "The path: '$Media_Path' has already been added to the media library!" -warning -AlertUI
@@ -240,9 +252,9 @@ function Import-Media
               $PathToAdd = $Null
               write-ezlogs "Unable to find any supported media in Directory $Media_Path" -showtime -warning -logtype LocalMedia -LogLevel 2
             }
-          }else{
-            write-ezlogs "Provided Directory path ($Media_Path) is not a valid media type" -showtime -warning -logtype LocalMedia -LogLevel 2
           }
+        }else{
+          write-ezlogs "Provided Directory path ($Media_Path) is not a valid media type" -showtime -warning -logtype LocalMedia -LogLevel 2
         }
         if($PathToAdd){          
           Get-LocalMedia -Media_Path $PathToAdd -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -Import_Profile -Export_Profile -Verboselog:$VerboseLog -thisApp $thisApp -Refresh_All_Media -synchash $synchash -AddNewOnly:$AddNewOnly -ImportMode $ImportMode

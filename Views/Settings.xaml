@@ -1397,21 +1397,31 @@
 					          Header="Youtube Options"
 					          IsExpanded="True">
 						<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling">
-							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,0,0,0">
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="0,0,0,0">
 								<Grid Margin="0,0,0,0">
 									<mah:ToggleSwitch Content="Use Web Player" Name="Youtube_WebPlayer_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" Grid.Column="0" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="True"/>
 									<ToggleButton Name="Youtube_WebPlayer_Help_Button" Width="20" Height="20" Margin="0,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
 										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
 									</ToggleButton>
 								</Grid>
-								<Border Name="Use_invidious_grid" BorderThickness="1,0,0,0" BorderBrush="Red" Margin="65,0,0,0">
+<!-- 								<Border Name="Use_invidious_grid" BorderThickness="1,0,0,0" BorderBrush="Red" Margin="65,0,0,0">
 									<Grid>
 										<mah:ToggleSwitch Content="Use Invidious" Name="Use_invidious_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" Grid.Column="0" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="{Binding ElementName=Youtube_WebPlayer_Toggle, Path=IsOn}"/>
 										<ToggleButton Name="Use_invidious_Help_Button" Width="20" Height="20" Margin="5,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
 											<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
 										</ToggleButton>
 									</Grid>
-								</Border>
+								</Border> -->	
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0" IsEnabled="{Binding ElementName=Youtube_WebPlayer_Toggle, Path=IsOn}">
+									<Grid Margin="0,0,0,0">
+										<mah:ToggleSwitch Content="Use Invidious" Name="Use_invidious_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" Grid.Column="0" HorizontalAlignment="Left" Foreground="#ffffff" />
+										<ToggleButton Name="Use_invidious_Help_Button" Width="20" Height="20" Margin="5,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+											<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+										</ToggleButton>
+									</Grid>
+									<Label Name='InvidiousURL_Label' Grid.Column="0" Content="Invidious URL:" VerticalAlignment="Top" Margin="35,2,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Green" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+									<TextBox Name='InvidiousURL_textbox' Height="23" Text="" UndoLimit="0" VerticalAlignment="Top" Visibility="Visible" RenderTransformOrigin="0.502,0.52" Width="163" HorizontalAlignment="Left" IsEnabled="{Binding ElementName=Use_invidious_Toggle, Path=IsOn}"/>									
+								</VirtualizingStackPanel>								
 							</VirtualizingStackPanel>	
 							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,0,0,0">
 								<Grid Margin="0,0,0,0">
@@ -1420,7 +1430,7 @@
 										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
 									</Button>
 								</Grid>	
-								<Label Name='Sponsorblock_ActionType_Label' Grid.Column="0" Content="Action Type:" VerticalAlignment="Top" Margin="35,2,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Green" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+								<Label Name='Sponsorblock_ActionType_Label' Grid.Column="0" Content="Action Type:" VerticalAlignment="Top" Margin="34,2,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Green" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
 								<ComboBox
 										  Margin="11,2,0,0"
 										  Name='Sponsorblock_ActionType_ComboBox'

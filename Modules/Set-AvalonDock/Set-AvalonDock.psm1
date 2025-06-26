@@ -2,14 +2,14 @@
     .Name
     Set-AvalonDock
 
-    .Version 
+    .Version
     0.1.1
 
     .SYNOPSIS
     Creates and updates AvalonDock content, context menus..etc
 
     .DESCRIPTION
-       
+
     .Configurable Variables
 
     .Requirements
@@ -26,7 +26,7 @@
 
 #>
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Set-AvalonDock Function
 #----------------------------------------------
 function Set-AvalonDock {
@@ -43,13 +43,13 @@ function Set-AvalonDock {
     try{
       $Synchash.Docking_Command_Scriptblock = {
         param($sender)
-        try{ 
+        try{
           $synchash = $synchash
           if($thisApp.Config.Dev_mode){write-ezlogs "Docking_Command_Sendertag $($sender.tag | out-string)" -showtime -Dev_mode}
           if($synchash.VideoView_Grid.Parent.Parent -and $synchash.Window.IsLoaded){
             $synchash.VideoView_Grid.Parent.Parent.Owner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($synchash.Window)
           }
-          if($synchash.MediaViewAnchorable.isFloating -and ($sender.tag -eq 'VideoView' -or $sender.Uid -eq 'VideoView')){              
+          if($synchash.MediaViewAnchorable.isFloating -and ($sender.tag -eq 'VideoView' -or $sender.Uid -eq 'VideoView')){
             $synchash.MediaViewAnchorable.Dock()
             $synchash.MediaViewAnchorable.Title = "Video Player"
             if($sender.Header){
@@ -59,7 +59,7 @@ function Set-AvalonDock {
             write-ezlogs "[AVALONDOCK] >>>> Docking WebBrowserAnchorable"
             $Bookmarks_FlyoutControlWindow = Get-VisualParentUp -source $synchash.Bookmarks_FlyoutControl -type ([System.Windows.Window])
             if($Bookmarks_FlyoutControlWindow.Owner -and $synchash.Window.IsLoaded){
-              write-ezlogs "| Setting Bookmarks_FlyoutControlWindow.Owner to main window"
+              write-ezlogs "| Setting Bookmarks_FlyoutControlWindow.Owner to main window" -LogLevel 0 -Verboselog:$Verboselog
               $Bookmarks_FlyoutControlWindow.Owner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($synchash.Window)
             }
             $synchash.WebBrowserAnchorable.Dock()
@@ -111,18 +111,18 @@ function Set-AvalonDock {
               $SyncHash.Window.WindowState = 'Normal'
             }
             if(!$synchash.VideoButton_ToggleButton.isChecked -and $synchash.VideoViewAirControl){
-              write-ezlogs "| Video Viewer is closed, miniplayer is not open, hiding VideoViewAirControl"
+              write-ezlogs "| Video Viewer is closed, miniplayer is not open, hiding VideoViewAirControl" -LogLevel 0 -Verboselog:$Verboselog
               $synchash.VideoViewAirControl.Visibility = 'Collapsed'
             }
           }else{
-            write-ezlogs ">>>> $($sender.Uid) floating window has closed, Miniplayer is loaded, not showing main player"
+            write-ezlogs ">>>> $($sender.Uid) floating window has closed, Miniplayer is loaded, not showing main player" -LogLevel 0 -Verboselog:$Verboselog
             $null = $synchash.MiniPlayer_Viewer.Activate()
             if((!$synchash.MediaViewAnchorable.isFloating -and !$synchash.Window.isVisible)  -and $synchash.VideoView -and !$synchash.MainWindow_IsClosing){
-              write-ezlogs "| Collapsing video view as video player is not floating and main player is not visible due to miniplayer being open"
+              write-ezlogs "| Collapsing video view as video player is not floating and main player is not visible due to miniplayer being open" -LogLevel 0 -Verboselog:$Verboselog
               $synchash.VideoView.Visibility = 'Collapsed'
               if($synchash.VideoViewAirControl){
                 $synchash.VideoViewAirControl.Visibility = 'Collapsed'
-              }             
+              }
             }
             if($sender.Uid -eq 'WebBrowser' -and !$synchash.WebBrowserAnchorable.isFloating -and $synchash.WebBrowser -ne $null -and $synchash.WebBrowser.CoreWebView2 -ne $null){
               write-ezlogs "| WebBrowser closed and not visible due to mini-player being open - disposing Webbrowser instance"
@@ -169,7 +169,7 @@ function Set-AvalonDock {
           write-ezlogs "An exception occurred in StayOnTop_Command event" -showtime -catcherror $_
         }
       }
-      
+
       [System.Windows.RoutedEventHandler]$synchash.Docking_Close_Command = {
         param($sender)
         $synchash = $synchash
@@ -186,14 +186,14 @@ function Set-AvalonDock {
             if($synchash.VideoView.Visibility -eq 'Visible' -and $synchash.MediaViewAnchorable){
               $synchash.MediaViewAnchorable.isSelected = $true
             }
-          }                            
+          }
           if($synchash.VideoButton_ToggleButton.isChecked -and $thisApp.Config.Open_VideoPlayer){
             write-ezlogs ">>>> Docking Close command, closing Video Player" -showtime
             Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Close
           }
           if($synchash."$($sender.Uid)".isFloating){
             $synchash."$($sender.Uid)".Dock()
-          }            
+          }
         }catch{
           write-ezlogs 'An exception occurred in Docking_Close_Command event' -showtime -catcherror $_
         }
@@ -211,7 +211,7 @@ function Set-AvalonDock {
           }elseif($synchash."$($sender.uid)Float".isVisible -and $sender.Uid -match "WebBrowser_TabWindow_" -and $synchash."$($sender.uid)Float".WindowState -ne 'Minimized'){
             $synchash."$($sender.uid)Float".WindowState = 'Minimized'
             $sender.Header = "Restore"
-          }elseif($sender.tag -eq 'VideoView' -and $synchash.VideoViewFloat.WindowState -eq 'Minimized'){     
+          }elseif($sender.tag -eq 'VideoView' -and $synchash.VideoViewFloat.WindowState -eq 'Minimized'){
             $sender.Header = "Minimize"
           }elseif($sender.tag -eq 'WebBrowserFloat' -and $synchash.WebBrowserFloat.WindowState -eq 'Minimized'){
             $synchash.WebBrowserFloat.WindowState = 'Normal'
@@ -228,7 +228,7 @@ function Set-AvalonDock {
           }elseif($sender.tag -eq 'TorBrowser' -and $synchash.TorBrowserFloat.WindowState -eq 'Minimized'){
             $synchash.TorBrowserFloat.WindowState = 'Normal'
             $sender.Header = "Restore"
-          }       
+          }
         }catch{
           write-ezlogs 'An exception occurred in Minimize_VideoView_Command' -showtime -catcherror $_
         }
@@ -237,7 +237,7 @@ function Set-AvalonDock {
         param($sender)
         try{
           $synchash = $synchash
-          write-ezlogs ">>>> $($sender.name) window has loaded" -showtime -loglevel 2
+          write-ezlogs ">>>> $($sender.name) window has loaded"
           if($sender.name -eq 'VideoViewWindow'){
             if($sender.icon -ne $synchash.Window.icon){
               $sender.icon = $synchash.Window.icon
@@ -258,10 +258,10 @@ function Set-AvalonDock {
           write-ezlogs ">>>> $($sender.name) window has rendered" -showtime -loglevel 2
           if($sender.name -eq 'VideoViewWindow'){
             if($synchash.VideoButton_ToggleButton.isChecked -and $thisApp.Config.Open_VideoPlayer -and !$synchash.MiniPlayer_Viewer.isVisible){
-              write-ezlogs "| Video player has been undocked to new window, closing Docking Manager View" -showtime
+              write-ezlogs "| Video player has been undocked to new window, closing Docking Manager View" -showtime -LogLevel 0 -Verboselog:$Verboselog
               Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Close
             }elseif($synchash.MiniPlayer_Viewer.isVisible -and $synchash.Window){
-              write-ezlogs "| Video player has been undocked to new window, miniplayer is open, calling show/hide to on main window to update visual tree" -showtime -warning
+              write-ezlogs "| Video player has been undocked to new window, miniplayer is open, calling show/hide to on main window to update visual tree" -warning -LogLevel 0 -Verboselog:$Verboselog
               #Trick to prerender or update window without showing it - Set opacity to 0, show to render, then hide
               $synchash.window.ShowActivated = $false #Prevent window from activating/taking focus while rendering
               $synchash.window.ShowInTaskbar = $false
@@ -273,7 +273,7 @@ function Set-AvalonDock {
               }
             }
             if($synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
-              write-ezlogs "| Calling Activate for VideoView_Grid.Parent.Parent window" -showtime -warning
+              write-ezlogs "| Calling Activate for VideoView_Grid.Parent.Parent window" -warning -LogLevel 0 -Verboselog:$Verboselog
               $synchash.VideoView_Grid.Parent.Parent.Show()
               $synchash.VideoView_Grid.Parent.Parent.Activate()
             }
@@ -289,17 +289,17 @@ function Set-AvalonDock {
           $synchash = $synchash
           if($sender.name -eq 'VideoViewWindow'){
             if(!$synchash.VideoViewFloat.IsHitTestVisible){
-              write-ezlogs ">>>> Setting videoviewfloat IsHitTestVisible to true"
+              write-ezlogs ">>>> Setting videoviewfloat IsHitTestVisible to true" -LogLevel 0 -Verboselog:$Verboselog
               $synchash.VideoViewFloat.IsHitTestVisible = $true
             }
             if($synchash.VideoViewFloat.WindowState -eq 'Maximized'){
               $style =  $synchash.DockingManager.TryFindResource('LayoutAnchorableFloatingWindowControl')
               if($synchash.VideoViewFloat.style -ne $style){
-                write-ezlogs "| Setting videoviewfloat style"
+                write-ezlogs "| Setting videoviewfloat style" -LogLevel 0 -Verboselog:$Verboselog
                 $synchash.VideoViewFloat.style = $style
               }
               if($synchash.VideoViewFloat.ResizeMode -ne 'CanResize'){
-                write-ezlogs ">>>> videoviewfloat is Maximized - Setting videoviewfloat ResizeMode to CanResize"
+                write-ezlogs ">>>> videoviewfloat is Maximized - Setting videoviewfloat ResizeMode to CanResize" -LogLevel 0 -Verboselog:$Verboselog
                 $synchash.VideoViewFloat.Visibility = 'Collapsed'
                 $synchash.VideoViewFloat.WindowStyle = 'none'
                 $synchash.VideoViewFloat.ResizeMode = 'CanResize'
@@ -310,14 +310,8 @@ function Set-AvalonDock {
                 #Has to be false in order for sftreeview control that holds youtube comments to display, otherwise its just black.
                 #Need to find a fix that allows AllowsTransparency to always stay true (until libvlcsharp fixes the core issue). Maybe use another airhackcontrol?
                 if(($thisApp.Config.Enable_YoutubeComments) -and $synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
-                  <#                  if($synchash.VideoView -and $synchash.VideoView.Background -ne 'Black'){
-                      #TODO: Fixes the issue where libvlc video player window background sometimes becomes solid white or flashes white if AllowsTransparency  is false on floating window
-                      #https://code.videolan.org/videolan/LibVLCSharp/-/issues/555
-                      write-ezlogs "| Setting VideoView.Background $($synchash.VideoView.Background) to Black to prevent background from becoming solid white" -showtime -warning
-                      $synchash.VideoView.Background = 'Black'
-                  }#>
                   if($synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
-                    write-ezlogs "| VideoViewFloat stated changed -- Calling Activate for VideoView_Grid.Parent.Parent window" -showtime -warning
+                    write-ezlogs "| VideoViewFloat stated changed -- Calling Activate for VideoView_Grid.Parent.Parent window" -warning -LogLevel 0 -Verboselog:$Verboselog
                     #$synchash.VideoView_Grid.Parent.Parent.hide()
                     $synchash.VideoView_Grid.Parent.Parent.Show()
                     $synchash.VideoView_Grid.Parent.Parent.Activate()
@@ -330,14 +324,14 @@ function Set-AvalonDock {
             }elseif($synchash.VideoViewFloat.WindowState -ne 'Maximized'){
               $style =  $synchash.DockingManager.TryFindResource('LayoutAnchorableFloatingWindowControl')
               if($synchash.VideoViewFloat.style -ne $style){
-                write-ezlogs "| Setting videoviewfloat style"
+                write-ezlogs "| Setting videoviewfloat style" -LogLevel 0 -Verboselog:$Verboselog
                 $synchash.VideoViewFloat.style = $style
               }
               if($synchash.VideoView_LargePlayer_Icon.Kind -ne 'ScreenFull'){
                 $synchash.VideoView_LargePlayer_Icon.Kind = 'ScreenFull'
               }
               if($synchash.VideoViewFloat.ResizeMode -ne 'CanResize'){
-                write-ezlogs ">>>> Setting videoviewfloat ResizeMode to CanResize"
+                write-ezlogs ">>>> Setting videoviewfloat ResizeMode to CanResize" -LogLevel 0 -Verboselog:$Verboselog
                 #$synchash.VideoViewFloat.WindowStyle = 'SingleBorderWindow'
                 $synchash.VideoViewFloat.ResizeMode = 'CanResize'
                 #$synchash.VideoViewFloat.Visibility = 'Visible'
@@ -346,14 +340,8 @@ function Set-AvalonDock {
                 #Has to be false in order for sftreeview control that holds youtube comments to display, otherwise its just black.
                 #Need to find a fix that allows AllowsTransparency to always stay true (until libvlcsharp fixes the core issue). Maybe use another airhackcontrol?
                 if(($thisApp.Config.Enable_YoutubeComments) -and $synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
-                  <#                  if($synchash.VideoView -and $synchash.VideoView.Background -ne 'Black'){
-                      #TODO: Fixes the issue where libvlc video player window background sometimes becomes solid white or flashes white if AllowsTransparency  is false on floating window
-                      #https://code.videolan.org/videolan/LibVLCSharp/-/issues/555
-                      write-ezlogs "| Setting VideoView.Background $($synchash.VideoView.Background) to Black to prevent background from becoming solid white" -showtime -warning
-                      $synchash.VideoView.Background = 'Black'
-                  }#>
                   if($synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
-                    write-ezlogs "| VideoViewFloat stated changed -- Calling activate for VideoView_Grid.Parent.Parent window" -showtime -warning
+                    write-ezlogs "| VideoViewFloat stated changed -- Calling activate for VideoView_Grid.Parent.Parent window" -warning -LogLevel 0 -Verboselog:$Verboselog
                     #$synchash.VideoView_Grid.Parent.Parent.hide()
                     $synchash.VideoView_Grid.Parent.Parent.Show()
                     $synchash.VideoView_Grid.Parent.Parent.Activate()
@@ -365,7 +353,7 @@ function Set-AvalonDock {
             if($synchash.MediaViewAnchorable.isFloating -and $LibVLCSharpWPFForegroundWindow){
               $FloatingWindowOwner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($sender)
               if($LibVLCSharpWPFForegroundWindow -and $FloatingWindowOwner){
-                write-ezlogs ">>>> Setting Libvlcsharp.Wpf.ForegroundWindow.Owner to VideoView floating window" -Dev_mode
+                write-ezlogs ">>>> Setting Libvlcsharp.Wpf.ForegroundWindow.Owner to VideoView floating window" -LogLevel 0 -Verboselog:$Verboselog
                 $LibVLCSharpWPFForegroundWindow.Owner = $FloatingWindowOwner
               }
             }
@@ -374,7 +362,7 @@ function Set-AvalonDock {
               if($VideoViewAirControl){
                 $FloatingWindowOwner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($sender)
                 if($VideoViewAirControl -and $FloatingWindowOwner){
-                  write-ezlogs ">>>> Setting VideoViewAirControl.front.parent.parent.Owner to VideoView floating window" -Dev_mode
+                  write-ezlogs ">>>> Setting VideoViewAirControl.front.parent.parent.Owner to VideoView floating window" -LogLevel 0 -Verboselog:$Verboselog
                   $VideoViewAirControl.Owner = $FloatingWindowOwner
                 }
               }
@@ -382,22 +370,22 @@ function Set-AvalonDock {
           }elseif($sender.name -eq "$($sender.Uid)Float"){
             write-ezlogs ">>>> StateChanged Event for: $($sender.name) -- State: $($sender.WindowState)"
             if(!$sender.IsHitTestVisible){
-              write-ezlogs ">>>> Setting $($sender.Name) IsHitTestVisible to true"
+              write-ezlogs ">>>> Setting $($sender.Name) IsHitTestVisible to true" -LogLevel 0 -Verboselog:$Verboselog
               $sender.IsHitTestVisible = $true
-            }                         
+            }
             if($sender.WindowState -eq 'Maximized'){
               $style =  $synchash.DockingManager.TryFindResource('LayoutAnchorableFloatingWindowControl')
               if($sender.style -ne $style){
-                write-ezlogs "| Setting $($sender.Name) style"
+                write-ezlogs "| Setting $($sender.Name) style" -LogLevel 0 -Verboselog:$Verboselog
                 $sender.style = $style
               }
               if($Sender.Name -eq 'WebBrowserFloat' -and $synchash.WebBrowser.CoreWebView2 -and !$synchash.WebBrowser.IsVisible){
                 Write-EZLogs "| WebBrowser window is now maximized, unhiding WebBrowser: - isSupsended: $($synchash.WebBrowser.CoreWebview2.IsSuspended)" -logtype Webview2
-                $synchash.WebBrowser.Visibility = 'Visible'  
+                $synchash.WebBrowser.Visibility = 'Visible'
               }
               if($Sender.Name -eq 'WebBrowserFloat' -and $synchash.WebBrowser.CoreWebView2.ContainsFullScreenElement){
                 if($sender.ResizeMode -ne 'NoResize' -and $synchash.WebBrowser.CoreWebView2.ContainsFullScreenElement){
-                  write-ezlogs ">>>> $($sender.Name) is Maximized - Setting $($sender.Name) ResizeMode to CanResize"
+                  write-ezlogs ">>>> $($sender.Name) is Maximized - Setting $($sender.Name) ResizeMode to CanResize" -LogLevel 0 -Verboselog:$Verboselog
                   $sender.Visibility = 'Collapsed'
                   $sender.WindowStyle = 'none'
                   $sender.ResizeMode = 'NoResize'
@@ -405,15 +393,15 @@ function Set-AvalonDock {
                   $sender.WindowState = 'Maximized'
                 }
               }
-            }elseif($sender.WindowState -ne 'Maximized'){   
+            }elseif($sender.WindowState -ne 'Maximized'){
               $synchash.WebBrowserGrid.Tag = $true
-              $style =  $synchash.DockingManager.TryFindResource('LayoutAnchorableFloatingWindowControl')     
+              $style =  $synchash.DockingManager.TryFindResource('LayoutAnchorableFloatingWindowControl')
               if($sender.style -ne $style){
-                write-ezlogs "| Setting $($sender.Name) style"
+                write-ezlogs "| Setting $($sender.Name) style" -LogLevel 0 -Verboselog:$Verboselog
                 $sender.style = $style
               }
               if($sender.ResizeMode -ne 'CanResize'){
-                write-ezlogs ">>>> Setting $($sender.Name) ResizeMode to CanResize"
+                write-ezlogs ">>>> Setting $($sender.Name) ResizeMode to CanResize" -LogLevel 0 -Verboselog:$Verboselog
                 $sender.ResizeMode = 'CanResize'
               }
               if(!$synchash.MainWindow_IsClosing -and $Sender.Name -eq 'WebBrowserFloat' -and $synchash.WebBrowser.CoreWebView2){
@@ -428,9 +416,9 @@ function Set-AvalonDock {
               }
             }
           }else{
-            $style = $synchash.DockingManager.TryFindResource('LayoutAnchorableFloatingWindowControl')     
+            $style = $synchash.DockingManager.TryFindResource('LayoutAnchorableFloatingWindowControl')
             if($sender.style -ne $style){
-              write-ezlogs "| Setting floating window style for: $($sender.Name)"
+              write-ezlogs "| Setting floating window style for: $($sender.Name)" -LogLevel 0 -Verboselog:$Verboselog
               $sender.style = $style
             }
           }
@@ -484,10 +472,10 @@ function Set-AvalonDock {
           write-ezlogs "An exception occurred executing LocationChanged_Timer_ScriptBlock" -showtime -catcherror $_
         }finally{
           $this.stop()
-        }     
+        }
       }
       $synchash.LocationChanged_Timer.add_tick($synchash.LocationChanged_Timer_ScriptBlock)
-      
+
       $synchash.FloatingWindow_LocationChangedScriptblock = {
         Param($sender,$e)
         try{
@@ -510,7 +498,7 @@ function Set-AvalonDock {
           }
           if($sender.name -eq 'VideoViewWindow'){
             if($synchash.VideoView_Grid.Parent.Parent -and $synchash.Window.IsLoaded){
-              write-ezlogs ">>>> Clearing focus for VideoView_Grid.Parent.Parent and clearing window owner"
+              write-ezlogs ">>>> Clearing focus for VideoView_Grid.Parent.Parent and clearing window owner" -LogLevel 0 -Verboselog:$Verboselog
               [void][System.Windows.Input.FocusManager]::SetFocusedElement([System.Windows.Input.FocusManager]::GetFocusScope($synchash.VideoView_Grid.Parent.Parent),$Null)
               $synchash.VideoView_Grid.Parent.Parent.Owner = $null
               <#              if(!$synchash.VideoButton_ToggleButton.isChecked -and $thisApp.Config.Open_VideoPlayer -and !$synchash.MiniPlayer_Viewer.isVisible){
@@ -520,28 +508,29 @@ function Set-AvalonDock {
             }
             ######
             #TODO: Setting video view to visible here potentially contributes towards Layout measurement override crash if video view set to collapsed
+            #UPDATE - This should now be resolved with Libvclsharp 3.9.3 - leaving notes for now but should be cleaned up at some point
             #Mostly only occurs if miniplayer is open but can still occur even if not
             #Does not occur if video view is hidden. If collapsed, it basically sets the height/width to 0 (and any controls inside it, specifically airhack and those used to get around wpf airspace issues)
             #If set to collapsed then set back to visible, various layout measurement events trigger but if the height and width is 0 (due to being collapsed) we get the crash
             #See related code/comments in Stop-Media and/or Set-WPFControls - Reset-MainPlayer
             #This likely needs a thorough refactor or rethinking to avoid this situation
             if(!$synchash.MainWindow_IsClosing -and $synchash.MiniPlayer_Viewer.isVisible -and $synchash.VideoView -and $synchash.VideoView.Visibility -ne 'Collapsed'){
-              write-ezlogs ">>>> Videoview floating window is closing, miniplayer is open, videoview isVisible: $($synchash.VideoView.isVisible) -- Collapsing VideoView" -showtime -loglevel 2
+              write-ezlogs ">>>> Videoview floating window is closing, miniplayer is open, videoview isVisible: $($synchash.VideoView.isVisible) -- Collapsing VideoView" -LogLevel 0 -Verboselog:$verboselog
               write-ezlogs "| VideoView.Visibility: $($synchash.VideoView.Visibility) -- VideoView.Height: $($synchash.VideoView.Height) -- VideoView.Width: $($synchash.VideoView.Width) -- VideoView_Grid.Parent.Parent.Visibility: $($synchash.VideoView_Grid.Parent.Parent.Visibility)" -showtime -Dev_mode
               $synchash.VideoView.Visibility = 'Collapsed'
             }
             ######
             if($synchash.VideoViewAirControl.front.parent.parent -is [System.Windows.Window] -and $synchash.Window.IsLoaded){
-              write-ezlogs ">>>> Clearing focus for VideoViewAirControl.front.parent.parent and setting owner to main window"
+              write-ezlogs ">>>> Clearing focus for VideoViewAirControl.front.parent.parent and setting owner to main window" -LogLevel 0 -Verboselog:$Verboselog
               [void][System.Windows.Input.FocusManager]::SetFocusedElement([System.Windows.Input.FocusManager]::GetFocusScope($synchash.VideoViewAirControl.front.parent.parent),$Null)
               $synchash.VideoViewAirControl.front.parent.parent.Owner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($synchash.Window)
               if($synchash.VideoViewAirControl -and $synchash.VLC_Grid.Children -contains $synchash.VideoViewAirControl){
-                Write-EZLogs '| Temporarily Removing VideoViewAirControl from VLC_Grid while VideoViewWindow is closing'
+                Write-EZLogs '| Temporarily Removing VideoViewAirControl from VLC_Grid while VideoViewWindow is closing' -LogLevel 0 -Verboselog:$Verboselog
                 [void]$synchash.VLC_Grid.children.Remove($synchash.VideoViewAirControl)
               }
             }
             [void][System.Windows.Input.Keyboard]::ClearFocus()
-          }                                                                   
+          }
         }catch{
           write-ezlogs "An exception occurred in $($sender.name) Closing event" -showtime -catcherror $_
         }
@@ -561,16 +550,16 @@ function Set-AvalonDock {
           if($sender.name -eq 'VideoViewWindow'){
             $sender.Remove_Closing($Synchash.FloatingWindow_ClosingScriptblock)
             $sender.Remove_LocationChanged($synchash.FloatingWindow_LocationChangedScriptblock)
-            
+
             if(!$synchash.MainWindow_IsClosing -and $synchash.VideoViewAirControl -and $synchash.VLC_Grid.Children -notcontains $synchash.VideoViewAirControl){
-              Write-EZLogs '| Re-adding VideoViewAirControl to VLC_Grid'
+              Write-EZLogs '| Re-adding VideoViewAirControl to VLC_Grid' -LogLevel 0 -Verboselog:$Verboselog
               [void]$synchash.VLC_Grid.AddChild($synchash.VideoViewAirControl)
             }
             if($synchash.MiniVideo_ToggleButton.isChecked){
               $synchash.MiniVideo_ToggleButton.isChecked = $false
             }
             if(!$synchash.MainWindow_IsClosing -and $synchash.VideoView_Grid.Parent.Parent -and $synchash.Window.IsLoaded){
-              write-ezlogs "| Setting videoview parent window Owner to main window"
+              write-ezlogs "| Setting videoview parent window Owner to main window" -LogLevel 0 -Verboselog:$Verboselog
               $synchash.VideoView_Grid.Parent.Parent.Owner = $Null
               $synchash.VideoView_Grid.Parent.Parent.Owner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($synchash.Window)
               $synchash.VideoView_Grid.Parent.Parent.Activate()
@@ -579,7 +568,7 @@ function Set-AvalonDock {
               }
             }
             if(!$synchash.MainWindow_IsClosing -and ($synchash.MiniPlayer_Viewer.isVisible -or (!$synchash.VideoButton_ToggleButton.isChecked -and $synchash.Window.isVisible)) -and $synchash.VideoView.Visibility -notin 'Hidden','Collapsed'){
-              write-ezlogs ">>>> Miniplayer is visible, hiding VideoView and VideoViewAirControl" -showtime -loglevel 2
+              write-ezlogs ">>>> Miniplayer is visible, hiding VideoView and VideoViewAirControl" -LogLevel 0 -Verboselog:$Verboselog
               $synchash.VideoView.Visibility = 'Collapsed'
               if($synchash.VideoViewAirControl){
                 $synchash.VideoViewAirControl.Visibility = 'Collapsed'
@@ -593,9 +582,9 @@ function Set-AvalonDock {
             }
           }elseif($sender.name){
             $webview2 = $($sender.Uid) -replace 'TabWindow','Webview2'
-            if($sender.name -ne 'WebBrowserFloat' -and $synchash."$webview2" -and $synchash."$webview2".isVisible -eq $false){    
+            if($sender.name -ne 'WebBrowserFloat' -and $synchash."$webview2" -and $synchash."$webview2".isVisible -eq $false){
               if($synchash."$webview2".CoreWebview2 -and $synchash."$webview2" -is [System.IDisposable]){
-                write-ezlogs "| Disposing Webview2 instance $($webview2)" -loglevel 2
+                write-ezlogs "| Disposing Webview2 instance $($webview2)"
                 $synchash."$webview2".dispose()
               }
             }
@@ -618,7 +607,7 @@ function Set-AvalonDock {
           if($synchash.MiniPlayer_Viewer.isVisible -and $synchash.VideoButton_ToggleButton.isChecked){
             write-ezlogs "| Miniplayer is open, closing main window video tray"
             Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Close
-          }                                                                 
+          }
         }catch{
           write-ezlogs "An exception occurred in VideoViewFloat.add_loaded" -showtime -catcherror $_
         }
@@ -638,7 +627,7 @@ function Set-AvalonDock {
             if($sender.Header){
               $sender.Header = 'Close Playlists'
             }
-          } 
+          }
         }catch{
           write-ezlogs "An exception occurred in PlaylistsView_Command" -showtime -catcherror $_
         }
@@ -729,7 +718,7 @@ function Set-AvalonDock {
                 'IsCheckable' = $false
               }
               $null = $items.Add($Playlists_View)
-              if($synchash.chat_WebView2.Visibility -eq 'Visible' -or $synchash.Comments_Grid.Visibility -eq 'Visible'){
+              if($synchash.chat_WebView2.isVisible -or $synchash.Comments_Grid.Visibility -eq 'Visible'){
                 $chatHeader = 'Close Chat View'
                 $chaticon = 'ChatRemove'
               }else{
@@ -743,7 +732,10 @@ function Set-AvalonDock {
                 'Icon_Color' = 'White'
                 'Command' = $synchash.ChatView_Command
                 'Icon_kind' = $chaticon
-                'Enabled' = $synchash.Chat_View_Button.isEnabled
+                'Binding' = $synchash.Chat_View_Button
+                'binding_property_path' = 'isEnabled'
+                'binding_mode' = 'OneWay'
+                'binding_property' = 'IsEnabledProperty'
                 'IsCheckable' = $false
               }
               $null = $items.Add($Chat_View)
@@ -770,7 +762,7 @@ function Set-AvalonDock {
                 }
                 { $_ -eq 'Web Browser' -or ($_ -and $_.startswith('Web Browser -')) } {
                   $VideoPlayer = $false
-                  $tag = $synchash.WebBrowserAnchorable.contentid          
+                  $tag = $synchash.WebBrowserAnchorable.contentid
                   if($synchash.WebBrowserAnchorable.isFloating){
                     $DockHeader = 'Dock'
                   }else{
@@ -827,7 +819,7 @@ function Set-AvalonDock {
                   'IsCheckable' = $false
                 }
                 $null = $items.Add($Playlists_View)
-                if($synchash.chat_WebView2.Visibility -eq 'Visible' -or $synchash.Comments_Grid.Visibility -eq 'Visible'){
+                if($synchash.chat_WebView2.isVisible -or $synchash.Comments_Grid.Visibility -eq 'Visible'){
                   $chatHeader = 'Close Chat View'
                   $chaticon = 'ChatRemove'
                 }else{
@@ -892,14 +884,14 @@ function Set-AvalonDock {
             $null = $synchash.VideoViewTransparentBackground.AddHandler([System.Windows.Controls.Button]::PreviewMouseLeftButtonDownEvent,$synchash.VideoViewMouseLeftButtonDown_command)
             $null = $synchash.VideoView_Queue.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Media_ContextMenu)
             $null = $synchash.VideoView_Queue.RemoveHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$synchash.PlayMedia_Command)
-            $null = $synchash.VideoView_Queue.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$synchash.PlayMedia_Command)    
+            $null = $synchash.VideoView_Queue.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$synchash.PlayMedia_Command)
           }catch{
             write-ezlogs "An exception occurred executing AnchorableContextMenu" -showtime -catcherror $_
           }finally{
             $this.stop()
             $this.Remove_Tick($AnchorableContextMenu_Timer_ScriptBlock)
             $AnchorableContextMenu_Timer = $Null
-          }     
+          }
         }
         $AnchorableContextMenu_Timer.add_tick($AnchorableContextMenu_Timer_ScriptBlock)
         $AnchorableContextMenu_Timer.start()
@@ -917,7 +909,7 @@ function Set-AvalonDock {
             try{
               if($floatingwindow.OwnedByDockingManagerWindow){
                 $floatingwindow.OwnedByDockingManagerWindow = $false
-              }                          
+              }
               if(!$floatingwindow.ShowInTaskbar){
                 $floatingwindow.ShowInTaskbar = $true
               }
@@ -928,7 +920,7 @@ function Set-AvalonDock {
                 'Now_Playing_Label' = $synchash.Now_Playing_Label.DataContext
                 'Now_Playing_Label_Visibility' = $synchash.Now_Playing_Label.Visibility
                 'Now_Playing_Sep1_Label' = $synchash.Now_Playing_Sep1_Label.content
-                'Now_Playing_Sep2_Label' = $synchash.Now_Playing_Sep2_Label.content 
+                'Now_Playing_Sep2_Label' = $synchash.Now_Playing_Sep2_Label.content
                 'Now_Playing_Title_Label' = $synchash.Now_Playing_Title_Label.DataContext
                 'Now_Playing_Artist_Label' = $synchash.Now_Playing_Artist_Label.DataContext
                 'Name' = 'VideoView'
@@ -964,7 +956,7 @@ function Set-AvalonDock {
               if($synchash.MediaViewAnchorable.isFloating -and $LibVLCSharpWPFForegroundWindow){
                 $FloatingWindowOwner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($floatingwindow)
                 if($LibVLCSharpWPFForegroundWindow.Owner -ne $FloatingWindowOwner){
-                  write-ezlogs ">>>> Setting Libvlcsharp.Wpf.ForegroundWindow.Owner to VideoView floating window"
+                  write-ezlogs ">>>> Setting Libvlcsharp.Wpf.ForegroundWindow.Owner to VideoView floating window" -LogLevel 0 -Verboselog:$Verboselog
                   $LibVLCSharpWPFForegroundWindow.Owner = $FloatingWindowOwner
                 }
               }
@@ -973,7 +965,7 @@ function Set-AvalonDock {
                 if($VideoViewAirControl){
                   $FloatingWindowOwner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($floatingwindow)
                   if($VideoViewAirControl.Owner -ne $FloatingWindowOwner){
-                    write-ezlogs ">>>> Setting VideoViewAirControl.front.parent.parent.Owner to VideoView floating window"
+                    write-ezlogs ">>>> Setting VideoViewAirControl.front.parent.parent.Owner to VideoView floating window" -LogLevel 0 -Verboselog:$Verboselog
                     $VideoViewAirControl.Owner = $FloatingWindowOwner
                   }
                 }
@@ -986,19 +978,19 @@ function Set-AvalonDock {
                 $floatingwindow.style = $windowstyle
               }
               if($floatingWindow.WindowStyle -ne 'None'){
-                $floatingWindow.WindowStyle = 'None' 
-              }                             
+                $floatingWindow.WindowStyle = 'None'
+              }
               if($synchash.vlc.isPlaying -and ($synchash.videoView.Visibility -in 'Hidden','Collapsed') -and !$synchash.Webview2.CoreWebView2.IsDocumentPlayingAudio -and !$synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio -and -not [string]($synchash.vlc.media.Mrl).StartsWith("dshow://")){
-                write-ezlogs "Vlc is playing, Youtube/Spotify webplayer not playing and videoView.Visibility is hidden, setting to visible" -warning
+                write-ezlogs "Vlc is playing, Youtube/Spotify webplayer not playing and videoView.Visibility is hidden, setting to visible" -warning -LogLevel 0 -Verboselog:$Verboselog
                 $synchash.videoView.Visibility = 'Visible'
               }
               if($synchash.VideoView_Grid.MaxHeight -eq 0){
                 $synchash.VideoView_Grid.MaxHeight = [Double]::PositiveInfinity
-              }            
+              }
               if($floatingwindow.MinHeight -ne '400' -or $floatingwindow.MinWidth -ne "600"){
                 $floatingwindow.MinHeight="400"
                 $floatingwindow.MinWidth="600"
-              }                       
+              }
               if($floatingWindow.Topmost -ne $synchash.VideoViewFloat.Topmost){
                 $floatingWindow.Topmost = $synchash.VideoViewFloat.Topmost
               }
@@ -1076,7 +1068,7 @@ function Set-AvalonDock {
                     'IsCheckable' = $false
                   }
                   $null = $items.Add($Playlists_View)
-                  if($synchash.chat_WebView2.Visibility -eq 'Visible' -or $synchash.Comments_Grid.Visibility -eq 'Visible'){
+                  if($synchash.chat_WebView2.isVisible -or $synchash.Comments_Grid.Visibility -eq 'Visible'){
                     $chatHeader = 'Close Chat View'
                     $chaticon = 'ChatRemove'
                   }else{
@@ -1101,8 +1093,8 @@ function Set-AvalonDock {
                 $separator = @{
                   'Separator' = $true
                   'Style' = 'SeparatorGradient'
-                }            
-                $null = $items.Add($separator) 
+                }
+                $null = $items.Add($separator)
                 $Exit_App = @{
                   'Header' = "Close Video View"
                   'Color' = 'White'
@@ -1116,7 +1108,7 @@ function Set-AvalonDock {
                 $null = $items.Add($Exit_App)
                 Add-WPFMenu -control $floatingwindow -items $items -AddContextMenu -sourceWindow $synchash
               }
-              $synchash.VideoViewFloat = $floatingwindow 
+              $synchash.VideoViewFloat = $floatingwindow
               $synchash.VideoViewFloat.Add_StateChanged($Synchash.FloatingWindow_StateChangedScriptblock)
               $synchash.VideoViewFloat.Uid = $FloatingWindow_contentid
               if(!$synchash.VideoViewFloat.TryFindResource('DockWindowCommand')){
@@ -1138,19 +1130,19 @@ function Set-AvalonDock {
                   $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)
                   if($thisapp.config.Installed_AppID -ne $appid){
                     $thisapp.config.Installed_AppID = $appid
-                  } 
+                  }
                 }
                 $synchash.VideoViewFloat.Add_Closing($Synchash.FloatingWindow_ClosingScriptblock)
               }
               if($synchash.MediaViewAnchorable_FloatMaximized -and $synchash.VideoViewFloat.WindowState -ne 'Maximized' -and $synchash.VideoView_LargePlayer_Icon.Kind -ne 'ScreenFull'){
-                $synchash.VideoView_LargePlayer_Icon.Kind = 'ScreenFull'                                  
+                $synchash.VideoView_LargePlayer_Icon.Kind = 'ScreenFull'
               }else{
                 $synchash.MediaViewAnchorable_FloatMaximized = $false
-              }                                                    
+              }
             }catch{
               write-ezlogs "An exception occurred in MediaViewAnchorable.add_FloatingPropertiesUpdated" -showtime -catcherror $_
             }
-          }elseif($FloatingWindow_contentid -eq 'Webbrowser' -or $FloatingWindow_contentid -match "WebBrowser_TabWindow_"){                
+          }elseif($FloatingWindow_contentid -eq 'Webbrowser' -or $FloatingWindow_contentid -match "WebBrowser_TabWindow_"){
             $floatingwindow.OwnedByDockingManagerWindow = $false
             $floatingwindow.AllowMinimize = $true
             $floatingwindow.ShowInTaskbar = $true
@@ -1187,7 +1179,7 @@ function Set-AvalonDock {
               $synchash.MicrosoftEdgeicon.Drawing.Bounds.Width = '15'
               $synchash.MicrosoftEdgeicon.Drawing.Bounds.Height = '15'
               $floatingwindow.icon = $synchash.MicrosoftEdgeicon
-              $synchash.MicrosoftEdgeicon.Freeze()    
+              $synchash.MicrosoftEdgeicon.Freeze()
             }
             if($FloatingWindow_contentid -eq 'Webbrowser'){
               $floatingwindow.MinWidth="500"
@@ -1200,15 +1192,15 @@ function Set-AvalonDock {
               $synchash."$($FloatingWindow_contentid)Float".style = $windowstyle
               $synchash."$($FloatingWindow_contentid)Float".Name = "$($FloatingWindow_contentid)Float"
               $synchash."$($FloatingWindow_contentid)Float".Add_StateChanged($Synchash.FloatingWindow_StateChangedScriptblock)
-            }           
+            }
             if(!$synchash."$($FloatingWindow_contentid)Float".TryFindResource('DockWindowCommand')){
               $Dockingrelaycommand = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.Docking_Command_Scriptblock -target $synchash."$($FloatingWindow_contentid)Float"
-              $synchash."$($FloatingWindow_contentid)Float".Resources.add('DockWindowCommand',$Dockingrelaycommand) 
+              $synchash."$($FloatingWindow_contentid)Float".Resources.add('DockWindowCommand',$Dockingrelaycommand)
               $synchash."$($FloatingWindow_contentid)Float".Tag = $Dockingrelaycommand
               [System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($synchash."$($FloatingWindow_contentid)Float")
-                      
-              #Register window to installed application ID 
-              $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($synchash."$($FloatingWindow_contentid)Float")  
+
+              #Register window to installed application ID
+              $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($synchash."$($FloatingWindow_contentid)Float")
               if($thisApp.Config.Installed_AppID){
                 $appid = $thisApp.Config.Installed_AppID
               }else{
@@ -1220,10 +1212,10 @@ function Set-AvalonDock {
                 $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)
                 if($thisapp.config.Installed_AppID -ne $appid){
                   $thisapp.config.Installed_AppID = $appid
-                } 
+                }
               }
-            }                           
-          }elseif($FloatingWindow_contentid -in 'MediaLibrary','TorBrowser'){ 
+            }
+          }elseif($FloatingWindow_contentid -in 'MediaLibrary','TorBrowser'){
             $floatingwindow.OwnedByDockingManagerWindow = $false
             $floatingwindow.AllowMinimize = $true
             $floatingwindow.ShowInTaskbar = $true
@@ -1255,7 +1247,7 @@ function Set-AvalonDock {
               $synchash.Libraryicon.Drawing.Bounds.Width = '15'
               $synchash.Libraryicon.Drawing.Bounds.Height = '15'
               $floatingwindow.icon = $synchash.Libraryicon
-              $synchash.Libraryicon.Freeze()               
+              $synchash.Libraryicon.Freeze()
             }
             $floatingWindow.Topmost= $synchash."$($FloatingWindow_contentid)Float".Topmost
             #Context Menu
@@ -1294,15 +1286,15 @@ function Set-AvalonDock {
                   'Command' = $Synchash.Minimize_VideoView_Command
                   'Icon_kind' = 'WindowMinimize'
                   'Enabled' = $true
-                  'IsCheckable' = $false                  
+                  'IsCheckable' = $false
                 }
                 $null = $items.Add($Minimize_VideoView)
               }
               $separator = @{
                 'Separator' = $true
                 'Style' = 'SeparatorGradient'
-              }            
-              $null = $items.Add($separator) 
+              }
+              $null = $items.Add($separator)
               $Exit_App = @{
                 'Header' = "Close Video View"
                 'Color' = 'White'
@@ -1315,21 +1307,21 @@ function Set-AvalonDock {
               }
               $null = $items.Add($Exit_App)
               Add-WPFMenu -control $floatingwindow -items $items -AddContextMenu -sourceWindow $synchash
-            }               
+            }
             $synchash."$($FloatingWindow_contentid)Float" = $floatingwindow
             if($synchash."$($FloatingWindow_contentid)Float".style -ne $windowstyle){
               $synchash."$($FloatingWindow_contentid)Float".style = $windowstyle
               $synchash."$($FloatingWindow_contentid)Float".Name = "$($FloatingWindow_contentid)Float"
-            } 
+            }
             $synchash."$($FloatingWindow_contentid)Float".Uid = $FloatingWindow_contentid
             if(!$synchash."$($FloatingWindow_contentid)Float".TryFindResource('DockWindowCommand')){
               $Dockingrelaycommand = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.Docking_Command_Scriptblock -target $synchash."$($FloatingWindow_contentid)Float"
-              $synchash."$($FloatingWindow_contentid)Float".Resources.add('DockWindowCommand',$Dockingrelaycommand) 
+              $synchash."$($FloatingWindow_contentid)Float".Resources.add('DockWindowCommand',$Dockingrelaycommand)
               $synchash."$($FloatingWindow_contentid)Float".Tag = $Dockingrelaycommand
               [System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($synchash."$($FloatingWindow_contentid)Float")
-                       
-              #Register window to installed application ID 
-              $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($synchash."$($FloatingWindow_contentid)Float") 
+
+              #Register window to installed application ID
+              $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($synchash."$($FloatingWindow_contentid)Float")
               if($thisApp.Config.Installed_AppID){
                 $appid = $thisApp.Config.Installed_AppID
               }else{
@@ -1338,15 +1330,15 @@ function Set-AvalonDock {
               if($Window_Helper.Handle -and $appid){
                 $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
                 write-ezlogs ">>>> Registering $($FloatingWindow_contentid)Float window handle: $($Window_Helper.Handle) -- to appid: $appid" -Dev_mode
-                $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)    
+                $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)
                 if($thisapp.config.Installed_AppID -ne $appid){
                   $thisapp.config.Installed_AppID = $appid
                 }
               }
-            }                      
+            }
           }elseif($FloatingWindow_contentid){
             write-ezlogs ">>>> Floating properties updated for floating window contentid: $($FloatingWindow_contentid) -- Name: $($sender.Name)"
-          }                
+          }
         }catch{
           write-ezlogs 'An exception occurred in FloatingPropertiesUpdated_Command' -showtime -catcherror $_
         }
@@ -1380,10 +1372,10 @@ function Set-AvalonDock {
               if($synchash.VideoViewAirControl.front.parent.parent -is [System.Windows.Window]){
                 $FloatingWindowOwner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($FloatingWindowControl)
                 if($synchash.VideoViewAirControl.front.parent.parent.Owner -ne $FloatingWindowOwner){
-                  write-ezlogs "| Setting VideoViewAirControl.front.parent.parent.Owner to VideoView floating window" -warning
+                  write-ezlogs "| Setting VideoViewAirControl.front.parent.parent.Owner to VideoView floating window" -warning -LogLevel 0 -Verboselog:$Verboselog
                   $synchash.VideoViewAirControl.front.parent.parent.Owner = $FloatingWindowOwner
                   if($synchash.VideoViewAirControl.Visibility -in 'Hidden','Collapsed'){
-                    write-ezlogs "| Unhiding VideoViewAirControl"
+                    write-ezlogs "| Unhiding VideoViewAirControl" -LogLevel 0 -Verboselog:$Verboselog
                     $synchash.VideoViewAirControl.Visibility = 'Visible'
                   }
                 }
@@ -1392,7 +1384,7 @@ function Set-AvalonDock {
               if($synchash.MediaViewAnchorable.isFloating -and $LibVLCSharpWPFForegroundWindow){
                 $FloatingWindowOwner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($FloatingWindowControl)
                 if($LibVLCSharpWPFForegroundWindow.Owner -ne $FloatingWindowOwner){
-                  write-ezlogs "| Setting Libvlcsharp.Wpf.ForegroundWindow.Owner to VideoView floating window"
+                  write-ezlogs "| Setting Libvlcsharp.Wpf.ForegroundWindow.Owner to VideoView floating window" -LogLevel 0 -Verboselog:$Verboselog
                   $LibVLCSharpWPFForegroundWindow.Owner = $FloatingWindowOwner
                 }
               }
@@ -1405,11 +1397,11 @@ function Set-AvalonDock {
             }elseif($FloatingAnchorable.ContentId -eq 'WebBrowser'){
               $Bookmarks_FlyoutControlWindowElement = [System.WeakReference]::new($synchash.Bookmarks_FlyoutControl).Target
               $Bookmarks_FlyoutControlWindow = Get-VisualParentUp -source $Bookmarks_FlyoutControlWindowElement -type ([System.Windows.Window])
-              if($Bookmarks_FlyoutControlWindow.Owner){              
+              if($Bookmarks_FlyoutControlWindow.Owner){
                 $FloatingWindowOwner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($FloatingWindowControl)
                 if($Bookmarks_FlyoutControlWindow.Owner -ne $FloatingWindowOwner){
                   write-ezlogs "| Setting Bookmarks_FlyoutControl.parent.parent.Owner to floating window" -Dev_mode
-                  $Bookmarks_FlyoutControlWindow.Owner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($FloatingWindowControl)   
+                  $Bookmarks_FlyoutControlWindow.Owner = [MahApps.Metro.Controls.MetroWindow]::GetWindow($FloatingWindowControl)
                 }
               }
               #Context Menu
@@ -1455,8 +1447,8 @@ function Set-AvalonDock {
                 $separator = @{
                   'Separator' = $true
                   'Style' = 'SeparatorGradient'
-                }            
-                $null = $items.Add($separator) 
+                }
+                $null = $items.Add($separator)
                 $Exit_App = @{
                   'Header' = "Close Video View"
                   'Color' = 'White'
@@ -1530,13 +1522,13 @@ function Set-AvalonDock {
       })
       if($synchash.TorBrowserAnchorable){
         $synchash.TorBrowserAnchorable.add_FloatingPropertiesUpdated($Synchash.FloatingPropertiesUpdated_Command)
-      } 
+      }
     }catch{
       write-ezlogs "An exception occurred setting add_FloatingPropertiesUpdated for MediaViewAnchorable" -showtime -catcherror $_
     }
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Set-AvalonDock Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Set-AvalonDock')

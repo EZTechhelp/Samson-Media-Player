@@ -7,7 +7,7 @@
 
     .DESCRIPTION
     Creates, initializes, renders, updates, resets and displays a Mahapps Metro WPF window with controls for all available app settings. Used for both guided First Run setup and updating app settings at any time
-       
+
     .Requirements
     - Powershell v3.0 or higher
     - Module designed for EZT-MediaPlayer
@@ -20,7 +20,7 @@
     Author  : EZTechhelp - https://www.eztechhelp.com
 #>
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-MediaLocations Function
 #----------------------------------------------
 function Update-MediaLocations
@@ -43,20 +43,20 @@ function Update-MediaLocations
     [switch]$SetItemsSource,
     [switch]$VerboseLog
   )
-  try{ 
+  try{
     $hashsetup.Media_Progress_Ring.isActive = $true
     $hashsetup.Media_Path_Browse.isEnabled = $false
     $hashsetup.MediaLocations_Grid.isEnabled = $false
     $hashSetup.setupbutton_status = $hashSetup.Save_Setup_Button.isEnabled
     $hashSetup.Save_Setup_Button.isEnabled = $false
-    write-ezlogs "[Update-MediaLocations] >>>> Updating Media Locations table" -showtime -LogLevel 2 -logtype Setup      
+    write-ezlogs "[Update-MediaLocations] >>>> Updating Media Locations table" -showtime -LogLevel 2 -logtype Setup
     if($Refresh){
       if($hashsetup.LocalMedia_items){
         [void]$hashsetup.LocalMedia_items.clear()
       }
       if($hashsetup.MediaLocations_Grid.items){
         [void]$hashsetup.MediaLocations_Grid.items.clear()
-      }                   
+      }
     }
     $enumerate_files_Scriptblock = {
       param (
@@ -80,25 +80,25 @@ function Update-MediaLocations
       $BadPaths = [System.Collections.Generic.List[Object]]::new()
       $warningPaths = [System.Collections.Generic.List[Object]]::new()
       foreach($path in $Directories){
-        try{   
+        try{
           if([string]::IsNullOrEmpty($path)){
             write-ezlogs "[Update-MediaLocations] LocalMedia directory path blank entry" -showtime -warning -logtype Setup
-          }elseif($hashsetup.LocalMedia_items.path -notcontains $path){                             
+          }elseif($hashsetup.LocalMedia_items.path -notcontains $path){
             if(!$hashsetup.LocalMedia_items){
               $Number = 1
             }else{
               $Number = $hashsetup.LocalMedia_items.Number | select -last 1
               $Number++
             }
-            if([System.IO.Directory]::Exists($Path)){               
+            if([System.IO.Directory]::Exists($Path)){
               try{
                 if(($Path).StartsWith("\\")){
                   $isNetworkPath = $true
-                  write-ezlogs "[Update-MediaLocations] The path $($path) is detected as a network UNC Path" -warning 
+                  write-ezlogs "[Update-MediaLocations] The path $($path) is detected as a network UNC Path" -warning
                 }elseif([system.io.driveinfo]::new($Path).DriveType -eq 'Network' -and (Use-RunAs -Check)){
                   $isNetworkMappedDrive = $true
                   write-ezlogs "[Update-MediaLocations] The path $($path) is detected as a network drive and the app is currently running as admin. It may not be accessible under different user contexts" -warning
-                }                       
+                }
               }catch{
                 write-ezlogs "[Update-MediaLocations] An exception occurred getting drive info for $path" -CatchError $_
                 [void]$BadPaths.add($Path)
@@ -106,13 +106,13 @@ function Update-MediaLocations
               }
               write-ezlogs "[Update-MediaLocations] >>>> Adding Number: $Number -- Path: $path" -showtime -LogLevel 2 -logtype Setup
               $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($path)-Local")
-              $encodedpath = [System.Convert]::ToBase64String($encodedBytes) 
+              $encodedpath = [System.Convert]::ToBase64String($encodedBytes)
               $media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)avi|(?i)wmv|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mov|(?i)h264|(?i)mpeg|(?i)mpg4|(?i)movie|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))')
               $exclude_Pattern = '\.temp\.|\.tmp\.'
-              try{ 
+              try{
                 write-ezlogs "[Update-MediaLocations] | Verifying valid media exists in path: $($path)" -showtime -LogLevel 2 -logtype Setup
-                $enumerate_measure = [system.diagnostics.stopwatch]::StartNew()  
-                $directory_files = Find-FilesFast -Path $Path | select -first 10 | & { process {if ($_.FileName -match $media_pattern -and $_.FullName -notmatch $exclude_Pattern -and !$_.isDirectory){$_}}} 
+                $enumerate_measure = [system.diagnostics.stopwatch]::StartNew()
+                $directory_files = Find-FilesFast -Path $Path | select -first 10 | & { process {if ($_.FileName -match $media_pattern -and $_.FullName -notmatch $exclude_Pattern -and !$_.isDirectory){$_}}}
                 $enumerate_measure.stop()
                 write-ezlogs "[Update-MediaLocations] Find-FilesFast measure for $path" -LogLevel 2 -logtype Perf -PerfTimer $enumerate_measure
                 $enumerate_measure = $Null
@@ -125,28 +125,28 @@ function Update-MediaLocations
                   write-ezlogs "[Update-MediaLocations] Unable to verify if any valid media exists under path: $path" -logtype Setup -warning
                 }
               }catch{
-                write-ezlogs "[Update-MediaLocations] An exception occurred attempting to get directory file count with GetFiles for path $Path" -showtime -catcherror $_               
-                $hashsetup.window.Dispatcher.Invoke("Normal",[action]{     
+                write-ezlogs "[Update-MediaLocations] An exception occurred attempting to get directory file count with GetFiles for path $Path" -showtime -catcherror $_
+                $hashsetup.window.Dispatcher.Invoke("Normal",[action]{
                     $hashsetup.Media_Progress_Ring.isActive = $false
                     $hashsetup.Media_Path_Browse.isEnabled = $true
                     $hashSetup.Save_Setup_Button.isEnabled = $hashSetup.setupbutton_status
-                    $hashsetup.MediaLocations_Grid.isEnabled = $true              
+                    $hashsetup.MediaLocations_Grid.isEnabled = $true
                     $hashsetup.Editor_Help_Flyout.isOpen = $true
-                    $hashsetup.Editor_Help_Flyout.header = 'Local Media'                                                      
-                }) 
+                    $hashsetup.Editor_Help_Flyout.header = 'Local Media'
+                })
                 update-EditorHelp -content "[WARNING] An exception occurred attempting to get media file count for path $Path`n$_" -color red -FontWeight Bold  -RichTextBoxControl $hashsetup.EditorHelpFlyout -Open -clear -use_runspace
-                update-EditorHelp -content "Media in this directory may not be imported. This is usually due to permission issues. Try re-running setup as admin or verifying you have access to the path specified" -color orange -RichTextBoxControl $hashsetup.EditorHelpFlyout -use_runspace                       
+                update-EditorHelp -content "Media in this directory may not be imported. This is usually due to permission issues. Try re-running setup as admin or verifying you have access to the path specified" -color orange -RichTextBoxControl $hashsetup.EditorHelpFlyout -use_runspace
                 continue
-              }              
+              }
             }else{
-              [void]$BadPaths.add($Path)               
+              [void]$BadPaths.add($Path)
               continue
-            }                               
+            }
             [void]$hashSetup.LocalMedia_items.add([PSCustomObject]@{
                 Number=$Number
                 Path=$Path
                 MediaCount=$directory_filecount
-            })  
+            })
           }else{
             write-ezlogs "[Update-MediaLocations] LocalMedia path ($($Path)) has already been added to LocalMedia_items" -showtime -warning -logtype Setup
           }
@@ -159,27 +159,27 @@ function Update-MediaLocations
           $BadPathsMessage += "`n + $path"
         }
         $message = @"
-**Could not find some of your configured local media directories** 
+**Could not find some of your configured local media directories**
 `n
 $BadPathsMessage
-%{color:#FFFFD265}*This app is currently running as administrator*%`n 
+%{color:#FFFFD265}*This app is currently running as administrator*%`n
 If these path(s) are network mapped drive(s), you can try the following:`n + Restart the app without running as administrator`n + Click [HERE](RestartAsUser) to restart the app as a normal user now.`n + Configure **Enablelinkedconnections** registry option to allow accessing mapped drives when running as admin.`n`t + Visit [Microsoft KB 3035277](https://learn.microsoft.com/en-us/troubleshoot/windows-client/networking/mapped-drives-not-available-from-elevated-command) to learn how to configure
 "@
 
-        $message2 = "Could not find some of your configured local media directories. If these path(s) are network mapped drive(s), try restarting the app without running as admin or click Restart as User to restart now`n`nInvalid Paths:`n$($BadPaths | out-string)"                   
-      }elseif(@($BadPaths).count -ge 1){   
+        $message2 = "Could not find some of your configured local media directories. If these path(s) are network mapped drive(s), try restarting the app without running as admin or click Restart as User to restart now`n`nInvalid Paths:`n$($BadPaths | out-string)"
+      }elseif(@($BadPaths).count -ge 1){
         if($exceptionmessage){
           write-ezlogs "[Update-MediaLocations] **An error occurred when adding the following directories`n`nErrors: $exceptionmessage`n" -warning -logtype Setup
-          $message = "**An error occurred when adding the following directories. These errors may or may not prevent issues importing or scanning media from these paths**`n`n%{color:#FFFFD265}Errors: $exceptionmessage%`n`n" 
+          $message = "**An error occurred when adding the following directories. These errors may or may not prevent issues importing or scanning media from these paths**`n`n%{color:#FFFFD265}Errors: $exceptionmessage%`n`n"
         }else{
           write-ezlogs "[Update-MediaLocations] Could not find directory to add $($BadPaths)...skipping" -warning -logtype Setup
-          $message = "**Could not find some of your configured local media directories**`n" 
-        }               
+          $message = "**Could not find some of your configured local media directories**`n"
+        }
         foreach($path in $BadPaths){
           $message += "`n + $path"
         }
         $message2 = "Could not find some of your configured local media directories`n`nInvalid Paths:`n$($BadPaths | out-string)"
-      }elseif(@($warningPaths).count -ge 1){                  
+      }elseif(@($warningPaths).count -ge 1){
         #write-ezlogs "Unable to verify if any valid media exists under path: $warningPaths" -warning -logtype Setup
         $message = "**Unable to verify if any valid media exists under these paths**`n"
         foreach($path in $warningPaths){
@@ -200,9 +200,9 @@ If these path(s) are network mapped drive(s), you can try the following:`n + Res
       }
       #final processing
       if($SetItemsSource){
-        try{         
-          write-ezlogs "[Update-MediaLocations] >>>> Executing Update_LocalMedia_Timer" -logtype Setup                             
-          $hashsetup.Update_LocalMedia_Timer.tag = $hashSetup.LocalMedia_items   
+        try{
+          write-ezlogs "[Update-MediaLocations] >>>> Executing Update_LocalMedia_Timer" -logtype Setup
+          $hashsetup.Update_LocalMedia_Timer.tag = $hashSetup.LocalMedia_items
           $hashsetup.Update_LocalMedia_Timer.start()
         }catch{
           write-ezlogs "[Update-MediaLocations] An exception occurred starting Update_LocalMedia_Timer" -catcherror $_
@@ -211,18 +211,18 @@ If these path(s) are network mapped drive(s), you can try the following:`n + Res
       }
     }
     #$Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
-    Start-Runspace -scriptblock $enumerate_files_Scriptblock -StartRunspaceJobHandler -arguments $PSBoundParameters -runspace_name "Enumerate_Files_ScriptBlock" -thisApp $thisApp    
+    Start-Runspace -scriptblock $enumerate_files_Scriptblock -StartRunspaceJobHandler -arguments $PSBoundParameters -runspace_name "Enumerate_Files_ScriptBlock" -thisApp $thisApp
     #$Variable_list = $Null
     $enumerate_files_Scriptblock = $Null
   }catch{
     write-ezlogs "An exception occurred processing local media $path" -catcherror $_
-  }  
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-MediaLocations Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-SpotifyPlaylists Function
 #----------------------------------------------
 function Update-SpotifyPlaylists
@@ -258,10 +258,10 @@ function Update-SpotifyPlaylists
       'Type'
       'Tracks'
       'Playlist_info'
-  ) #>     
-  if(!$hashsetup.SpotifyPlaylists_Grid.items){ 
+  ) #>
+  if(!$hashsetup.SpotifyPlaylists_Grid.items){
     #$Global:SpotifyPlayliststable =  [hashtable]::Synchronized(@{})
-    #$Global:SpotifyPlayliststable.datatable = [System.Data.DataTable]::new() 
+    #$Global:SpotifyPlayliststable.datatable = [System.Data.DataTable]::new()
     #[void]$SpotifyPlayliststable.datatable.Columns.AddRange($Fields)
     $Number = 1
   }else{
@@ -277,12 +277,12 @@ function Update-SpotifyPlaylists
       [void]$array.add($n.Number)
       [void]$array.add($n.Path)
       #[void]$SpotifyPlayliststable.datatable.Rows.Add($array)
-    } 
+    }
   }
   write-ezlogs "| Adding Spotify - Number: $Number -- URL: $path -- Name: $Name -- Type: $Type -- ID: $ID" -showtime -logtype Setup -loglevel 3
-  try{    
+  try{
     [void]$hashsetup.SpotifyPlaylists_Grid.Items.add([PSCustomObject]@{
-        Number=$Number    
+        Number=$Number
         ID = $id
         Name=$Name
         Path=$Path
@@ -294,11 +294,11 @@ function Update-SpotifyPlaylists
     write-ezlogs "An exception occurred adding items to Locations grid" -showtime -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-SpotifyPlaylists Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-YoutubePlaylists Function
 #----------------------------------------------
 function Update-YoutubePlaylists
@@ -314,8 +314,8 @@ function Update-YoutubePlaylists
     [string]$id,
     [switch]$VerboseLog
   )
-  try{      
-    if(!$hashsetup.YoutubePlaylists_Grid.items){ 
+  try{
+    if(!$hashsetup.YoutubePlaylists_Grid.items){
       $Number = 1
     }else{
       $Number = $hashsetup.YoutubePlaylists_Grid.items.Number | select -last 1
@@ -324,7 +324,7 @@ function Update-YoutubePlaylists
     write-ezlogs ">>>> Updating Youtube Playlists table | Adding Youtube - Number: $Number -- URL: $path -- Name: $Name -- Type: $Type -- ID: $ID" -showtime -logtype Setup -Dev_mode
     try{
       $hashsetup.Update_YoutubePlaylists_Timer.tag = [PSCustomObject]@{
-        Number=$Number;       
+        Number=$Number;
         ID = $id
         Name=$Name
         Path=$Path
@@ -334,16 +334,16 @@ function Update-YoutubePlaylists
       $hashsetup.Update_YoutubePlaylists_Timer.start()
     }catch{
       write-ezlogs "An exception occurred adding items to Locations grid" -showtime -catcherror $_
-    }                
+    }
   }catch{
     write-ezlogs "An exception occurred in Update_YoutubePlaylists_Timer.add_tick $($hashsetup | out-string)" -showtime -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-YoutubePlaylists Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Invoke-YoutubeImport Function
 #----------------------------------------------
 function Invoke-YoutubeImport
@@ -358,24 +358,24 @@ function Invoke-YoutubeImport
       $youtube_playlists = Get-YouTubePlaylists -mine
     }catch{
       write-ezlogs "An exception occurred retrieving youtube playlists with Get-YoutubePlaylists" -showtime -catcherror $_
-    } 
+    }
     $newplaylists = 0
     $newchannels = 0
-          
-    if($youtube_playlists){        
-      foreach($playlist in $youtube_playlists){              
+
+    if($youtube_playlists){
+      foreach($playlist in $youtube_playlists){
         $playlisturl = "https://www.youtube.com/playlist?list=$($playlist.id)"
         $playlistName = $playlist.snippet.title
         if($hashSetup.YoutubePlaylists_itemsArray.path -notcontains $playlisturl){
           write-ezlogs "Adding Youtube Playlist URL $playlisturl" -showtime -logtype Setup -loglevel 3
-          if(!$hashSetup.YoutubePlaylists_itemsArray.Number){ 
+          if(!$hashSetup.YoutubePlaylists_itemsArray.Number){
             $Number = 1
           }else{
             $Number = $hashSetup.YoutubePlaylists_itemsArray.Number | Select-Object -last 1
             $Number++
           }
           [void]$hashSetup.YoutubePlaylists_itemsArray.add([PSCustomObject]@{
-              Number=$Number;       
+              Number=$Number;
               ID = $playlist.id
               Name=$playlistName
               Path=$playlisturl
@@ -399,14 +399,14 @@ function Invoke-YoutubeImport
           $channelName = $channel.items.snippet.title
           if($hashSetup.YoutubePlaylists_itemsArray.path -notcontains $playlisturl){
             write-ezlogs "Adding Youtube Channel URL $playlisturl" -showtime -logtype Setup -loglevel 3
-            if(!$hashSetup.YoutubePlaylists_itemsArray.Number){ 
+            if(!$hashSetup.YoutubePlaylists_itemsArray.Number){
               $Number = 1
             }else{
               $Number = $hashSetup.YoutubePlaylists_itemsArray.Number | Select-Object -last 1
               $Number++
             }
             [void]$hashSetup.YoutubePlaylists_itemsArray.add([PSCustomObject]@{
-                Number=$Number;       
+                Number=$Number;
                 ID = $playlistid
                 Name=$channelName
                 Path=$playlisturl
@@ -416,7 +416,7 @@ function Invoke-YoutubeImport
             $newplaylists++
           }else{
             write-ezlogs "The Youtube Channel URL $playlisturl has already been added!" -showtime -warning -logtype Setup
-          }           
+          }
         }
       }
       if($thisApp.Config.Import_My_Youtube_Subscriptions -or $thisApp.ConfigTemp.Import_My_Youtube_Subscriptions){
@@ -430,14 +430,14 @@ function Invoke-YoutubeImport
               $channel = Get-YouTubeChannel -Id $channelid -Raw
               if($hashSetup.YoutubePlaylists_itemsArray.path -notcontains $channelurl){
                 write-ezlogs "Adding Youtube Subscription Channel URL $channelurl" -showtime -logtype Setup -loglevel 3
-                if(!$hashSetup.YoutubePlaylists_itemsArray.Number){ 
+                if(!$hashSetup.YoutubePlaylists_itemsArray.Number){
                   $Number = 1
                 }else{
                   $Number = $hashSetup.YoutubePlaylists_itemsArray.Number | Select-Object -last 1
                   $Number++
                 }
                 [void]$hashSetup.YoutubePlaylists_itemsArray.add([PSCustomObject]@{
-                    Number=$Number;       
+                    Number=$Number;
                     ID = $channelid
                     Name=$channelName
                     Path=$channelurl
@@ -448,7 +448,7 @@ function Invoke-YoutubeImport
               }else{
                 write-ezlogs "The Youtube Subscription Channel URL $channelurl has already been added!" -showtime -warning -logtype Setup
               }
-            }                          
+            }
           }
         }catch{
           write-ezlogs "An exception occurred getting personal Youtube subscriptions" -showtime -catcherror $_
@@ -459,18 +459,18 @@ function Invoke-YoutubeImport
       $hashsetup.Update_YoutubePlaylists_Timer.start()
     }catch{
       write-ezlogs "An exception occurred retrieving owner youtube channel id" -showtime -catcherror $_
-    }       
+    }
     if($newplaylists -le 0 -and $newchannels -le 0){
       write-ezlogs "No new Youtuube Playlists were found!" -showtime -warning -logtype Setup
       $hashsetup.window.Dispatcher.Invoke("Normal",[action]{
-          $hashsetup.Editor_Help_Flyout.isOpen = $true           
+          $hashsetup.Editor_Help_Flyout.isOpen = $true
           $hashsetup.Youtube_Playlists_Import_Progress_Ring.isActive=$false
-          $hashsetup.Youtube_Playlists_Import.isEnabled = $true                       
+          $hashsetup.Youtube_Playlists_Import.isEnabled = $true
       })
       update-EditorHelp -content "No new Youtuube Playlists were found!" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -Open -clear -use_runspace -Header 'Youtube'
     }else{
       write-ezlogs "Found $newplaylists playlists and $newchannels new channels" -showtime -logtype Setup
- 
+
       if($newplaylists -gt 0){
         $message = "Found $newplaylists new Youtube Playlists!"
         write-ezlogs ">>>> Found $newplaylists new Youtube Playlists!" -showtime -logtype Setup -loglevel 2
@@ -479,26 +479,26 @@ function Invoke-YoutubeImport
         $message += "`nFound $newchannels new Youtube Subscribed Channels!"
         write-ezlogs ">>>> Found $newchannels new Youtube Subscribed Channels!" -showtime -logtype Setup -loglevel 2
       }
-      $hashsetup.window.Dispatcher.Invoke("Normal",[action]{             
-          try{               
+      $hashsetup.window.Dispatcher.Invoke("Normal",[action]{
+          try{
             $hashsetup.Editor_Help_Flyout.header = 'Youtube'
             $hashsetup.Youtube_Playlists_Import_Progress_Ring.isActive=$false
-            $hashsetup.Youtube_Playlists_Import.isEnabled = $true                                
+            $hashsetup.Youtube_Playlists_Import.isEnabled = $true
           }catch{
             write-ezlogs "An exception occurred updating/opening Editor_Help_Flyout" -catcherror $_
-          } 
+          }
       })
       update-EditorHelp -content $message -color cyan -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -Open -use_runspace -clear
-    }               
+    }
   }catch{
     write-ezlogs "An exception occurred in Youtube_ImportHandler routed event" -showtime -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Invoke-YoutubeImport Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Invoke-TwitchImport Function
 #----------------------------------------------
 function Invoke-TwitchImport
@@ -514,9 +514,9 @@ function Invoke-TwitchImport
       $Twitch_playlists = Get-TwitchFollows -GetMyFollows -thisApp $thisApp
     }catch{
       write-ezlogs "An exception occurred retrieving Twitch Follows with Get-TwitchFollows" -showtime -catcherror $_
-    } 
+    }
     if($Twitch_playlists){
-      foreach($playlist in $Twitch_playlists){                         
+      foreach($playlist in $Twitch_playlists){
         $playlisturl = "https://www.twitch.tv/$($playlist.broadcaster_login)"
         $playlistName = $playlist.broadcaster_name
         if($playlist.followed_at){
@@ -541,7 +541,7 @@ function Invoke-TwitchImport
       write-ezlogs "| Found $newtwitchchannels new Twitch Channels" -showtime -logtype Setup -LogLevel 2
       if($hashsetup.EditorHelpFlyout.Document.Blocks){
         $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-      }        
+      }
       if($newtwitchchannels -le 0){
         write-ezlogs "No new Twitch Channels were found!" -showtime -warning -logtype Setup
         $hashsetup.Editor_Help_Flyout.isOpen = $true
@@ -552,25 +552,25 @@ function Invoke-TwitchImport
         $hashsetup.Editor_Help_Flyout.header = 'Twitch Import'
         write-ezlogs ">>>> Found $newtwitchchannels new Twitch Channels!" -showtime -logtype Setup -LogLevel 2
         update-EditorHelp -content "Found $newtwitchchannels new Twitch Channels!" -color cyan -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
-      } 
+      }
     }else{
       write-ezlogs "Unable to import Followed channels from Twitch" -showtime -warning -logtype Setup
       if($hashsetup.EditorHelpFlyout.Document.Blocks){
         $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-      } 
+      }
       $hashsetup.Editor_Help_Flyout.isOpen = $true
       $hashsetup.Editor_Help_Flyout.header = 'Twitch Import'
-      update-EditorHelp -content "Unable to import Followed channels from Twitch. Check the log for more detail or try again in case of a transient issue" -color Orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout          
-    }         
+      update-EditorHelp -content "Unable to import Followed channels from Twitch. Check the log for more detail or try again in case of a transient issue" -color Orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
+    }
   }catch{
     write-ezlogs "An exception occurred in Invoke-TwitchImport" -showtime -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Invoke-TwitchImport Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-TwitchPlaylists Function
 #----------------------------------------------
 function Update-TwitchPlaylists
@@ -594,8 +594,8 @@ function Update-TwitchPlaylists
     [switch]$VerboseLog = $true,
     [switch]$add_to_Twitch_Playlists,
     [switch]$remove_from_Twitch_Playlists
-  ) 
-  try{     
+  )
+  try{
     if($Name){
       if(!$Number){
         if(!$hashsetup.TwitchPlaylists_items){
@@ -604,7 +604,7 @@ function Update-TwitchPlaylists
             $Number++
           }else{
             $Number = 1
-          }         
+          }
         }else{
           $Number = $hashsetup.TwitchPlaylists_items.Number | Select-Object -last 1
           $Number++
@@ -618,7 +618,7 @@ function Update-TwitchPlaylists
         Type=$Type
         Followed=$Followed
         ID = $id
-      } 
+      }
       if($hashSetup.TwitchPlaylists_items -is [System.Collections.Generic.List[Object]] -and $hashSetup.TwitchPlaylists_items -notcontains $itemssource -and !$remove_from_Twitch_Playlists){
         if($VerboseLog){write-ezlogs "| Adding Twitch channel $($Name) to TwitchPlaylists_items" -showtime -warning -logtype Setup -Dev_mode:$VerboseLog}
         [void]$hashSetup.TwitchPlaylists_items.add($itemssource)
@@ -637,28 +637,28 @@ function Update-TwitchPlaylists
         if($thisApp.Config.Twitch_Playlists -is [System.Collections.Generic.List[Twitch_Playlist]] -and $thisApp.Config.Twitch_Playlists.path -contains $itemssource.Path){
           write-ezlogs "| Removing Twitch URL from Twitch_Playlists: $($itemssource.Path)" -showtime -logtype Setup
           [void]$thisApp.Config.Twitch_Playlists.Remove($itemssource)
-        }      
-      }         
+        }
+      }
     }
     if($SetItemsSource -and $hashsetup.Update_TwitchPlaylists_Timer){
-      $hashsetup.Update_TwitchPlaylists_Timer.tag = $hashSetup.TwitchPlaylists_items   
+      $hashsetup.Update_TwitchPlaylists_Timer.tag = $hashSetup.TwitchPlaylists_items
       $hashsetup.Update_TwitchPlaylists_Timer.start()
       return
     }
   }catch{
     write-ezlogs "An exception occurred adding items to Locations grid" -showtime -catcherror $_
-  }      
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-TwitchPlaylists Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-SettingsWindow Function
 #----------------------------------------------
 function Update-SettingsWindow {
   <#
-          
+
       .SYNOPSIS
       Updates existing properties for the settings UI window.
 
@@ -697,6 +697,7 @@ function Update-SettingsWindow {
     [string]$TopMost,
     [switch]$close,
     [switch]$screenshot,
+    [string]$ScreenshotPath,
     [switch]$UpdateMediaDirectories,
     [switch]$startHidden,
     [string]$Current_folder,
@@ -718,18 +719,18 @@ function Update-SettingsWindow {
           if($hashsetup.SettingsWindow_Update_Queue){
             $Process = $hashsetup.SettingsWindow_Update_Queue.TryDequeue([ref]$object)
           }
-          if($Process){   
+          if($Process){
             if($object.Show){
               $hashsetup.window.Opacity = 1
-              $hashsetup.Window.show() 
-              $hashsetup.Window.Activate() 
+              $hashsetup.Window.show()
+              $hashsetup.Window.Activate()
             }
             if($object.Hide){
-              $hashsetup.Window.Hide() 
-            }  
+              $hashsetup.Window.Hide()
+            }
             if($object.Close){
               $hashsetup.ClosedbyApp = $true
-              $hashsetup.Window.Close() 
+              $hashsetup.Window.Close()
             }
             if(-not [string]::IsNullOrEmpty($object.Set_ThemeName)){
               try{
@@ -741,24 +742,24 @@ function Update-SettingsWindow {
                   $newtheme = $themes.Where({$_.Name -eq $object.Set_ThemeName})
                 }
                 if($themes){
-                  [void]$themes.Dispose() 
+                  [void]$themes.Dispose()
                   $themes = $Null
                 }
-                $theme = $null           
+                $theme = $null
                 [void]$thememanager.RegisterLibraryThemeProvider($newtheme.LibraryThemeProvider)
                 [void]$thememanager.ChangeTheme($hashsetup.Window,$newtheme.Name,$false)
-                $thememanager = $Null    
+                $thememanager = $Null
               }catch{
                 write-ezlogs "An exception occurred setting theme to $($newtheme | out-string)" -CatchError $_
               }
-            }             
+            }
             if($object.BringToFront -and $hashsetup.Window.isVisible -and !$hashsetup.Window.Topmost){
               $hashsetup.Window.TopMost = $true
               $hashsetup.Window.TopMost = $false
             }
             if($object.UpdateMediaDirectories -and $thisApp.Config.Import_Local_Media){
               if(@($thisApp.Config.Media_Directories).count -gt 0 -and $hashsetup.Window.isInitialized){
-                Update-MediaLocations -hashsetup $hashsetup -thisapp $thisApp -Directories $thisApp.Config.Media_Directories -synchash $synchash -SetItemssource        
+                Update-MediaLocations -hashsetup $hashsetup -thisapp $thisApp -Directories $thisApp.Config.Media_Directories -synchash $synchash -SetItemssource
               }
               if($object.RefreshLibrary -eq 'Local' -and $synchash.MediaTable){
                 Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'LocalMedia_Progress_Ring' -Property 'isActive' -value $true
@@ -769,95 +770,118 @@ function Update-SettingsWindow {
                 }
               }
             }
-            if($object.screenshot){
-              #$hashsetup.Window.TopMost = $true
-              $hashsetup.Window.TopMost = $object.TopMost
-              $hashsetup.Window.Activate() 
-              start-sleep -Milliseconds 500
-              write-ezlogs ">>>> Taking Snapshot of Show-SettingsWindow window" -showtime
-              $translatepoint = $hashsetup.Window.TranslatePoint([system.windows.point]::new(0,0),$hashsetup.Window)
-              $locationfromscreen = $hashsetup.Window.PointToScreen($translatepoint)
-              $synchash.SnapshotPoint = New-Object System.Drawing.Point($locationfromscreen.x,$locationfromscreen.y)     
-            }                     
-            if($object.Controls){ 
+            if($object.screenshot -and $Object.ScreenshotPath){
+              try{
+                $before = $hashsetup.Window.TopMost
+                $hashsetup.Window.TopMost = $true
+                $hashsetup.Window.Activate()
+                start-sleep -Milliseconds 500
+                $newpathname = "Setup_$([System.io.path]::GetFileName($Object.ScreenshotPath))"
+                $pathdir = [System.io.directory]::GetParent($Object.ScreenshotPath)
+                $path = [system.io.path]::Combine($pathdir,$newpathname)
+                [int]$Width =  $hashsetup.Window.ActualWidth
+                [int]$Height = $hashsetup.Window.ActualHeight
+                write-ezlogs ">>>> Taking Snapshot of Show-SettingsWindow window -- Path: $($Path)" -showtime
+                $Size = [System.Drawing.Size]::new($Width, $Height)
+                $ScreenshotObject = [Drawing.Bitmap]::new($Width, $Height)
+                $DrawingGraphics = [Drawing.Graphics]::FromImage($ScreenshotObject)
+                $translatepoint = $hashsetup.Window.TranslatePoint([system.windows.point]::new(0,0),$hashsetup.Window)
+                $locationfromscreen = $hashsetup.Window.PointToScreen($translatepoint)
+                $SnapshotPoint = [System.Drawing.Point]::new($locationfromscreen.x,$locationfromscreen.y)
+                if($SnapshotPoint){
+                  $DrawingGraphics.CopyFromScreen($SnapshotPoint, [Drawing.Point]::Empty, $Size)
+                  $ScreenshotObject.Save($path,"PNG")
+                }else{
+                  write-ezlogs "Unable to take screenshot of settings window, no SnapshotPoint returned!" -Warning
+                }
+              }catch{
+                write-ezlogs "An exception occurred taking a screenshot of settings window" -CatchError $_
+              }finally{
+                if($DrawingGraphics -is [System.IDisposable]){
+                  $DrawingGraphics.Dispose()
+                }
+                $hashsetup.Window.TopMost = $before
+              }
+            }
+            if($object.Controls){
               foreach($control in $object.Controls){
-                write-ezlogs ">>>> Looking for control: $($control.Control)" -loglevel 3  
-                write-ezlogs "| Property: $($control.Property)" -loglevel 3 
-                write-ezlogs "| value: $($control.value)" -loglevel 3 
-                if(-not [string]::IsNullOrEmpty($hashsetup."$($control.Control)")){ 
-                  write-ezlogs ">>>> Updating Settings Window Control $($hashsetup."$($control.Control)")" -loglevel 3     
+                write-ezlogs ">>>> Looking for control: $($control.Control)" -loglevel 3
+                write-ezlogs "| Property: $($control.Property)" -loglevel 3
+                write-ezlogs "| value: $($control.value)" -loglevel 3
+                if(-not [string]::IsNullOrEmpty($hashsetup."$($control.Control)")){
+                  write-ezlogs ">>>> Updating Settings Window Control $($hashsetup."$($control.Control)")" -loglevel 3
                   if(-not [string]::IsNullOrEmpty($control.Method)){
                     if(-not [string]::IsNullOrEmpty($control.Property)){
                       if(-not [string]::IsNullOrEmpty($control.Method_Value)){
                         [void]$hashsetup."$($control.Control)"."$($control.Property)".$($control.Method)($control.Method_Value)
                       }else{
                         [void]$hashsetup."$($control.Control)"."$($control.Property)".$($control.Method)()
-                      }                        
+                      }
                     }else{
                       if(-not [string]::IsNullOrEmpty($control.Method_Value)){
                         [void]$hashsetup."$($control.Control)".$($control.Method)($control.Method_Value)
                       }else{
                         [void]$hashsetup."$($control.Control)".$($control.Method)()
-                      } 
+                      }
                     }
                   }elseif(-not [string]::IsNullOrEmpty($control.Value) -or $control.ClearValue -or $control.NullValue){
                     if(-not [string]::IsNullOrEmpty($control.Property)){
                       if($hashsetup."$($control.Control)"."$($control.Property)" -ne $control.Value -and $control.NullValue){
-                        write-ezlogs "| Setting property $($control.Property) from $($hashsetup."$($control.Control)"."$($control.Property)") to Null" -loglevel 3 
+                        write-ezlogs "| Setting property $($control.Property) from $($hashsetup."$($control.Control)"."$($control.Property)") to Null" -loglevel 3
                         $hashsetup."$($control.Control)"."$($control.Property)" = $null
                       }elseif($hashsetup."$($control.Control)"."$($control.Property)" -ne $control.Value){
-                        write-ezlogs "| Setting property $($control.Property) from $($hashsetup."$($control.Control)"."$($control.Property)") to $($control.Value)" -loglevel 3 
+                        write-ezlogs "| Setting property $($control.Property) from $($hashsetup."$($control.Control)"."$($control.Property)") to $($control.Value)" -loglevel 3
                         $hashsetup."$($control.Control)"."$($control.Property)" = $control.Value
                       }
                     }else{
                       if($hashsetup."$($control.Control)" -ne $control.Value){
-                        write-ezlogs "| Setting $($hashsetup."$($control.Control)") to $($control.Value)" -loglevel 3 
+                        write-ezlogs "| Setting $($hashsetup."$($control.Control)") to $($control.Value)" -loglevel 3
                         $hashsetup."$($control.Control)" = $control.Value
-                      }                        
+                      }
                     }
-                  }                      
+                  }
                 }
               }
-            }elseif(-not [string]::IsNullOrEmpty($hashsetup."$($object.Control)")){ 
-              write-ezlogs ">>>> Updating Settings Window Control: $("$($object.Control)") -- Property: $($object.Property) -- Value: $($object.Value)" -loglevel 3 -Dev_mode                                  
+            }elseif(-not [string]::IsNullOrEmpty($hashsetup."$($object.Control)")){
+              write-ezlogs ">>>> Updating Settings Window Control: $("$($object.Control)") -- Property: $($object.Property) -- Value: $($object.Value)" -loglevel 3 -Dev_mode
               if(-not [string]::IsNullOrEmpty($object.Method)){
                 if(-not [string]::IsNullOrEmpty($object.Property)){
                   if(-not [string]::IsNullOrEmpty($object.Method_Value)){
                     [void]$hashsetup."$($object.Control)"."$($object.Property)".$($object.Method)($object.Method_Value)
                   }else{
                     [void]$hashsetup."$($object.Control)"."$($object.Property)".$($object.Method)()
-                  }                     
+                  }
                 }else{
                   if(-not [string]::IsNullOrEmpty($object.Method_Value)){
                     [void]$hashsetup."$($object.Control)".$($object.Method)($object.Method_Value)
                   }else{
                     [void]$hashsetup."$($object.Control)".$($object.Method)()
-                  }    
+                  }
                 }
               }
               if(-not [string]::IsNullOrEmpty($object.Value) -or $object.ClearValue -or $object.NullValue){
                 if(-not [string]::IsNullOrEmpty($object.Property)){
                   if($hashsetup."$($object.Control)"."$($object.Property)" -ne $object.Value -and $object.NullValue){
-                    write-ezlogs "| Setting property $($object.Property) from $($hashsetup."$($object.Control)"."$($object.Property)") to Null" -loglevel 3 
+                    write-ezlogs "| Setting property $($object.Property) from $($hashsetup."$($object.Control)"."$($object.Property)") to Null" -loglevel 3
                     $hashsetup."$($object.Control)"."$($object.Property)" = $null
                   }elseif($hashsetup."$($object.Control)"."$($object.Property)" -ne $object.Value){
                     write-ezlogs "| Setting property $($object.Property) from $($hashsetup."$($object.Control)"."$($object.Property)") to $($object.Value)" -loglevel 3
                     $hashsetup."$($object.Control)"."$($object.Property)" = $object.Value
                   }
                 }else{
-                  write-ezlogs "| Setting Control $($object.Control) from $($hashsetup."$($object.Control)") to $($object.Value)" -loglevel 3 
+                  write-ezlogs "| Setting Control $($object.Control) from $($hashsetup."$($object.Control)") to $($object.Value)" -loglevel 3
                   $hashsetup."$($object.Control)" = $object.Value
                 }
-              }                                     
+              }
             }
-            if(-not [string]::IsNullOrEmpty($object.ScriptBlock)){ 
+            if(-not [string]::IsNullOrEmpty($object.ScriptBlock)){
               if($thisApp.Config.Verbose_logging){write-ezlogs ">>>> Executing Scriptblock: $($object.ScriptBlock | out-string)" -Dev_mode -loglevel 3}
               Invoke-command -ScriptBlock $object.ScriptBlock
             }
           }else{
             write-ezlogs ">>>> Stopping SettingsWindow_Update_Timer as SettingsWindow_Update_Queue is empty" -warning -logtype Setup
             $this.Stop()
-          }                  
+          }
         }catch{
           $this.stop()
           write-ezlogs "An exception occurred in SettingsWindow_Update_Timer.add_tick" -showtime -catcherror $_
@@ -883,6 +907,7 @@ function Update-SettingsWindow {
               'BringToFront' = $BringToFront
               'UpdateMediaDirectories' = $UpdateMediaDirectories
               'screenshot' = $screenshot
+              'ScreenshotPath' = $ScreenshotPath
               'controls' = $controls
               'Set_ThemeName' = $Set_ThemeName
               'Show' = $Show
@@ -890,24 +915,24 @@ function Update-SettingsWindow {
               'ScriptBlock' = $ScriptBlock
               'Close' = $close
         }))
-      } 
+      }
       if(!$hashsetup.SettingsWindow_Update_Timer.IsEnabled){
         write-ezlogs ">>>> Starting SettingsWindow_Update_Timer" -warning -logtype Setup
-        $hashsetup.SettingsWindow_Update_Timer.start() 
+        $hashsetup.SettingsWindow_Update_Timer.start()
       }
     }
   }catch{
     write-ezlogs "An exception occurred in Update-SettingsWindow" -showtime -catcherror $_
-  }   
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-SettingsWindow Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region update-EditorHelp Function
 #----------------------------------------------
-function update-EditorHelp{    
+function update-EditorHelp{
   param (
     $content,
     [string]$color = "White",
@@ -928,7 +953,7 @@ function update-EditorHelp{
     [System.Windows.Controls.RichTextBox]$RichTextBoxControl,
     $thisApp = $thisApp,
     $hashsetup = $hashsetup
-  ) 
+  )
   $update_editor_scriptblock = {
     param (
       $content = $content,
@@ -949,9 +974,9 @@ function update-EditorHelp{
       [System.Windows.Controls.RichTextBox]$RichTextBoxControl = $RichTextBoxControl,
       $thisApp = $thisApp,
       $hashsetup = $hashsetup
-    ) 
+    )
     if($clear -and $RichTextBoxControl.Document.Blocks){
-      $RichTextBoxControl.Document.Blocks.Clear() 
+      $RichTextBoxControl.Document.Blocks.Clear()
       if($markdowncontrol.Markdown){
         $markdowncontrol.Markdown = $Null
       }elseif($hashsetup.MarkdownScrollViewer.Markdown){
@@ -961,7 +986,7 @@ function update-EditorHelp{
     if(-not [string]::IsNullOrEmpty($Header)){
       $hashsetup.Editor_Help_Flyout.header = $Header
     }
-    $url_pattern = "(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])"  
+    $url_pattern = "(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])"
     if($MarkDownFile -and $markdowncontrol){
       #write-ezlogs ">>>> Opening Markdown Help File: $MarkDownFile" -loglevel 2 -logtype Setup
       if([system.io.file]::Exists($MarkDownFile)){
@@ -981,37 +1006,37 @@ function update-EditorHelp{
       $hashsetup.EditorHelpFlyout.isEnabled=$true
       $hashsetup.EditorHelpFlyout.Visibility = 'Visible'
       $Paragraph = [System.Windows.Documents.Paragraph]::new()
-      $RichTextRange = [System.Windows.Documents.Run]::new() 
+      $RichTextRange = [System.Windows.Documents.Run]::new()
       $RichTextRange.Foreground = $color
       $RichTextRange.FontWeight = $FontWeight
       $RichTextRange.FontSize = $FontSize
       $RichTextRange.Background = $BackGroundColor
       $RichTextRange.TextDecorations = $TextDecorations
-      if($List){ 
+      if($List){
         $listrange = [System.Windows.Documents.List]::new()
-        $listrange.MarkerStyle="Disc" 
+        $listrange.MarkerStyle="Disc"
         $listrange.MarkerOffset="2"
-        #$listrange.padding = "10,0,0,0" 
+        #$listrange.padding = "10,0,0,0"
         $listrange.Background = $BackGroundColor
         $listrange.Foreground = $color
         $listrange.Margin = 0
         $listrange.FontWeight = $FontWeight
         $listrange.FontSize = $FontSize
-        $content | & { process {   
-            $RichTextRange = [System.Windows.Documents.Run]::new()   
+        $content | & { process {
+            $RichTextRange = [System.Windows.Documents.Run]::new()
             $RichTextRange.Foreground = $color
             $RichTextRange.FontWeight = $FontWeight
             $RichTextRange.FontSize = $FontSize
             $RichTextRange.Background = $BackGroundColor
-            $RichTextRange.TextDecorations = $TextDecorations     
-            $listitem = [System.Windows.Documents.ListItem]::new() 
+            $RichTextRange.TextDecorations = $TextDecorations
+            $listitem = [System.Windows.Documents.ListItem]::new()
             $RichTextRange.AddText(($_).toupper())
             $Paragraph = [System.Windows.Documents.Paragraph]::new()
             $paragraph.Margin = 0
             $Paragraph.Inlines.add($RichTextRange)
             [void]$listitem.AddChild($Paragraph)
-            [void]$listrange.AddChild($listitem)         
-        }}    
+            [void]$listrange.AddChild($listitem)
+        }}
         [void]$RichTextBoxControl.Document.Blocks.Add($listrange)
       }elseif($AppendContent){
         $existing_content = $RichTextBoxControl.Document.blocks | select -last 1
@@ -1031,12 +1056,12 @@ function update-EditorHelp{
           [void]$link_hyperlink.Inlines.add("$($uri.Scheme)://$($uri.DnsSafeHost)")
           [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Hyperlink_RequestNavigate)
           [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Hyperlink_RequestNavigate)
-          $RichTextRange1 = [System.Windows.Documents.Run]::new()          
+          $RichTextRange1 = [System.Windows.Documents.Run]::new()
           $RichTextRange1.Foreground = $color
           $RichTextRange1.FontWeight = $FontWeight
           $RichTextRange1.FontSize = $FontSize
           $RichTextRange1.Background = $BackGroundColor
-          $RichTextRange1.TextDecorations = $TextDecorations      
+          $RichTextRange1.TextDecorations = $TextDecorations
           $content1 = ($content -split $hyperlink)[0]
           $content2 = ($content -split $hyperlink)[1]
           $RichTextRange1.AddText($content1)
@@ -1049,7 +1074,7 @@ function update-EditorHelp{
           $RichTextRange.AddText($content)
           $paragraph.Margin = 10
           $Paragraph.Inlines.add($RichTextRange)
-        }   
+        }
         [void]$RichTextBoxControl.Document.Blocks.Add($Paragraph)
       }
     }
@@ -1063,15 +1088,15 @@ function update-EditorHelp{
     Invoke-Command -ScriptBlock $update_editor_scriptblock
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion update-EditorHelp Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Show-SettingsWindow Function
 #----------------------------------------------
 function Show-SettingsWindow{
-  <#         
+  <#
       .SYNOPSIS
       Creates and displays a WPF settings Window.
 
@@ -1178,7 +1203,7 @@ function Show-SettingsWindow{
     Import-module "$($thisApp.Config.Current_Folder)\Modules\Spotishell\Spotishell.psm1" -NoClobber -DisableNameChecking -Scope Local
 
     #Valid fields that can be used for Secret Vault lookups
-    $hashsetup.valid_secrets = @( 
+    $hashsetup.valid_secrets = @(
       'TwitchClientId'
       'TwitchClientSecret'
       'TwitchRedirectUri'
@@ -1188,7 +1213,7 @@ function Show-SettingsWindow{
       'Twitchrefresh_token'
       'Twitchtoken_type'
       'TwitchUserId'
-      'TwitchUsername' 
+      'TwitchUsername'
       'Twitchprofile_image_url'
       'SpotyClientId'
       'SpotyClientSecret'
@@ -1196,7 +1221,7 @@ function Show-SettingsWindow{
       'Spotyexpires'
       'Spotyaccess_token'
       'Spotyscope'
-      'Spotyrefresh_token' 
+      'Spotyrefresh_token'
       'Spotytoken_type'
       'YoutubeAccessToken'
       'Youtubeexpires_in'
@@ -1211,20 +1236,20 @@ function Show-SettingsWindow{
       if($thisApp.Config){
         $thisapp.configTemp = $thisapp.config.psobject.Copy()
       }
-    }   
+    }
     if($Reload -and $hashsetup.Window.Visibility -in 'Hidden','Collapsed'){
       write-ezlogs "######## Reloading and resetting existing Show-SettingsWindow window" -showtime -logtype Setup -linesbefore 1
     }else{
       #############################################################################
       #region Initialize UI Controls and Events
       #############################################################################
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Initialize Xaml
       #----------------------------------------------
       try{
         #$hashsetup = [hashtable]::Synchronized(@{})
         write-ezlogs "######## Executing Show-SettingsWindow" -showtime -logtype Setup -linesbefore 1
-        
+
         #Measure total startup time of UI and Settings
         $setup_TotalStart_Measure = [system.diagnostics.stopwatch]::StartNew()
 
@@ -1241,42 +1266,42 @@ function Show-SettingsWindow{
             $PrimaryAccentColor = [System.Windows.Media.SolidColorBrush]::new($thisApp.Config.Current_Theme.PrimaryAccentColor.ToString())
           }else{
             $PrimaryAccentColor = "{StaticResource MahApps.Brushes.Accent}"
-          } 
+          }
         }catch{
           write-ezlogs "An exception occurred changing theme for Show-SettingsWindow" -showtime -catcherror $_
         }
-        if($PrimaryAccentColor){        
+        if($PrimaryAccentColor){
           $xaml = [System.IO.File]::ReadAllText($add_Window_XML).replace('Views/Styles.xaml',"$($thisapp.Config.Current_Folder)`\Views`\Styles.xaml").Replace("{StaticResource MahApps.Brushes.Accent}","$PrimaryAccentColor")
         }else{
           $xaml = [System.IO.File]::ReadAllText($add_Window_XML).replace('Views/Styles.xaml',"$($thisapp.Config.Current_Folder)`\Views`\Styles.xaml")
-        }                
-        if($thisApp.Config.Verbose_logging){write-ezlogs ">>>> Script path: $($thisapp.Config.Current_Folder)\Views\Settings.xaml" -showtime -logtype Setup -loglevel 3}    
+        }
+        if($thisApp.Config.Verbose_logging){write-ezlogs ">>>> Script path: $($thisapp.Config.Current_Folder)\Views\Settings.xaml" -showtime -logtype Setup -loglevel 3}
         $hashsetup.Window = [Windows.Markup.XAMLReader]::Parse($XAML)
         $reader = [XML.XMLReader]::Create([IO.StringReader]$XAML)
         while ($reader.Read())
         {
           $name=$reader.GetAttribute('Name')
-          if(!$name){ 
+          if(!$name){
             $name=$reader.GetAttribute('x:Name')
           }
           if($name -and $hashsetup.Window){
             $hashsetup."$($name)" = [System.WeakReference]::new(($hashsetup.Window.FindName($name))).Target
           }
         }
-        $reader.Dispose()           
+        $reader.Dispose()
         $reader = $null
         $XAML = $Null
         $setup_Initialize_UI_Measure.stop()
-        write-ezlogs ">>>> Setup_Initialize_UI_Measure (Load/Process Xaml)" -showtime -logtype Setup -PerfTimer $setup_Initialize_UI_Measure -Perf 
+        write-ezlogs ">>>> Setup_Initialize_UI_Measure (Load/Process Xaml)" -showtime -logtype Setup -PerfTimer $setup_Initialize_UI_Measure -Perf
         $setup_Initialize_UI_Measure = $Null
       }catch{
         write-ezlogs "An exception occurred when loading xaml" -showtime -CatchError $_
       }
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Initialize Xaml
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Set Window Properties
       #----------------------------------------------
       try{
@@ -1285,21 +1310,21 @@ function Show-SettingsWindow{
 
         $hashsetup.Logo.Source=$Logo
         $hashsetup.Window.title =$PageTitle
-        $hashsetup.Window.icon = "$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico"      
-        $hashsetup.Window.icon.Freeze()  
+        $hashsetup.Window.icon = "$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico"
+        $hashsetup.Window.icon.Freeze()
         $PrimaryMonitor = [System.Windows.Forms.Screen]::PrimaryScreen
         if($PrimaryMonitor.Bounds.Height -lt '1080'){
           $hashsetup.window.MaxHeight=$PrimaryMonitor.WorkingArea.Height
         }
         $hashsetup.window.TaskbarItemInfo.Description = "SETUP - $($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version)"
-        $hashsetup.PageHeader.content = $PageHeader    
-        $hashsetup.Window.IsWindowDraggable="True" 
-        $hashsetup.Window.LeftWindowCommandsOverlayBehavior="HiddenTitleBar" 
+        $hashsetup.PageHeader.content = $PageHeader
+        $hashsetup.Window.IsWindowDraggable="True"
+        $hashsetup.Window.LeftWindowCommandsOverlayBehavior="HiddenTitleBar"
         $hashsetup.Window.RightWindowCommandsOverlayBehavior="HiddenTitleBar"
         $hashsetup.Window.ShowTitleBar=$true
         $hashsetup.Window.UseNoneWindowStyle = $false
- 
-        $stream_image = [System.IO.File]::OpenRead("$($thisapp.Config.Current_Folder)\Resources\Skins\Settings\SubWindowTop.png") 
+
+        $stream_image = [System.IO.File]::OpenRead("$($thisapp.Config.Current_Folder)\Resources\Skins\Settings\SubWindowTop.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -1315,9 +1340,9 @@ function Show-SettingsWindow{
         $settingsBackground.Viewport = "0,0,600,263"
         $settingsBackground.TileMode = 'Tile'
         $SettingsBackground.Freeze()
-        $hashsetup.Window.Background = $SettingsBackground 
-        
-        $stream_image = [System.IO.File]::OpenRead("$($thisapp.Config.Current_Folder)\Resources\Skins\Settings\SubWindowBottom.png") 
+        $hashsetup.Window.Background = $SettingsBackground
+
+        $stream_image = [System.IO.File]::OpenRead("$($thisapp.Config.Current_Folder)\Resources\Skins\Settings\SubWindowBottom.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -1328,8 +1353,8 @@ function Show-SettingsWindow{
         $stream_image = $Null
         $image.Freeze()
         $hashsetup.Background_Image_Bottom.Source = $image
-                        
-        $stream_image = [System.IO.File]::OpenRead("$($thisapp.Config.Current_Folder)\Resources\Skins\Settings\SubWindowTile.png") 
+
+        $stream_image = [System.IO.File]::OpenRead("$($thisapp.Config.Current_Folder)\Resources\Skins\Settings\SubWindowTile.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -1348,20 +1373,20 @@ function Show-SettingsWindow{
         $hashsetup.Editor_Help_Flyout.Background = $imagebrush
         $image = $Null
 
-        #$hashsetup.Window.WindowStyle = 'none' 
+        #$hashsetup.Window.WindowStyle = 'none'
         if($Update){
           $hashsetup.Cancel_Button_Text.text = "CANCEL"
           $hashsetup.Cancel_Setup_Button.ToolTip = "Cancel and Close Settings"
-          $hashsetup.Save_Setup_Button.ToolTip = "Apply and Close Settings" 
-          $hashsetup.Setup_Button_Textblock.text = "APPLY" 
+          $hashsetup.Save_Setup_Button.ToolTip = "Apply and Close Settings"
+          $hashsetup.Setup_Button_Textblock.text = "APPLY"
         }
         if($Use_RoundedCorners){
           $hashsetup.Window.Style = $hashsetup.Window.TryFindResource('WindowChromeStyle')
-          $hashsetup.Window.add_SizeChanged({    
-              try{ 
+          $hashsetup.Window.add_SizeChanged({
+              try{
                 #write-ezlogs ">>>> Setup window sized changed, updating windowchromestyle" -showtime
                 $hashsetup.Window.Style = $hashsetup.Window.TryFindResource('WindowChromeStyle')
-                #$hashsetup.Window.UpdateDefaultStyle()           
+                #$hashsetup.Window.UpdateDefaultStyle()
               }catch{
                 write-ezlogs 'An exception occurred in hashsetup.Window.add_SizeChanged' -showtime -catcherror $_
               }
@@ -1383,7 +1408,7 @@ function Show-SettingsWindow{
               $hashsetup.Window.TopMost = $false
             }else{
               $hashsetup.Window.TopMost = $true
-            }                             
+            }
           }catch{
             write-ezlogs 'An exception occurred in TopMost_Command' -showtime -catcherror $_
           }
@@ -1395,7 +1420,7 @@ function Show-SettingsWindow{
               $hashsetup.Window.ShowInTaskbar = $false
             }else{
               $hashsetup.Window.ShowInTaskbar = $true
-            }                             
+            }
           }catch{
             write-ezlogs 'An exception occurred in ShowinTaskbar_Command' -showtime -catcherror $_
           }
@@ -1441,18 +1466,18 @@ function Show-SettingsWindow{
         Add-WPFMenu -control $hashsetup.Window -items $items -AddContextMenu -sourceWindow $hashsetup
 
         $hashsetup.Flyout_Scriptblock = {
-          Param($sender)        
+          Param($sender)
           try{
             if($sender.isOpen){
               $sender.isOpen = $false
             }
           }catch{
             write-ezlogs "An exception occurred in Flyout_Scriptblock" -catcherror $_
-          }        
+          }
         }
         $relaycommand = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $hashsetup.Flyout_Scriptblock -target $hashsetup.Editor_Help_Flyout
         $hashsetup.Editor_Help_Flyout.tag = $relaycommand
-        if($ApplyColorTheme -and $thisApp.Config.Current_Theme -ne $null -and $thisApp.Config.Current_Theme.PrimaryAccentColor){    
+        if($ApplyColorTheme -and $thisApp.Config.Current_Theme -ne $null -and $thisApp.Config.Current_Theme.PrimaryAccentColor){
           try{
             $theme = [MahApps.Metro.Theming.MahAppsLibraryThemeProvider]::new()
             $themes = $theme.GetLibraryThemes()
@@ -1462,30 +1487,30 @@ function Show-SettingsWindow{
               $newtheme = $themes.Where({$_.Name -eq $thisApp.Config.Current_Theme.Name})
             }
             if($themes){
-              [void]$themes.Dispose() 
+              [void]$themes.Dispose()
               $themes = $Null
             }
-            $theme = $null           
+            $theme = $null
             [void]$thememanager.RegisterLibraryThemeProvider($newtheme.LibraryThemeProvider)
-            [void]$thememanager.ChangeTheme($hashsetup.Window,$newtheme.Name,$false)      
+            [void]$thememanager.ChangeTheme($hashsetup.Window,$newtheme.Name,$false)
           }catch{
             write-ezlogs "An exception occurred setting theme to $($newtheme | out-string)" -CatchError $_
-          } 
-        }          
+          }
+        }
       }catch{
         write-ezlogs "An exception occurred setting Window properties" -showtime -catcherror $_
       }finally{
         if($Setup_Set_Window_Properties_Measure){
           $Setup_Set_Window_Properties_Measure.stop()
-          write-ezlogs ">>>> Setup_Set_Window_Properties_Measure" -showtime -logtype Setup -PerfTimer $Setup_Set_Window_Properties_Measure -Perf 
+          write-ezlogs ">>>> Setup_Set_Window_Properties_Measure" -showtime -logtype Setup -PerfTimer $Setup_Set_Window_Properties_Measure -Perf
           $Setup_Set_Window_Properties_Measure = $Null
         }
-      }    
-      #---------------------------------------------- 
+      }
+      #----------------------------------------------
       #endregion Set Window Properties
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region MouseDown Event
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.MouseDown_Command = {
@@ -1500,11 +1525,11 @@ function Show-SettingsWindow{
       }
       $hashsetup.Window.AddHandler([MahApps.Metro.Controls.MetroWindow]::MouseDownEvent,$hashsetup.MouseDown_Command)
       $hashsetup.PageHeader.AddHandler([System.Windows.Controls.Label]::MouseDownEvent,$hashsetup.MouseDown_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion MouseDown Event
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Hyperlink_RequestNavigate
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.Hyperlink_RequestNavigate = {
@@ -1515,7 +1540,7 @@ function Show-SettingsWindow{
             $path = $sender.NavigateUri
           }else{
             $path = (resolve-path $($sender.NavigateUri -replace 'file:///','')).Path
-          }     
+          }
           write-ezlogs ">>>> Navigating to path: $($path)" -showtime -logtype Setup
           if($path){
             start $($path)
@@ -1526,11 +1551,11 @@ function Show-SettingsWindow{
           write-ezlogs "An exception occurred in hashsetup.Hyperlink_RequestNavigate" -showtime -catcherror $_
         }
       }
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Hyperlink_RequestNavigate
       #----------------------------------------------
-            
-      #---------------------------------------------- 
+
+      #----------------------------------------------
       #region Next Button
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.Next_Button_Command = {
@@ -1554,17 +1579,17 @@ function Show-SettingsWindow{
           }elseif($hashsetup.Setup_TabControl.SelectedIndex -eq 4){
             $hashsetup.Next_Button.isEnabled = $false
             $hashsetup.Prev_Button.isEnabled = $true
-          }         
+          }
         }catch{
           write-ezlogs "An exception occurred in Next_Button click event" -CatchError $_ -showtime
         }
       }
       $hashsetup.Next_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$hashsetup.Next_Button_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Next Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Prev Button
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.Prev_Button_Command = {
@@ -1588,17 +1613,17 @@ function Show-SettingsWindow{
             $hashsetup.Setup_TabControl.SelectedIndex = 3
             $hashsetup.Next_Button.isEnabled = $true
             $hashsetup.Prev_Button.isEnabled = $true
-          }         
+          }
         }catch{
           write-ezlogs "An exception occurred in Prev_Button click event" -CatchError $_ -showtime
         }
       }
       $hashsetup.Prev_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$hashsetup.Prev_Button_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Prev Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Tab Selection Change
       #----------------------------------------------
       $hashsetup.Current_NavigationIndex = 0
@@ -1640,17 +1665,17 @@ function Show-SettingsWindow{
             if(!$hashsetup.Update){
               $hashsetup.Current_NavigationIndex = 4
             }
-          }         
+          }
         }catch{
           write-ezlogs "An exception occurred in Setup_TabControl add_SelectionChanged  event" -CatchError $_ -showtime
-        } 
+        }
       }
       [void]$hashsetup.Prev_Button.AddHandler([MahApps.Metro.Controls.MetroTabControl]::SelectionChangedEvent,$hashsetup.TabControlSelectionChanged_Command)
       #----------------------------------------------
       #endregion Tab Selection Change
-      #----------------------------------------------      
-                 
-      #---------------------------------------------- 
+      #----------------------------------------------
+
+      #----------------------------------------------
       #region Remove Media Location Button
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$RemoveclickEvent = {
@@ -1666,23 +1691,23 @@ function Show-SettingsWindow{
           }
           if($hashsetup.LocalMedia_items -contains $itemtoremove){
             Write-ezlogs ">>> Removing Local Media Path $($itemtoremove.path)" -showtime -logtype Setup
-            [void]$hashsetup.LocalMedia_items.Remove($itemtoremove) 
+            [void]$hashsetup.LocalMedia_items.Remove($itemtoremove)
           }else{
             Write-ezlogs "Cannot find Local Media item to remove ($($itemtoremove))" -showtime -warning -logtype Setup
           }
           $hashsetup.total_localMedia = $Null
-          if($syncHash.MediaTable.ItemsSource){         
-            $synchash.window.Dispatcher.Invoke("Background",[action]{ 
-                $hashsetup.total_localMedia = $syncHash.MediaTable.ItemsSource.ItemCount     
-            }) 
+          if($syncHash.MediaTable.ItemsSource){
+            $synchash.window.Dispatcher.Invoke("Background",[action]{
+                $hashsetup.total_localMedia = $syncHash.MediaTable.ItemsSource.ItemCount
+            })
             $hashsetup.Local_Media_Total_Textbox.text = "Total Imported Media: $($hashsetup.total_localMedia)"
           }else{
-            $hashsetup.Local_Media_Total_Textbox.text = "Total Imported Media: TBD" 
-          }         
+            $hashsetup.Local_Media_Total_Textbox.text = "Total Imported Media: TBD"
+          }
         }catch{
           write-ezlogs "An exception occurred for removeclickevent" -showtime -catcherror $_
         }
-      }  
+      }
       [System.Windows.RoutedEventHandler]$RemoveAllclickEvent = {
         param ($sender,$e)
         try{
@@ -1691,18 +1716,18 @@ function Show-SettingsWindow{
           }
           [void]$hashsetup.MediaLocations_Grid.items.clear()
           $hashsetup.total_localMedia = $Null
-          if($syncHash.MediaTable.ItemsSource){         
-            $synchash.window.Dispatcher.Invoke("Background",[action]{ 
+          if($syncHash.MediaTable.ItemsSource){
+            $synchash.window.Dispatcher.Invoke("Background",[action]{
                 $hashsetup.total_localMedia = $syncHash.MediaTable.ItemsSource.ItemCount
-            }) 
+            })
             $hashsetup.Local_Media_Total_Textbox.text = "Total Imported Media: $($hashsetup.total_localMedia)"
           }else{
-            $hashsetup.Local_Media_Total_Textbox.text = "Total Imported Media: TBD" 
+            $hashsetup.Local_Media_Total_Textbox.text = "Total Imported Media: TBD"
           }
         }catch{
           write-ezlogs "An exception occurred for removeallclickevent" -showtime -catcherror $_
         }
-      } 
+      }
       [System.Windows.RoutedEventHandler]$RemoveSpotifyPlaylistclickEvent = {
         param ($sender,$e)
         try{
@@ -1710,7 +1735,7 @@ function Show-SettingsWindow{
         }catch{
           write-ezlogs "An exception occurred for removeclickevent" -showtime -catcherror $_
         }
-      }  
+      }
       [System.Windows.RoutedEventHandler]$RemoveSpotifyAllPlaylistclickEvent = {
         param ($sender,$e)
         try{
@@ -1724,26 +1749,26 @@ function Show-SettingsWindow{
         try{
           if($hashsetup.YoutubePlaylists_Grid.items -contains $hashsetup.YoutubePlaylists_Grid.SelectedItem){
             Write-ezlogs ">>> Removing Youtube Playlist $($hashsetup.YoutubePlaylists_Grid.SelectedItem)" -showtime -logtype Setup
-            [void]$hashSetup.YoutubePlaylists_itemsArray.Remove($hashsetup.YoutubePlaylists_Grid.SelectedItem)   
-            [void]$hashSetup.YoutubePlaylists_Grid.items.Remove($hashsetup.YoutubePlaylists_Grid.SelectedItem)    
+            [void]$hashSetup.YoutubePlaylists_itemsArray.Remove($hashsetup.YoutubePlaylists_Grid.SelectedItem)
+            [void]$hashSetup.YoutubePlaylists_Grid.items.Remove($hashsetup.YoutubePlaylists_Grid.SelectedItem)
           }else{
             Write-ezlogs "Cannot find Youtube Playlist to remove ($($hashsetup.YoutubePlaylists_Grid.SelectedItem))" -showtime -warning -logtype Setup
           }
         }catch{
           write-ezlogs "An exception occurred for removeclickevent" -showtime -catcherror $_
         }
-      }  
+      }
       [System.Windows.RoutedEventHandler]$RemoveAllPlaylistclickEvent = {
         param ($sender,$e)
         try{
           if($hashSetup.YoutubePlaylists_itemsArray){
             [void]$hashSetup.YoutubePlaylists_itemsArray.clear()
-          }        
+          }
           [void]$hashsetup.YoutubePlaylists_Grid.items.clear()
         }catch{
           write-ezlogs "An exception occurred for removeallclickevent" -showtime -catcherror $_
         }
-      } 
+      }
       [System.Windows.RoutedEventHandler]$RemoveTwitchPlaylistclickEvent = {
         param ($sender,$e)
         try{
@@ -1752,25 +1777,25 @@ function Show-SettingsWindow{
               Write-ezlogs ">>> Removing Twitch Playlist $($hashsetup.Twitch_Custom_Proxy_Grid.SelectedItem)" -showtime -logtype Setup
               [void]$hashsetup.Twitch_Custom_Proxy_Grid.items.Remove($hashsetup.Twitch_Custom_Proxy_Grid.SelectedItem)
             }else{
-              Write-ezlogs "Cannot find Twitch Proxy item to remove ($($hashsetup.Twitch_Custom_Proxy_Grid.SelectedItem))" -showtime -warning -logtype Setup 
+              Write-ezlogs "Cannot find Twitch Proxy item to remove ($($hashsetup.Twitch_Custom_Proxy_Grid.SelectedItem))" -showtime -warning -logtype Setup
             }
           }else{
             if($hashsetup.TwitchPlaylists_Grid.items -contains $hashsetup.TwitchPlaylists_Grid.SelectedItem){
               Write-ezlogs ">>> Removing Twitch Playlist $($hashsetup.TwitchPlaylists_Grid.SelectedItem)" -showtime -logtype Setup
-              [void]$hashSetup.TwitchPlaylists_items.Remove($hashsetup.TwitchPlaylists_Grid.SelectedItem)       
+              [void]$hashSetup.TwitchPlaylists_items.Remove($hashsetup.TwitchPlaylists_Grid.SelectedItem)
             }else{
-              Write-ezlogs "Cannot find Twitch Playlist to remove ($($hashsetup.TwitchPlaylists_Grid.SelectedItem))" -showtime -warning -logtype Setup 
+              Write-ezlogs "Cannot find Twitch Playlist to remove ($($hashsetup.TwitchPlaylists_Grid.SelectedItem))" -showtime -warning -logtype Setup
             }
           }
         }catch{
           write-ezlogs "An exception occurred for Twitch removeclickevent" -showtime -catcherror $_
         }
-      } 
+      }
 
       [System.Windows.RoutedEventHandler]$AddTwitchAllProxyclickEvent = {
         param ($sender,$e)
         try{
-          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()        
+          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
           $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalInputExternal($hashsetup.Window,"Add New Twitch Proxy","Enter the url of the Twitch Playlist Proxy",$button_settings)
           if(-not [string]::IsNullOrEmpty($result)){
             if($hashsetup.Twitch_Custom_Proxy_Grid.items.url -notcontains $result){
@@ -1788,7 +1813,7 @@ function Show-SettingsWindow{
             }else{
               write-ezlogs "Twitch Playlist Proxy URL has already been to Twitch_Custom_Proxy_Grid" -warning -logtype Setup
             }
-          }  
+          }
         }catch{
           write-ezlogs "An exception occurred for Twitch AddTwitchAllProxyclickEvent" -showtime -catcherror $_
         }
@@ -1802,12 +1827,12 @@ function Show-SettingsWindow{
           }else{
             [void]$hashsetup.TwitchPlaylists_items.clear()
             [void]$hashsetup.TwitchPlaylists_Grid.items.clear()
-          }         
+          }
         }catch{
           write-ezlogs "An exception occurred for Twitch removeallclickevent" -showtime -catcherror $_
         }
-      }   
-      #MarkdownScrollViewer HyperlinkComman 
+      }
+      #MarkdownScrollViewer HyperlinkComman
       $MarkDownLinkScriptBlock = {
         $link = $args[1]
         try{
@@ -1816,11 +1841,11 @@ function Show-SettingsWindow{
             write-ezlogs "| Opening: $($link)" -logtype Setup
             start-process $link
           }elseif($link -match 'RestartAsUser'){
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Yes'
-            $Button_Settings.NegativeButtonText = 'No'  
-            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
-            $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Restart App?","This will attempt to restart the app under the current logged on user permission context ($($env:username)).`n`nAre you sure?",$okandCancel,$Button_Settings)    
+            $Button_Settings.NegativeButtonText = 'No'
+            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
+            $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Restart App?","This will attempt to restart the app under the current logged on user permission context ($($env:username)).`n`nAre you sure?",$okandCancel,$Button_Settings)
             if($result -eq 'Affirmative'){
               write-ezlogs "User wished to proceed, restarting app as user: $($env:username)" -showtime -warning -logtype Setup
               use-runas -RestartAsUser
@@ -1837,12 +1862,12 @@ function Show-SettingsWindow{
         $hashsetup.MarkdownScrollViewer.engine.HyperlinkCommand = $markdowncommand
       }
 
-      #Add MediaLocations Grid Buttons      
+      #Add MediaLocations Grid Buttons
       if($hashsetup.MediaLocations_Grid.Columns.count -lt 5){
-        <#        $buttontag = @{        
+        <#        $buttontag = @{
             hashsetup=$hashsetup
             thisApp=$thisApp
-        }#>  
+        }#>
         $buttonColumn = [System.Windows.Controls.DataGridTemplateColumn]::new()
         $buttonFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.Button])
         [void]$buttonFactory.SetValue([System.Windows.Controls.Button]::ContentProperty, "Remove")
@@ -1850,7 +1875,7 @@ function Show-SettingsWindow{
         [void]$buttonFactory.SetValue([System.Windows.Controls.Button]::NameProperty, "Locations_dismiss_button")
         [void]$buttonFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveclickEvent)
         [void]$buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveclickEvent)
-        #[void]$buttonFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)    
+        #[void]$buttonFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)
         $dataTemplate = [System.Windows.DataTemplate]::new()
         $dataTemplate.VisualTree = $buttonFactory
         $buttonHeaderFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.Button])
@@ -1859,20 +1884,20 @@ function Show-SettingsWindow{
         [void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::NameProperty, "Locations_dismissAll_button")
         [void]$buttonHeaderFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveAllclickEvent)
         [void]$buttonHeaderFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveAllclickEvent)
-        #[void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)    
+        #[void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)
         $headerdataTemplate = [System.Windows.DataTemplate]::new()
-        $headerdataTemplate.VisualTree = $buttonheaderFactory        
+        $headerdataTemplate.VisualTree = $buttonheaderFactory
         $buttonColumn.CellTemplate = $dataTemplate
-        $buttonColumn.HeaderTemplate = $headerdataTemplate 
-        $buttonColumn.DisplayIndex = 0  
+        $buttonColumn.HeaderTemplate = $headerdataTemplate
+        $buttonColumn.DisplayIndex = 0
         [void]$hashsetup.MediaLocations_Grid.Columns.add($buttonColumn)
       }
-      #Add SpotifyPlaylists Grid Buttons 
+      #Add SpotifyPlaylists Grid Buttons
       if($hashsetup.SpotifyPlaylists_Grid.Columns.count -lt 5){
-        <#        $buttontag = @{        
+        <#        $buttontag = @{
             hashsetup=$hashsetup
             thisApp=$thisApp
-        }#>  
+        }#>
         $buttonColumn = [System.Windows.Controls.DataGridTemplateColumn]::new()
         $buttonFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.Button])
         [void]$buttonFactory.SetValue([System.Windows.Controls.Button]::ContentProperty, "Remove")
@@ -1880,7 +1905,7 @@ function Show-SettingsWindow{
         [void]$buttonFactory.SetValue([System.Windows.Controls.Button]::NameProperty, "SpotifyPlaylists_dismiss_button")
         [void]$buttonFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveSpotifyPlaylistclickEvent)
         [void]$buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveSpotifyPlaylistclickEvent)
-        #[void]$buttonFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)    
+        #[void]$buttonFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)
         $dataTemplate = [System.Windows.DataTemplate]::new()
         $dataTemplate.VisualTree = $buttonFactory
         $buttonHeaderFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.Button])
@@ -1889,20 +1914,20 @@ function Show-SettingsWindow{
         [void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::NameProperty, "SpotifyPlaylists_dismissAll_button")
         [void]$buttonHeaderFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveSpotifyAllPlaylistclickEvent)
         [void]$buttonHeaderFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveSpotifyAllPlaylistclickEvent)
-        #[void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)    
+        #[void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)
         $headerdataTemplate = [System.Windows.DataTemplate]::new()
-        $headerdataTemplate.VisualTree = $buttonheaderFactory        
+        $headerdataTemplate.VisualTree = $buttonheaderFactory
         $buttonColumn.CellTemplate = $dataTemplate
-        $buttonColumn.HeaderTemplate = $headerdataTemplate 
-        $buttonColumn.DisplayIndex = 0  
+        $buttonColumn.HeaderTemplate = $headerdataTemplate
+        $buttonColumn.DisplayIndex = 0
         [void]$hashsetup.SpotifyPlaylists_Grid.Columns.add($buttonColumn)
       }
-      #Add YoutubePlaylists Grid Buttons 
+      #Add YoutubePlaylists Grid Buttons
       if($hashsetup.YoutubePlaylists_Grid.Columns.count -lt 5){
-        <#        $buttontag = @{        
+        <#        $buttontag = @{
             hashsetup=$hashsetup
             thisApp=$thisApp
-        } #> 
+        } #>
         $buttonColumn = [System.Windows.Controls.DataGridTemplateColumn]::new()
         $buttonFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.Button])
         [void]$buttonFactory.SetValue([System.Windows.Controls.Button]::ContentProperty, "Remove")
@@ -1910,7 +1935,7 @@ function Show-SettingsWindow{
         [void]$buttonFactory.SetValue([System.Windows.Controls.Button]::NameProperty, "Playlists_dismiss_button")
         [void]$buttonFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$RemovePlaylistclickEvent)
         [void]$buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$RemovePlaylistclickEvent)
-        #[void]$buttonFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)    
+        #[void]$buttonFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)
         $dataTemplate = [System.Windows.DataTemplate]::new()
         $dataTemplate.VisualTree = $buttonFactory
         $buttonHeaderFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.Button])
@@ -1919,22 +1944,22 @@ function Show-SettingsWindow{
         [void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::NameProperty, "Playlists_dismissAll_button")
         [void]$buttonHeaderFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveAllPlaylistclickEvent)
         [void]$buttonHeaderFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveAllPlaylistclickEvent)
-        #[void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)    
+        #[void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)
         $headerdataTemplate = [System.Windows.DataTemplate]::new()
-        $headerdataTemplate.VisualTree = $buttonheaderFactory    
-    
+        $headerdataTemplate.VisualTree = $buttonheaderFactory
+
         $buttonColumn.CellTemplate = $dataTemplate
-        $buttonColumn.HeaderTemplate = $headerdataTemplate 
-        $buttonColumn.DisplayIndex = 0  
+        $buttonColumn.HeaderTemplate = $headerdataTemplate
+        $buttonColumn.DisplayIndex = 0
         [void]$hashsetup.YoutubePlaylists_Grid.Columns.add($buttonColumn)
-      } 
+      }
 
       #Add TwitchPlaylists Grid Buttons
       if($hashsetup.TwitchPlaylists_Grid.Columns.count -lt 5){
-        <#        $buttontag = @{        
+        <#        $buttontag = @{
             hashsetup=$hashsetup
             thisApp=$thisApp
-        }#>  
+        }#>
         $buttonColumn = [System.Windows.Controls.DataGridTemplateColumn]::new()
         $buttonFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.Button])
         [void]$buttonFactory.SetValue([System.Windows.Controls.Button]::ContentProperty, "Remove")
@@ -1942,7 +1967,7 @@ function Show-SettingsWindow{
         [void]$buttonFactory.SetValue([System.Windows.Controls.Button]::NameProperty, "Playlists_dismiss_button")
         [void]$buttonFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveTwitchPlaylistclickEvent)
         [void]$buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveTwitchPlaylistclickEvent)
-        #[void]$buttonFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)    
+        #[void]$buttonFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)
         $dataTemplate = [System.Windows.DataTemplate]::new()
         $dataTemplate.VisualTree = $buttonFactory
         $buttonHeaderFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.Button])
@@ -1951,21 +1976,21 @@ function Show-SettingsWindow{
         [void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::NameProperty, "Playlists_dismissAll_button")
         [void]$buttonHeaderFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveTwitchAllPlaylistclickEvent)
         [void]$buttonHeaderFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveTwitchAllPlaylistclickEvent)
-        #[void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)    
+        #[void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)
         $headerdataTemplate = [System.Windows.DataTemplate]::new()
-        $headerdataTemplate.VisualTree = $buttonheaderFactory    
-    
+        $headerdataTemplate.VisualTree = $buttonheaderFactory
+
         $buttonColumn.CellTemplate = $dataTemplate
-        $buttonColumn.HeaderTemplate = $headerdataTemplate 
-        $buttonColumn.DisplayIndex = 0  
+        $buttonColumn.HeaderTemplate = $headerdataTemplate
+        $buttonColumn.DisplayIndex = 0
         [void]$hashsetup.TwitchPlaylists_Grid.Columns.add($buttonColumn)
       }
       #Add TwitchProxy Grid Buttons
       if($hashsetup.Twitch_Custom_Proxy_Grid.Columns.count -lt 5){
-        <#        $buttontag = @{        
+        <#        $buttontag = @{
             hashsetup=$hashsetup
             thisApp=$thisApp
-        }#>  
+        }#>
         $buttonColumn = [System.Windows.Controls.DataGridTemplateColumn]::new()
         $buttonFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.Button])
         [void]$buttonFactory.SetValue([System.Windows.Controls.Button]::ContentProperty, "Remove")
@@ -1973,7 +1998,7 @@ function Show-SettingsWindow{
         [void]$buttonFactory.SetValue([System.Windows.Controls.Button]::NameProperty, "TwitchProxy_dismiss_button")
         [void]$buttonFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveTwitchPlaylistclickEvent)
         [void]$buttonFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveTwitchPlaylistclickEvent)
-        #[void]$buttonFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)    
+        #[void]$buttonFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)
         $dataTemplate = [System.Windows.DataTemplate]::new()
         $dataTemplate.VisualTree = $buttonFactory
         $buttonHeaderFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.Button])
@@ -1982,12 +2007,12 @@ function Show-SettingsWindow{
         [void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::NameProperty, "TwitchProxy_dismissAll_button")
         [void]$buttonHeaderFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveTwitchAllPlaylistclickEvent)
         [void]$buttonHeaderFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$RemoveTwitchAllPlaylistclickEvent)
-        #[void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)    
+        #[void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::TagProperty,$buttontag)
         $headerdataTemplate = [System.Windows.DataTemplate]::new()
-        $headerdataTemplate.VisualTree = $buttonheaderFactory    
-    
+        $headerdataTemplate.VisualTree = $buttonheaderFactory
+
         $buttonColumn.CellTemplate = $dataTemplate
-        $buttonColumn.HeaderTemplate = $headerdataTemplate 
+        $buttonColumn.HeaderTemplate = $headerdataTemplate
         $buttonColumn.DisplayIndex = 1
         [void]$hashsetup.Twitch_Custom_Proxy_Grid.Columns.add($buttonColumn)
 
@@ -1999,19 +2024,19 @@ function Show-SettingsWindow{
         [void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::StyleProperty, $hashsetup.Window.TryFindResource("DetailButtonStyle"))
         [void]$buttonHeaderFactory.SetValue([System.Windows.Controls.Button]::NameProperty, "TwitchProxy_Add_button")
         [void]$buttonHeaderFactory.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$AddTwitchAllProxyclickEvent)
-        [void]$buttonHeaderFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$AddTwitchAllProxyclickEvent)   
+        [void]$buttonHeaderFactory.AddHandler([System.Windows.Controls.Button]::ClickEvent,$AddTwitchAllProxyclickEvent)
         $headerdataTemplate = [System.Windows.DataTemplate]::new()
         $headerdataTemplate.VisualTree = $buttonheaderFactory
         #$buttonColumn.CellTemplate = $dataTemplate
         $buttonColumn.HeaderTemplate = $headerdataTemplate
         $buttonColumn.DisplayIndex = 0
         [void]$hashsetup.Twitch_Custom_Proxy_Grid.Columns.add($buttonColumn)
-      }           
-      #---------------------------------------------- 
+      }
+      #----------------------------------------------
       #endregion Remove Media Location Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Editor_Help_Flyout IsOpenChanged
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.Help_Flyout_OpenChanged_Command = {
@@ -2027,13 +2052,13 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Editor_Help_Flyout.AddHandler([MahApps.Metro.Controls.Flyout]::IsOpenChangedEvent,$hashsetup.Help_Flyout_OpenChanged_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Editor_Help_Flyout IsOpenChanged
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Start Tray Only Toggle
-      #----------------------------------------------   
+      #----------------------------------------------
       $hashsetup.Start_Tray_only_Toggle_Command = {
         param ($sender)
         try{
@@ -2043,11 +2068,11 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Start_Tray_only_Toggle.add_Toggled($hashsetup.Start_Tray_only_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Start Tray Only Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Start Tray Only Help
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.Start_Tray_only_Click_Command = {
@@ -2059,13 +2084,13 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Start_Tray_only_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$hashsetup.Start_Tray_only_Click_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Start Tray Only Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Start Mini Only Toggle
-      #----------------------------------------------   
+      #----------------------------------------------
       $hashsetup.Start_Mini_only_Toggle_Command = {
         param ($sender)
         try{
@@ -2075,11 +2100,11 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Start_Mini_only_Toggle.add_Toggled($hashsetup.Start_Mini_only_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Start Mini Only Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Start Mini Only Help
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.Start_Mini_only_Button_Click_Command = {
@@ -2087,17 +2112,17 @@ function Show-SettingsWindow{
         try{
           update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Start_Mini_Only.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Start_Mini_only_Toggle.content -open -clear
         }catch{
-          write-ezlogs "An exception occurred in Start_Mini_only_Button.add_Click" -CatchError $_ 
+          write-ezlogs "An exception occurred in Start_Mini_only_Button.add_Click" -CatchError $_
         }
       }
       $hashsetup.Start_Mini_only_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$hashsetup.Start_Mini_only_Button_Click_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Start Mini Only Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Disable_Tray Toggle
-      #----------------------------------------------    
+      #----------------------------------------------
       $hashsetup.Disable_Tray_Toggle_Command = {
         param ($sender)
         try{
@@ -2119,30 +2144,30 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Disable_Tray_Toggle.add_Toggled($hashsetup.Disable_Tray_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Disable_Tray Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Disable_Tray Help
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.Disable_Tray_Button_Click_Command = {
         param ($sender)
-        try{ 
+        try{
           update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Disable_Tray.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Disable_Tray_Toggle.content -clear
         }catch{
           write-ezlogs "An exception occurred in Disable_Tray_Button.add_Click" -CatchError $_
         }
       }
       $hashsetup.Disable_Tray_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$hashsetup.Disable_Tray_Button_Click_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Disable_Tray Help
       #----------------------------------------------
 
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Minimize To Tray Toggle
-      #----------------------------------------------    
+      #----------------------------------------------
       $hashsetup.Minimize_To_Tray_Toggle_Command = {
         param ($sender)
         try{
@@ -2152,11 +2177,11 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Minimize_To_Tray_Toggle.add_Toggled($hashsetup.Minimize_To_Tray_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Minimize To Tray Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Minimize To Tray Help
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.Minimize_To_Tray_Button_Click_Command = {
@@ -2168,11 +2193,11 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Minimize_To_Tray_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$hashsetup.Minimize_To_Tray_Button_Click_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Minimize To Tray Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Start on Windows Login Toggle
       #----------------------------------------------
       $hashsetup.Start_On_Windows_Login_Toggle_Command = {
@@ -2184,11 +2209,11 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Start_On_Windows_Login_Toggle.add_Toggled($hashsetup.Start_On_Windows_Login_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Start on Windows Login Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Start on Windows Login Help
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.Start_On_Windows_Login_Button_Click_Command = {
@@ -2200,17 +2225,17 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Start_On_Windows_Login_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$hashsetup.Start_On_Windows_Login_Button_Click_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Start on Windows Login Help
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Verbose Logging Control
       #----------------------------------------------
       $hashsetup.Log_Path_textbox.Add_TextChanged({
           try{
             if([system.io.file]::Exists($hashsetup.Log_Path_textbox.text) -or [System.IO.Directory]::Exists($hashsetup.Log_Path_textbox.text)){
-              $hashsetup.Log_Path_Label.BorderBrush="LightGreen"         
+              $hashsetup.Log_Path_Label.BorderBrush="LightGreen"
             }else{
               $hashsetup.Log_Path_Label.BorderBrush="Red"
             }
@@ -2224,19 +2249,19 @@ function Show-SettingsWindow{
         param($sender)
         try{
           if($sender.isOn -eq $true){
-            $hashsetup.Log_label_transitioningControl.content = $hashsetup.Log_label_transitioningControlContent      
-            $hashsetup.Log_Path_Label.IsEnabled = $true 
-            $hashsetup.Log_StackPanel.Height = [Double]::NaN           
+            $hashsetup.Log_label_transitioningControl.content = $hashsetup.Log_label_transitioningControlContent
+            $hashsetup.Log_Path_Label.IsEnabled = $true
+            $hashsetup.Log_StackPanel.Height = [Double]::NaN
             $hashsetup.Log_Path_textbox.text = $thisapp.configTemp.Log_file
-            $hashsetup.Log_Path_textbox.IsEnabled = $true    
+            $hashsetup.Log_Path_textbox.IsEnabled = $true
             $hashsetup.Log_Path_Browse.IsEnabled = $true
             $thisapp.configTemp.Dev_mode = $true
           }else{
-            $hashsetup.Log_label_transitioningControl.content = '' 
-            $hashsetup.Log_StackPanel.Height = '0'          
-            $hashsetup.Log_Path_Label.IsEnabled = $false      
-            $hashsetup.Log_Path_textbox.IsEnabled = $false      
-            $hashsetup.Log_Path_Browse.IsEnabled = $false 
+            $hashsetup.Log_label_transitioningControl.content = ''
+            $hashsetup.Log_StackPanel.Height = '0'
+            $hashsetup.Log_Path_Label.IsEnabled = $false
+            $hashsetup.Log_Path_textbox.IsEnabled = $false
+            $hashsetup.Log_Path_Browse.IsEnabled = $false
             $thisapp.configTemp.Dev_mode = $false
           }
         }catch{
@@ -2248,33 +2273,33 @@ function Show-SettingsWindow{
       $hashsetup.Log_Path_Browse.add_Click({
           try{
             $result = Open-FolderDialog -Title 'Select the directory where logs will be stored'
-            if(-not [string]::IsNullOrEmpty($result)){$hashsetup.Log_Path_textbox.text = $result}  
+            if(-not [string]::IsNullOrEmpty($result)){$hashsetup.Log_Path_textbox.text = $result}
           }catch{
             write-ezlogs "An exception occurred in Log_Path_Browse.add_Click" -CatchError $_
           }
-      }) 
+      })
       $hashsetup.Log_Path_Hyperlink.Inlines.add("$([system.io.path]::GetFileName($thisApp.Config.Log_file))")
       [void]$hashsetup.Log_Path_Hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Hyperlink_RequestNavigate)
       $hashsetup.Log_Path_Hyperlink.NavigateUri = $thisApp.Config.Log_file
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Verbose Logging Control
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Verbose Logging Help
       #----------------------------------------------
       $hashsetup.Verbose_logging_Button.add_Click({
-          try{ 
+          try{
             Update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Dev_mode.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Verbose_logging_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Verbose_logging_Button.add_Click" -CatchError $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Verbose Logging Help
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Notification_Audio Toggle
       #----------------------------------------------
       $hashsetup.Notification_Audio_Toggle_Command = {
@@ -2286,31 +2311,31 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Notification_Audio_Toggle.add_Toggled($hashsetup.Notification_Audio_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Notification_Audio Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Notification_Audio Help
       #----------------------------------------------
       $hashsetup.Notification_Audio_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Notification_Audio.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Notification_Audio_Toggle.content -clear
           }catch{
-            write-ezlogs "An exception occurred in Splash_Screen_Audio_Button.add_Click" -CatchError $_ 
+            write-ezlogs "An exception occurred in Splash_Screen_Audio_Button.add_Click" -CatchError $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Notification_Audio Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Snapshots Toggle
       #----------------------------------------------
       $hashsetup.SnapShots_textbox.Add_TextChanged({
           try{
             if([system.io.directory]::Exists($hashsetup.SnapShots_textbox.text)){
-              $hashsetup.SnapShots_Label.BorderBrush="LightGreen"         
+              $hashsetup.SnapShots_Label.BorderBrush="LightGreen"
             }else{
               $hashsetup.SnapShots_Label.BorderBrush = 'Red'
             }
@@ -2345,13 +2370,13 @@ function Show-SettingsWindow{
           try{
             $SnapShot_Path = Open-FolderDialog -Title 'Select the directory path where Snapshots will be saved to' -InitialDirectory $hashsetup.SnapShots_textbox.text
             if([system.io.directory]::Exists($SnapShot_Path)){
-              $hashsetup.SnapShots_textbox.text = $SnapShot_Path   
+              $hashsetup.SnapShots_textbox.text = $SnapShot_Path
               $thisapp.configTemp.Snapshots_Path = $SnapShot_Path
               $hashsetup.SnapShots_Hyperlink.Inlines.add("Open Snapshots Folders")
               $hashsetup.SnapShots_Hyperlink.NavigateUri = [uri]$thisapp.configTemp.Snapshots_Path
               if($hashsetup.SnapShots_Hyperlink.Visibility){
                 $hashsetup.SnapShots_Hyperlink.Visibility = 'Visible'
-              }           
+              }
             }else{
               $hashsetup.SnapShots_textbox.text = ''
               $thisapp.configTemp.Snapshots_Path = ''
@@ -2361,41 +2386,41 @@ function Show-SettingsWindow{
           }catch{
             write-ezlogs "An exception occurred in SnapShots_Browse click event" -showtime -catcherror $_
           }
-      })  
+      })
       [void]$hashsetup.SnapShots_Hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Hyperlink_RequestNavigate)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Snapshots Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Snapshots Help
       #----------------------------------------------
       $hashsetup.SnapShots_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Snapshots.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.SnapShots_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in SnapShots_Button.add_Click" -CatchError $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Snapshots Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region App Snapshots Help
       #----------------------------------------------
       $hashsetup.App_SnapShots_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\App_Snapshots.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.App_SnapShots_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in App_SnapShots_Button.add_Click" -CatchError $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion App Snapshots Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Performance Mode Toggle
       #----------------------------------------------
       $hashsetup.Performance_Mode_Toggle_Command = {
@@ -2407,26 +2432,26 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Performance_Mode_Toggle.add_Toggled($hashsetup.Performance_Mode_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Performance Mode Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Performance Mode Help
       #----------------------------------------------
       $hashsetup.Performance_Mode_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Performance_Mode.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Performance_Mode_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Performance_Mode_Button.add_Click" -CatchError $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Performance Mode Help
       #----------------------------------------------
 
       if($hashsetup.High_DPI_Toggle){
-        #---------------------------------------------- 
+        #----------------------------------------------
         #region High DPI Toggle
         #----------------------------------------------
         $hashsetup.High_DPI_Toggle_Command = {
@@ -2438,27 +2463,27 @@ function Show-SettingsWindow{
           }
         }
         $hashsetup.High_DPI_Toggle.add_Toggled($hashsetup.High_DPI_Toggle_Command)
-        #---------------------------------------------- 
+        #----------------------------------------------
         #endregion High DPI Toggle
         #----------------------------------------------
 
-        #---------------------------------------------- 
+        #----------------------------------------------
         #region High DPI Help
         #----------------------------------------------
         $hashsetup.High_DPI_Button_Command = {
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\High_DPI.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.High_DPI_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in High_DPI_Button.add_Click" -CatchError $_
           }
         }
         $hashsetup.High_DPI_Button.add_Click($hashsetup.High_DPI_Button_Command)
-        #---------------------------------------------- 
+        #----------------------------------------------
         #endregion High DPI Help
         #----------------------------------------------
       }
       if($hashsetup.DisableTransparency_Toggle){
-        #---------------------------------------------- 
+        #----------------------------------------------
         #region DisableTransparency Toggle
         #----------------------------------------------
         $hashsetup.DisableTransparency_Toggle_Command = {
@@ -2470,26 +2495,26 @@ function Show-SettingsWindow{
           }
         }
         $hashsetup.DisableTransparency_Toggle.add_Toggled($hashsetup.DisableTransparency_Toggle_Command)
-        #---------------------------------------------- 
+        #----------------------------------------------
         #endregion DisableTransparency Toggle
         #----------------------------------------------
 
-        #---------------------------------------------- 
+        #----------------------------------------------
         #region DisableTransparency Help
         #----------------------------------------------
         $hashsetup.DisableTransparency_Button_Command = {
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\DisableTransparency.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.DisableTransparency_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in DisableTransparency_Button.add_Click" -CatchError $_
           }
         }
         $hashsetup.DisableTransparency_Button.add_Click($hashsetup.DisableTransparency_Button_Command)
-        #---------------------------------------------- 
+        #----------------------------------------------
         #endregion DisableTransparency Help
         #----------------------------------------------
       }
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Use Hardware Acceleration Toggle
       #----------------------------------------------
       $hashsetup.Use_HardwareAcceleration_Toggle_Command = {
@@ -2501,25 +2526,25 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Use_HardwareAcceleration_Toggle.add_Toggled($hashsetup.Use_HardwareAcceleration_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Use Hardware Acceleration Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Use Hardware Acceleration Help
       #----------------------------------------------
       $hashsetup.Use_HardwareAcceleration_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Hardware_Acceleration.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Use_HardwareAcceleration_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Use_HardwareAcceleration_Button.add_Click" -CatchError $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Use Hardware Acceleration Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Enable_WebEQSupport Toggle
       #----------------------------------------------
       $hashsetup.Enable_WebEQSupport_Toggle_Command = {
@@ -2532,11 +2557,11 @@ function Show-SettingsWindow{
               $appinstalled = [System.IO.FileInfo]::new("$env:ProgramW6432\VB\CABLE\VBCABLE_Setup_x64.exe").versioninfo.fileversion -replace ', ','.'
             }else{
               write-ezlogs "VB-Cable virtual audio device does not appear to be installed, requesting permissions to install" -warning -logtype setup
-              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
               $Button_Settings.AffirmativeButtonText = 'Yes'
-              $Button_Settings.NegativeButtonText = 'No'  
-              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
-              $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Install Virtual Audio","Enabling EQ Support for WebPlayers requires installation of a virtual audio device (VB-Cable).`n`nDo you want to continue?",$okandCancel,$Button_Settings)    
+              $Button_Settings.NegativeButtonText = 'No'
+              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
+              $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Install Virtual Audio","Enabling EQ Support for WebPlayers requires installation of a virtual audio device (VB-Cable).`n`nDo you want to continue?",$okandCancel,$Button_Settings)
               if($result -eq 'Affirmative'){
                 write-ezlogs "User wished to proceed, installing vb-cable" -showtime -warning -logtype Setup
                 try{
@@ -2549,17 +2574,17 @@ function Show-SettingsWindow{
                   }else{
                     write-ezlogs ">>>> Launching new Splash Screen" -logtype Setup
                     Start-SplashScreen -SplashTitle "$($thisApp.Config.App_Name) Media Player" -SplashMessage 'Installing VB-Cable...' -Splash_More_Info 'Please Wait' -current_folder $thisapp.Config.Current_Folder -log_file $thisapp.Config.Log_file
-                  }                  
+                  }
                   if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe")){
                     write-ezlogs "| Attempting to install from $($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -showtime -logtype setup
                     try{
-                      $default_output_Device = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::DefaultAudioEndpoint([CSCore.CoreAudioAPI.DataFlow]::Render,[CSCore.CoreAudioAPI.Role]::Multimedia)   
+                      $default_output_Device = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::DefaultAudioEndpoint([CSCore.CoreAudioAPI.DataFlow]::Render,[CSCore.CoreAudioAPI.Role]::Multimedia)
                     }catch{
                       write-ezlogs "An exception occurred installing VB-Cable" -catcherror $_
                     }
                     if(!$default_output_Device.DeviceID){
                       try{
-                        write-ezlogs "Unable to get default audio device via MMDeviceEnumerator:...attempting Get-AudioDevice" -logtype setup            
+                        write-ezlogs "Unable to get default audio device via MMDeviceEnumerator:...attempting Get-AudioDevice" -logtype setup
                         $Audio_output_Device = Get-AudioDevice -List | Where-Object {$_.type -eq 'Playback' -and $_.default}
                       }catch{
                         write-ezlogs "An exception occurred executing Get-AudioDevice" -catcherror $_
@@ -2576,7 +2601,7 @@ function Show-SettingsWindow{
                     }
                     if($DeviceID){
                       try{
-                        write-ezlogs "| Current Default Audio Device: $($DeviceName) -- ID: $DeviceID" -logtype setup            
+                        write-ezlogs "| Current Default Audio Device: $($DeviceName) -- ID: $DeviceID" -logtype setup
                         Start-Process "$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -ArgumentList '-i -h' -Wait -Verb RunAs
                         #Using where-object vs passing deviceid as param due to sometimes getting type cast error - unknown why may have been specific to test Win11 machine
                         $set_AudioDevice = Get-AudioDevice -list | where-Object {$_.id -eq "$DeviceID"}
@@ -2589,28 +2614,28 @@ function Show-SettingsWindow{
                           write-ezlogs "No AudioDevice was found or able to be set with id $($DeviceID) - enumerating all devices" -logtype setup -warning
                           $audio_devices = Get-AudioDevice -List | Where-Object {$_.Type -eq 'Playback'} | Select-Object -first 1
                           $set_AudioDevice = Get-AudioDevice -ID $audio_devices.ID | Set-AudioDevice -DefaultOnly
-                          $DefaultDeviceWarning = $true                     
+                          $DefaultDeviceWarning = $true
                         }else{
                           write-ezlogs "An exception occurred installing VB-Cable" -catcherror $_
                         }
-                      }                                     
+                      }
                       if($set_AudioDevice){
                         write-ezlogs "| New Default Audio Device (should be same as previous): $($set_AudioDevice | out-string)" -logtype setup
                       }
                     }else{
                       $NoDefaultDevice = $true
-                    }                   
+                    }
                   }else{
                     if(!$(get-command choco*)){
                       [void](confirm-requirements -thisApp $thisApp -noRestart)
                     }
-                    write-ezlogs "Attempting to install VB-Cable from chocolatey" -showtime -warning -logtype Setup 
+                    write-ezlogs "Attempting to install VB-Cable from chocolatey" -showtime -warning -logtype Setup
                     $choco_install = choco upgrade vb-cable --confirm --force --acceptlicense
                     write-ezlogs ">>>> Verifying if vb-cable was installed successfully...." -showtime -loglevel 2 -logtype Setup
                     $chocoappmatch = choco list vb-cable
                     if($chocoappmatch){
                       $appinstalled = $($chocoappmatch | Select-String vb-cable | out-string).trim()
-                    } 
+                    }
                   }
                   if(!$NoDefaultDevice){
                     if([System.IO.File]::Exists("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_ControlPanel.exe")){
@@ -2652,7 +2677,7 @@ function Show-SettingsWindow{
                   update-EditorHelp -content $Message -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -clear -Open -Header $Header -color $Color
                 }catch{
                   write-ezlogs "An exception occurred installing VB-Cable" -catcherror $_
-                  update-EditorHelp -content "An exception occurred installing the Virtual Audio Device:`n$_" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -clear -Open -Header 'Install Virtual Audio' -color Tomato  
+                  update-EditorHelp -content "An exception occurred installing the Virtual Audio Device:`n$_" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -clear -Open -Header 'Install Virtual Audio' -color Tomato
                   $thisapp.configTemp.Enable_WebEQSupport = $false
                   $hashsetup.Enable_WebEQSupport_Toggle.isOn = $false
                 }finally{
@@ -2672,8 +2697,8 @@ function Show-SettingsWindow{
                   if($default_output_Device){
                     $default_output_Device.dispose()
                     $default_output_Device = $null
-                  }    
-                }                
+                  }
+                }
               }else{
                 write-ezlogs "User did not wish to proceed" -showtime -warning -logtype Setup
                 $thisapp.configTemp.Enable_WebEQSupport = $false
@@ -2686,7 +2711,7 @@ function Show-SettingsWindow{
               $thisapp.configTemp.Enable_WebEQSupport = $true
             }else{
               write-ezlogs "Unable to verify if VB-Cable is installed" -warning -logtype Setup
-            }           
+            }
             if($synchash.Enable_EQWeb_Toggle){
               write-ezlogs "[Show-SettingsWindow] >>>> Enabling Enable_EQWeb_Toggle" -logtype Setup
               Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'Enable_EQWeb_Toggle' -Property 'IsEnabled' -value $true
@@ -2710,11 +2735,11 @@ function Show-SettingsWindow{
               }
               if($appinstalled){
                 write-ezlogs "VB-Cable virtual audio device is installed, requesting permissions to uninstall" -warning -logtype setup
-                $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+                $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
                 $Button_Settings.AffirmativeButtonText = 'Yes'
-                $Button_Settings.NegativeButtonText = 'No'  
-                $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative                
-                $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Uninstall Virtual Audio","Do you wish to uninstall the virtual audio device (VB-Cable)?",$okandCancel,$Button_Settings)  
+                $Button_Settings.NegativeButtonText = 'No'
+                $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
+                $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Uninstall Virtual Audio","Do you wish to uninstall the virtual audio device (VB-Cable)?",$okandCancel,$Button_Settings)
                 if($result -eq 'Affirmative'){
                   write-ezlogs "User wished to proceed, uninstalling vb-cable" -showtime -warning -logtype Setup
                   try{
@@ -2725,7 +2750,7 @@ function Show-SettingsWindow{
                       Update-SplashScreen -hash $hash -SplashMessage 'Uninstalling VB-Cable...' -Splash_More_Info 'Please Wait' -Show
                     }else{
                       Start-SplashScreen -SplashTitle "$($thisApp.Config.App_Name) Media Player" -SplashMessage 'Uninstalling VB-Cable...' -Splash_More_Info 'Please Wait' -current_folder $thisapp.Config.Current_Folder -log_file $thisapp.Config.Log_file
-                    }                
+                    }
                     if([system.io.file]::Exists($vbcablesetup)){
                       write-ezlogs "| Executing $vbcablesetup with arguments -u -h with verb Runas" -logtype Setup
                       Start-Process "$vbcablesetup" -ArgumentList '-u -h' -Wait -Verb Runas
@@ -2733,13 +2758,13 @@ function Show-SettingsWindow{
                       if(!$(get-command choco*)){
                         [void](confirm-requirements -thisApp $thisApp -noRestart)
                       }
-                      write-ezlogs "Attempting to uninstall VB-Cable from chocolatey" -showtime -warning -logtype Setup 
+                      write-ezlogs "Attempting to uninstall VB-Cable from chocolatey" -showtime -warning -logtype Setup
                       $choco_install = choco uninstall vb-cable --confirm --force --acceptlicense
                       write-ezlogs ">>>> Verifying if vb-cable was removed successfully...." -showtime -loglevel 2 -logtype Setup
                       $chocoappmatch = choco list vb-cable
                       if($chocoappmatch){
                         $appinstalled = $($chocoappmatch | Select-String vb-cable | out-string).trim()
-                      } 
+                      }
                     }
                     if([System.IO.File]::Exists("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_ControlPanel.exe")){
                       write-ezlogs "VB-Cable was not removed succesfully - install still found at ${env:ProgramFiles(x86)}\VB\CABLE\" -logtype Setup -warning
@@ -2767,14 +2792,14 @@ function Show-SettingsWindow{
                         Update-SplashScreen -hash $hash -Close
                       }
                     }
-                  }                
+                  }
                 }else{
                   write-ezlogs "User did not wish to uninstall VB-Cable" -showtime -warning -logtype Setup
                   return
-                }  
+                }
               }else{
                 write-ezlogs "VB-Audio does not appear to be installed -- skipping uninstall process" -warning -logtype Setup
-              } 
+              }
             }catch{
               write-ezlogs "An exception occurred removing vb-cable" -catcherror $_
             }
@@ -2784,25 +2809,25 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Enable_WebEQSupport_Toggle.add_Toggled($hashsetup.Enable_WebEQSupport_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Enable_WebEQSupport Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Enable_WebEQSupport Help
       #----------------------------------------------
       $hashsetup.Enable_WebEQSupport_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Enable_WebEQSupport.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Enable_WebEQSupport_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Enable_WebEQSupport_Button.add_Click" -CatchError $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Enable_WebEQSupport Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Show Notifications Toggle
       #----------------------------------------------
       $hashsetup.Show_Notifications_Toggle_Command = {
@@ -2813,26 +2838,26 @@ function Show-SettingsWindow{
           write-ezlogs "An exception occurred in Show_Notifications_Toggle.add_Toggled" -showtime -catcherror $_
         }
       }
-      $hashsetup.Show_Notifications_Toggle.add_Toggled($hashsetup.Show_Notifications_Toggle_Command) 
-      #---------------------------------------------- 
+      $hashsetup.Show_Notifications_Toggle.add_Toggled($hashsetup.Show_Notifications_Toggle_Command)
+      #----------------------------------------------
       #endregion Show Notifications Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Show Notifications Help
       #----------------------------------------------
       $hashsetup.Show_Notifications_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Show_Notifications.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Show_Notifications_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Show_Notifications_Button.add_Click" -CatchError $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Show Notifications Help
-      #----------------------------------------------  
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Enable_Marquee Toggle
       #----------------------------------------------
       $hashsetup.Enable_Marquee_Toggle_Command = {
@@ -2840,29 +2865,29 @@ function Show-SettingsWindow{
         try{
           $thisapp.configTemp.Enable_Marquee = $Sender.isOn
         }catch{
-          write-ezlogs "An exception occurred in Enable_Marquee_Toggle.add_Toggled" -CatchError $_ 
+          write-ezlogs "An exception occurred in Enable_Marquee_Toggle.add_Toggled" -CatchError $_
         }
       }
       $hashsetup.Enable_Marquee_Toggle.add_Toggled($hashsetup.Enable_Marquee_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Enable_Marquee Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Enable_Marquee Help
       #----------------------------------------------
       $hashsetup.Enable_Marquee_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Marquee_Overlay.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Enable_Marquee_Toggle.content -clear
           }catch{
-            write-ezlogs "An exception occurred in Enable_Marquee_Button.add_Click" -CatchError $_ 
+            write-ezlogs "An exception occurred in Enable_Marquee_Button.add_Click" -CatchError $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Enable_Marquee Help
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Open_VideoPlayer Toggle
       #----------------------------------------------
       $hashsetup.Open_VideoPlayer_Toggle_Command = {
@@ -2873,26 +2898,26 @@ function Show-SettingsWindow{
           write-ezlogs "An exception occurred in Open_VideoPlayer_Toggle.add_Toggled" -CatchError $_
         }
       }
-      $hashsetup.Open_VideoPlayer_Toggle.add_Toggled($hashsetup.Open_VideoPlayer_Toggle_Command) 
-      #---------------------------------------------- 
+      $hashsetup.Open_VideoPlayer_Toggle.add_Toggled($hashsetup.Open_VideoPlayer_Toggle_Command)
+      #----------------------------------------------
       #endregion Open_VideoPlayer Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Open_VideoPlayer Help
       #----------------------------------------------
       $hashsetup.Open_VideoPlayer_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\OpenClose_VideoPlayer.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Open_VideoPlayer_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Open_VideoPlayer_Button.add_Click" -CatchError $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Open_VideoPlayer Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Remember_Playback_Progress Toggle
       #----------------------------------------------
       $hashsetup.Remember_Playback_Progress_Toggle_Command = {
@@ -2901,31 +2926,31 @@ function Show-SettingsWindow{
           $thisapp.configTemp.Remember_Playback_Progress = $Sender.isOn
           if(!$Sender.isOn){
             $thisapp.configTemp.Current_Playing_Media = $Null
-          }           
+          }
         }catch{
           write-ezlogs "An exception occurred in Remember_Playback_Progress_Toggle.add_Toggled" -CatchError $_
         }
       }
       $hashsetup.Remember_Playback_Progress_Toggle.add_Toggled($hashsetup.Remember_Playback_Progress_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Remember_Playback Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Remember_Playback Help
       #----------------------------------------------
       $hashsetup.Remember_Playback_Progress_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Remember_Progress.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Remember_Playback_Progress_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Remember_Playback_Progress_Button.add_Click" -CatchError $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Remember_Playback Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Start_Paused_Toggle
       #----------------------------------------------
       $hashsetup.Start_Paused_Toggle_Command = {
@@ -2937,25 +2962,25 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Start_Paused_Toggle.add_Toggled($hashsetup.Start_Paused_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Start_Paused_Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Start_Paused Help
       #----------------------------------------------
       $hashsetup.Start_Paused_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Start_Paused.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Start_Paused_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Start_Paused_Button.add_Click" -CatchError $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Start_Paused Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Current_Visualization Combobox
       #----------------------------------------------
       [void]$hashsetup.Current_Visualization_ComboBox.items.add('ProjectM')
@@ -2964,34 +2989,34 @@ function Show-SettingsWindow{
       $hashsetup.Current_Visualization_ComboBox.add_SelectionChanged({
           Param($Sender)
           try{
-            if($Sender.Selectedindex -ne -1){ 
+            if($Sender.Selectedindex -ne -1){
               if($Sender.selecteditem -eq 'Spectrum'){
                 $Visualization = 'Visual'
               }else{
                 $Visualization = $Sender.selecteditem
               }
-              $hashsetup.Current_Visualization_Label.BorderBrush = 'LightGreen'      
+              $hashsetup.Current_Visualization_Label.BorderBrush = 'LightGreen'
               write-ezlogs ">>>> Enabling Use_Visualizations ($($sender.Name)) -- Current_Visualization: $($Visualization)" -logtype Setup
               $thisapp.configTemp.Current_Visualization = $Visualization
             }
-            else{       
-              $hashsetup.Current_Visualization_Label.BorderBrush = 'Red'   
+            else{
+              $hashsetup.Current_Visualization_Label.BorderBrush = 'Red'
               write-ezlogs ">>>> Disabling Use_Visualizations ($($sender.Name)) -- no Current_Visualization selected" -logtype Setup
               $thisapp.configTemp.Use_Visualizations = $false
               if($hashsetup.Use_Visualizations_Toggle -and $hashsetup.Use_Visualizations_Toggle.isOn -and $hashsetup.Use_Visualizations_Toggle.tag -ne 'Startup'){
                 $hashsetup.Use_Visualizations_Toggle.isOn = $false
               }
-              $thisapp.configTemp.Current_Visualization = ''    
+              $thisapp.configTemp.Current_Visualization = ''
             }
           }catch{
             write-ezlogs "An exception occurred in Current_Visualization_ComboBox.add_SelectionChanged" -CatchError $_ -enablelogs
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Current_Visualization Combobox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Use_Visualizations Toggle
       #----------------------------------------------
       $hashsetup.Use_Visualizations_Toggle_Command = {
@@ -2999,31 +3024,31 @@ function Show-SettingsWindow{
         try{
           $thisapp.configTemp.Use_Visualizations = [bool]$($sender.isOn)
         }catch{
-          write-ezlogs "An exception occurred in Use_Visualizations_Toggle.add_Toggled" -CatchError $_ 
+          write-ezlogs "An exception occurred in Use_Visualizations_Toggle.add_Toggled" -CatchError $_
         }finally{
           $sender.tag = $Null
         }
       }
       $hashsetup.Use_Visualizations_Toggle.add_Toggled($hashsetup.Use_Visualizations_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Use_Visualizations Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Use_Visualizations Help
       #----------------------------------------------
       $hashsetup.Use_Visualizations_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Visualizations.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Use_Visualizations_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Use_Visualizations_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Use_Visualizations Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Use_Visualizations_Video Toggle
       #----------------------------------------------
       $hashsetup.Use_Visualizations_Video_Toggle_Command = {
@@ -3031,57 +3056,57 @@ function Show-SettingsWindow{
         try{
           $thisapp.configTemp.Use_Visualizations_Video = [bool]($Sender.isOn)
         }catch{
-          write-ezlogs "An exception occurred in Use_Visualizations_Video_Toggle.add_Toggled" -CatchError $_ 
+          write-ezlogs "An exception occurred in Use_Visualizations_Video_Toggle.add_Toggled" -CatchError $_
         }
       }
       $hashsetup.Use_Visualizations_Video_Toggle.add_Toggled($hashsetup.Use_Visualizations_Video_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Use_Visualizations_Video Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Use_Visualizations_Video Help
       #----------------------------------------------
       $hashsetup.Use_Visualizations_Video_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Visualizations_Video.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Use_Visualizations_Video_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Use_Visualizations_Video_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Use_Visualizations_Video Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Audio_Output Combobox
-      #----------------------------------------------    
+      #----------------------------------------------
       [void]$hashsetup.Audio_Output_ComboBox.items.clear()
       [void]$hashsetup.Audio_Output_ComboBox.items.add('Default')
-      #TODO: Refactor this to not use selection change event but only on save event  
+      #TODO: Refactor this to not use selection change event but only on save event
       <#      $hashsetup.Audio_Output_ComboBox.add_SelectionChanged({
           Param($Sender)
 
       }) #>
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Audio_Output Combobox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Audio_Output Help
       #----------------------------------------------
       $hashsetup.Audio_Output_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Audio_OutputDevice.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Audio_Output_Label.content -clear
           }catch{
             write-ezlogs "An exception occurred in Audio_Output_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Audio_Output Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Discord Integration Toggle
       #----------------------------------------------
       $hashsetup.Discord_Integration_Toggle_Command = {
@@ -3094,25 +3119,25 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Discord_Integration_Toggle.add_Toggled($hashsetup.Discord_Integration_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Discord Integration Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Discord Integration Help
       #----------------------------------------------
       $hashsetup.Discord_Integration_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Discord_Integration.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Discord_Integration_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Audio_Output_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Discord Integration Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Enable_Subtitles Toggle
       #----------------------------------------------
       $hashsetup.Enable_Subtitles_Toggle_Command = {
@@ -3124,39 +3149,39 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Enable_Subtitles_Toggle.add_Toggled($hashsetup.Enable_Subtitles_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Enable_Subtitles Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Enable_Subtitles Help
       #----------------------------------------------
       $hashsetup.Enable_Subtitles_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Enable_Subtitles.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Enable_Subtitles_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Enable_Subtitles_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Enable_Subtitles Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Hotkeys_Button Help
       #----------------------------------------------
       $hashsetup.Hotkeys_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Hotkeys.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Hotkeys_Label.content -clear
           }catch{
             write-ezlogs "An exception occurred in Hotkeys_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Hotkeys_Button Help
       #----------------------------------------------
-      
-      #---------------------------------------------- 
+
+      #----------------------------------------------
       #region Auto_UpdateCheck Toggle
       #----------------------------------------------
       if($thisApp.Enable_Update_Features){
@@ -3169,25 +3194,25 @@ function Show-SettingsWindow{
           }
         }
         $hashsetup.Auto_UpdateCheck_Toggle.add_Toggled($hashsetup.Auto_UpdateCheck_Toggle_Command)
-        #---------------------------------------------- 
+        #----------------------------------------------
         #endregion Auto_UpdateCheck Toggle
         #----------------------------------------------
 
-        #---------------------------------------------- 
+        #----------------------------------------------
         #region Auto_UpdateCheck Help
         #----------------------------------------------
         $hashsetup.Auto_UpdateCheck_Button.add_Click({
-            try{ 
+            try{
               update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Auto_UpdateCheck.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Auto_UpdateCheck_Toggle.content -clear
             }catch{
               write-ezlogs "An exception occurred in Auto_UpdateCheck_Button.add_Click" -CatchError $_ -enablelogs
             }
         })
-        #---------------------------------------------- 
+        #----------------------------------------------
         #endregion Auto_UpdateCheck Help
         #----------------------------------------------
 
-        #---------------------------------------------- 
+        #----------------------------------------------
         #region Auto_UpdateInstall Toggle
         #----------------------------------------------
         $hashsetup.Auto_UpdateInstall_Toggle_Command = {
@@ -3199,47 +3224,47 @@ function Show-SettingsWindow{
           }
         }
         $hashsetup.Auto_UpdateInstall_Toggle.add_Toggled($hashsetup.Auto_UpdateInstall_Toggle_Command)
-        #---------------------------------------------- 
+        #----------------------------------------------
         #endregion Auto_UpdateCheck Toggle
         #----------------------------------------------
 
-        #---------------------------------------------- 
+        #----------------------------------------------
         #region Auto_UpdateInstall Help
         #----------------------------------------------
         $hashsetup.Auto_UpdateInstall_Button.add_Click({
-            try{ 
+            try{
               update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Auto_UpdateInstall.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Auto_UpdateInstall_Toggle.content -clear
             }catch{
               write-ezlogs "An exception occurred in Auto_UpdateInstall_Button.add_Click" -CatchError $_ -enablelogs
             }
         })
-        #---------------------------------------------- 
+        #----------------------------------------------
         #endregion Auto_UpdateInstall Help
         #----------------------------------------------
       }elseif($hashsetup.Updates_Settings_Expander){
         $hashsetup.Updates_Settings_Expander.isEnabled = $false
         $hashsetup.Updates_Settings_Expander.visibility = 'Collapsed'
       }
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Enable_MediaCasting_Toggle
       #----------------------------------------------
       $hashsetup.Enable_MediaCasting_Toggle_Command = {
         Param($sender)
-        try{        
+        try{
           $thisapp.configTemp.Use_MediaCasting = $Sender.isOn
           if($sender.isOn){
             if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Enabling Use_MediaCasting" -logtype Setup -LogLevel 2 -Dev_mode}
             #TODO: Move to apply event
             if($synchash.VideoView_Cast_Button){
               Update-MainWindow -synchash $synchash -thisapp $thisapp -Control 'VideoView_Cast_Button' -Property 'isEnabled' -value $true
-              Update-MainWindow -synchash $synchash -thisapp $thisapp -Control 'VideoView_Cast_Button' -Property 'Tooltip' -value 'Cast Media to other Device'  
+              Update-MainWindow -synchash $synchash -thisapp $thisapp -Control 'VideoView_Cast_Button' -Property 'Tooltip' -value 'Cast Media to other Device'
             }
           }
           else{
             if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Disabling Use_MediaCasting" -logtype Setup -LogLevel 2 -Dev_mode}
             if($synchash.VideoView_Cast_Button){
               Update-MainWindow -synchash $synchash -thisapp $thisapp -Control 'VideoView_Cast_Button' -Property 'isEnabled' -value $false
-              Update-MainWindow -synchash $synchash -thisapp $thisapp -Control 'VideoView_Cast_Button' -Property 'Tooltip' -value 'Media Casting Support is currently disabled'   
+              Update-MainWindow -synchash $synchash -thisapp $thisapp -Control 'VideoView_Cast_Button' -Property 'Tooltip' -value 'Media Casting Support is currently disabled'
             }
           }
         }catch{
@@ -3247,61 +3272,61 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Enable_MediaCasting_Toggle.add_Toggled($hashsetup.Enable_MediaCasting_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Enable_MediaCasting_Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Enable_MediaCasting Help
       #----------------------------------------------
       $hashsetup.Enable_MediaCasting_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Enable_MediaCasting.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Enable_MediaCasting_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Enable_MediaCasting_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Enable_MediaCasting Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Cast_HTTPPort_textbox
       #----------------------------------------------
       $hashsetup.Cast_HTTPPort_textbox.add_textChanged({
           try{
-            if(-not [string]::IsNullOrEmpty($hashsetup.Cast_HTTPPort_textbox.text)){   
-              $hashsetup.Cast_HTTPPort_Label.BorderBrush = 'LightGreen' 
+            if(-not [string]::IsNullOrEmpty($hashsetup.Cast_HTTPPort_textbox.text)){
+              $hashsetup.Cast_HTTPPort_Label.BorderBrush = 'LightGreen'
               Add-Member -InputObject $thisapp.configTemp -Name 'Cast_HTTPPort' -Value $($hashsetup.Cast_HTTPPort_textbox.text) -MemberType NoteProperty -Force
             }
-            else{       
-              $hashsetup.Cast_HTTPPort_Label.BorderBrush = 'Red'   
-              Add-Member -InputObject $thisapp.configTemp -Name 'Cast_HTTPPort' -Value $null -MemberType NoteProperty -Force     
+            else{
+              $hashsetup.Cast_HTTPPort_Label.BorderBrush = 'Red'
+              Add-Member -InputObject $thisapp.configTemp -Name 'Cast_HTTPPort' -Value $null -MemberType NoteProperty -Force
             }
           }catch{
             write-ezlogs "An exception occurred in Cast_HTTPPort_textbox.add_textChanged" -CatchError $_ -enablelogs
           }
-      }) 
+      })
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Cast_HTTPPort_textbox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Cast_HTTPPort_HelpButton Help
       #----------------------------------------------
       $hashsetup.Cast_HTTPPort_HelpButton.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Cast_HTTPPort.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Enable_MediaCasting_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Cast_HTTPPort_HelpButton.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Cast_HTTPPort_HelpButton Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Audio_OutputModule Combobox
       #----------------------------------------------
       [void]$hashsetup.Audio_OutputModule_ComboBox.items.add('Auto')
@@ -3310,23 +3335,23 @@ function Show-SettingsWindow{
       [void]$hashsetup.Audio_OutputModule_ComboBox.items.add('waveout')
       $hashsetup.Audio_OutputModule_ComboBox.add_SelectionChanged({
           try{
-            if($hashsetup.Audio_OutputModule_ComboBox.Selectedindex -ne -1){   
-              $hashsetup.Audio_OutputModule_Textbox.BorderBrush = 'LightGreen' 
+            if($hashsetup.Audio_OutputModule_ComboBox.Selectedindex -ne -1){
+              $hashsetup.Audio_OutputModule_Textbox.BorderBrush = 'LightGreen'
               Add-Member -InputObject $thisapp.configTemp -Name 'Audio_OutputModule' -Value $($hashsetup.Audio_OutputModule_ComboBox.selecteditem) -MemberType NoteProperty -Force
             }
-            else{       
-              $hashsetup.Audio_OutputModule_Textbox.BorderBrush = 'Red'   
-              Add-Member -InputObject $thisapp.configTemp -Name 'Audio_OutputModule' -Value 'Auto' -MemberType NoteProperty -Force     
+            else{
+              $hashsetup.Audio_OutputModule_Textbox.BorderBrush = 'Red'
+              Add-Member -InputObject $thisapp.configTemp -Name 'Audio_OutputModule' -Value 'Auto' -MemberType NoteProperty -Force
             }
           }catch{
             write-ezlogs "An exception occurred in Audio_OutputModule_ComboBox.add_SelectionChanged" -CatchError $_ -enablelogs
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Audio_OutputModule Combobox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Audio_OutputModule Help
       #----------------------------------------------
       $hashsetup.Audio_OutputModule_Button.add_Click({
@@ -3336,11 +3361,11 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred in Audio_Output_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Audio_OutputModule Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region vlc_GlobalGain_textbox
       #----------------------------------------------
       $hashsetup.vlc_GlobalGain_textbox.add_textChanged({
@@ -3359,12 +3384,12 @@ function Show-SettingsWindow{
           }catch{
             write-ezlogs "An exception occurred in vlc_GlobalGain_textbox.add_textChanged" -CatchError $_
           }
-      }) 
+      })
       #----------------------------------------------
       #endregion vlc_GlobalGain_textbox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region vlc_GlobalGain Help
       #----------------------------------------------
       $hashsetup.vlc_GlobalGain_HelpButton.add_Click({
@@ -3374,32 +3399,32 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred in vlc_GlobalGain_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion vlc_GlobalGain Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region vlc_Arguments_textbox
       #----------------------------------------------
       $hashsetup.vlc_Arguments_textbox.add_textChanged({
           try{
-            if(-not [string]::IsNullOrEmpty($hashsetup.vlc_Arguments_textbox.text)){   
-              $hashsetup.vlc_Arguments_Label.BorderBrush = 'LightGreen' 
+            if(-not [string]::IsNullOrEmpty($hashsetup.vlc_Arguments_textbox.text)){
+              $hashsetup.vlc_Arguments_Label.BorderBrush = 'LightGreen'
               Add-Member -InputObject $thisapp.configTemp -Name 'vlc_Arguments' -Value $($hashsetup.vlc_Arguments_textbox.text) -MemberType NoteProperty -Force
             }
-            else{       
-              $hashsetup.vlc_Arguments_Label.BorderBrush = 'Red'   
-              Add-Member -InputObject $thisapp.configTemp -Name 'vlc_Arguments' -Value $null -MemberType NoteProperty -Force     
+            else{
+              $hashsetup.vlc_Arguments_Label.BorderBrush = 'Red'
+              Add-Member -InputObject $thisapp.configTemp -Name 'vlc_Arguments' -Value $null -MemberType NoteProperty -Force
             }
           }catch{
             write-ezlogs "An exception occurred in vlc_Arguments_textbox.add_textChanged" -CatchError $_ -enablelogs
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion vlc_Arguments_textbox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region vlc_Arguments Help
       #----------------------------------------------
       $hashsetup.vlc_Arguments_HelpButton.add_Click({
@@ -3409,22 +3434,22 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred in vlc_Arguments_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion vlc_Arguments Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Optimize_Assembly_Button
       #----------------------------------------------
       $hashsetup.Update_Optimize_Timer = [System.Windows.Threading.DispatcherTimer]::new()
       $hashsetup.Update_Optimize_Timer_ScriptBlock = {
         try{
           if($this.tag -eq 'Requires Reboot'){
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Yes'
-            $Button_Settings.NegativeButtonText = 'No'  
-            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
-            $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Optimization Requires Admin Permissions","$($thisApp.Config.App_name) Media Player must be run as an administrator in order to optimize Powershell Assemblies.`n`nDo you want to restart the app as admin now? You can then try executing Optimize Assemblies again.",$okandCancel,$Button_Settings)    
+            $Button_Settings.NegativeButtonText = 'No'
+            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
+            $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Optimization Requires Admin Permissions","$($thisApp.Config.App_name) Media Player must be run as an administrator in order to optimize Powershell Assemblies.`n`nDo you want to restart the app as admin now? You can then try executing Optimize Assemblies again.",$okandCancel,$Button_Settings)
             if($result -eq 'Affirmative'){
               write-ezlogs "User wished to proceed, restarting app as admin" -showtime -warning -logtype Setup
               if($First_Run){
@@ -3434,12 +3459,12 @@ function Show-SettingsWindow{
               }
             }else{
               write-ezlogs "User did not wish to proceed" -showtime -warning -logtype Setup
-            }    
+            }
           }elseif(-not [string]::IsNullOrEmpty($this.tag)){
             update-EditorHelp -content $this.tag -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -clear -Open -Header 'Optimization Tools'
           }
           if($hashsetup.Optimize_Assembly_Button){
-            $hashsetup.Optimize_Assembly_Button.isEnabled = $true        
+            $hashsetup.Optimize_Assembly_Button.isEnabled = $true
             $hashsetup.Optimize_Assembly_Progress_Ring.isActive = $false
           }
           if($hashsetup.Optimize_Services_Button){
@@ -3447,26 +3472,26 @@ function Show-SettingsWindow{
           }
           if($hashsetup.Optimize_Assembly_Progress_Ring){
             $hashsetup.Optimize_Services_Button.isEnabled = $true
-          } 
+          }
           if($hashsetup.Optimization_Toggle){
             $hashsetup.Optimization_Toggle.isEnabled = $true
-          }      
+          }
         }catch{
           write-ezlogs "An exception occurred in Update_Optimize_Timer" -catcherror $_
         }finally{
           $this.stop()
           $this.tag = $null
-        }   
+        }
       }
       $hashsetup.Update_Optimize_Timer.add_Tick($hashsetup.Update_Optimize_Timer_ScriptBlock)
 
       $hashsetup.Optimize_Assembly_Button.add_Click({
-          try{               
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+          try{
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Yes'
-            $Button_Settings.NegativeButtonText = 'No'  
-            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
-            $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Optimize .NET Assemblies","Optimizing Assemblies attempts to improve general Powershell performance by caching .NET assemblies. This process can take a while even on a fast machine. You can continue to use the app normally while optimization continues, but it will effect performance until the operation is complete.`n`nIt is HIGHLY RECOMMENDED to first read and review the help topics for these Optimizations before continuing`n`nDo you wish to continue?",$okandCancel,$Button_Settings)    
+            $Button_Settings.NegativeButtonText = 'No'
+            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
+            $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Optimize .NET Assemblies","Optimizing Assemblies attempts to improve general Powershell performance by caching .NET assemblies. This process can take a while even on a fast machine. You can continue to use the app normally while optimization continues, but it will effect performance until the operation is complete.`n`nIt is HIGHLY RECOMMENDED to first read and review the help topics for these Optimizations before continuing`n`nDo you wish to continue?",$okandCancel,$Button_Settings)
             if($result -eq 'Affirmative'){
               $hashsetup.Optimize_Assembly_Button.isEnabled = $false
               $hashsetup.Optimize_Services_Button.isEnabled = $false
@@ -3481,7 +3506,7 @@ function Show-SettingsWindow{
               $hashsetup.Optimize_Services_Button.isEnabled = $true
               $hashsetup.Optimize_Assembly_Progress_Ring.isActive = $false
               return
-            }       
+            }
           }catch{
             write-ezlogs "An exception occurred in Optimize_Assembly_Button.add_Click" -CatchError $_ -enablelogs
             $failure = $true
@@ -3494,11 +3519,11 @@ function Show-SettingsWindow{
             }
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Optimize_Assembly_Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Optimizations Help
       #----------------------------------------------
       $hashsetup.Optimization_Button.add_Click({
@@ -3508,7 +3533,7 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred in Optimization_Button_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Optimizations Help
       #----------------------------------------------
       if($thisApp.Enable_Tor_Features){
@@ -3518,18 +3543,18 @@ function Show-SettingsWindow{
         if($hashsetup.VPN_StackPanel.Visibility -eq 'Collapsed'){
           $hashsetup.VPN_StackPanel.Visibility = 'Visible'
         }
-        #---------------------------------------------- 
+        #----------------------------------------------
         #region Install_VPN_Button
         #----------------------------------------------
         $hashsetup.Update_VPN_Timer = [System.Windows.Threading.DispatcherTimer]::new()
         $hashsetup.Update_VPN_Timer_ScriptBlock = {
           try{
             if($this.tag -eq 'Requires Reboot'){
-              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
               $Button_Settings.AffirmativeButtonText = 'Yes'
-              $Button_Settings.NegativeButtonText = 'No'  
-              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
-              $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"VPN Install Requires Admin Permissions","$($thisApp.Config.App_name) Media Player must be run as an administrator in order to install ProtonVPN.`n`nDo you want to restart the app as admin now? You can then try executing Install ProtonVPN again.",$okandCancel,$Button_Settings)    
+              $Button_Settings.NegativeButtonText = 'No'
+              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
+              $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"VPN Install Requires Admin Permissions","$($thisApp.Config.App_name) Media Player must be run as an administrator in order to install ProtonVPN.`n`nDo you want to restart the app as admin now? You can then try executing Install ProtonVPN again.",$okandCancel,$Button_Settings)
               if($result -eq 'Affirmative'){
                 write-ezlogs "User wished to proceed, restarting app as admin" -showtime -warning -logtype Setup
                 if($First_Run){
@@ -3539,26 +3564,26 @@ function Show-SettingsWindow{
                 }
               }else{
                 write-ezlogs "User did not wish to proceed" -showtime -warning -logtype Setup
-              }    
+              }
             }elseif(-not [string]::IsNullOrEmpty($this.tag)){
               update-EditorHelp -content $this.tag -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -clear -Open -Header 'VPN Tools'
             }
             if($hashsetup.Install_VPN_Button){
-              $hashsetup.Install_VPN_Button.isEnabled = $true        
+              $hashsetup.Install_VPN_Button.isEnabled = $true
               $hashsetup.Install_VPN_Progress_Ring.isActive = $false
             }
             if($hashsetup.VPN_Toggle){
               $hashsetup.VPN_Toggle.isEnabled = $true
-            }      
+            }
           }catch{
             write-ezlogs "An exception occurred in Update_VPN_Timer" -catcherror $_
           }finally{
             $this.stop()
             $this.tag = $null
-          }   
+          }
         }
         $hashsetup.Update_VPN_Timer.add_Tick($hashsetup.Update_VPN_Timer_ScriptBlock)
-        #---------------------------------------------- 
+        #----------------------------------------------
         #region VPN_Toggle
         #----------------------------------------------
         if($hashsetup.VPN_Toggle){
@@ -3566,14 +3591,14 @@ function Show-SettingsWindow{
             Param($sender)
             try{
               if($sender.isOn){
-                write-ezlogs ">>>> Enabling Use_Preferred_VPN" -logtype Setup -LogLevel 2   
+                write-ezlogs ">>>> Enabling Use_Preferred_VPN" -logtype Setup -LogLevel 2
                 $thisapp.configTemp.Use_Preferred_VPN = $true
                 #Add-Member -InputObject $thisapp.configTemp -Name 'Preferred_VPN' -Value 'ProtonVPN' -MemberType NoteProperty -Force
               }
               else{
-                write-ezlogs ">>>> Disabling Use_Preferred_VPN" -logtype Setup -LogLevel 2 
+                write-ezlogs ">>>> Disabling Use_Preferred_VPN" -logtype Setup -LogLevel 2
                 $thisapp.configTemp.Use_Preferred_VPN = $false
-                #Add-Member -InputObject $thisapp.configTemp -Name 'Preferred_VPN' -Value '' -MemberType NoteProperty -Force  
+                #Add-Member -InputObject $thisapp.configTemp -Name 'Preferred_VPN' -Value '' -MemberType NoteProperty -Force
               }
             }catch{
               write-ezlogs "An exception occurred in VPN_Toggle.add_Toggled" -CatchError $_
@@ -3581,20 +3606,20 @@ function Show-SettingsWindow{
           }
           $hashsetup.VPN_Toggle.add_Toggled($hashsetup.VPN_Toggle_Command)
         }
-        #---------------------------------------------- 
+        #----------------------------------------------
         #endregion VPN_Toggle
         #----------------------------------------------
         $hashsetup.Install_VPN_Button.add_Click({
-            try{               
-              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            try{
+              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
               $Button_Settings.AffirmativeButtonText = 'Yes'
-              $Button_Settings.NegativeButtonText = 'No'  
-              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
-              $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Install ProtonVPN","This will download the latest public windows build of ProtonVPN, install it and then launch it.`n`nDo you wish to continue?",$okandCancel,$Button_Settings)    
+              $Button_Settings.NegativeButtonText = 'No'
+              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
+              $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Install ProtonVPN","This will download the latest public windows build of ProtonVPN, install it and then launch it.`n`nDo you wish to continue?",$okandCancel,$Button_Settings)
               if($result -eq 'Affirmative'){
                 $hashsetup.Install_VPN_Button.isEnabled = $false
                 $hashsetup.VPN_Toggle.isEnabled = $false
-                $hashsetup.Install_VPN_Progress_Ring.isActive = $true           
+                $hashsetup.Install_VPN_Progress_Ring.isActive = $true
                 write-ezlogs "User wished to proceed, executing Install_VPN" -showtime -warning -logtype Setup
                 $ProtonVPN = Install-ProtonVPN -thisApp $thisApp
                 if($ProtonVPN){
@@ -3607,7 +3632,7 @@ function Show-SettingsWindow{
                 $hashsetup.VPN_Toggle.isEnabled = $true
                 $hashsetup.Install_VPN_Progress_Ring.isActive = $false
                 return
-              }       
+              }
             }catch{
               write-ezlogs "An exception occurred in Install_VPN_Button.add_Click" -CatchError $_ -enablelogs
               $failure = $true
@@ -3619,11 +3644,11 @@ function Show-SettingsWindow{
               }
             }
         })
-        #---------------------------------------------- 
+        #----------------------------------------------
         #endregion Install_VPN_Button
         #----------------------------------------------
 
-        #---------------------------------------------- 
+        #----------------------------------------------
         #region VPN Help
         #----------------------------------------------
         $hashsetup.VPN_Button.add_Click({
@@ -3633,7 +3658,7 @@ function Show-SettingsWindow{
               write-ezlogs "An exception occurred in VPN_Button_Button.add_Click" -CatchError $_ -enablelogs
             }
         })
-        #---------------------------------------------- 
+        #----------------------------------------------
         #endregion VPN Help
         #----------------------------------------------
       }else{
@@ -3647,7 +3672,7 @@ function Show-SettingsWindow{
           $hashsetup.VPN_StackPanel.Visibility = 'Collapsed'
         }
       }
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Update_LocalMedia_Timer
       #----------------------------------------------
       $hashSetup.LocalMedia_items = [System.Collections.Generic.List[Object]]::new()
@@ -3660,10 +3685,10 @@ function Show-SettingsWindow{
             [void]$hashsetup.MediaLocations_Grid.Items.add($item)
           }
           $hashsetup.total_localMedia = $Null
-          if($synchash.All_local_Media){         
+          if($synchash.All_local_Media){
             $hashsetup.Local_Media_Total_Textbox.text = "Total Imported Media: $($synchash.All_local_Media.count)"
           }else{
-            $hashsetup.Local_Media_Total_Textbox.text = "Total Imported Media: TBD" 
+            $hashsetup.Local_Media_Total_Textbox.text = "Total Imported Media: TBD"
           }
           #$hashsetup.Local_Media_Total_Textbox.text = "Total Media: $($total_media)"
           $hashsetup.Media_Path_Browse.isEnabled = $true
@@ -3674,15 +3699,15 @@ function Show-SettingsWindow{
           }
           $hashsetup.MediaLocations_Grid.isEnabled = $true
           $hashsetup.Media_Path_Browse.IsEnabled = $true
-          $hashsetup.Media_Progress_Ring.isActive = $false     
+          $hashsetup.Media_Progress_Ring.isActive = $false
           if($hashsetup.Refresh_LocalMedia_Library -and $synchash.MediaTable -and $thisApp.Config.Import_Local_Media){
             Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'LocalMedia_Progress_Ring' -Property 'isActive' -value $true
             Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaTable' -Property 'isEnabled' -value $false
             if($synchash.Refresh_LocalMedia_timer){
-              $synchash.Refresh_LocalMedia_timer.tag = 'AddNewOnly'   
+              $synchash.Refresh_LocalMedia_timer.tag = 'AddNewOnly'
               $synchash.Refresh_LocalMedia_timer.start()
             }
-          }    
+          }
           $this.stop()
         }catch{
           write-ezlogs "An exception occurred in Update_LocalMedia_Timer" -showtime -catcherror $_
@@ -3693,11 +3718,11 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Update_LocalMedia_Timer.add_tick($hashsetup.Update_LocalMedia_Timer_ScriptBlock)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Update_LocalMedia_Timer
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Local_Media_Toggle
       #----------------------------------------------
       $hashsetup.Import_Local_Media_Toggle_Command = {
@@ -3711,27 +3736,27 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Import_Local_Media_Toggle.add_Toggled($hashsetup.Import_Local_Media_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Import_Local_Media_Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Local_Media_Button
       #----------------------------------------------
       $hashsetup.Import_Local_Media_Button.add_click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\LocalMedia_Importing.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Import_Local_Media_Toggle.content  -clear 
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\LocalMedia_Importing.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Import_Local_Media_Toggle.content  -clear
           }catch{
             write-ezlogs "An exception occurred in Import_Local_Media_Button.add_click" -catcherror $_
-          }      
-      }) 
-      #---------------------------------------------- 
+          }
+      })
+      #----------------------------------------------
       #endregion Import_Local_Media_Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region LocalMedia_SkipDuplicates
-      #---------------------------------------------- 
+      #----------------------------------------------
       $hashsetup.LocalMedia_SkipDuplicates_Toggle_Command = {
         Param($sender)
         try{
@@ -3741,11 +3766,11 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.LocalMedia_SkipDuplicates_Toggle.add_Toggled($hashsetup.LocalMedia_SkipDuplicates_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion LocalMedia_SkipDuplicates
       #----------------------------------------------
-       
-      #---------------------------------------------- 
+
+      #----------------------------------------------
       #region LocalMedia_SkipDuplicates Help
       #----------------------------------------------
       $hashsetup.LocalMedia_SkipDuplicates_Button.add_Click({
@@ -3755,11 +3780,11 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred in LocalMedia_SkipDuplicates_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion LocalMedia_SkipDuplicates Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region LocalMedia_ImportMode
       #----------------------------------------------
       if($hashsetup.LocalMedia_ImportMode_ComboBox){
@@ -3769,27 +3794,27 @@ function Show-SettingsWindow{
           [void]$hashsetup.LocalMedia_ImportMode_ComboBox.items.add('Slow')
           $hashsetup.LocalMedia_ImportMode_ComboBox.add_SelectionChanged({
               try{
-                if($hashsetup.LocalMedia_ImportMode_ComboBox.SelectedIndex -ne -1){    
+                if($hashsetup.LocalMedia_ImportMode_ComboBox.SelectedIndex -ne -1){
                   $hashsetup.LocalMedia_ImportMode_Textbox.BorderBrush = 'Green'
                   Add-Member -InputObject $thisapp.configTemp -Name 'LocalMedia_ImportMode' -Value $hashsetup.LocalMedia_ImportMode_ComboBox.SelectedItem -MemberType NoteProperty -Force
                 }
-                else{          
+                else{
                   $hashsetup.LocalMedia_ImportMode_Textbox.BorderBrush = 'Green'
-                  Add-Member -InputObject $thisapp.configTemp -Name 'LocalMedia_ImportMode' -Value $LocalMedia_ImportMode_Default -MemberType NoteProperty -Force      
+                  Add-Member -InputObject $thisapp.configTemp -Name 'LocalMedia_ImportMode' -Value $LocalMedia_ImportMode_Default -MemberType NoteProperty -Force
                 }
               }catch{
                 write-ezlogs "An exception occurred in LocalMedia_ImportMode event" -CatchError $_ -showtime
               }
-          }) 
+          })
         }catch{
           write-ezlogs 'An exception occurred processing LocalMedia_ImportMode_ComboBox' -showtime -catcherror $_
         }
       }
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion LocalMedia_ImportMode
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region LocalMedia_ImportMode Help
       #----------------------------------------------
       $hashsetup.LocalMedia_ImportMode_Button.add_Click({
@@ -3799,13 +3824,13 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred inLocalMedia_ImportMode_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion LocalMedia_ImportMode Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Enable_LocalMedia_Monitor
-      #---------------------------------------------- 
+      #----------------------------------------------
       $hashsetup.Enable_LocalMedia_Monitor_Toggle_Command = {
         Param($sender)
         try{
@@ -3823,27 +3848,27 @@ function Show-SettingsWindow{
           [void]$hashsetup.LocalMedia_MonitorMode_ComboBox.items.add('Removed Media')
           $hashsetup.LocalMedia_MonitorMode_ComboBox.add_SelectionChanged({
               try{
-                if($hashsetup.LocalMedia_MonitorMode_ComboBox.SelectedIndex -ne -1){    
+                if($hashsetup.LocalMedia_MonitorMode_ComboBox.SelectedIndex -ne -1){
                   $hashsetup.LocalMedia_MonitorMode_Textbox.BorderBrush = 'Green'
                   Add-Member -InputObject $thisapp.configTemp -Name 'LocalMedia_MonitorMode' -Value $hashsetup.LocalMedia_MonitorMode_ComboBox.SelectedItem -MemberType NoteProperty -Force
                 }
-                else{          
+                else{
                   $hashsetup.LocalMedia_MonitorMode_Textbox.BorderBrush = 'Green'
-                  Add-Member -InputObject $thisapp.configTemp -Name 'LocalMedia_MonitorMode' -Value $LocalMedia_MonitorMode_Default -MemberType NoteProperty -Force      
+                  Add-Member -InputObject $thisapp.configTemp -Name 'LocalMedia_MonitorMode' -Value $LocalMedia_MonitorMode_Default -MemberType NoteProperty -Force
                 }
               }catch{
                 write-ezlogs "An exception occurred in LocalMedia_MonitorMode event" -CatchError $_ -showtime
               }
-          }) 
+          })
         }catch{
           write-ezlogs 'An exception occurred processing LocalMedia_MonitorMode options' -showtime -catcherror $_
         }
-      }     
-      #---------------------------------------------- 
+      }
+      #----------------------------------------------
       #endregion Enable_LocalMedia_Monitor
       #----------------------------------------------
-       
-      #---------------------------------------------- 
+
+      #----------------------------------------------
       #region Enable_LocalMedia_Monitor Help
       #----------------------------------------------
       $hashsetup.Enable_LocalMedia_Monitor_Button.add_Click({
@@ -3853,53 +3878,53 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred in Enable_LocalMedia_Monitor_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Enable_LocalMedia_Monitor Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region LocalMedia_Display_Syntax_textbox
       #----------------------------------------------
       $hashsetup.LocalMedia_Display_Syntax_textbox.add_textChanged({
           try{
-            if(-not [string]::IsNullOrEmpty($hashsetup.LocalMedia_Display_Syntax_textbox.text)){   
-              $hashsetup.LocalMedia_Display_Syntax_Label.BorderBrush = 'LightGreen' 
-            }else{       
-              $hashsetup.LocalMedia_Display_Syntax_Label.BorderBrush = 'Red'   
+            if(-not [string]::IsNullOrEmpty($hashsetup.LocalMedia_Display_Syntax_textbox.text)){
+              $hashsetup.LocalMedia_Display_Syntax_Label.BorderBrush = 'LightGreen'
+            }else{
+              $hashsetup.LocalMedia_Display_Syntax_Label.BorderBrush = 'Red'
             }
           }catch{
             write-ezlogs "An exception occurred in LocalMedia_Display_Syntax_textbox.add_textChanged" -CatchError $_ -enablelogs
           }
-      }) 
+      })
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion LocalMedia_Display_Syntax_textbox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region LocalMedia_Display_Syntax_HelpButton Help
       #----------------------------------------------
       $hashsetup.LocalMedia_Display_Syntax_HelpButton.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\LocalMedia_Display_Syntax.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.LocalMedia_Display_Syntax_Label.text -clear
           }catch{
             write-ezlogs "An exception occurred in LocalMedia_Display_Syntax_HelpButton.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion LocalMedia_Display_Syntax_HelpButton Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Media_Path_Browse
-      #---------------------------------------------- 
+      #----------------------------------------------
       $hashsetup.Media_Path_Browse.add_click({
           try{
             if(($hashsetup.MediaLocations_Grid.items.path | select -last 1)){
               $initialdirectory = ($hashsetup.MediaLocations_Grid.items.path | select -last 1)
             }else{
               $initialdirectory = "file:"
-            }     
+            }
             $hashsetup.Media_Path_Browse.IsEnabled = $false
             $hashsetup.Media_Progress_Ring.isActive = $true
             $hashsetup.MediaLocations_Grid.IsEnabled = $false
@@ -3909,64 +3934,64 @@ function Show-SettingsWindow{
             }elseif($hashsetup.Import_Local_Media_Toggle.isEnabled){
               $hashsetup.Media_Path_Browse.IsEnabled = $true
               $hashsetup.MediaLocations_Grid.IsEnabled = $true
-            } 
-            $hashsetup.Media_Progress_Ring.isActive = $false      
+            }
+            $hashsetup.Media_Progress_Ring.isActive = $false
           }catch{
             write-ezlogs "An exception occurred in Media_Path_Browse.add_click" -CatchError $_ -enablelogs
           }
-      })     
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Media_Path_Browse
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Spicetify_Toggle
       #----------------------------------------------
       $hashsetup.Spicetify_Toggle_Command = {
         Param($sender)
         try{
           $hashsetup.Spicetify_textblock.text = ''
-          $hashsetup.Spicetify_transitioningControl.content = ''     
+          $hashsetup.Spicetify_transitioningControl.content = ''
           if($hashsetup.Spicetify_Toggle.isOn){
             $hashsetup.Spicetify_textblock.text = "IMPORTANT! You must click 'Apply to Spotify' to complete Spicetify setup and customizations"
             $hashsetup.Spicetify_Remove_Button.IsEnabled = $false
             $hashsetup.Spicetify_Status = $false
-            $hashsetup.Spotify_WebPlayer_Toggle.isOn = $false             
+            $hashsetup.Spotify_WebPlayer_Toggle.isOn = $false
           }else{
             $hashsetup.Spicetify_textblock.text = "IMPORTANT! You must click 'Remove from Spotify' to complete the removal of Spicetify customizations if previously enabled"
             $hashsetup.Spicetify_Remove_Button.IsEnabled = $true
             $hashsetup.Spotify_WebPlayer_Toggle.isOn = $true
-          }        
+          }
           $hashsetup.Spicetify_textblock.foreground = 'Orange'
           $hashsetup.Spicetify_textblock.FontSize = 14
           $hashsetup.Spicetify_transitioningControl.content = $hashsetup.Spicetify_textblock
         }catch{
           write-ezlogs "An exception occurred in Spicetify_Toggle.Add_Toggled" -CatchError $_ -enablelogs
-        } 
+        }
       }
       $hashsetup.Spicetify_Toggle.add_Toggled($hashsetup.Spicetify_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Spicetify_Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Spicetify_Button
       #----------------------------------------------
-      $hashsetup.Spicetify_Button.Add_Click({ 
-          try{ 
+      $hashsetup.Spicetify_Button.Add_Click({
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Spotify_Use_Spicetify.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Spicetify_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Spicetify_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Spicetify_Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Spicetify_Apply_Button
       #----------------------------------------------
-      $hashsetup.Spicetify_Apply_Button.Add_Click({ 
+      $hashsetup.Spicetify_Apply_Button.Add_Click({
           try{
             $hashsetup.Spicetify_Status = $false
             if($synchash){
@@ -3980,26 +4005,26 @@ function Show-SettingsWindow{
               if(!$appinstalled){
                 $appinstalled = "$($env:USERPROFILE)\spicetify-cli\spicetify.exe"
               }
-            }elseif([System.IO.File]::Exists("$($env:LOCALAPPDATA)\spicetify\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){    
+            }elseif([System.IO.File]::Exists("$($env:LOCALAPPDATA)\spicetify\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){
               $Spicetify_Install_Dir = "$($env:LOCALAPPDATA)\spicetify"
-              $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"  
+              $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"
               $appinstalled = (Get-iniFile "$Spicetify_Config_Dir\config-xpui.ini").Backup.with
               if(!$appinstalled){
                 $appinstalled = "$($env:LOCALAPPDATA)\spicetify\spicetify.exe"
-              }    
-            }elseif([System.IO.File]::Exists("$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){    
-              $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"  
+              }
+            }elseif([System.IO.File]::Exists("$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){
+              $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"
               $appinstalled = (Get-iniFile "$Spicetify_Config_Dir\config-xpui.ini").Backup.with
               if(!$appinstalled){
                 $appinstalled = "$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\spicetify.exe"
-              }    
+              }
             }else{
               write-ezlogs "Spicetify does not appear to be installed!" -showtime -warning -logtype Setup
             }
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Yes'
-            $Button_Settings.NegativeButtonText = 'No'  
-            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+            $Button_Settings.NegativeButtonText = 'No'
+            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
             $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Apply Spicetify?","Are you sure you wish to apply Spicetify customizations to Spotify?`nA backup of Spotify's state is made so you can always restore/remove customizations later",$okandCancel,$Button_Settings)
             if($result -eq 'Affirmative'){
               if($synchash.Window.isVisible){
@@ -4011,7 +4036,7 @@ function Show-SettingsWindow{
                 Update-SplashScreen -hash $hash -SplashMessage 'Applying Spicetify customizations...' -Splash_More_Info 'Please Wait' -Show
               }else{
                 Start-SplashScreen -SplashTitle "$($thisapp.Config.App_Name) Media Player" -SplashMessage 'Applying Spicetify customizations...' -Splash_More_Info 'Please Wait' -current_folder $thisapp.Config.Current_Folder -log_file $thisApp.Config.Log_file
-              }                 
+              }
               $Spicetify = Enable-Spicetify -thisApp $thisApp -synchash $synchash
               write-ezlogs ">>>> Enable Spicetify Results: $($Spicetify)" -logtype Setup
               if($Spicetify.Spicetify_apply_status){
@@ -4022,22 +4047,22 @@ function Show-SettingsWindow{
               }elseif($Spicetify.Spotify_install_status -eq 'NotInstalled'){
                 $hashsetup.Spicetify_Toggle.ison = $false
                 Add-Member -InputObject $thisapp.configTemp -Name 'Use_Spicetify' -Value $false -MemberType NoteProperty -Force
-                update-EditorHelp -content "Unable to find Spotify installation. Spicetify requires installing Spotify, cannot continue!`n`nNOTE: You can have this app auto install Spotify using the 'Install Spotify' options above" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -color orange -Header 'Spicetify ERROR' -Open -clear       
-                $hashsetup.Spicetify_Status = $true      
+                update-EditorHelp -content "Unable to find Spotify installation. Spicetify requires installing Spotify, cannot continue!`n`nNOTE: You can have this app auto install Spotify using the 'Install Spotify' options above" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -color orange -Header 'Spicetify ERROR' -Open -clear
+                $hashsetup.Spicetify_Status = $true
               }elseif($Spicetify.Spotify_install_status -eq 'StoreVersion'){
                 $hashsetup.Spicetify_Toggle.ison = $false
                 Add-Member -InputObject $thisapp.configTemp -Name 'Use_Spicetify' -Value $false -MemberType NoteProperty -Force
-                update-EditorHelp -content "You are using the Windows Store version of Spotify, which is not supported with Spicetify.`nYou must first remove the Windows Store version and install the normal version!" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -color orange -Header 'Spicetify ERROR' -Open -clear    
-                $hashsetup.Spicetify_Status = $true        
+                update-EditorHelp -content "You are using the Windows Store version of Spotify, which is not supported with Spicetify.`nYou must first remove the Windows Store version and install the normal version!" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -color orange -Header 'Spicetify ERROR' -Open -clear
+                $hashsetup.Spicetify_Status = $true
               }elseif(!$Spicetify){
                 $hashsetup.Spicetify_Toggle.ison = $false
                 Add-Member -InputObject $thisapp.configTemp -Name 'Use_Spicetify' -Value $false -MemberType NoteProperty -Force
-                update-EditorHelp -content "Unable to verify Spicetify is installed successfully, cannot continue! Check logs for more detail" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -color orange -Header 'Spicetify ERROR' -Open -clear    
-                $hashsetup.Spicetify_Status = $true            
+                update-EditorHelp -content "Unable to verify Spicetify is installed successfully, cannot continue! Check logs for more detail" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -color orange -Header 'Spicetify ERROR' -Open -clear
+                $hashsetup.Spicetify_Status = $true
               }else{
-                Add-Member -InputObject $thisapp.configTemp -Name 'Use_Spicetify' -Value $true -MemberType NoteProperty -Force  
+                Add-Member -InputObject $thisapp.configTemp -Name 'Use_Spicetify' -Value $true -MemberType NoteProperty -Force
                 write-ezlogs 'Successfully applied Spicetify customizations to Spotify! The Spotify app may have opened' -Success -logtype Setup
-                $hashsetup.Spicetify_Toggle.ison = $true       
+                $hashsetup.Spicetify_Toggle.ison = $true
                 if((NETSTAT.EXE -an) | Where-Object {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'}){
                   write-ezlogs ">>>> Closing existing PODE Server Runspace for Spicetify" -showtime -logtype Setup -loglevel 2
                   Invoke-RestMethod -Uri 'http://127.0.0.1:8974/CLOSEPODE' -UseBasicParsing -ErrorAction SilentlyContinue
@@ -4045,24 +4070,24 @@ function Show-SettingsWindow{
                 $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
                 write-ezlogs ">>>> Starting new PODE Server Runspace for Spicetify" -showtime -logtype Setup -loglevel 2
                 Start-Runspace -scriptblock $synchash.pode_server_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'PODE_SERVER_RUNSPACE' -thisApp $thisApp -synchash $synchash
-                $Variable_list = $Null  
+                $Variable_list = $Null
                 $hashsetup.Spicetify_Status = $true
                 $hashsetup.Spicetify_textblock.text = '[SUCCESS] Successfully applied Spicetify customizations to Spotify! The Spotify app may have opened. Make sure you are logged in with your Spotify account'
                 $hashsetup.Spicetify_textblock.foreground = 'LightGreen'
                 $hashsetup.Spicetify_textblock.FontSize = 14
-                $hashsetup.Spicetify_transitioningControl.content = $hashsetup.Spicetify_textblock 
+                $hashsetup.Spicetify_transitioningControl.content = $hashsetup.Spicetify_textblock
               }
             }else{
               write-ezlogs "User choose not to Apply Spicetify" -showtime -warning -logtype Setup
             }
           }catch{
             write-ezlogs "An exception occurred in Spicetify_Apply_Button click event" -showtime -catcherror $_
-          }finally{    
+          }finally{
             if($first_Run){
               Update-SplashScreen -hash $hash -hide
             }else{
               Update-SplashScreen -hash $hash -Close
-            }          
+            }
             $hashsetup.Window.show()
             if($hashsetup.MainWindow_Status){
               write-ezlogs "Unhiding Main App Window" -logtype Setup -loglevel 2
@@ -4071,14 +4096,14 @@ function Show-SettingsWindow{
             }
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Spicetify_Apply_Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Spicetify_Remove_Button
       #----------------------------------------------
-      $hashsetup.Spicetify_Remove_Button.Add_Click({ 
+      $hashsetup.Spicetify_Remove_Button.Add_Click({
           try{
             if($synchash){
               $synchash.Spicetify_apply_status = $Null
@@ -4091,20 +4116,20 @@ function Show-SettingsWindow{
                 $appinstalled = "$($env:USERPROFILE)\spicetify-cli\spicetify.exe"
               }
               write-ezlogs ">>>> Spicetify is installed:`n$appinstalled" -showtime -logtype Setup -loglevel 2
-            }elseif([System.IO.File]::Exists("$($env:LOCALAPPDATA)\spicetify\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){    
+            }elseif([System.IO.File]::Exists("$($env:LOCALAPPDATA)\spicetify\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){
               $Spicetify_Install_Dir = "$($env:LOCALAPPDATA)\spicetify"
-              $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"  
+              $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"
               $appinstalled = (Get-iniFile "$Spicetify_Config_Dir\config-xpui.ini").Backup.with
               if(!$appinstalled){
                 $appinstalled = "$($env:LOCALAPPDATA)\spicetify\spicetify.exe"
-              } 
-              write-ezlogs ">>>> Spicetify is installed:`n$appinstalled" -showtime -logtype Setup -loglevel 2   
-            }elseif([System.IO.File]::Exists("$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){    
-              $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"  
+              }
+              write-ezlogs ">>>> Spicetify is installed:`n$appinstalled" -showtime -logtype Setup -loglevel 2
+            }elseif([System.IO.File]::Exists("$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\spicetify.exe") -and [System.IO.File]::Exists("$($env:APPDATA)\spicetify\config-xpui.ini")){
+              $Spicetify_Config_Dir = "$($env:APPDATA)\spicetify"
               $appinstalled = (Get-iniFile "$Spicetify_Config_Dir\config-xpui.ini").Backup.with
               if(!$appinstalled){
                 $appinstalled = "$($env:PUBLIC)\chocolatey\lib\spicetify-cli\tools\bin\spicetify.exe"
-              }    
+              }
               write-ezlogs ">>>> Spicetify is installed:`n$appinstalled" -showtime -logtype Setup -loglevel 2
             }else{
               write-ezlogs "Spicetify does not appear to be installed!" -showtime -warning -logtype Setup
@@ -4116,10 +4141,10 @@ function Show-SettingsWindow{
               update-EditorHelp -content "Spicetify does not appear to be installed! Unable to continue" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -color orange
               return
             }
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Yes'
-            $Button_Settings.NegativeButtonText = 'No'  
-            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+            $Button_Settings.NegativeButtonText = 'No'
+            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
             $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Remove Spicetify?","Are you sure you wish to remove Spicetify customizations from Spotify?`nThis will restore the Spotify app to the state it was in before Spicetify was added",$okandCancel,$Button_Settings)
             if($result -eq 'Affirmative'){
               if($synchash.Window.isVisible){
@@ -4131,14 +4156,14 @@ function Show-SettingsWindow{
               Add-Member -InputObject $thisapp.configTemp -Name 'Use_Spicetify' -Value $false -MemberType NoteProperty -Force
               Start-SplashScreen -SplashTitle "$($thisapp.Config.App_Name) Media Player" -SplashMessage 'Removing Spicetify customizations...' -Splash_More_Info 'Please Wait' -current_folder $thisapp.Config.Current_Folder -log_file $thisApp.Config.Log_file
               Disable-Spicetify -thisApp $thisApp -synchash $synchash
-              if((NETSTAT.EXE -an) | Where-Object {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'}){Invoke-RestMethod -Uri 'http://127.0.0.1:8974/CLOSEPODE' -UseBasicParsing -ErrorAction SilentlyContinue}       
-              $hashsetup.Spicetify_textblock.text = '[SUCCESS] Successfully removed Spicetify customizations to Spotify! If the Spotify launched, you can safely close it' 
+              if((NETSTAT.EXE -an) | Where-Object {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'}){Invoke-RestMethod -Uri 'http://127.0.0.1:8974/CLOSEPODE' -UseBasicParsing -ErrorAction SilentlyContinue}
+              $hashsetup.Spicetify_textblock.text = '[SUCCESS] Successfully removed Spicetify customizations to Spotify! If the Spotify launched, you can safely close it'
               $hashsetup.Spicetify_textblock.foreground = 'LightGreen'
               $hashsetup.Spicetify_textblock.FontSize = 14
               $hashsetup.Spicetify_transitioningControl.content = $hashsetup.Spicetify_textblock
             }else{
               write-ezlogs "User choose not to Remove Spicetify" -showtime -warning -logtype Setup
-            } 
+            }
             #}
           }catch{
             write-ezlogs "An exception occurred in Spicetify_Remove_Button click event" -showtime -catcherror $_
@@ -4148,67 +4173,67 @@ function Show-SettingsWindow{
             }
             $hashsetup.Editor_Help_Flyout.Header = 'Spicetify'
             update-EditorHelp -content "An exception occurred when attempting to remove Spicetify customizations from Spotify!`n`n$($_ | out-string)" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -color orange
-          }finally{            
+          }finally{
             if($hash.Window.isVisible){
               Update-SplashScreen -hash $hash -Close
             }
             if(!$hashsetup.Window.isVisible){
               $hashsetup.Window.show()
-            }      
+            }
             if($hashsetup.MainWindow_Status){
               $synchash.window.Dispatcher.Invoke("Normal",[action]{ $synchash.window.show() })
               $hashsetup.MainWindow_Status = $false
             }
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Spicetify_Remove_Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Spotify WebPlayer Toggle
       #----------------------------------------------
       $hashsetup.Spotify_WebPlayer_Toggle_Command = {
         Param($sender)
         try{
-          if($sender.isOn -eq $true){    
+          if($sender.isOn -eq $true){
             write-ezlogs ">>>> Enabling Spotify Webplayer" -logtype Setup -LogLevel 3
             $thisapp.configTemp.Spotify_WebPlayer = $true
             if($hashsetup.Spicetify_Toggle){
               $hashsetup.Spicetify_Toggle.isOn = $false
             }
           }
-          else{            
-            write-ezlogs ">>>> Disabling Spotify Webplayer" -logtype Setup -LogLevel 3   
+          else{
+            write-ezlogs ">>>> Disabling Spotify Webplayer" -logtype Setup -LogLevel 3
             $thisapp.configTemp.Spotify_WebPlayer = $false
             if($hashsetup.Spicetify_Toggle){
               $hashsetup.Spicetify_Toggle.isOn = $true
-            }             
-          }     
+            }
+          }
         }catch{
           write-ezlogs "An exception occurred in Spotify_WebPlayer_Toggle event" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.Spotify_WebPlayer_Toggle.add_Toggled($hashsetup.Spotify_WebPlayer_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Spotify WebPlayer Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Spotify WebPlayer Help
       #----------------------------------------------
       $hashsetup.Spotify_WebPlayer_Help_Button.add_Click({
-          try{ 
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Spotify_WebPlayer.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Spotify_WebPlayer_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred in Spotify_WebPlayer_Help_Button.add_Click" -CatchError $_ -enablelogs
-          }  
+          }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Spotify WebPlayer Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Spotify AuthHandler
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.Spotify_AuthHandler = {
@@ -4222,7 +4247,7 @@ function Show-SettingsWindow{
               write-ezlogs "Stopping Update_SpotifyStatus_Timer" -logtype Setup -LogLevel 2
               $hashsetup.Update_SpotifyStatus_Timer.stop()
             }
-            $Spotify_AuthHandler_Scriptblock = {              
+            $Spotify_AuthHandler_Scriptblock = {
               try{
                 try{
                   $secretstore = Get-SecretVault -Name $thisApp.config.App_Name -ErrorAction SilentlyContinue
@@ -4231,10 +4256,10 @@ function Show-SettingsWindow{
                 }
                 if($secretstore){
                   write-ezlogs ">>>> Removing stored Spotify authentication secrets from vault: $($secretstore.name)" -showtime -warning -logtype Setup
-                  foreach($secret in $hashsetup.valid_secrets | where {$_ -match 'Spoty'}){  
-                    $secret_info = Get-SecretInfo -Filter $secret -VaultName $thisApp.config.App_Name -ErrorAction SilentlyContinue       
+                  foreach($secret in $hashsetup.valid_secrets | where {$_ -match 'Spoty'}){
+                    $secret_info = Get-SecretInfo -Filter $secret -VaultName $thisApp.config.App_Name -ErrorAction SilentlyContinue
                     if($secret_info.Name -eq $secret){
-                      try{                  
+                      try{
                         write-ezlogs "| Removing Secret $($secret_info.Name)" -showtime -warning -logtype Setup
                         Remove-secret -Name $($secret_info.Name) -Vault $thisApp.config.App_Name
                       }catch{
@@ -4243,7 +4268,7 @@ function Show-SettingsWindow{
                     }
                   }
                 }
-                $hashsetup.Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name   
+                $hashsetup.Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name
                 if(!$hashsetup.Spotify_Auth_app.token.access_token){
                   write-ezlogs ">>>> Starting spotify authentication setup process" -showtime -logtype Setup -LogLevel 2
                   $APIXML = "$($thisApp.Config.Current_folder)\Resources\API\Spotify-API-Config.xml"
@@ -4254,35 +4279,35 @@ function Show-SettingsWindow{
                     $client_secret = $Spotify_API.ClientSecret
                   }
                   if($Spotify_API -and $client_ID -and $client_secret){
-                    write-ezlogs ">>>> Creating new Spotify Application '$($thisApp.config.App_Name)'" -showtime -logtype Setup -LogLevel 2            
+                    write-ezlogs ">>>> Creating new Spotify Application '$($thisApp.config.App_Name)'" -showtime -logtype Setup -LogLevel 2
                     New-SpotifyApplication -ClientId $client_ID -ClientSecret $client_secret -Name $thisApp.config.App_Name -RedirectUri $Spotify_API.Redirect_URLs
                     write-ezlogs ">>>> Getting Spotify Application" -showtime -logtype Setup -LogLevel 2
                     $hashsetup.Spotify_Auth_app = $null
                     $hashsetup.Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name
                     #write-ezlogs ">>>> Starting Update_SpotifyStatus_Timer" -showtime -logtype Setup -LogLevel 2
                     $hashsetup.Update_SpotifyStatus_Timer.tag = 'NewAuth'
-                    $hashsetup.Update_SpotifyStatus_Timer.start() 
+                    $hashsetup.Update_SpotifyStatus_Timer.start()
                     return
                   }else{
                     write-ezlogs "Unable to authenticate with Spotify API -- cannot continue" -showtime -warning -logtype Setup
                     #$hashsetup.Spotify_Playlists_Import.isEnabled = $false
                     $hashsetup.Spotify_Auth_Status = $false
-                    update-EditorHelp -content "[WARNING] Unable to authenticate with Spotify API, no API credentials were found. Spotify integration will be unavailable" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -use_runspace -clear -Open -Header 'Spotify - Warning' 
+                    update-EditorHelp -content "[WARNING] Unable to authenticate with Spotify API, no API credentials were found. Spotify integration will be unavailable" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -use_runspace -clear -Open -Header 'Spotify - Warning'
                     $hashsetup.Update_SpotifyStatus_Timer.tag = $Null
-                    $hashsetup.Update_SpotifyStatus_Timer.start()  
+                    $hashsetup.Update_SpotifyStatus_Timer.start()
                     Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -Control 'Import_Spotify_Playlists_Toggle' -Property 'IsOn' -value $false
                     return
                   }
                 }
                 $hashsetup.Update_SpotifyStatus_Timer.tag = 'NewAuth'
                 $hashsetup.Update_SpotifyStatus_Timer.start()
-                return                    
+                return
               }catch{
                 write-ezlogs "An exception occurred executing Get-SpotifyApplication in Import_Spotify_Playlists_Toggle.add_Toggled" -catcherror $_
-              }                          
+              }
             }
             $Variable_list = Get-Variable | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
-            Start-Runspace -scriptblock $Spotify_AuthHandler_Scriptblock -Variable_list $Variable_list -runspace_name 'Spotify_AuthHandler_RUNSPACE' -thisApp $thisApp -synchash $synchash  
+            Start-Runspace -scriptblock $Spotify_AuthHandler_Scriptblock -Variable_list $Variable_list -runspace_name 'Spotify_AuthHandler_RUNSPACE' -thisApp $thisApp -synchash $synchash
             $Variable_list = $Null
             $Spotify_AuthHandler_Scriptblock = $Null
           }catch{
@@ -4293,14 +4318,14 @@ function Show-SettingsWindow{
               write-ezlogs ">>>> Spotify_AuthHandler_Measure:" -logtype Setup -Perf -PerfTimer $Spotify_AuthHandler_Measure
               $Spotify_AuthHandler_Measure = $Null
             }
-          }       
-        }     
+          }
+        }
       }
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Spotify AuthHandler
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Spotify ImportHandler
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$Spotify_ImportHandler = {
@@ -4308,13 +4333,13 @@ function Show-SettingsWindow{
         try{
           $Spotify_ImportHandler_Measure = [system.diagnostics.stopwatch]::StartNew()
           try{
-            $Spotify_playlists = Get-CurrentUserPlaylists -ApplicationName $thisApp.config.App_Name -thisApp $thisApp -First_Run:$First_Run 
+            $Spotify_playlists = Get-CurrentUserPlaylists -ApplicationName $thisApp.config.App_Name -thisApp $thisApp -First_Run:$First_Run
           }catch{
             write-ezlogs "An exception occurred retrievingSpotify playlists with Get-CurrentUserPlaylists" -showtime -catcherror $_
-          } 
+          }
           $newplaylists = 0
-          if($Spotify_playlists){        
-            foreach($playlist in $Spotify_playlists){              
+          if($Spotify_playlists){
+            foreach($playlist in $Spotify_playlists){
               $playlisturl = $playlist.uri
               $playlistName = $playlist.name
               if($hashsetup.SpotifyPlaylists_Grid.items.path -notcontains $playlisturl){
@@ -4328,7 +4353,7 @@ function Show-SettingsWindow{
           }
           if($hashsetup.EditorHelpFlyout.Document.Blocks){
             $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-          }        
+          }
           if($newplaylists -le 0){
             write-ezlogs "No new Spotify Playlists were found!" -showtime -warning -logtype Setup
             $hashsetup.Editor_Help_Flyout.isOpen = $true
@@ -4339,7 +4364,7 @@ function Show-SettingsWindow{
             $hashsetup.Editor_Help_Flyout.header = 'Spotify'
             write-ezlogs ">>>> Found $newplaylists new Spotify Playlists!" -showtime -logtype Setup -LogLevel 2
             update-EditorHelp -content "Found $newplaylists new Spotify Playlists!" -color cyan -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
-          }        
+          }
         }catch{
           write-ezlogs "An exception occurred in Spotify_ImportHandler routed event" -showtime -catcherror $_
         }finally{
@@ -4347,15 +4372,15 @@ function Show-SettingsWindow{
             $Spotify_ImportHandler_Measure.stop()
             write-ezlogs ">>>> Spotify_ImportHandler_Measure:" -logtype Setup -Perf -PerfTimer $Spotify_ImportHandler_Measure
             $Spotify_ImportHandler_Measure = $Null
-          } 
+          }
         }
       }
-      [void]$hashsetup.Spotify_Playlists_Import.AddHandler([System.Windows.Controls.Button]::ClickEvent,$Spotify_ImportHandler) 
-      #---------------------------------------------- 
+      [void]$hashsetup.Spotify_Playlists_Import.AddHandler([System.Windows.Controls.Button]::ClickEvent,$Spotify_ImportHandler)
+      #----------------------------------------------
       #endregion Spotify ImportHandler
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Update_SpotifyStatus_Timer
       #----------------------------------------------
       $hashsetup.Update_SpotifyStatus_Timer = [System.Windows.Threading.DispatcherTimer]::new()
@@ -4364,16 +4389,16 @@ function Show-SettingsWindow{
           $hashsetup.Spotify_Progress_Ring.isActive = $false
           $hashsetup.SpotifyMedia_Importing_Settings_Expander.isEnabled = $true
           write-ezlogs ">>>> Updating Spotify Authentication Status: $($hashsetup.Spotify_Auth_app | out-string)" -logtype Setup -LogLevel 2 -Dev_mode
-          if($this.tag -eq 'NewAuth'){           
+          if($this.tag -eq 'NewAuth'){
             if($hashsetup.Spotify_Auth_app){
               try{
                 write-ezlogs ">>>> Getting current Spotify User Playlists" -logtype Setup -LogLevel 2
-                $playlists = Get-CurrentUserPlaylists -ApplicationName $thisApp.config.App_Name -thisApp $thisApp -First_Run:$First_Run        
+                $playlists = Get-CurrentUserPlaylists -ApplicationName $thisApp.config.App_Name -thisApp $thisApp -First_Run:$First_Run
               }catch{
                 write-ezlogs "[Show-SettingsWindow] An exception occurred executing Get-CurrentUserPlaylists" -CatchError $_
-              }                             
+              }
               if($playlists){
-                foreach($playlist in $playlists){              
+                foreach($playlist in $playlists){
                   $playlisturl = $playlist.uri
                   $playlistName = $playlist.name
                   if($hashsetup.SpotifyPlaylists_Grid.items.path -notcontains $playlisturl){
@@ -4402,8 +4427,8 @@ function Show-SettingsWindow{
                 $link_hyperlink.FontWeight = "Bold"
                 [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Spotify_AuthHandler)
                 [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Spotify_AuthHandler)
-                [void]$hashsetup.Import_Spotify_textbox.Inlines.add("If you wish to update or change your Spotify credentials, click ")  
-                [void]$hashsetup.Import_Spotify_textbox.Inlines.add($($link_hyperlink))        
+                [void]$hashsetup.Import_Spotify_textbox.Inlines.add("If you wish to update or change your Spotify credentials, click ")
+                [void]$hashsetup.Import_Spotify_textbox.Inlines.add($($link_hyperlink))
                 $hashsetup.Import_Spotify_textbox.FontSize = '14'
                 $hashsetup.Import_Spotify_transitioningControl.Height = '60'
                 $hashsetup.Import_Spotify_Playlists_Toggle.isOn = $true
@@ -4411,17 +4436,17 @@ function Show-SettingsWindow{
                 if($MahDialog_hash.window.Dispatcher){
                   write-ezlogs ">>>> Closing Weblogin Window: isVisible: $($MahDialog_hash.window.isVisible) - Visibility: $($MahDialog_hash.window.Visibility)" -logtype Setup -LogLevel 2
                   $MahDialog_hash.window.Dispatcher.Invoke("Normal",[action]{ $MahDialog_hash.window.close() })
-                }  
+                }
                 if($hashsetup.EditorHelpFlyout.Document.Blocks){
                   $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-                }        
+                }
                 $hashsetup.Editor_Help_Flyout.isOpen = $true
-                $hashsetup.Editor_Help_Flyout.header = 'Spotify'            
-                update-EditorHelp -content "[SUCCESS] Authenticated to Spotify and retrieved Playlists!.`n`nSpotify Playlists have been imported automatically. If you do not see them or wish to refresh the list, click 'Import from Spotify'" -color lightgreen -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout     
-                update-EditorHelp -content "INFO" -color cyan -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout 
-                update-EditorHelp -content "If you disable the 'Use Web Player' option for Spotify, please ensure that you have the Windows Spotify client installed and are logged in with your account" -color cyan -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout  \                
-                $this.tag = $null 
-                $this.stop()                    
+                $hashsetup.Editor_Help_Flyout.header = 'Spotify'
+                update-EditorHelp -content "[SUCCESS] Authenticated to Spotify and retrieved Playlists!.`n`nSpotify Playlists have been imported automatically. If you do not see them or wish to refresh the list, click 'Import from Spotify'" -color lightgreen -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
+                update-EditorHelp -content "INFO" -color cyan -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
+                update-EditorHelp -content "If you disable the 'Use Web Player' option for Spotify, please ensure that you have the Windows Spotify client installed and are logged in with your account" -color cyan -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout  \
+                $this.tag = $null
+                $this.stop()
               }else{
                 write-ezlogs "[Show-SettingsWindow] Unable to successfully authenticate to spotify!" -showtime -warning -logtype Setup
                 $thisApp.Config.Import_Spotify_Media = $false
@@ -4439,8 +4464,8 @@ function Show-SettingsWindow{
                 $hashsetup.Import_Spotify_textbox.Inlines.add("Click ")
                 [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Spotify_AuthHandler)
                 [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Spotify_AuthHandler)
-                [void]$hashsetup.Import_Spotify_textbox.Inlines.add($($link_hyperlink))        
-                [void]$hashsetup.Import_Spotify_textbox.Inlines.add(" to provide your Spotify account credentials.")  
+                [void]$hashsetup.Import_Spotify_textbox.Inlines.add($($link_hyperlink))
+                [void]$hashsetup.Import_Spotify_textbox.Inlines.add(" to provide your Spotify account credentials.")
                 $hashsetup.Import_Spotify_textbox.Foreground = "Orange"
                 $hashsetup.Import_Spotify_textbox.FontSize = '14'
                 $hashsetup.Import_Spotify_transitioningControl.Height = '60'
@@ -4449,18 +4474,18 @@ function Show-SettingsWindow{
                 $hashsetup.Import_Spotify_Playlists_Toggle.isOn = $false
                 if($hashsetup.EditorHelpFlyout.Document.Blocks){
                   $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-                }        
+                }
                 $hashsetup.Editor_Help_Flyout.isOpen = $true
-                $hashsetup.Editor_Help_Flyout.header = 'Spotify'            
-                update-EditorHelp -content "[WARNING] Unable to successfully authenticate to spotify! (No playlists returned!) Spotify integration will be unavailable" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout     
-                Remove-SpotifyApplication -Name $thisApp.config.App_Name               
+                $hashsetup.Editor_Help_Flyout.header = 'Spotify'
+                update-EditorHelp -content "[WARNING] Unable to successfully authenticate to spotify! (No playlists returned!) Spotify integration will be unavailable" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
+                Remove-SpotifyApplication -Name $thisApp.config.App_Name
               }
-              $this.tag = $null 
-              $this.stop() 
+              $this.tag = $null
+              $this.stop()
               if(!$hashsetup.Window.isVisible){
                 write-ezlogs "Show/unhiding First Run Setup window" -logtype Setup
                 $hashsetup.Window.Show()
-              }                            
+              }
             }else{
               write-ezlogs "No Spotify app returned from Get-SpotifyApplication! Cannot continue" -showtime -warning -logtype Setup
             }
@@ -4481,8 +4506,8 @@ function Show-SettingsWindow{
               $hashsetup.Import_Spotify_textbox.Inlines.add("Click ")
               [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Spotify_AuthHandler)
               [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Spotify_AuthHandler)
-              [void]$hashsetup.Import_Spotify_textbox.Inlines.add($($link_hyperlink))        
-              [void]$hashsetup.Import_Spotify_textbox.Inlines.add(" to provide your Spotify account credentials.")  
+              [void]$hashsetup.Import_Spotify_textbox.Inlines.add($($link_hyperlink))
+              [void]$hashsetup.Import_Spotify_textbox.Inlines.add(" to provide your Spotify account credentials.")
               $hashsetup.Import_Spotify_textbox.Foreground = "Orange"
               $hashsetup.Import_Spotify_textbox.FontSize = 14
               $hashsetup.Spotify_Playlists_Import.isEnabled = $false
@@ -4504,28 +4529,28 @@ function Show-SettingsWindow{
               $link_hyperlink.FontWeight = "Bold"
               [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Spotify_AuthHandler)
               [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Spotify_AuthHandler)
-              [void]$hashsetup.Import_Spotify_textbox.Inlines.add("If you wish to update/change your Spotify credentials, click ")  
-              [void]$hashsetup.Import_Spotify_textbox.Inlines.add($($link_hyperlink))        
+              [void]$hashsetup.Import_Spotify_textbox.Inlines.add("If you wish to update/change your Spotify credentials, click ")
+              [void]$hashsetup.Import_Spotify_textbox.Inlines.add($($link_hyperlink))
               $hashsetup.Import_Spotify_textbox.Foreground = "LightGreen"
               $hashsetup.Import_Spotify_textbox.FontSize = '14'
               $hashsetup.Import_Spotify_transitioningControl.Height = '60'
             }
-          } 
+          }
           $hashsetup.Update_SpotifyStatus_Timer.tag = $Null
-          $hashsetup.Update_SpotifyStatus_Timer.stop()         
+          $hashsetup.Update_SpotifyStatus_Timer.stop()
         }catch{
           write-ezlogs "An exception occurred in Update_SpotifyStatus_Timer" -catcherror $_
         }finally{
           $this.tag = $null
-          $hashsetup.Update_SpotifyStatus_Timer.stop() 
+          $hashsetup.Update_SpotifyStatus_Timer.stop()
         }
       }
       $hashsetup.Update_SpotifyStatus_Timer.add_Tick($hashsetup.Update_SpotifyStatus_Timer_ScriptBlock)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Update_SpotifyStatus_Timer
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Spotify_Playlists_Toggle
       #----------------------------------------------
       $hashsetup.Import_Spotify_Playlists_Toggle_Command = {
@@ -4534,23 +4559,23 @@ function Show-SettingsWindow{
           $hashsetup.Import_Spotify_textbox.text = ''
           if($thisApp.Config.Startup_perf_timer){
             $Import_Spotify_Playlists_Toggle_Measure = [system.diagnostics.stopwatch]::StartNew()
-          }         
-          if($sender.isOn){     
+          }
+          if($sender.isOn){
             $hashsetup.Spotify_Progress_Ring.isActive = $true
             $hashsetup.SpotifyMedia_Importing_Settings_Expander.isEnabled = $false
             $hashsetup.Install_Spotify_Toggle.isEnabled = $true
-            $Spotify_AUth_Check_Scriptblock = {              
-              try{             
-                $hashsetup.Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name                  
+            $Spotify_AUth_Check_Scriptblock = {
+              try{
+                $hashsetup.Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name
               }catch{
                 write-ezlogs "An exception occurred executing Get-SpotifyApplication in Import_Spotify_Playlists_Toggle.add_Toggled" -catcherror $_
               }finally{
                 $hashsetup.Update_SpotifyStatus_Timer.start()
-              }                          
+              }
             }
             $Variable_list = Get-Variable | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
-            Start-Runspace -scriptblock $Spotify_AUth_Check_Scriptblock -Variable_list $Variable_list -runspace_name 'Spotify_Auth_Check_RUNSPACE' -thisApp $thisApp -synchash $synchash       
-            $Variable_list = $Null        
+            Start-Runspace -scriptblock $Spotify_AUth_Check_Scriptblock -Variable_list $Variable_list -runspace_name 'Spotify_Auth_Check_RUNSPACE' -thisApp $thisApp -synchash $synchash
+            $Variable_list = $Null
           }else{
             $hashsetup.Install_Spotify_Toggle.isEnabled = $false
             $hashsetup.Spotify_Playlists_Import.isEnabled = $false
@@ -4559,7 +4584,7 @@ function Show-SettingsWindow{
             $thisapp.configTemp.Import_Spotify_Media = $false
             $hashsetup.Import_Spotify_textbox.text = ""
             $hashsetup.Import_Spotify_transitioningControl.Height = '0'
-          }    
+          }
         }catch{
           write-ezlogs "An exception occurred in Import_Spotify_Playlists_Toggle toggle event" -showtime -catcherror $_
         }finally{
@@ -4571,11 +4596,11 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Import_Spotify_Playlists_Toggle.add_Toggled($hashsetup.Import_Spotify_Playlists_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Import_Spotify_Playlists_Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Spotify_Status_Button
       #----------------------------------------------
       $hashsetup.Import_Spotify_Status_Button_Command = {
@@ -4587,33 +4612,33 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Import_Spotify_Status_Button.add_click($hashsetup.Import_Spotify_Status_Button_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Import_Spotify_Status_Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Spotify_Playlists_Button
       #----------------------------------------------
       $hashsetup.Import_Spotify_Playlists_Button_Command = {
         Param($sender)
         try{
-          update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Spotify_Integration.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Import_Spotify_Playlists_Toggle.content -clear 
+          update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Spotify_Integration.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Import_Spotify_Playlists_Toggle.content -clear
         }catch{
           write-ezlogs "An exception occurred in Import_Spotify_Playlists_Button click event" -showtime -catcherror $_
         }
       }
       $hashsetup.Import_Spotify_Playlists_Button.add_click($hashsetup.Import_Spotify_Playlists_Button_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Import_Spotify_Playlists_Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Spotify_Playlists_Browse
       #----------------------------------------------
       $hashsetup.Spotify_Playlists_Browse_Command = {
         Param($sender)
         try{
-          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()        
+          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
           $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalInputExternal($hashsetup.Window,"Add New Playlist","Enter the url of the Spotify Playlist or Track",$button_settings)
           if(-not [string]::IsNullOrEmpty($result)){
             if(($result -match 'spotify\:' -or $result -match 'open.spotify.com')){
@@ -4622,80 +4647,80 @@ function Show-SettingsWindow{
                 write-ezlogs "Adding URL $result" -showtime -logtype Setup -loglevel 2
                 if($result -match "playlist\:" -or $result -match '\/playlist\/'){
                   if($result -match "playlist\:"){
-                    $id = ($($result) -split('playlist:'))[1].trim() 
+                    $id = ($($result) -split('playlist:'))[1].trim()
                   }elseif($result -match '\/playlist\/'){
-                    $id = ($($result) -split('\/playlist\/'))[1].trim() 
-                  } 
+                    $id = ($($result) -split('\/playlist\/'))[1].trim()
+                  }
                   if($id -match '\?si\='){
                     $id = ($($id) -split('\?si\='))[0].trim()
-                  }             
+                  }
                   if($id -and $hashsetup.Spotify_Auth_app.token.access_token){
                     $Spotifyplaylist = Get-Playlist -Id $id -ApplicationName $thisApp.Config.App_Name
-                  }  
+                  }
                   if($Spotifyplaylist){
                     $name = $Spotifyplaylist.name
                     $url = $Spotifyplaylist.uri
-                  }else{                
-                    $Name = "Custom_$id"    
-                    $url = $result            
+                  }else{
+                    $Name = "Custom_$id"
+                    $url = $result
                   }
-                  $type = 'Playlist'  
-                  $Playlist_info = $Spotifyplaylist                                
+                  $type = 'Playlist'
+                  $Playlist_info = $Spotifyplaylist
                 }elseif($result -match "track\:" -or $result -match '\/track\/'){
                   if($result -match "track\:"){
-                    $id = ($($result) -split('track:'))[1].trim() 
+                    $id = ($($result) -split('track:'))[1].trim()
                   }elseif($result -match '\/track\/'){
-                    $id = ($($result) -split('\/track\/'))[1].trim() 
+                    $id = ($($result) -split('\/track\/'))[1].trim()
                   }
                   if($id -match '\?si\='){
                     $id = ($($id) -split('\?si\='))[0].trim()
-                  }              
+                  }
                   if($id -and $hashsetup.Spotify_Auth_app.token.access_token){
                     $Spotifytrack = Get-Track -Id $id -ApplicationName $thisApp.Config.App_Name
                   }
                   if($Spotifytrack){
                     $name = "$($Spotifytrack.artists.name) - $($Spotifytrack.name)"
                     $url = $Spotifytrack.uri
-                  }else{                
+                  }else{
                     $Name = "Custom_$id"
-                    $url = $result                
-                  }  
+                    $url = $result
+                  }
                   $type = 'Track'
-                  $Playlist_info = $Spotifytrack                      
+                  $Playlist_info = $Spotifytrack
                 }elseif($result -match "episode\:" -or $result -match '\/episode\/'){
                   if($result -match "episode\:"){
-                    $id = ($($result) -split('episode:'))[1].trim() 
+                    $id = ($($result) -split('episode:'))[1].trim()
                   }elseif($result -match '\/episode\/'){
-                    $id = ($($result) -split('\/episode\/'))[1].trim() 
-                  } 
+                    $id = ($($result) -split('\/episode\/'))[1].trim()
+                  }
                   if($id -match '\?si\='){
                     $id = ($($id) -split('\?si\='))[0].trim()
-                  }              
+                  }
                   if($id -and $hashsetup.Spotify_Auth_app.token.access_token){
                     $Spotifytrack = Get-Episode -Id $id -ApplicationName $thisApp.Config.App_Name
                   }
                   if($Spotifytrack){
                     $name = $($Spotifytrack.show.name)
                     $url = $Spotifytrack.uri
-                  }else{                
+                  }else{
                     $Name = "Custom_$id"
-                    $url = $result                
-                  }  
+                    $url = $result
+                  }
                   $type = 'Episode'
-                  $Playlist_info = $Spotifytrack                      
+                  $Playlist_info = $Spotifytrack
                 }
                 Update-SpotifyPlaylists -hashsetup $hashsetup -Path $url -Name $Name -id $id -type $type -Playlist_Info $Playlist_info -VerboseLog:$thisApp.Config.Verbose_logging
               }else{
                 write-ezlogs "The location $result has already been added!" -showtime -warning -logtype Setup
                 $hashsetup.Editor_Help_Flyout.isOpen = $true
-                $hashsetup.Editor_Help_Flyout.header = 'Spotify'            
+                $hashsetup.Editor_Help_Flyout.header = 'Spotify'
                 update-EditorHelp -content "[WARNING] The URL $result has already been added!" -color Orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -clear
-              } 
+              }
             }else{
               $hashsetup.Editor_Help_Flyout.isOpen = $true
-              $hashsetup.Editor_Help_Flyout.header = 'Spotify'            
+              $hashsetup.Editor_Help_Flyout.header = 'Spotify'
               update-EditorHelp -content "[WARNING] Invalid URL Provided" -color Orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -clear
-              update-EditorHelp -content "The location $result is not a valid URL! Please ensure the URL is a valid Spotify Playlist or Track URL" -color Orange -RichTextBoxControl $hashsetup.EditorHelpFlyout     
+              update-EditorHelp -content "The location $result is not a valid URL! Please ensure the URL is a valid Spotify Playlist or Track URL" -color Orange -RichTextBoxControl $hashsetup.EditorHelpFlyout
               write-ezlogs "The location $result is not a valid URL!" -showtime -warning -logtype Setup
             }
           }else{
@@ -4706,24 +4731,24 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Spotify_Playlists_Browse.add_click($hashsetup.Spotify_Playlists_Browse_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Spotify_Playlists_Browse
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Install_Spotify_Toggle
       #----------------------------------------------
       $hashsetup.Install_Spotify_Toggle_Command = {
         Param($sender)
         try{
-          if($sender.isOn) {  
+          if($sender.isOn) {
             $thisApp.ConfigTemp.Install_Spotify = $true
             if($psversiontable.PSVersion.Major -gt 5 -and ![System.IO.File]::Exists("$($env:APPDATA)\Spotify\Spotify.exe")){
               try{
                 write-ezlogs "Running PowerShell $($psversiontable.PSVersion.Major), Importing Module Appx with parameter -usewindowspowershell" -showtime -warning -logtype Setup
                 if(!(get-command Get-appxpackage -ErrorAction SilentlyContinue)){
                   Import-module Appx -usewindowspowershell -DisableNameChecking -ErrorAction SilentlyContinue
-                }            
+                }
               }catch{
                 write-ezlogs "[SETUP] An exception occurred executing import-module appx -usewindowspowershell" -CatchError $_
               }
@@ -4750,39 +4775,39 @@ function Show-SettingsWindow{
           }
         }catch{
           write-ezlogs "An exception occurred in $($sender.Name)" -catcherror $_
-        } 
+        }
       }
       $hashsetup.Install_Spotify_Toggle.add_Toggled($hashsetup.Install_Spotify_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Install_Spotify_Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Install_Spotify_Button
       #----------------------------------------------
       $hashsetup.Install_Spotify_Button.add_click({
-          try{  
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Install_Spotify.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Install_Spotify_Toggle.content -clear     
+          try{
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Install_Spotify.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Install_Spotify_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred when opening main UI window" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Install_Spotify_Button
-      #----------------------------------------------   
-  
-      #---------------------------------------------- 
+      #----------------------------------------------
+
+      #----------------------------------------------
       #region Install_Spotify_Now_Button
-      #----------------------------------------------     
+      #----------------------------------------------
       $hashsetup.Install_Spotify_Now_Button.add_click({
-          try{  
+          try{
             write-ezlogs ">>>> Checking for existing installation of Spotify..." -showtime -logtype Setup -loglevel 2
             if($psversiontable.PSVersion.Major -gt 5 -and ![System.IO.File]::Exists("$($env:APPDATA)\Spotify\Spotify.exe")){
               try{
                 write-ezlogs "Running PowerShell $($psversiontable.PSVersion.Major), Importing Module Appx with parameter -usewindowspowershell" -showtime -warning -logtype Setup
                 if(!(get-command Get-appxpackage -ErrorAction SilentlyContinue)){
                   Import-module Appx -usewindowspowershell -DisableNameChecking -ErrorAction SilentlyContinue
-                }            
+                }
               }catch{
                 write-ezlogs "[SETUP] An exception occurred executing import-module appx -usewindowspowershell" -CatchError $_
               }
@@ -4797,21 +4822,21 @@ function Show-SettingsWindow{
               $appinstalled = $false
             }
             if(!$appinstalled -or $spotifyApx){
-              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
               $Button_Settings.AffirmativeButtonText = 'Yes'
-              $Button_Settings.NegativeButtonText = 'No'  
-              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+              $Button_Settings.NegativeButtonText = 'No'
+              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
               write-ezlogs "| Checking admin permissions" -showtime -logtype Setup -loglevel 2
               if(!(Use-RunAs -Check)){
                 $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Restart as Admin Required","In order to install Spotify, the app must be run with administrator permissions.`nWould you like to restart the app as admin now?",$okandCancel,$Button_Settings)
-                if($result -eq 'Affirmative'){                  
+                if($result -eq 'Affirmative'){
                   if($First_Run){
                     write-ezlogs ">>>> Restarting app as admin...and restarting First Run" -showtime -logtype Setup -loglevel 2
                     Use-RunAs -ForceReboot -freshstart
                   }else{
                     write-ezlogs ">>>> Restarting app as admin..." -showtime -logtype Setup -loglevel 2
                     Use-RunAs -ForceReboot
-                  }                 
+                  }
                 }else{
                   write-ezlogs "User did not wish to restart as admin, unable to continue" -showtime -warning -logtype Setup
                   return
@@ -4839,10 +4864,10 @@ function Show-SettingsWindow{
               #$hashsetup.window.hide()
               if($First_Run){
                 write-ezlogs "| Unhiding Splash Screen" -showtime -logtype Setup -loglevel 2
-                Update-SplashScreen -hash $hash -show 
+                Update-SplashScreen -hash $hash -show
               }else{
                 Start-SplashScreen -SplashTitle "$($thisApp.Config.App_Name) Media Player" -SplashMessage 'Installing Spotify' -Splash_More_Info 'Please Wait' -current_folder $thisapp.Config.Current_Folder -log_file $thisapp.Config.Log_file
-              }             
+              }
               $app_install_scriptblock = {
                 #Install Chocolatey
                 [void](confirm-requirements -thisApp $thisApp -noRestart)
@@ -4857,19 +4882,19 @@ function Show-SettingsWindow{
                         write-ezlogs "Running PowerShell $($psversiontable.PSVersion.Major), Importing Module Appx with parameter -usewindowspowershell" -showtime -warning -logtype Setup
                         if(!(get-command Get-appxpackage -ErrorAction SilentlyContinue)){
                           Import-module Appx -usewindowspowershell -DisableNameChecking -ErrorAction SilentlyContinue
-                        }            
+                        }
                       }catch{
                         write-ezlogs "[SETUP] An exception occurred executing import-module appx -usewindowspowershell" -CatchError $_
                       }
                     }
-                    (Get-appxpackage 'Spotify*') | Remove-AppxPackage 
+                    (Get-appxpackage 'Spotify*') | Remove-AppxPackage
                   }catch{
                     write-ezlogs "An exception occurred removing the Spotify appx package" -showtime -catcherror $_
                     $hashsetup.window.Dispatcher.Invoke("Normal",[action]{
                         if(!$hashsetup.Window.isVisible){
                           $hashsetup.Window.Show()
                         }
-                        $hashsetup.Window.Activate()       
+                        $hashsetup.Window.Activate()
                         $hashsetup.Editor_Help_Flyout.isOpen = $true
                         $hashsetup.Editor_Help_Flyout.header = 'Spotify Install'
                         $hashsetup.Install_Spotify_Status_textblock.text = "NOT INSTALLED"
@@ -4878,23 +4903,23 @@ function Show-SettingsWindow{
                     update-EditorHelp -content "ERROR" -FontWeight bold -color Tomato -TextDecorations Underline -RichTextBoxControl $hashsetup.EditorHelpFlyout -use_runspace -clear
                     update-EditorHelp -content "An exception occurred removing the Spotify appx package! See logs for details`n`n$($_ | out-string)" -color Tomato -RichTextBoxControl $hashsetup.EditorHelpFlyout -use_runspace -Open
                     return
-                  }               
-                } 
+                  }
+                }
                 if($hash.Window){
                   Update-SplashScreen -hash $hash -More_Info_Visibility 'Visible' -SplashMessage 'Installing Spotify...'
                 }
-                write-ezlogs "----------------- [START] Install Spotify via chocolatey [START] -----------------" -showtime -logtype Setup -loglevel 2   
+                write-ezlogs "----------------- [START] Install Spotify via chocolatey [START] -----------------" -showtime -logtype Setup -loglevel 2
                 $chocoappmatch = choco list Spotify
                 write-ezlogs "$($chocoappmatch)" -showtime -logtype Setup -loglevel 2
                 $appinstalled = $($chocoappmatch | Select-String Spotify | out-string).trim()
-                if(-not [string]::IsNullOrEmpty($appinstalled) -and $appinstalled -notmatch 'Removing incomplete install for'){               
+                if(-not [string]::IsNullOrEmpty($appinstalled) -and $appinstalled -notmatch 'Removing incomplete install for'){
                   if([System.IO.Directory]::Exists("$($env:APPDATA)\Spotify")){
                     $appinstalled_Version = (Get-ItemProperty "$($env:APPDATA)\Spotify\Spotify.exe").VersionInfo.ProductVersion
                     if($appinstalled_Version){
                       write-ezlogs "Chocolatey says Spotify is installed (Version: $($appinstalled)). Also detected installed exe: $($appinstalled_Version). Will continue to attemp to update Spotify..." -showtime -warning -logtype Setup
                     }
                   }else{
-                    write-ezlogs "Chocolatey says Spotify is installed (Version: $($appinstalled)), yet it does not exist. Choco database likely corrupted or out-dated, performing remove of Spotify via Chocolately.." -showtime -warning -logtype Setup 
+                    write-ezlogs "Chocolatey says Spotify is installed (Version: $($appinstalled)), yet it does not exist. Choco database likely corrupted or out-dated, performing remove of Spotify via Chocolately.." -showtime -warning -logtype Setup
                     $chocoremove = choco uninstall Spotify --confirm --force
                     write-ezlogs "Verifying if Choco still thinks Spotify is installed..." -showtime -logtype Setup -loglevel 2
                     $chocoappmatch = choco list Spotify
@@ -4905,7 +4930,7 @@ function Show-SettingsWindow{
                           if(!$hashsetup.Window.isVisible){
                             $hashsetup.Window.Show()
                           }
-                          $hashsetup.window.Activate()       
+                          $hashsetup.window.Activate()
                           $hashsetup.Editor_Help_Flyout.isOpen = $true
                           $hashsetup.Editor_Help_Flyout.header = 'Spotify Install'
                           $hashsetup.Install_Spotify_Status_textblock.text = "NOT INSTALLED"
@@ -4926,7 +4951,7 @@ function Show-SettingsWindow{
                 $chocoappmatch = choco list Spotify
                 if($chocoappmatch){
                   $appinstalled = $($chocoappmatch | Select-String Spotify | out-string).trim()
-                }      
+                }
                 if($hashSetup.First_Run){
                   write-ezlogs ">>>> Hiding Splash screen to continue setup" -showtime -logtype Setup -loglevel 2
                   Update-SplashScreen -hash $hash -hide -SplashMessage 'Continuing Setup...'
@@ -4939,13 +4964,13 @@ function Show-SettingsWindow{
                     $synchash.window.Dispatcher.Invoke("Normal",[action]{ $synchash.window.show() })
                     $hashsetup.MainWindow_Status = $false
                   }
-                } 
+                }
                 if(-not [string]::IsNullOrEmpty($appinstalled)){
                   if($appinstalled -match 'spotify'){
                     $appinstalled = $appinstalled.replace('spotify','').trim()
                   }
                   write-ezlogs "Spotify was successfully installed. Version $appinstalled" -showtime -logtype Setup -loglevel 2 -Success
-                  $hashsetup.window.Dispatcher.Invoke("Normal",[action]{        
+                  $hashsetup.window.Dispatcher.Invoke("Normal",[action]{
                       $hashsetup.Editor_Help_Flyout.isOpen = $true
                       $hashsetup.Editor_Help_Flyout.header = 'Spotify Install'
                       $hashsetup.Install_Spotify_Status_textblock.text = "INSTALLED:`n$appinstalled"
@@ -4955,7 +4980,7 @@ function Show-SettingsWindow{
                   update-EditorHelp -content "Spotify was successfully installed. Version`n $appinstalled" -color LightGreen -RichTextBoxControl $hashsetup.EditorHelpFlyout -use_runspace -Open
                 }else{
                   write-ezlogs "Unable to verify if Spotify installed successfully! Choco output: $($choco_install | out-string)" -showtime -warning -logtype Setup
-                  $hashsetup.window.Dispatcher.Invoke("Normal",[action]{      
+                  $hashsetup.window.Dispatcher.Invoke("Normal",[action]{
                       $hashsetup.Editor_Help_Flyout.isOpen = $true
                       $hashsetup.Editor_Help_Flyout.header = 'Spotify Install'
                       $hashsetup.Install_Spotify_Status_textblock.text = "UNKNOWN"
@@ -4970,16 +4995,16 @@ function Show-SettingsWindow{
                       $hashsetup.Window.Show()
                       $hashsetup.Window.Activate()
                   })
-                }                                   
+                }
               }
               try{
                 if($First_Run){
                   if($hashSetup.Window.isVisible){
                     write-ezlogs "| Hiding setup window" -showtime -logtype Setup -loglevel 2
-                    $hashSetup.Window.Hide()               
+                    $hashSetup.Window.Hide()
                   }
                   Invoke-Command -ScriptBlock $app_install_scriptblock
-                }else{               
+                }else{
                   $Variable_list = Get-Variable | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
                   Start-Runspace -scriptblock $app_install_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'App_install__RUNSPACE' -thisApp $thisApp -synchash $synchash
                   $Variable_list = $Null
@@ -4990,7 +5015,7 @@ function Show-SettingsWindow{
                 $hashsetup.Window.Activate()
                 if($hashsetup.EditorHelpFlyout.Document.Blocks){
                   $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-                }        
+                }
                 $hashsetup.Editor_Help_Flyout.isOpen = $true
                 $hashsetup.Editor_Help_Flyout.header = 'Spotify Install'
                 update-EditorHelp -content "ERROR" -FontWeight bold -color Tomato -TextDecorations Underline -RichTextBoxControl $hashsetup.EditorHelpFlyout
@@ -5002,21 +5027,21 @@ function Show-SettingsWindow{
               $message = "Spotify was detected as already installed. Version: $appinstalled"
               if($hashsetup.EditorHelpFlyout.Document.Blocks){
                 $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-              }        
+              }
               $hashsetup.Editor_Help_Flyout.isOpen = $true
               $hashsetup.Editor_Help_Flyout.header = 'Spotify'
               update-EditorHelp -content "INFO" -FontWeight bold -color cyan -TextDecorations Underline -RichTextBoxControl $hashsetup.EditorHelpFlyout
               update-EditorHelp -content $message -RichTextBoxControl $hashsetup.EditorHelpFlyout -color cyan
-            }                  
+            }
           }catch{
             write-ezlogs "An exception occurred in Install_Spotify_Now_Button.add_click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Install_Spotify_Now_Button
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Spotify Updates Toggle
       #----------------------------------------------
       $hashsetup.Spotify_Update_Toggle_Command = {
@@ -5026,19 +5051,19 @@ function Show-SettingsWindow{
           $thisapp.configTemp.Spotify_Update = $sender.isOn
         }catch{
           write-ezlogs "An exception occurred in Spotify_Update_Toggle event" -CatchError $_ -showtime
-        } 
+        }
       }
       $hashsetup.Spotify_Update_Toggle.add_Toggled($hashsetup.Spotify_Update_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Spotify Updates Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Spotify_Update_Interval_ComboBox
       #----------------------------------------------
       $hashsetup.Spotify_Update_Interval_ComboBox.add_SelectionChanged({
           try{
-            if($hashsetup.Spotify_Update_Interval_ComboBox.SelectedIndex -ne -1){    
+            if($hashsetup.Spotify_Update_Interval_ComboBox.SelectedIndex -ne -1){
               $hashsetup.Spotify_Update_Interval_Label.BorderBrush = 'Green'
               if($hashsetup.Spotify_Update_Interval_ComboBox.Selecteditem.Content -match 'Startup'){
                 $interval = $hashsetup.Spotify_Update_Interval_ComboBox.Selecteditem.Content
@@ -5049,50 +5074,50 @@ function Show-SettingsWindow{
               }
               Add-Member -InputObject $thisapp.configTemp -Name 'Spotify_Update_Interval' -Value $interval -MemberType NoteProperty -Force
             }
-            else{          
+            else{
               $hashsetup.Spotify_Update_Interval_Label.BorderBrush = 'Red'
-              Add-Member -InputObject $thisapp.configTemp -Name 'Spotify_Update_Interval' -Value '' -MemberType NoteProperty -Force      
+              Add-Member -InputObject $thisapp.configTemp -Name 'Spotify_Update_Interval' -Value '' -MemberType NoteProperty -Force
             }
           }catch{
             write-ezlogs "An exception occurred in Spotify_Update_Interval_ComboBox event" -CatchError $_ -showtime
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Spotify_Update_Interval_ComboBox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Spotify Updates Help
       #----------------------------------------------
       $hashsetup.Spotify_Update_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Spotify_AutoUpdate.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Spotify_Update_Toggle.content            
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Spotify_AutoUpdate.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Spotify_Update_Toggle.content
           }catch{
             write-ezlogs "An exception occurred in Spotify_Update_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Spotify Updates Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube WebPlayer Toggle
       #----------------------------------------------
       $hashsetup.Youtube_WebPlayer_Toggle_Command = {
         Param($sender)
         try{
           $hashsetup.Use_invidious_Toggle.IsEnabled = $sender.isOn
-          $thisapp.configTemp.Youtube_WebPlayer = $sender.isOn     
+          $thisapp.configTemp.Youtube_WebPlayer = $sender.isOn
         }catch{
           write-ezlogs "An exception occurred in Youtube_WebPlayer_Toggle event" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.Youtube_WebPlayer_Toggle.add_Toggled($hashsetup.Youtube_WebPlayer_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube WebPlayer Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube WebPlayer Help
       #----------------------------------------------
       $hashsetup.Youtube_WebPlayer_Help_Button.add_Click({
@@ -5100,35 +5125,61 @@ function Show-SettingsWindow{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_Webplayer.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open  -Header $hashsetup.Youtube_WebPlayer_Toggle.Content -clear
           }catch{
             write-ezlogs "An exception occurred in Youtube_WebPlayer_Help_Button.add_Click" -CatchError $_ -enablelogs
-          }   
+          }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube WebPlayer Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Use_invidious Toggle
       #----------------------------------------------
       $hashsetup.Use_invidious_Toggle_Command = {
         Param($sender)
         try{
           if($sender.isOn -eq $true){
-            $hashsetup.Use_invidious_grid.BorderBrush = 'LightGreen'    
             $thisapp.configTemp.Use_invidious = $true
           }else{
             $thisapp.configTemp.Use_invidious = $false
-            $hashsetup.Use_invidious_grid.BorderBrush = 'Red'   
-          }      
+          }
         }catch{
           write-ezlogs "An exception occurred in Use_invidious_Toggle event" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.Use_invidious_Toggle.add_Toggled($hashsetup.Use_invidious_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Use_invidious Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
+      #region InvidiousURL Textbox
+      #----------------------------------------------
+      $hashsetup.InvidiousURL_textbox_Command = {
+        Param($sender)
+        try{
+          if((Test-ValidPath -Type URL $sender.text)){
+            if($hashsetup.InvidiousURL_Label){
+              $hashsetup.InvidiousURL_Label.BorderBrush = 'Green'
+              $hashsetup.InvidiousURL_textbox.ToolTip = ''
+            }
+            $thisapp.configTemp.InvidiousURL = "$($sender.text)"
+          }else{
+            if($hashsetup.InvidiousURL_Label){
+              $hashsetup.InvidiousURL_Label.BorderBrush = 'Red'
+              $hashsetup.InvidiousURL_textbox.ToolTip = 'No valid URL entered'
+            }
+            $thisapp.configTemp.InvidiousURL = ''
+          }
+        }catch{
+          write-ezlogs "An exception occurred in InvidiousURL_textbox textchanged event" -showtime -catcherror $_
+        }
+      }
+      $hashsetup.InvidiousURL_textbox.Add_TextChanged($hashsetup.InvidiousURL_textbox_Command)
+      #----------------------------------------------
+      #endregion InvidiousURL Textbox
+      #----------------------------------------------
+
+      #----------------------------------------------
       #region Use_invidious Help
       #----------------------------------------------
       $hashsetup.Use_invidious_Help_Button.add_Click({
@@ -5136,13 +5187,13 @@ function Show-SettingsWindow{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Invidious_Webplayer.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open  -Header $hashsetup.Use_invidious_Toggle.Content -clear
           }catch{
             write-ezlogs "An exception occurred in Use_invidious_Help_Button.add_Click" -CatchError $_ -enablelogs
-          }    
+          }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Use_invidious Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube Updates Toggle
       #----------------------------------------------
       $hashsetup.Youtube_Update_Toggle_Command = {
@@ -5151,19 +5202,19 @@ function Show-SettingsWindow{
           $thisapp.configTemp.Youtube_Update = $sender.isOn
         }catch{
           write-ezlogs "An exception occurred in Youtube_Update_Toggle event" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.Youtube_Update_Toggle.add_Toggled($hashsetup.Youtube_Update_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube Updates Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_Update_Interval_ComboBox
       #----------------------------------------------
       $hashsetup.Youtube_Update_Interval_ComboBox.add_SelectionChanged({
           try{
-            if($hashsetup.Youtube_Update_Interval_ComboBox.SelectedIndex -ne -1){    
+            if($hashsetup.Youtube_Update_Interval_ComboBox.SelectedIndex -ne -1){
               $hashsetup.Youtube_Update_Interval_Label.BorderBrush = 'Green'
               if($hashsetup.Youtube_Update_Interval_ComboBox.Selecteditem.Content -match 'Startup'){
                 $interval = $hashsetup.Youtube_Update_Interval_ComboBox.Selecteditem.Content
@@ -5174,33 +5225,33 @@ function Show-SettingsWindow{
               }
               Add-Member -InputObject $thisapp.configTemp -Name 'Youtube_Update_Interval' -Value $interval -MemberType NoteProperty -Force
             }
-            else{          
+            else{
               $hashsetup.Youtube_Update_Interval_Label.BorderBrush = 'Red'
-              Add-Member -InputObject $thisapp.configTemp -Name 'Youtube_Update_Interval' -Value '' -MemberType NoteProperty -Force      
+              Add-Member -InputObject $thisapp.configTemp -Name 'Youtube_Update_Interval' -Value '' -MemberType NoteProperty -Force
             }
           }catch{
             write-ezlogs "An exception occurred in Youtube_Update_Interval_ComboBox event" -CatchError $_ -showtime
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Youtube_Update_Interval_ComboBox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube Updates Help
       #----------------------------------------------
       $hashsetup.Youtube_Update_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_AutoUpdate.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Youtube_Update_Toggle.content            
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_AutoUpdate.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Youtube_Update_Toggle.content
           }catch{
             write-ezlogs "An exception occurred in Youtube_Update_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube Updates Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Enable Sponsorblock Toggle
       #----------------------------------------------
       $hashsetup.Enable_Sponsorblock_Toggle_Command = {
@@ -5210,48 +5261,48 @@ function Show-SettingsWindow{
           $thisapp.configTemp.Enable_Sponsorblock = $sender.isOn
         }catch{
           write-ezlogs "An exception occurred in Enable_Sponsorblock_Toggle event" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.Enable_Sponsorblock_Toggle.add_Toggled($hashsetup.Enable_Sponsorblock_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Enable Sponsorblock Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Sponsorblock_ActionType_ComboBox
       #----------------------------------------------
       $hashsetup.Sponsorblock_ActionType_ComboBox.add_SelectionChanged({
           try{
-            if($hashsetup.Sponsorblock_ActionType_ComboBox.SelectedIndex -ne -1){    
+            if($hashsetup.Sponsorblock_ActionType_ComboBox.SelectedIndex -ne -1){
               Add-Member -InputObject $thisapp.configTemp -Name 'Sponsorblock_ActionType' -Value $hashsetup.Sponsorblock_ActionType_ComboBox.Selecteditem.Content -MemberType NoteProperty -Force
             }
-            else{          
+            else{
               $hashsetup.Youtube_Update_Interval_Label.BorderBrush = 'Red'
-              Add-Member -InputObject $thisapp.configTemp -Name 'Sponsorblock_ActionType' -Value '' -MemberType NoteProperty -Force      
+              Add-Member -InputObject $thisapp.configTemp -Name 'Sponsorblock_ActionType' -Value '' -MemberType NoteProperty -Force
             }
           }catch{
             write-ezlogs "An exception occurred in Sponsorblock_ActionType_ComboBox event" -CatchError $_ -showtime
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Sponsorblock_ActionType_ComboBox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Sponsorblock Help
       #----------------------------------------------
       $hashsetup.Enable_Sponsorblock_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Enable_Sponsorblock.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Enable_Sponsorblock_Toggle.content            
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Enable_Sponsorblock.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Enable_Sponsorblock_Toggle.content
           }catch{
             write-ezlogs "An exception occurred in Enable_Sponsorblock_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Sponsorblock Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region YoutubeComments Toggle
       #----------------------------------------------
       $hashsetup.Enable_YoutubeComments_Toggle_Command = {
@@ -5260,28 +5311,28 @@ function Show-SettingsWindow{
           $thisapp.configTemp.Enable_YoutubeComments = $sender.isOn
         }catch{
           write-ezlogs "An exception occurred in Enable_YoutubeComments_Toggle.add_Toggled" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.Enable_YoutubeComments_Toggle.add_Toggled($hashsetup.Enable_YoutubeComments_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion YoutubeComments Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region YoutubeComments Help
       #----------------------------------------------
       $hashsetup.YoutubeComments_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Enable_YoutubeComments.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open  -Header $hashsetup.Enable_YoutubeComments_Toggle.Content -clear   
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Enable_YoutubeComments.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open  -Header $hashsetup.Enable_YoutubeComments_Toggle.Content -clear
           }catch{
             write-ezlogs "An exception occurred in YoutubeComments_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion YoutubeComments Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region PlayLink_OnDrop Toggle
       #----------------------------------------------
       $hashsetup.PlayLink_OnDrop_Toggle_Command = {
@@ -5290,28 +5341,28 @@ function Show-SettingsWindow{
           $thisapp.configTemp.PlayLink_OnDrop = $sender.isOn
         }catch{
           write-ezlogs "An exception occurred in PlayLink_OnDrop_Toggle.add_Toggled" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.PlayLink_OnDrop_Toggle.add_Toggled($hashsetup.PlayLink_OnDrop_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion PlayLink_OnDrop Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region PlayLink_OnDrop Help
       #----------------------------------------------
       $hashsetup.PlayLink_OnDrop_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_StartOnDrop.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open  -Header $hashsetup.PlayLink_OnDrop_Toggle.Content -clear   
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_StartOnDrop.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open  -Header $hashsetup.PlayLink_OnDrop_Toggle.Content -clear
           }catch{
             write-ezlogs "An exception occurred in PlayLink_OnDrop_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion PlayLink_OnDrop Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_Quality Combobox
       #----------------------------------------------
       [void]$hashsetup.Youtube_Quality_ComboBox.items.add('Auto')
@@ -5320,35 +5371,35 @@ function Show-SettingsWindow{
       [void]$hashsetup.Youtube_Quality_ComboBox.items.add('Low')
       $hashsetup.Youtube_Quality_ComboBox.add_SelectionChanged({
           try{
-            if($hashsetup.Youtube_Quality_ComboBox.Selectedindex -ne -1){   
+            if($hashsetup.Youtube_Quality_ComboBox.Selectedindex -ne -1){
               if($hashsetup.Youtube_Quality_ComboBox.selecteditem -eq 'Best' -or $hashsetup.Youtube_Quality_ComboBox.selecteditem -eq 'Auto'){
                 $hashsetup.Youtube_Quality_Label.BorderBrush = 'LightGreen'
               }elseif($hashsetup.Youtube_Quality_ComboBox.selecteditem -eq 'Medium'){
                 $hashsetup.Youtube_Quality_Label.BorderBrush = 'Gray'
               }else{
                 $hashsetup.Youtube_Quality_Label.BorderBrush = 'Red'
-              }   
+              }
               Add-Member -InputObject $thisapp.configTemp -Name 'Youtube_Quality' -Value $($hashsetup.Youtube_Quality_ComboBox.selecteditem) -MemberType NoteProperty -Force
             }
-            else{      
-              Add-Member -InputObject $thisapp.configTemp -Name 'Youtube_Quality' -Value 'Auto' -MemberType NoteProperty -Force  
-              $hashsetup.Youtube_Quality_Label.BorderBrush = 'Gray'               
+            else{
+              Add-Member -InputObject $thisapp.configTemp -Name 'Youtube_Quality' -Value 'Auto' -MemberType NoteProperty -Force
+              $hashsetup.Youtube_Quality_Label.BorderBrush = 'Gray'
             }
           }catch{
             write-ezlogs "An exception occurred in Youtube_Quality_ComboBox.add_SelectionChanged" -CatchError $_ -enablelogs
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Youtube_Quality Combobox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_Download_textbox
-      #----------------------------------------------      
+      #----------------------------------------------
       $hashsetup.Youtube_Download_textbox.Add_TextChanged({
           try{
             if([system.io.directory]::Exists($hashsetup.Youtube_Download_textbox.text)){
-              $hashsetup.Youtube_Download_Label.BorderBrush="LightGreen"         
+              $hashsetup.Youtube_Download_Label.BorderBrush="LightGreen"
             }else{
               $hashsetup.Youtube_Download_Label.BorderBrush="Red"
             }
@@ -5359,54 +5410,54 @@ function Show-SettingsWindow{
       if(-not [string]::IsNullOrEmpty($thisApp.Config.Youtube_Download_Path)){
         $hashsetup.Youtube_Download_textbox.text = $thisApp.Config.Youtube_Download_Path
       }
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube_Download_textbox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_Download_Browse
-      #---------------------------------------------- 
+      #----------------------------------------------
       $hashsetup.Youtube_Download_Browse.add_Click({
           try{
             $result = Open-FolderDialog -Title 'Select the directory where Youtube videos will be downloaded'
-            if(-not [string]::IsNullOrEmpty($result)){$hashsetup.Youtube_Download_textbox.text = $result}  
+            if(-not [string]::IsNullOrEmpty($result)){$hashsetup.Youtube_Download_textbox.text = $result}
           }catch{
             write-ezlogs "An exception occurred in Youtube_Download_Browse.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube_Download_Browse
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_Download Help
       #----------------------------------------------
       $hashsetup.Youtube_Download_Help_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Default_Download_Path.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open  -Header 'Default Youtube Download Location' -clear         
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Default_Download_Path.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open  -Header 'Default Youtube Download Location' -clear
           }catch{
             write-ezlogs "An exception occurred in Youtube_Download_Help_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube_Download Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_Quality Help
       #----------------------------------------------
       $hashsetup.Youtube_Quality_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_Quality.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open  -Header  $hashsetup.Youtube_Quality_Label.content -clear                 
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_Quality.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open  -Header  $hashsetup.Youtube_Quality_Label.content -clear
           }catch{
             write-ezlogs "An exception occurred in Youtube_Quality_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube_Quality Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Update_YoutubePlaylists_Timer
       #----------------------------------------------
       try{
@@ -5414,10 +5465,10 @@ function Show-SettingsWindow{
         #$hashSetup.YoutubePlaylists_items = New-Object System.Collections.ObjectModel.ObservableCollection[object]
         $hashsetup.Update_YoutubePlaylists_Timer = [System.Windows.Threading.DispatcherTimer]::new()
         $hashsetup.Update_YoutubePlaylists_Timer_ScriptBlock = {
-          try{             
+          try{
             if($hashsetup.YoutubePlaylists_Grid.Items){
               [void]$hashsetup.YoutubePlaylists_Grid.Items.clear()
-            }          
+            }
             foreach($item in $this.tag | where {$hashsetup.YoutubePlaylists_Grid.Items -notcontains $_}){
               [void]$hashsetup.YoutubePlaylists_Grid.Items.add($item)
             }
@@ -5427,17 +5478,17 @@ function Show-SettingsWindow{
             $this.stop()
           }finally{
             $this.stop()
-          }  
+          }
         }
-        $hashsetup.Update_YoutubePlaylists_Timer.add_tick($hashsetup.Update_YoutubePlaylists_Timer_ScriptBlock) 
+        $hashsetup.Update_YoutubePlaylists_Timer.add_tick($hashsetup.Update_YoutubePlaylists_Timer_ScriptBlock)
       }catch{
         write-ezlogs "An exception occurred in Update-YoutubePlaylists startup" -showtime -catcherror $_
-      } 
-      #---------------------------------------------- 
+      }
+      #----------------------------------------------
       #endregion Update_YoutubePlaylists_Timer
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Update_YoutubeStatus_Timer
       #----------------------------------------------
       $hashsetup.Update_YoutubeStatus_Timer = [System.Windows.Threading.DispatcherTimer]::new()
@@ -5449,7 +5500,7 @@ function Show-SettingsWindow{
           }
           if($hashsetup.YoutubeMedia_Importing_Settings_Expander){
             $hashsetup.YoutubeMedia_Importing_Settings_Expander.isEnabled = $true
-          }                 
+          }
           if($this.tag -eq 'AuthSuccess'){
             write-ezlogs "Authenticated to Youtube and retrieved access tokens" -showtime -LogLevel 2 -logtype Setup -Success
             $hashsetup.Youtube_Playlists_Import.isEnabled = $true
@@ -5465,39 +5516,39 @@ function Show-SettingsWindow{
             [void]$link_hyperlink.Inlines.add("AUTHENTICATE")
             [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashSetup.Youtube_AuthHandler)
             [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashSetup.Youtube_AuthHandler)
-            [void]$hashsetup.Import_Youtube_textbox.Inlines.add("If you wish to update or change your Youtube credentials, click ")  
-            [void]$hashsetup.Import_Youtube_textbox.Inlines.add($($link_hyperlink))        
+            [void]$hashsetup.Import_Youtube_textbox.Inlines.add("If you wish to update or change your Youtube credentials, click ")
+            [void]$hashsetup.Import_Youtube_textbox.Inlines.add($($link_hyperlink))
             $hashsetup.Import_Youtube_textbox.Foreground = "LightGreen"
             $hashsetup.Import_Youtube_textbox.FontSize = '14'
             $hashsetup.Import_Youtube_transitioningControl.Height = '60'
             if($MahDialog_hash.window.Dispatcher -and $MahDialog_hash.window.isVisible){
               write-ezlogs ">>>> Closing Web Login Window" -LogLevel 2 -logtype Setup
               $MahDialog_hash.window.Dispatcher.Invoke("Normal",[action]{ $MahDialog_hash.window.close() })
-            }          
+            }
             Invoke-YoutubeImport -thisapp $thisApp -hashsetup $hashsetup
-            update-EditorHelp -content "[SUCCESS] Authenticated to Youtube and saved access tokens into the Secret Vault! You may close this message" -color lightgreen -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -clear -Open -Header 'Youtube Authentication' 
-          }elseif($this.tag -eq 'AuthFail'){           
+            update-EditorHelp -content "[SUCCESS] Authenticated to Youtube and saved access tokens into the Secret Vault! You may close this message" -color lightgreen -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -clear -Open -Header 'Youtube Authentication'
+          }elseif($this.tag -eq 'AuthFail'){
             write-ezlogs "[Show-SettingsWindow] Unable to successfully authenticate to Youtube!" -showtime -warning -logtype Youtube
             $hashsetup.Import_Youtube_Playlists_Toggle.isOn = $false
-            $hashsetup.Youtube_Playlists_Import.isEnabled = $false  
+            $hashsetup.Youtube_Playlists_Import.isEnabled = $false
             update-EditorHelp -content "[WARNING] Unable to successfully authenticate to Youtube! Some Youtube features may be unavailable" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -clear -Open -Header 'Youtube Authentication'
           }
           if(!$hashsetup.Window.isVisible){
-            $hashsetup.Window.Show() 
-          }         
+            $hashsetup.Window.Show()
+          }
         }catch{
           write-ezlogs "An exception occurred in Youtube_UpdateStatus_Timer" -catcherror $_
         }finally{
           $this.tag = $null
           $this.stop()
-        } 
+        }
       }
       $hashsetup.Update_YoutubeStatus_Timer.add_Tick($hashsetup.Update_YoutubeStatus_Timer_ScriptBlock)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Update_YoutubePlaylists_Timer
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_AuthHandler
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashSetup.Youtube_AuthHandler = {
@@ -5511,7 +5562,7 @@ function Show-SettingsWindow{
               $hashsetup.Update_YoutubeStatus_Timer.tag = $null
               $hashsetup.Update_YoutubeStatus_Timer.stop()
             }
-            <#            if([System.IO.Directory]::Exists("$($thisApp.Config.Temp_Folder)\Setup_Webview2")){   
+            <#            if([System.IO.Directory]::Exists("$($thisApp.Config.Temp_Folder)\Setup_Webview2")){
                 try{
                 write-ezlogs ">>>> Removing existing Webview2 cache $($thisApp.Config.Temp_Folder)\Setup_Webview2" -showtime -logtype Setup -LogLevel 2
                 del "\\?\$($thisApp.Config.Temp_Folder)\Setup_Webview2" -Force -Confirm:$false -Recurse
@@ -5526,10 +5577,10 @@ function Show-SettingsWindow{
             }
             if($secretstore){
               write-ezlogs ">>>> Removing stored Youtube authentication secrets from vault" -showtime -warning -logtype Setup
-              foreach($secret in $hashsetup.valid_secrets | where-Object {$_ -match 'Youtube'}){  
-                $secret_info = Get-SecretInfo -Filter $secret -VaultName $thisApp.config.App_Name -ErrorAction SilentlyContinue       
+              foreach($secret in $hashsetup.valid_secrets | where-Object {$_ -match 'Youtube'}){
+                $secret_info = Get-SecretInfo -Filter $secret -VaultName $thisApp.config.App_Name -ErrorAction SilentlyContinue
                 if($secret_info.Name -eq $secret){
-                  try{                  
+                  try{
                     write-ezlogs "| Removing Secret $($secret_info.Name)" -showtime -warning -logtype Setup
                     Remove-secret -Name $($secret_info.Name) -Vault $thisApp.config.App_Name
                   }catch{
@@ -5547,47 +5598,47 @@ function Show-SettingsWindow{
               }
             }catch{
               write-ezlogs "[Show-SettingsWindow] An exception occurred in Grant-YoutubeOauth" -showtime -catcherror $_
-            }         
+            }
           }catch{
             write-ezlogs "An exception occurred in Youtube_AuthHandler routed event" -showtime -catcherror $_
-          }         
-        }     
-      }   
-      #---------------------------------------------- 
+          }
+        }
+      }
+      #----------------------------------------------
       #endregion Youtube_AuthHandler
-      #----------------------------------------------  
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_ImportHandler
-      #----------------------------------------------         
+      #----------------------------------------------
       [System.Windows.RoutedEventHandler]$Youtube_ImportHandler = {
         param ($sender,$e)
         $hashsetup.Youtube_Playlists_Import_Progress_Ring.isActive=$true
         $hashsetup.Youtube_Playlists_Import.isEnabled = $false
         $Youtube_Import_Scriptblock = {
           try{
-            Invoke-YoutubeImport -thisapp $thisApp -hashsetup $hashsetup               
+            Invoke-YoutubeImport -thisapp $thisApp -hashsetup $hashsetup
           }catch{
             write-ezlogs "An exception occurred in Youtube_ImportHandler routed event" -showtime -catcherror $_
-          }     
+          }
         }
         try{
-          $Variable_list = Get-Variable | & { process {if ($_.Options -notmatch "ReadOnly|Constant" -and !$_.description){$_}}} 
+          $Variable_list = Get-Variable | & { process {if ($_.Options -notmatch "ReadOnly|Constant" -and !$_.description){$_}}}
           Start-Runspace -scriptblock $Youtube_Import_Scriptblock -Variable_list $Variable_list -runspace_name 'Youtube_ImportHandler_RUNSPACE' -thisApp $thisApp -synchash $synchash
           $Variable_list = $Null
           $Youtube_Import_Scriptblock = $Null
         }catch{
           write-ezlogs "An exception occurred executing Youtube_ImportHandler_RUNSPACE" -showtime -catcherror $_
-        }             
-      } 
-      [void]$hashsetup.Youtube_Playlists_Import.AddHandler([System.Windows.Controls.Button]::ClickEvent,$Youtube_ImportHandler) 
-      #---------------------------------------------- 
+        }
+      }
+      [void]$hashsetup.Youtube_Playlists_Import.AddHandler([System.Windows.Controls.Button]::ClickEvent,$Youtube_ImportHandler)
+      #----------------------------------------------
       #endregion Youtube_ImportHandler
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Youtube_Auth_ComboBox
-      #----------------------------------------------     
+      #----------------------------------------------
       $hashsetup.Import_Youtube_Auth_ComboBox.add_SelectionChanged({
           Param($Sender)
           try{
@@ -5595,18 +5646,18 @@ function Show-SettingsWindow{
               $hashsetup.Import_Youtube_Auth_Label.BorderBrush = "Red"
             }else{
               $hashsetup.Import_Youtube_Auth_Label.BorderBrush = "Green"
-            } 
+            }
           }catch{
             write-ezlogs "An exception occured in Import_Youtube_Auth_ComboBox.add_SelectionChanged" -catcherror $_
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Import_Youtube_Auth_ComboBox
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Youtube_Auth_Toggle
-      #---------------------------------------------- 
+      #----------------------------------------------
       $hashsetup.Import_Youtube_Auth_Toggle_Command = {
         Param($sender)
         try{
@@ -5614,31 +5665,31 @@ function Show-SettingsWindow{
           $thisapp.configTemp.Import_Youtube_Browser_Auth = $sender.isOn
         }catch{
           write-ezlogs "An exception occurred in Import_Youtube_Auth_Toggle.add_Toggled" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.Import_Youtube_Auth_Toggle.add_Toggled($hashsetup.Import_Youtube_Auth_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Import_Youtube_Auth_Toggle
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Youtube_Playlists_Toggle
       #----------------------------------------------
       $hashsetup.Import_Youtube_Playlists_Toggle_Command = {
         Param($sender)
         try{
           if($sender.tag -ne 'Startup'){
-            if($sender.isOn) {     
+            if($sender.isOn) {
               write-ezlogs ">>>> Enabling Import Youtube Playlists" -showtime -logtype Setup -LogLevel 2
               $hashsetup.Youtube_Playlists_Browse.IsEnabled = $true
-              $hashsetup.YoutubePlaylists_Grid.IsEnabled = $true   
-              $hashsetup.YoutubePlaylists_Grid.MaxHeight = 250  
-              $hashsetup.Import_Youtube_Auth_Toggle.isEnabled = $true 
+              $hashsetup.YoutubePlaylists_Grid.IsEnabled = $true
+              $hashsetup.YoutubePlaylists_Grid.MaxHeight = 250
+              $hashsetup.Import_Youtube_Auth_Toggle.isEnabled = $true
               if($hashsetup.Import_Youtube_Auth_Toggle.isOn){
                 $hashsetup.Import_Youtube_Auth_ComboBox.isEnabled = $true
               }else{
                 $hashsetup.Import_Youtube_Auth_ComboBox.isEnabled = $false
-              }           
+              }
               $thisapp.configTemp.Import_Youtube_Media = $true
               try{
                 $Name = $($thisApp.Config.App_Name)
@@ -5647,13 +5698,13 @@ function Show-SettingsWindow{
                 if(!$secretstore){
                   write-ezlogs ">>>> Couldnt find secret vault, Attempting to create new application: $Name" -showtime -LogLevel 2 -logtype Setup
                   try{
-                    $secretstore = New-YoutubeApplication -thisApp $thisApp -Name $Name -ConfigPath $ConfigPath                  
+                    $secretstore = New-YoutubeApplication -thisApp $thisApp -Name $Name -ConfigPath $ConfigPath
                   }catch{
-                    write-ezlogs "An exception occurred when setting or configuring the secret vault $Name" -CatchError $_ -showtime -enablelogs 
-                  }   
+                    write-ezlogs "An exception occurred when setting or configuring the secret vault $Name" -CatchError $_ -showtime -enablelogs
+                  }
                 }else{
-                  write-ezlogs "Retrieved SecretVault: $($Name)" -showtime -LogLevel 2 -logtype Setup -Success  
-                }                 
+                  write-ezlogs "Retrieved SecretVault: $($Name)" -showtime -LogLevel 2 -logtype Setup -Success
+                }
               }catch{
                 write-ezlogs "An exception occurred when setting or configuring the secret vault $Name" -CatchError $_ -showtime
               }
@@ -5662,7 +5713,7 @@ function Show-SettingsWindow{
                 $refresh_access_token = Get-secret -name Youtuberefresh_token  -Vault $Name -ErrorAction SilentlyContinue
                 if($refresh_access_token){
                   $access_token_expires = Get-secret -name Youtubeexpires_in  -Vault $Name -ErrorAction SilentlyContinue
-                }   
+                }
               }catch{
                 write-ezlogs "An exception occurred getting Youtube secrets from vault $Name" -catcherror $_
                 if($_.Exception -match 'A valid password is required to access the Microsoft.PowerShell.SecretStore vault'){
@@ -5673,12 +5724,12 @@ function Show-SettingsWindow{
                     $refresh_access_token = Get-secret -name Youtuberefresh_token  -Vault $Name -ErrorAction SilentlyContinue
                     if($refresh_access_token){
                       $access_token_expires = Get-secret -name Youtubeexpires_in  -Vault $Name -ErrorAction SilentlyContinue
-                    } 
+                    }
                   }catch{
                     write-ezlogs "An exception occurred getting Youtube secrets after unlocking SecretVault $Name" -catcherror $_
                   }
                 }
-              }                    
+              }
               if($hashsetup.Import_Youtube_textbox.Inlines){
                 $hashsetup.Import_Youtube_textbox.Inlines.clear()
               }
@@ -5698,8 +5749,8 @@ function Show-SettingsWindow{
                 $hashsetup.Import_Youtube_textbox.Inlines.add("Click ")
                 [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashSetup.Youtube_AuthHandler)
                 [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashSetup.Youtube_AuthHandler)
-                [void]$hashsetup.Import_Youtube_textbox.Inlines.add($($link_hyperlink))        
-                [void]$hashsetup.Import_Youtube_textbox.Inlines.add(" to provide your Youtube account credentials.")   
+                [void]$hashsetup.Import_Youtube_textbox.Inlines.add($($link_hyperlink))
+                [void]$hashsetup.Import_Youtube_textbox.Inlines.add(" to provide your Youtube account credentials.")
                 $hashsetup.Import_Youtube_textbox.Foreground = "Orange"
                 $hashsetup.Import_Youtube_textbox.FontSize = '14'
                 $hashsetup.Import_Youtube_transitioningControl.Height = '60'
@@ -5717,18 +5768,18 @@ function Show-SettingsWindow{
                 [void]$link_hyperlink.Inlines.add("AUTHENTICATE")
                 [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashSetup.Youtube_AuthHandler)
                 [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashSetup.Youtube_AuthHandler)
-                [void]$hashsetup.Import_Youtube_textbox.Inlines.add("If you wish to update or change your Youtube credentials, click ")  
-                [void]$hashsetup.Import_Youtube_textbox.Inlines.add($($link_hyperlink))        
+                [void]$hashsetup.Import_Youtube_textbox.Inlines.add("If you wish to update or change your Youtube credentials, click ")
+                [void]$hashsetup.Import_Youtube_textbox.Inlines.add($($link_hyperlink))
                 $hashsetup.Import_Youtube_textbox.Foreground = "LightGreen"
                 $hashsetup.Import_Youtube_textbox.FontSize = '14'
-                $hashsetup.Import_Youtube_transitioningControl.Height = '60'        
-              }                   
+                $hashsetup.Import_Youtube_transitioningControl.Height = '60'
+              }
             }else{
               $hashsetup.Youtube_Playlists_Browse.IsEnabled = $false
-              $hashsetup.YoutubePlaylists_Grid.IsEnabled = $false    
+              $hashsetup.YoutubePlaylists_Grid.IsEnabled = $false
               $hashsetup.Import_Youtube_Auth_ComboBox.isEnabled = $false
               $hashsetup.Youtube_Playlists_Import.isEnabled = $false
-              $hashsetup.Import_Youtube_Auth_Toggle.isEnabled = $false    
+              $hashsetup.Import_Youtube_Auth_Toggle.isEnabled = $false
               $hashsetup.YoutubePlaylists_Grid.MaxHeight = '0'
               Add-Member -InputObject $thisapp.configTemp -Name "Import_Youtube_Media" -Value $false -MemberType NoteProperty -Force -ErrorAction SilentlyContinue
               $hashsetup.Import_Youtube_textbox.text = ""
@@ -5742,26 +5793,26 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Import_Youtube_Playlists_Toggle.add_Toggled($hashsetup.Import_Youtube_Playlists_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Import_Youtube_Playlists_Toggle
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Youtube_Playlists_Button
       #----------------------------------------------
       $hashsetup.Import_Youtube_Playlists_Button.add_click({
-          try{  
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_Integration.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Import_Youtube_Playlists_Toggle.content  
+          try{
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_Integration.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Import_Youtube_Playlists_Toggle.content
           }catch{
             write-ezlogs "An exception occurred when opening main UI window" -CatchError $_
           }
 
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Import_Youtube_Playlists_Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Youtube_Status_Button
       #----------------------------------------------
       $hashsetup.Import_Youtube_Status_Button_Command = {
@@ -5773,30 +5824,30 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Import_Youtube_Status_Button.add_click($hashsetup.Import_Youtube_Status_Button_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Import_Youtube_Status_Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Youtube_Auth_Button
       #----------------------------------------------
       $hashsetup.Import_Youtube_Auth_Button.add_click({
-          try{  
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_BrowserCookies.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Import_Youtube_Auth_Toggle.Content  
+          try{
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_BrowserCookies.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Import_Youtube_Auth_Toggle.Content
           }catch{
-            write-ezlogs "An exception occurred in Import_Youtube_Auth_Button.add_click" -CatchError $_ 
+            write-ezlogs "An exception occurred in Import_Youtube_Auth_Button.add_click" -CatchError $_
           }
 
-      })  
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Import_Youtube_Auth_Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_Playlists_Browse
-      #----------------------------------------------      
-      $hashsetup.Youtube_Playlists_Browse.add_click({  
-          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()        
+      #----------------------------------------------
+      $hashsetup.Youtube_Playlists_Browse.add_click({
+          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
           $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalInputExternal($hashsetup.Window,"Add New Youtube URL","Enter the url of the Youtube Playlist, Channel or Video",$button_settings)
           if(-not [string]::IsNullOrEmpty($result)){
             if((Test-URL $result) -and ($result -match 'youtube\.com' -or $result -match 'yewtu\.be|invidious' -or $result -match 'soundcloud\.com')){
@@ -5804,22 +5855,22 @@ function Show-SettingsWindow{
                 write-ezlogs "Adding URL $result" -showtime -logtype Setup -LogLevel 2
                 if($result -match 'tv\.youtube'){
                   if($result -match "v="){
-                    $id = ($($result) -split('v='))[1].trim() 
+                    $id = ($($result) -split('v='))[1].trim()
                   }elseif($result -match "\/watch\/"){
-                    $id = ($($result) -split('/watch/'))[1].trim() 
+                    $id = ($($result) -split('/watch/'))[1].trim()
                   }
                   $Name = "Custom_$id"
                   $type = "YoutubeTV"
                 }elseif($result -match "v="){
-                  $id = ($($result) -split('v='))[1].trim()  
+                  $id = ($($result) -split('v='))[1].trim()
                   $type = 'YoutubeVideo'
-                  $Name = "Custom_$id"          
+                  $Name = "Custom_$id"
                 }elseif($result -match 'list='){
-                  $id = ($($result) -split('list='))[1].trim()    
-                  $type = 'YoutubePlaylist'     
-                  $Name = "Custom_$id"                 
+                  $id = ($($result) -split('list='))[1].trim()
+                  $type = 'YoutubePlaylist'
+                  $Name = "Custom_$id"
                 }elseif($result -match 'youtube\.com\/channel\/'){
-                  $id = $((Get-Culture).textinfo.totitlecase(($result | split-path -leaf).tolower())) 
+                  $id = $((Get-Culture).textinfo.totitlecase(($result | split-path -leaf).tolower()))
                   $Name = "Custom_$id"
                   $type = 'YoutubeChannel'
                 }elseif($result -match "\/watch\/"){
@@ -5835,14 +5886,14 @@ function Show-SettingsWindow{
                   $Name = "Custom_$id"
                   $type = 'SoundCloud'
                 }
-                if(!$hashSetup.YoutubePlaylists_itemsArray.Number){ 
+                if(!$hashSetup.YoutubePlaylists_itemsArray.Number){
                   $Number = 1
                 }else{
                   $Number = $hashSetup.YoutubePlaylists_itemsArray.Number | select -last 1
                   $Number++
                 }
                 [void]$hashSetup.YoutubePlaylists_itemsArray.add([PSCustomObject]@{
-                    Number=$Number;       
+                    Number=$Number;
                     ID = $id
                     Name=$Name
                     Path=$result
@@ -5853,23 +5904,23 @@ function Show-SettingsWindow{
                 $hashsetup.Update_YoutubePlaylists_Timer.start()
               }else{
                 write-ezlogs "The location $result has already been added!" -showtime -warning -logtype Setup
-              } 
+              }
             }else{
               $hashsetup.Editor_Help_Flyout.isOpen = $true
-              $hashsetup.Editor_Help_Flyout.header = 'Youtube Playlists'            
+              $hashsetup.Editor_Help_Flyout.header = 'Youtube Playlists'
               update-EditorHelp -content "[WARNING] Invalid URL Provided" -color Orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -clear
-              update-EditorHelp -content "The location $result is not a valid URL! Please ensure the URL is a valid Youtube or Twitch URL" -color Orange -RichTextBoxControl $hashsetup.EditorHelpFlyout     
+              update-EditorHelp -content "The location $result is not a valid URL! Please ensure the URL is a valid Youtube or Twitch URL" -color Orange -RichTextBoxControl $hashsetup.EditorHelpFlyout
               write-ezlogs "The location $result is not a valid URL!" -showtime -warning -logtype Setup -LogLevel 2
             }
           }else{
             write-ezlogs "No URL was provided!" -showtime -warning -logtype Setup
-          } 
+          }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube_Playlists_Browse
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_My_Playlists_Import_Checked
       #----------------------------------------------
       $hashsetup.Youtube_My_Playlists_Import.add_Checked({
@@ -5879,11 +5930,11 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occured in Youtube_My_Playlists_Import.add_Checked event" -showtime -catcherror $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube_My_Playlists_Import_Checked
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_My_Playlists_Import_UnChecked
       #----------------------------------------------
       $hashsetup.Youtube_My_Playlists_Import.add_UnChecked({
@@ -5892,26 +5943,26 @@ function Show-SettingsWindow{
           }catch{
             write-ezlogs "An exception occured in Youtube_My_Playlists_Import.add_UnChecked event" -showtime -catcherror $_
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Youtube_My_Playlists_Import_UnChecked
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_My_Playlists_Import_Button
       #----------------------------------------------
       $hashsetup.Youtube_My_Playlists_Import_Button.add_click({
-          try{  
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_MyUploads.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Youtube_My_Playlists_Import.content
           }catch{
             write-ezlogs "An exception occurred in Youtube_My_Playlists_Import_Button.add_click event" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube_My_Playlists_Import_Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_My_Subscriptions_Import_Checked
       #----------------------------------------------
       $hashsetup.Youtube_My_Subscriptions_Import.add_Checked({
@@ -5921,11 +5972,11 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occured in Youtube_My_Subscriptions_Import.add_Checked event" -showtime -catcherror $_
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube_My_Subscriptions_Import_Checked
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_My_Subscriptions_Import_UnChecked
       #----------------------------------------------
       $hashsetup.Youtube_My_Subscriptions_Import.add_UnChecked({
@@ -5934,34 +5985,34 @@ function Show-SettingsWindow{
           }catch{
             write-ezlogs "An exception occured in Youtube_My_Subscriptions_Import.add_UnChecked event" -showtime -catcherror $_
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Youtube_My_Subscriptions_Import_UnChecked
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Youtube_My_Subscriptions_Import_Button
       #----------------------------------------------
       $hashsetup.Youtube_My_Subscriptions_Import_Button.add_click({
-          try{  
+          try{
             if($hashsetup.EditorHelpFlyout.Document.Blocks){
               $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-            }        
+            }
             $hashsetup.Editor_Help_Flyout.isOpen = $true
             $hashsetup.Editor_Help_Flyout.header = $hashsetup.Youtube_My_Subscriptions_Import.content
 
             update-EditorHelp -content "Check this if you also wish to import Youtube Channels you have Subscribed to on Youtube" -RichTextBoxControl $hashsetup.EditorHelpFlyout
             update-EditorHelp -content "IMPORTANT" -FontWeight bold -color orange -RichTextBoxControl $hashsetup.EditorHelpFlyout
-            update-EditorHelp -content "This needs to be documented with the help system...DID HE FORGET?!"  -color orange -RichTextBoxControl $hashsetup.EditorHelpFlyout  
+            update-EditorHelp -content "This needs to be documented with the help system...DID HE FORGET?!"  -color orange -RichTextBoxControl $hashsetup.EditorHelpFlyout
           }catch{
             write-ezlogs "An exception occurred in Youtube_My_Subscriptions_Import_Button.add_click event" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Youtube_My_Subscriptions_Import_Button
-      #----------------------------------------------  
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Update_TwitchPlaylists_Timer
       #----------------------------------------------
       #$hashSetup.TwitchPlaylists_items = [System.Collections.ObjectModel.ObservableCollection[object]]::new()
@@ -5977,17 +6028,17 @@ function Show-SettingsWindow{
             $this.stop()
           }finally{
             $this.stop()
-          }     
+          }
         }
         $hashsetup.Update_TwitchPlaylists_Timer.add_tick($hashsetup.Update_TwitchPlaylists_Timer_ScriptBlock)
       }catch{
         write-ezlogs "An exception occurred creating Update-TwitchPlaylists startup" -showtime -catcherror $_
       }
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Update_TwitchPlaylists_Timer
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch Updates Toggle
       #----------------------------------------------
       $hashsetup.Twitch_Update_transitioningControl.content = ''
@@ -5998,20 +6049,20 @@ function Show-SettingsWindow{
           $thisapp.configTemp.Twitch_Update = $sender.isOn
         }catch{
           write-ezlogs "An exception occurred in Twitch_Update_Toggle.add_Toggled" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.Twitch_Update_Toggle.add_Toggled($hashsetup.Twitch_Update_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Twitch Updates Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_Update_Interval_ComboBox
       #----------------------------------------------
       $hashsetup.Twitch_Update_Interval_ComboBox.add_SelectionChanged({
           Param($Sender)
           try{
-            if($Sender.SelectedIndex -ne -1){    
+            if($Sender.SelectedIndex -ne -1){
               $hashsetup.Twitch_Update_Interval_Label.BorderBrush = 'Green'
               if($Sender.Selecteditem.Content -match 'Minutes'){
                 $interval = [TimeSpan]::FromMinutes("$(($Sender.Selecteditem.Content -replace 'Minutes', '').trim())")
@@ -6021,33 +6072,33 @@ function Show-SettingsWindow{
               $thisapp.configTemp.Twitch_Update_Interval = $interval
               $hashsetup.Twitch_Update_textblock.text = ''
               $hashsetup.Twitch_Update_transitioningControl.content = ''
-            }else{          
+            }else{
               $hashsetup.Twitch_Update_Interval_Label.BorderBrush = 'Red'
-              $thisapp.configTemp.Twitch_Update_Interval = ''    
+              $thisapp.configTemp.Twitch_Update_Interval = ''
             }
           }catch{
             write-ezlogs "An exception occurred in Twitch_Update_Interval_ComboBox event" -CatchError $_ -showtime
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Twitch_Update_Interval_ComboBox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch Updates Help
       #----------------------------------------------
       $hashsetup.Twitch_Update_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Twitch_AutoUpdate.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Twitch_Update_Toggle.content            
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Twitch_AutoUpdate.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Twitch_Update_Toggle.content
           }catch{
             write-ezlogs "An exception occurred in Twitch_Update_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Twitch Updates Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Enable_Twitch_Notifications Toggle
       #----------------------------------------------
       $hashsetup.Enable_Twitch_Notifications_Toggle_Command = {
@@ -6056,28 +6107,28 @@ function Show-SettingsWindow{
           $thisapp.configTemp.Enable_Twitch_Notifications = $sender.isOn
         }catch{
           write-ezlogs "An exception occurred in Enable_Twitch_Notifications_Toggle.add_Toggled" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.Enable_Twitch_Notifications_Toggle.add_Toggled($hashsetup.Enable_Twitch_Notifications_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Enable_Twitch_Notifications Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Enable_Twitch_Notifications Help
       #----------------------------------------------
       $hashsetup.Enable_Twitch_Notifications_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Enable_Twitch_Notifications.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Enable_Twitch_Notifications_Toggle.Content -open -clear                  
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Enable_Twitch_Notifications.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Enable_Twitch_Notifications_Toggle.Content -open -clear
           }catch{
             write-ezlogs "An exception occurred in Enable_Twitch_Notifications_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Enable_Twitch_Notifications Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region ForceUse_YTDLP Toggle
       #----------------------------------------------
       $hashsetup.ForceUse_YTDLP_Toggle_Command = {
@@ -6086,14 +6137,14 @@ function Show-SettingsWindow{
           $thisapp.configTemp.ForceUse_YTDLP = $sender.isOn
         }catch{
           write-ezlogs "An exception occurred in Enable_Twitch_Notifications_Toggle.add_Toggled" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.ForceUse_YTDLP_Toggle.add_Toggled($hashsetup.ForceUse_YTDLP_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion ForceUse_YTDLP Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region ForceUse_YTDLP Help
       #----------------------------------------------
       $hashsetup.ForceUse_YTDLP_Button.add_Click({
@@ -6103,11 +6154,11 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred in ForceUse_YTDLP_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion ForceUse_YTDLP Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Skip_Twitch_Ads_Toggle Toggle
       #----------------------------------------------
       $hashsetup.Skip_Twitch_Ads_Toggle_Command = {
@@ -6116,28 +6167,28 @@ function Show-SettingsWindow{
           $thisapp.configTemp.Skip_Twitch_Ads = $sender.isOn
         }catch{
           write-ezlogs "An exception occurred in Skip_Twitch_Ads_Toggle.add_Toggled" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.Skip_Twitch_Ads_Toggle.add_Toggled($hashsetup.Skip_Twitch_Ads_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Skip_Twitch_Ads_Toggle Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Skip_Twitch_Ads Help
       #----------------------------------------------
       $hashsetup.Skip_Twitch_Ads_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Skip_Twitch_Ads.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Skip_Twitch_Ads_Toggle.Content -open -clear                
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Skip_Twitch_Ads.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Skip_Twitch_Ads_Toggle.Content -open -clear
           }catch{
             write-ezlogs "An exception occurred in Skip_Twitch_Ads_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Skip_Twitch_Ads Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Mute_Twitch_Ads_Toggle Toggle
       #----------------------------------------------
       $hashsetup.Mute_Twitch_Ads_Toggle_Command = {
@@ -6146,14 +6197,14 @@ function Show-SettingsWindow{
           $thisapp.configTemp.Mute_Twitch_Ads = $sender.isOn
         }catch{
           write-ezlogs "An exception occurred in Skip_Twitch_Ads_Toggle.add_Toggled" -showtime -catcherror $_
-        } 
+        }
       }
       $hashsetup.Mute_Twitch_Ads_Toggle.add_Toggled($hashsetup.Mute_Twitch_Ads_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Mute_Twitch_Ads_Toggle Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Mute_Twitch_Ads Help
       #----------------------------------------------
       $hashsetup.Mute_Twitch_Ads_Button.add_Click({
@@ -6163,11 +6214,11 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred in Mute_Twitch_Ads_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Mute_Twitch_Ads Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_TTVLOL_Toggle Toggle
       #----------------------------------------------
       $hashsetup.Twitch_TTVLOL_Toggle_Command = {
@@ -6175,7 +6226,7 @@ function Show-SettingsWindow{
         try{
           $customTwitchPlugindst = "$env:appdata\streamlink\plugins\twitch.py"
           $customTwitchPluginsrc = "$($thisApp.Config.Current_Folder)\Resources\Streamlink\twitch.py"
-          if($sender.isOn -eq $true){       
+          if($sender.isOn -eq $true){
             write-ezlogs ">>>> Enabled Use_Twitch_TTVLOL" -LogLevel 2 -logtype Setup
             if($hashsetup.Twitch_luminous_Toggle.isOn){
               write-ezlogs "| Disabling Twitch_luminous_Toggle" -LogLevel 2 -logtype Setup
@@ -6210,17 +6261,17 @@ function Show-SettingsWindow{
               return
             }
           }
-          else{     
-            write-ezlogs "Disabled Use_Twitch_TTVLOL" -LogLevel 2 -logtype Setup   
+          else{
+            write-ezlogs "Disabled Use_Twitch_TTVLOL" -LogLevel 2 -logtype Setup
             if(!$hashsetup.Twitch_luminous_Toggle.isOn){
-              if([system.io.file]::Exists($customTwitchPlugindst)){ 
-                try{        
+              if([system.io.file]::Exists($customTwitchPlugindst)){
+                try{
                   if((Get-Process streamlink -ErrorAction SilentlyContinue)){
                     write-ezlogs "| Streamlink is currently running, it must be shutdown before disabling the TTVLOL Plugin" -warning -logtype Setup
-                    $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+                    $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
                     $Button_Settings.AffirmativeButtonText = 'Yes'
-                    $Button_Settings.NegativeButtonText = 'No'  
-                    $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+                    $Button_Settings.NegativeButtonText = 'No'
+                    $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
                     $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Streamlink WARNING","Streamlink (which is used to play Twitch streams) is currently running. It must be shutdown before disabling the TTVLOL Plugin. This will end any currently playing Twitch Streams.`nDo you want to close it now and continue?",$okandCancel,$Button_Settings)
                     if($result -eq 'Affirmative'){
                       write-ezlogs "User wished to continue, killing streamlink" -showtime -warning -logtype Setup
@@ -6232,47 +6283,47 @@ function Show-SettingsWindow{
                   }else{
                     write-ezlogs "| Removing custom Twitch streamlink plugin at $customTwitchPlugindst" -LogLevel 2 -logtype Setup
                     [void][system.io.file]::Delete($customTwitchPlugindst)
-                  }                
+                  }
                 }catch{
                   write-ezlogs "An exception occurred attempting to disable Twitch_TTVLOL" -catcherror $_
                   update-EditorHelp -content "An exception occurred attempting to disable Twitch_TTVLOL. The setting will still be diabled, but the associated Streamlink Plugin files may still exist`n$($_.Exception | out-string)`n$($_.ScriptStackTrace | out-string)" -color Tomato -RichTextBoxControl $hashsetup.EditorHelpFlyout -Header 'Twitch Config ERROR' -clear -Open
                   $error.clear()
-                }            
-              }          
-            }                
+                }
+              }
+            }
             Add-Member -InputObject $thisapp.configTemp -Name 'Use_Twitch_TTVLOL' -Value $false -MemberType NoteProperty -Force
           }
         }catch{
           write-ezlogs "An exception occurred in Twitch_TTVLOL_Toggle event" -CatchError $_ -showtime
-        } 
+        }
       }
       $hashsetup.Twitch_TTVLOL_Toggle.add_Toggled($hashsetup.Twitch_TTVLOL_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Twitch_TTVLOL_Toggle Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_TTVLOL Help
       #----------------------------------------------
       $hashsetup.Twitch_TTVLOL_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Twitch_TTVLOL.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Twitch_TTVLOL_Toggle.Content -open -clear         
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Twitch_TTVLOL.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Twitch_TTVLOL_Toggle.Content -open -clear
           }catch{
             write-ezlogs "An exception occurred in Twitch_TTVLOL_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Twitch_TTVLOL Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_luminous_Toggle
       #----------------------------------------------
       if($thisapp.config.Use_Twitch_luminous){
         $hashsetup.Twitch_luminous_Toggle.isOn = $true
         $hashsetup.Twitch_TTVLOL_Toggle.isOn = $false
         if($hashsetup.Twitch_Custom_Proxy_Toggle.isOn){
-          $hashsetup.Twitch_Custom_Proxy_Toggle.isOn = $false 
+          $hashsetup.Twitch_Custom_Proxy_Toggle.isOn = $false
         }
         if($thisapp.configTemp.UseTwitchCustom){
           $thisapp.configTemp.UseTwitchCustom = $false
@@ -6283,11 +6334,11 @@ function Show-SettingsWindow{
       }else{
         $hashsetup.Twitch_luminous_Toggle.isOn = $false
       }
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Twitch_luminous_Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_luminous_Toggle Toggle
       #----------------------------------------------
       $hashsetup.Twitch_luminous_Toggle_Command = {
@@ -6295,7 +6346,7 @@ function Show-SettingsWindow{
         try{
           $customTwitchPlugindst = "$env:appdata\streamlink\plugins\twitch.py"
           $customTwitchPluginsrc = "$($thisApp.Config.Current_Folder)\Resources\Streamlink\twitch.py"
-          if($sender.isOn -eq $true){       
+          if($sender.isOn -eq $true){
             write-ezlogs ">>>> Enabled Use_Twitch_luminous" -LogLevel 2 -logtype Setup
             if($hashsetup.Twitch_TTVLOL_Toggle.isOn){
               write-ezlogs "| Disabling Twitch_TTVLOL_Toggle" -LogLevel 2 -logtype Setup
@@ -6330,17 +6381,17 @@ function Show-SettingsWindow{
               return
             }
           }
-          else{     
-            write-ezlogs "Disabled Use_Twitch_luminous" -LogLevel 2 -logtype Setup   
-            if(!$hashsetup.Twitch_TTVLOL_Toggle.isOn){               
-              if([system.io.file]::Exists($customTwitchPlugindst)){ 
-                try{        
+          else{
+            write-ezlogs "Disabled Use_Twitch_luminous" -LogLevel 2 -logtype Setup
+            if(!$hashsetup.Twitch_TTVLOL_Toggle.isOn){
+              if([system.io.file]::Exists($customTwitchPlugindst)){
+                try{
                   if((Get-Process streamlink -ErrorAction SilentlyContinue)){
                     write-ezlogs "| Streamlink is currently running, it must be shutdown before disabling the luminous Plugin" -warning -logtype Setup
-                    $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+                    $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
                     $Button_Settings.AffirmativeButtonText = 'Yes'
-                    $Button_Settings.NegativeButtonText = 'No'  
-                    $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+                    $Button_Settings.NegativeButtonText = 'No'
+                    $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
                     $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Streamlink WARNING","Streamlink (which is used to play Twitch streams) is currently running. It must be shutdown before disabling the luminous Plugin. This will end any currently playing Twitch Streams.`nDo you want to close it now and continue?",$okandCancel,$Button_Settings)
                     if($result -eq 'Affirmative'){
                       write-ezlogs "User wished to continue, killing streamlink" -showtime -warning -logtype Setup
@@ -6352,12 +6403,12 @@ function Show-SettingsWindow{
                   }else{
                     write-ezlogs "| Removing custom Twitch streamlink plugin at $customTwitchPlugindst" -LogLevel 2 -logtype Setup
                     [void][system.io.file]::Delete($customTwitchPlugindst)
-                  }                
+                  }
                 }catch{
                   write-ezlogs "An exception occurred attempting to disable Twitch_luminous" -catcherror $_
                   update-EditorHelp -content "An exception occurred attempting to disable Twitch_luminous. The setting will still be diabled, but the associated Streamlink Plugin files may still exist`n$($_.Exception | out-string)`n$($_.ScriptStackTrace | out-string)" -color Tomato -RichTextBoxControl $hashsetup.EditorHelpFlyout -Header 'Twitch Config ERROR' -clear -Open
                   $error.clear()
-                }            
+                }
               }
             }
             Add-Member -InputObject $thisapp.configTemp -Name 'Use_Twitch_luminous' -Value $false -MemberType NoteProperty -Force
@@ -6367,11 +6418,11 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Twitch_luminous_Toggle.add_Toggled($hashsetup.Twitch_luminous_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Twitch_luminous_Toggle Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_luminous Help
       #----------------------------------------------
       $hashsetup.Twitch_luminous_Button.add_Click({
@@ -6381,13 +6432,13 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred in Twitch_luminous_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Twitch_luminous Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
-      #region Twitch Custom Playlists Proxy 
-      #---------------------------------------------- 
+      #----------------------------------------------
+      #region Twitch Custom Playlists Proxy
+      #----------------------------------------------
       if($thisApp.Config.TwitchProxies.count -eq 0){
         $thisApp.Config.TwitchProxies = [System.Collections.ArrayList]::new()
       }
@@ -6418,11 +6469,11 @@ function Show-SettingsWindow{
       }else{
         $hashsetup.Twitch_Custom_Proxy_Toggle.isOn = $false
       }
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Twitch Custom Playlists Proxy
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_Custom_Proxy_Toggle Toggle
       #----------------------------------------------
       $hashsetup.Twitch_Custom_Proxy_Toggle_Command = {
@@ -6443,48 +6494,48 @@ function Show-SettingsWindow{
             if($thisapp.configTemp.Use_Twitch_TTVLOL){
               $thisapp.configTemp.Use_Twitch_TTVLOL = $false
             }
-          }else{     
-            write-ezlogs "Disabled Twitch_Custom_Proxy" -LogLevel 2 -logtype Setup                   
+          }else{
+            write-ezlogs "Disabled Twitch_Custom_Proxy" -LogLevel 2 -logtype Setup
             $thisApp.configTemp.UseTwitchCustom = $false
           }
         }catch{
           write-ezlogs "An exception occurred in Twitch_Custom_Proxy_Toggle event" -CatchError $_ -showtime
-        } 
+        }
       }
       $hashsetup.Twitch_Custom_Proxy_Toggle.add_Toggled($hashsetup.Twitch_Custom_Proxy_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Twitch_Custom_Proxy_Toggle Toggle
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_Custom_Proxy Help
       #----------------------------------------------
       $hashsetup.Twitch_Custom_Proxy_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Twitch_Custom_Proxy.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Twitch_Custom_Proxy_Toggle.Content -open -clear        
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Twitch_Custom_Proxy.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Twitch_Custom_Proxy_Toggle.Content -open -clear
           }catch{
             write-ezlogs "An exception occurred in Twitch_Custom_Proxy_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Twitch_Custom_Proxy Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_Quality Help
       #----------------------------------------------
       $hashsetup.Twitch_Quality_Button.add_Click({
-          try{       
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Twitch_Stream_Quality.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Twitch_Quality_Label.content -open -clear
           }catch{
             write-ezlogs "An exception occurred in Skip_Twitch_Ads_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Twitch_Quality Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_Quality Combobox
       #----------------------------------------------
       [void]$hashsetup.Twitch_Quality_ComboBox.items.add('Best')
@@ -6492,32 +6543,32 @@ function Show-SettingsWindow{
       [void]$hashsetup.Twitch_Quality_ComboBox.items.add('720p')
       [void]$hashsetup.Twitch_Quality_ComboBox.items.add('480p')
       [void]$hashsetup.Twitch_Quality_ComboBox.items.add('Worst')
-      [void]$hashsetup.Twitch_Quality_ComboBox.items.add('audio_only')     
+      [void]$hashsetup.Twitch_Quality_ComboBox.items.add('audio_only')
       $hashsetup.Twitch_Quality_ComboBox.add_SelectionChanged({
           try{
-            if($hashsetup.Twitch_Quality_ComboBox.Selectedindex -ne -1){   
+            if($hashsetup.Twitch_Quality_ComboBox.Selectedindex -ne -1){
               if($hashsetup.Twitch_Quality_ComboBox.selecteditem -eq 'Best' -or $hashsetup.Twitch_Quality_ComboBox.selecteditem -eq '1080p' -or $hashsetup.Twitch_Quality_ComboBox.selecteditem -eq '720p'){
                 $hashsetup.Twitch_Quality_Label.BorderBrush = 'LightGreen'
               }elseif($hashsetup.Twitch_Quality_ComboBox.selecteditem -eq '480p' -or $hashsetup.Twitch_Quality_ComboBox.selecteditem -eq 'Worst' -or $hashsetup.Twitch_Quality_ComboBox.selecteditem -eq 'audio_only'){
                 $hashsetup.Twitch_Quality_Label.BorderBrush = 'Gray'
               }else{
                 $hashsetup.Twitch_Quality_Label.BorderBrush = 'Red'
-              }   
+              }
               Add-Member -InputObject $thisapp.configTemp -Name 'Twitch_Quality' -Value $($hashsetup.Twitch_Quality_ComboBox.selecteditem) -MemberType NoteProperty -Force
             }
-            else{       
-              $hashsetup.Twitch_Quality_Label.BorderBrush = 'LightGreen'   
-              Add-Member -InputObject $thisapp.configTemp -Name 'Twitch_Quality' -Value 'Best' -MemberType NoteProperty -Force     
+            else{
+              $hashsetup.Twitch_Quality_Label.BorderBrush = 'LightGreen'
+              Add-Member -InputObject $thisapp.configTemp -Name 'Twitch_Quality' -Value 'Best' -MemberType NoteProperty -Force
             }
           }catch{
             write-ezlogs "An exception occurred in Twitch_Quality_ComboBox.add_SelectionChanged" -CatchError $_ -enablelogs
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Twitch_Quality Combobox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Streamlink_Interface Help
       #----------------------------------------------
       $hashsetup.Streamlink_Interface_Button.add_Click({
@@ -6527,52 +6578,52 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred in Streamlink_Interface_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Streamlink_Interface Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Streamlink_Interface Combobox
       #----------------------------------------------
       $hashsetup.Streamlink_Interface_ComboBox.add_SelectionChanged({
           try{
-            if($hashsetup.Streamlink_Interface_ComboBox.Selectedindex -ne -1){     
+            if($hashsetup.Streamlink_Interface_ComboBox.Selectedindex -ne -1){
               Add-Member -InputObject $thisapp.configTemp -Name 'Streamlink_Interface' -Value $($hashsetup.Streamlink_Interface_ComboBox.selecteditem) -MemberType NoteProperty -Force
             }
-            else{         
-              Add-Member -InputObject $thisapp.configTemp -Name 'Streamlink_Interface' -Value 'Any' -MemberType NoteProperty -Force     
+            else{
+              Add-Member -InputObject $thisapp.configTemp -Name 'Streamlink_Interface' -Value 'Any' -MemberType NoteProperty -Force
             }
           }catch{
             write-ezlogs "An exception occurred in Streamlink_Interface_ComboBox.add_SelectionChanged" -CatchError $_ -enablelogs
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Streamlink_Interface Combobox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Streamlink_Arguments_textbox
       #----------------------------------------------
       $hashsetup.Streamlink_Arguments_textbox.add_textChanged({
           try{
-            if(-not [string]::IsNullOrEmpty($this.text)){   
-              $hashsetup.Streamlink_Arguments_Label.BorderBrush = 'LightGreen' 
+            if(-not [string]::IsNullOrEmpty($this.text)){
+              $hashsetup.Streamlink_Arguments_Label.BorderBrush = 'LightGreen'
               Add-Member -InputObject $thisapp.configTemp -Name 'Streamlink_Arguments' -Value $($this.text) -MemberType NoteProperty -Force
             }
-            else{       
-              $hashsetup.Streamlink_Arguments_Label.BorderBrush = 'Red'   
-              Add-Member -InputObject $thisapp.configTemp -Name 'Streamlink_Arguments' -Value $null -MemberType NoteProperty -Force     
+            else{
+              $hashsetup.Streamlink_Arguments_Label.BorderBrush = 'Red'
+              Add-Member -InputObject $thisapp.configTemp -Name 'Streamlink_Arguments' -Value $null -MemberType NoteProperty -Force
             }
           }catch{
             write-ezlogs "An exception occurred in Streamlink_Arguments_textbox.add_textChanged" -CatchError $_ -enablelogs
           }
-      }) 
- 
-      #---------------------------------------------- 
+      })
+
+      #----------------------------------------------
       #endregion Streamlink_Arguments_textbox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Streamlink_Arguments Help
       #TODO: Refactor to use new MD format
       #----------------------------------------------
@@ -6580,38 +6631,38 @@ function Show-SettingsWindow{
           try{
             if($hashsetup.EditorHelpFlyout.Document.Blocks){
               $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-            }        
+            }
             $hashsetup.Editor_Help_Flyout.isOpen = $true
             $hashsetup.Editor_Help_Flyout.header = $hashsetup.Streamlink_Arguments_Label.content
             update-EditorHelp -content "Allows providing additional command-line arguments to pass to streamlink when fetching Twitch streams. Use a comma-separated list when providing multiple arguments" -RichTextBoxControl $hashsetup.EditorHelpFlyout
             update-EditorHelp -content "IMPORTANT" -FontWeight bold -color orange -TextDecorations Underline -RichTextBoxControl $hashsetup.EditorHelpFlyout
-            update-EditorHelp -content "This should only be used by those who understand exactly how these options will work and effect streamlink behaviour" -color orange -RichTextBoxControl $hashsetup.EditorHelpFlyout   
+            update-EditorHelp -content "This should only be used by those who understand exactly how these options will work and effect streamlink behaviour" -color orange -RichTextBoxControl $hashsetup.EditorHelpFlyout
             update-EditorHelp -content "Not all options are guaranteed to work, and some may be overridden by this app to ensure functionality is not compromised." -color orange -RichTextBoxControl $hashsetup.EditorHelpFlyout
             update-EditorHelp -content "INFO" -FontWeight bold -color cyan -TextDecorations Underline -RichTextBoxControl $hashsetup.EditorHelpFlyout
-            update-EditorHelp -content "To review available arguments and how they are used, refer to streamlink documentation: https://streamlink.github.io/cli.html#command-line-interface" -color cyan -RichTextBoxControl $hashsetup.EditorHelpFlyout                           
+            update-EditorHelp -content "To review available arguments and how they are used, refer to streamlink documentation: https://streamlink.github.io/cli.html#command-line-interface" -color cyan -RichTextBoxControl $hashsetup.EditorHelpFlyout
           }catch{
             write-ezlogs "An exception occurred in Streamlink_Arguments_HelpButton.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Streamlink_Arguments Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Streamlink_Logging Help
       #----------------------------------------------
       $hashsetup.Streamlink_Logging_Button.add_Click({
           try{
-            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Streamlink_Logging.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Streamlink_Logging_Label.content -open -clear             
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Streamlink_Logging.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Streamlink_Logging_Label.content -open -clear
           }catch{
             write-ezlogs "An exception occurred in Streamlink_Logging_Button.add_Click" -CatchError $_ -enablelogs
           }
       })
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Streamlink_Logging Help
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Streamlink_Logging Combobox
       #----------------------------------------------
       [void]$hashsetup.Streamlink_Logging_ComboBox.items.add('info')
@@ -6624,29 +6675,29 @@ function Show-SettingsWindow{
       $hashsetup.Streamlink_Logging_ComboBox.add_SelectionChanged({
           Param($Sender)
           try{
-            if($Sender.Selectedindex -ne -1){   
-              $hashsetup.Twitch_Quality_Label.BorderBrush = 'LightGreen'  
+            if($Sender.Selectedindex -ne -1){
+              $hashsetup.Twitch_Quality_Label.BorderBrush = 'LightGreen'
               $thisapp.configTemp.Streamlink_Verbose_logging = $Sender.selecteditem
-            }else{       
-              $hashsetup.Twitch_Quality_Label.BorderBrush = 'LightGreen'   
+            }else{
+              $hashsetup.Twitch_Quality_Label.BorderBrush = 'LightGreen'
               $thisapp.configTemp.Streamlink_Verbose_logging = 'info'
             }
           }catch{
             write-ezlogs "An exception occurred in Streamlink_Logging_ComboBox.add_SelectionChanged" -CatchError $_ -enablelogs
           }
-      }) 
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Streamlink_Logging Combobox
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_AuthHandler
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.Twitch_AuthHandler = {
         param ($sender,$e)
         if($sender.NavigateUri -match 'Twitch_Auth'){
           try{
-            <#            if([System.IO.Directory]::Exists("$($thisApp.Config.Temp_Folder)\Setup_Webview2")){   
+            <#            if([System.IO.Directory]::Exists("$($thisApp.Config.Temp_Folder)\Setup_Webview2")){
                 try{
                 write-ezlogs ">>>> Removing existing Webview2 cache $($thisApp.Config.Temp_Folder)\Setup_Webview2" -showtime -color cyan -logtype Setup -LogLevel 2
                 [void][System.IO.Directory]::Delete("$($thisApp.Config.Temp_Folder)\Setup_Webview2",$true)
@@ -6660,7 +6711,7 @@ function Show-SettingsWindow{
               write-ezlogs "An exception occurred getting SecretStore $($thisApp.config.App_Name)" -showtime -catcherror $_
             }
             write-ezlogs "Removing stored Twitch authentication secrets from vault" -showtime -warning -logtype Setup
-            if($secretstore){  
+            if($secretstore){
               try{
                 [void](Remove-secret -name Twitchaccess_token -Vault $thisApp.config.App_Name -ErrorAction SilentlyContinue)
               }catch{
@@ -6670,21 +6721,21 @@ function Show-SettingsWindow{
                 [void](Remove-secret -name Twitchexpires -Vault $thisApp.config.App_Name -ErrorAction SilentlyContinue)
               }catch{
                 write-ezlogs "An exception occurred removing Secret Twitchexpires_in" -showtime -catcherror $_
-              }   
+              }
               try{
                 [void](Remove-secret -name Twitchrefresh_token -Vault $thisApp.config.App_Name -ErrorAction SilentlyContinue)
               }catch{
                 write-ezlogs "An exception occurred removing Secret Twitchrefresh_token" -showtime -catcherror $_
-              }                    
+              }
             }
             try{
               write-ezlogs ">>> Verifying Twitch authentication" -showtime -logtype Setup -LogLevel 2
-              $Twitchaccess_token = Get-TwitchAccessToken -thisApp $thisApp -ApplicationName $thisApp.Config.App_Name -Verboselog 
+              $Twitchaccess_token = Get-TwitchAccessToken -thisApp $thisApp -ApplicationName $thisApp.Config.App_Name -Verboselog
               #$Twitchaccess_token = Get-secret -name TwitchAccessToken  -Vault $($thisApp.Config.App_name) -ErrorAction SilentlyContinue
               $Twitchrefresh_access_token = Get-secret -name Twitchrefresh_token  -Vault $($thisApp.Config.App_name) -ErrorAction SilentlyContinue
             }catch{
               write-ezlogs "An exception occurred getting Secret TwitchAccessToken" -showtime -catcherror $_
-            } 
+            }
             if($Twitchaccess_token -and $Twitchrefresh_access_token){
               Invoke-TwitchImport -thisApp $thisApp -hashsetup $hashsetup
               write-ezlogs "Authenticated to Twitch and retrieved access tokens" -showtime -color green -logtype Setup -LogLevel 2 -Success
@@ -6697,65 +6748,65 @@ function Show-SettingsWindow{
               }
               if($hashsetup.EditorHelpFlyout.Document.Blocks){
                 $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-              } 
+              }
               $hashsetup.Editor_Help_Flyout.isOpen = $true
-              $hashsetup.Editor_Help_Flyout.header = 'Twitch'            
-              update-EditorHelp -content "[SUCCESS] Authenticated to Twitch and saved access tokens into the Secret Vault! Any followed channels have been imported automatically. You can always refresh or manually add more channels" -color lightgreen -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout     
+              $hashsetup.Editor_Help_Flyout.header = 'Twitch'
+              update-EditorHelp -content "[SUCCESS] Authenticated to Twitch and saved access tokens into the Secret Vault! Any followed channels have been imported automatically. You can always refresh or manually add more channels" -color lightgreen -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
               if(!$hashsetup.Window.isVisible){
                 $hashsetup.Window.Show()
-              } 
-              return                                   
+              }
+              return
             }else{
               write-ezlogs "[Show-SettingsWindow] Unable to successfully authenticate to Twitch!" -showtime -warning -logtype Setup
               $hashsetup.Twitch_Playlists_Import.isEnabled = $false
               $hashsetup.Import_Twitch_Playlists_Toggle.isOn = $false
               if($hashsetup.EditorHelpFlyout.Document.Blocks){
                 $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-              }        
+              }
               $hashsetup.Editor_Help_Flyout.isOpen = $true
-              $hashsetup.Editor_Help_Flyout.header = 'Twitch'            
-              update-EditorHelp -content "[WARNING] Unable to successfully authenticate to Twitch! Some Twitch features may be unavailable" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout 
+              $hashsetup.Editor_Help_Flyout.header = 'Twitch'
+              update-EditorHelp -content "[WARNING] Unable to successfully authenticate to Twitch! Some Twitch features may be unavailable" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
               if(!$hashsetup.Window.isVisible){
                 $hashsetup.Window.Show()
               }
-              return              
-            }          
+              return
+            }
           }catch{
             write-ezlogs "An exception occurred in Twitch_AuthHandler routed event" -showtime -catcherror $_
-          }         
-        }     
-      } 
-      #---------------------------------------------- 
+          }
+        }
+      }
+      #----------------------------------------------
       #endregion Twitch_AuthHandler
-      #----------------------------------------------    
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_ImportHandler
-      #----------------------------------------------     
+      #----------------------------------------------
       [System.Windows.RoutedEventHandler]$Twitch_ImportHandler = {
         param ($sender,$e)
         try{
-          Invoke-TwitchImport -thisApp $thisApp -hashsetup $hashsetup         
+          Invoke-TwitchImport -thisApp $thisApp -hashsetup $hashsetup
         }catch{
           write-ezlogs "An exception occurred in Twitch_ImportHandler routed event" -showtime -catcherror $_
-        }             
-      } 
-      [void]$hashsetup.Twitch_Playlists_Import.AddHandler([System.Windows.Controls.Button]::ClickEvent,$Twitch_ImportHandler) 
-      #---------------------------------------------- 
+        }
+      }
+      [void]$hashsetup.Twitch_Playlists_Import.AddHandler([System.Windows.Controls.Button]::ClickEvent,$Twitch_ImportHandler)
+      #----------------------------------------------
       #endregion Twitch_ImportHandler
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Twitch_Playlists_Toggle
       #----------------------------------------------
       $hashsetup.Import_Twitch_Playlists_Toggle_Command = {
         Param($sender)
         try{
           if($this.tag -ne 'Startup'){
-            if($hashsetup.Import_Twitch_Playlists_Toggle.isOn){     
+            if($hashsetup.Import_Twitch_Playlists_Toggle.isOn){
               $hashsetup.Twitch_Playlists_Browse.IsEnabled = $true
-              $hashsetup.TwitchPlaylists_Grid.IsEnabled = $true   
-              $hashsetup.TwitchPlaylists_Grid.MaxHeight = '250'     
+              $hashsetup.TwitchPlaylists_Grid.IsEnabled = $true
+              $hashsetup.TwitchPlaylists_Grid.MaxHeight = '250'
               $thisapp.configTemp.Import_Twitch_Media = $true
               $TwitchApp = Get-TwitchApplication -Name $($thisApp.Config.App_name)
               if(([string]::IsNullOrEmpty($TwitchApp.token.access_token) -or [string]::IsNullOrEmpty($TwitchApp.token.expires))){
@@ -6765,15 +6816,15 @@ function Show-SettingsWindow{
                 $link_hyperlink = [System.Windows.Documents.Hyperlink]::new()
                 $link_hyperlink.NavigateUri = $hyperlink
                 $link_hyperlink.ToolTip = "Open Twitch Authentication Capture"
-                $link_hyperlink.Foreground = "LightBlue"    
+                $link_hyperlink.Foreground = "LightBlue"
                 $hashsetup.Import_Twitch_Status_textbox.Text="[NONE]"
                 $hashsetup.Import_Twitch_Status_textbox.Foreground = "Orange"
                 $hashsetup.Import_Twitch_textbox.Inlines.add("Click ")
                 [void]$link_hyperlink.Inlines.add("AUTHENTICATE")
                 [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Twitch_AuthHandler)
                 [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Twitch_AuthHandler)
-                [void]$hashsetup.Import_Twitch_textbox.Inlines.add($($link_hyperlink))        
-                [void]$hashsetup.Import_Twitch_textbox.Inlines.add(" to provide your Twitch account credentials")   
+                [void]$hashsetup.Import_Twitch_textbox.Inlines.add($($link_hyperlink))
+                [void]$hashsetup.Import_Twitch_textbox.Inlines.add(" to provide your Twitch account credentials")
                 $hashsetup.Import_Twitch_textbox.Foreground = "Orange"
                 $hashsetup.Import_Twitch_textbox.FontSize = '14'
                 $hashsetup.Import_Twitch_transitioningControl.Height = '80'
@@ -6790,17 +6841,17 @@ function Show-SettingsWindow{
                 [void]$link_hyperlink.Inlines.add("AUTHENTICATE")
                 [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Twitch_AuthHandler)
                 [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Twitch_AuthHandler)
-                [void]$hashsetup.Import_Twitch_textbox.Inlines.add("If you wish to update/change your Twitch credentials, click ")  
-                [void]$hashsetup.Import_Twitch_textbox.Inlines.add($($link_hyperlink))        
+                [void]$hashsetup.Import_Twitch_textbox.Inlines.add("If you wish to update/change your Twitch credentials, click ")
+                [void]$hashsetup.Import_Twitch_textbox.Inlines.add($($link_hyperlink))
                 $hashsetup.Import_Twitch_textbox.Foreground = "LightGreen"
                 $hashsetup.Import_Twitch_textbox.FontSize = '14'
                 $hashsetup.Import_Twitch_transitioningControl.Height = '60'
                 $hashsetup.Twitch_Playlists_Import.isEnabled = $true
                 $hashsetup.Import_Twitch_Playlists_Toggle.isOn = $true
-              }                                       
+              }
             }else{
               $hashsetup.Twitch_Playlists_Browse.IsEnabled = $false
-              $hashsetup.TwitchPlaylists_Grid.IsEnabled = $false       
+              $hashsetup.TwitchPlaylists_Grid.IsEnabled = $false
               $hashsetup.TwitchPlaylists_Grid.MaxHeight = '0'
               Add-Member -InputObject $thisapp.configTemp -Name "Import_Twitch_Media" -Value $false -MemberType NoteProperty -Force -ErrorAction SilentlyContinue
               $hashsetup.Import_Twitch_textbox.text = ""
@@ -6811,35 +6862,34 @@ function Show-SettingsWindow{
           write-ezlogs "An exception occurred in Import_Twitch_Playlists_Toggle.add_Toggled" -showtime -catcherror $_
           if($hashsetup.EditorHelpFlyout.Document.Blocks){
             $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-          }                  
+          }
           $hashsetup.Editor_Help_Flyout.isOpen = $true
-          $hashsetup.Editor_Help_Flyout.header = 'Import Twitch'            
-          update-EditorHelp -content "[ERROR] An exception occurred in Import_Twitch_Playlists Toggle Event`n$($_ | out-string)" -color red -FontWeight Bold  -RichTextBoxControl $hashsetup.EditorHelpFlyout  
+          $hashsetup.Editor_Help_Flyout.header = 'Import Twitch'
+          update-EditorHelp -content "[ERROR] An exception occurred in Import_Twitch_Playlists Toggle Event`n$($_ | out-string)" -color red -FontWeight Bold  -RichTextBoxControl $hashsetup.EditorHelpFlyout
         }finally{
           $this.tag = $Null
         }
       }
       $hashsetup.Import_Twitch_Playlists_Toggle.add_Toggled($hashsetup.Import_Twitch_Playlists_Toggle_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Import_Twitch_Playlists_Toggle
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Twitch_Playlists_Button
-      #---------------------------------------------- 
+      #----------------------------------------------
       $hashsetup.Import_Twitch_Playlists_Button.add_click({
-          try{  
+          try{
             update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Twitch_Integration.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.Import_Twitch_Playlists_Toggle.content -clear
           }catch{
             write-ezlogs "An exception occurred when opening main UI window" -CatchError $_
           }
-
-      })  
-      #---------------------------------------------- 
+      })
+      #----------------------------------------------
       #endregion Import_Twitch_Playlists_Button
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Import_Twitch_Status_Button
       #----------------------------------------------
       $hashsetup.Import_Twitch_Status_Button_Command = {
@@ -6851,79 +6901,89 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Import_Twitch_Status_Button.add_click($hashsetup.Import_Twitch_Status_Button_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Import_Twitch_Status_Button
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Twitch_Playlists_Browse
       #----------------------------------------------
-      $hashsetup.Twitch_Playlists_Browse.add_click({  
+      $hashsetup.Twitch_Playlists_Browse_Command = {
+        Param($sender)
+        try{
           $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
           $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalInputExternal($hashsetup.Window,"Add New Twitch URL","Enter the url of the Twitch Channel or Stream",$button_settings)
           if(-not [string]::IsNullOrEmpty($result)){
             if((Test-URL $result) -and ($result -match 'twitch.tv' -or $result -match 'twitch')){
-              $id = $((Get-Culture).textinfo.totitlecase(($result | split-path -leaf).tolower())) 
-              if($hashsetup.TwitchPlaylists_Grid.items.path -notcontains $result){           
+              $id = $((Get-Culture).textinfo.totitlecase(($result | split-path -leaf).tolower()))
+              if($hashsetup.TwitchPlaylists_Grid.items.path -notcontains $result){
                 $Name = $id
                 $type = 'TwitchChannel'
-                write-ezlogs "Adding Twitch URL $result" -showtime -logtype Setup -LogLevel 2 
+                write-ezlogs "Adding Twitch URL $result" -showtime -logtype Setup -LogLevel 2
                 Update-TwitchPlaylists -hashsetup $hashsetup -Path $result -id $id -Name $Name -type $type -VerboseLog:$thisApp.Config.Verbose_logging -SetItemsSource
               }else{
                 write-ezlogs "The location $result ($id) has already been added!" -showtime -warning -logtype Setup
-                update-EditorHelp -content "Twitch Channel ($id) has already been added!" -color orange -RichTextBoxControl $hashsetup.EditorHelpFlyout -Header 'Twitch Channel' -clear -Open 
-              } 
+                update-EditorHelp -content "Twitch Channel ($id) has already been added!" -color orange -RichTextBoxControl $hashsetup.EditorHelpFlyout -Header 'Twitch Channel' -clear -Open
+              }
             }else{
               $hashsetup.Editor_Help_Flyout.isOpen = $true
-              $hashsetup.Editor_Help_Flyout.header = 'Twitch Channels'            
+              $hashsetup.Editor_Help_Flyout.header = 'Twitch Channels'
               update-EditorHelp -content "[WARNING] Invalid URL Provided" -color Orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -clear
-              update-EditorHelp -content "The location $result is not a valid URL! Please ensure the URL is a valid Twitch URL" -color Orange -RichTextBoxControl $hashsetup.EditorHelpFlyout     
+              update-EditorHelp -content "The location $result is not a valid URL! Please ensure the URL is a valid Twitch URL" -color Orange -RichTextBoxControl $hashsetup.EditorHelpFlyout
               write-ezlogs "The location $result is not a valid URL!" -showtime -warning -logtype Setup
             }
           }else{
             write-ezlogs "No URL was provided!" -showtime -warning -logtype Setup
-          } 
-      })
-      #---------------------------------------------- 
+          }
+        }catch{
+          write-ezlogs "An exception occurred in Twitch_Playlists_Browse click event" -showtime -catcherror $_
+        }
+      }
+      $hashsetup.Twitch_Playlists_Browse.add_click($hashsetup.Twitch_Playlists_Browse_Command)
+      #----------------------------------------------
       #endregion Twitch_Playlists_Browse
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Apply Settings Button
       #----------------------------------------------
       try{
         #Next Button
-        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.Current_Folder)\Resources\Skins\OptionButton.png") 
-        $OptionButton = [System.Windows.Media.Imaging.BitmapImage]::new()
-        $OptionButton.BeginInit()
-        $OptionButton.CacheOption = "OnLoad"
-        $OptionButton.DecodePixelWidth = "64"
-        $OptionButton.StreamSource = $stream_image
-        $OptionButton.EndInit()
-        $stream_image.Close()
-        $stream_image.Dispose()
-        $stream_image = $null
-        $OptionButton.Freeze()
-        $hashsetup.Next_Button_Image.Source = $OptionButton
+        if($hashsetup.Next_Button_Image){
+          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.Current_Folder)\Resources\Skins\OptionButton.png")
+          $OptionButton = [System.Windows.Media.Imaging.BitmapImage]::new()
+          $OptionButton.BeginInit()
+          $OptionButton.CacheOption = "OnLoad"
+          $OptionButton.DecodePixelWidth = "64"
+          $OptionButton.StreamSource = $stream_image
+          $OptionButton.EndInit()
+          $stream_image.Close()
+          $stream_image.Dispose()
+          $stream_image = $null
+          $OptionButton.Freeze()
+          $hashsetup.Next_Button_Image.Source = $OptionButton
+        }
         #Save Button
-        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.Current_Folder)\Resources\Skins\Audio\EQ_ToggleButton.png") 
-        $SaveButton = [System.Windows.Media.Imaging.BitmapImage]::new()
-        $SaveButton.BeginInit()
-        $SaveButton.CacheOption = "OnLoad"
-        $SaveButton.DecodePixelWidth = "86"
-        $SaveButton.StreamSource = $stream_image
-        $SaveButton.EndInit() 
-        $stream_image.Close()
-        $stream_image.Dispose()
-        $stream_image = $null
-        $SaveButton.Freeze()
-        $hashsetup.Save_Setup_Button_Image.Source = $SaveButton
+        if($hashsetup.Save_Setup_Button_Image){
+          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.Current_Folder)\Resources\Skins\Audio\EQ_ToggleButton.png")
+          $SaveButton = [System.Windows.Media.Imaging.BitmapImage]::new()
+          $SaveButton.BeginInit()
+          $SaveButton.CacheOption = "OnLoad"
+          $SaveButton.DecodePixelWidth = "86"
+          $SaveButton.StreamSource = $stream_image
+          $SaveButton.EndInit()
+          $stream_image.Close()
+          $stream_image.Dispose()
+          $stream_image = $null
+          $SaveButton.Freeze()
+          $hashsetup.Save_Setup_Button_Image.Source = $SaveButton
+        }
       }catch{
         write-ezlogs "An exception occurred setting images for Next and Save buttons" -catcherror $_
       }
       [System.Windows.RoutedEventHandler]$hashsetup.Save_Setup_Button_Click_Command = {
         param ($sender)
-        try{   
+        try{
           #TODO: Put into function
           $hashsetup = $hashsetup
           $thisApp = $thisApp
@@ -6937,17 +6997,17 @@ function Show-SettingsWindow{
           #Check for existing custom playlists
           $playlist_pattern = [regex]::new('$(?<=((?i)Playlist.xml))')
           if($First_Run -and ([System.IO.Directory]::Exists($thisApp.config.Playlist_Profile_Directory)) -and $PlaylistRebuild_Required){
-            $existing_playlists = Find-FilesFast -Path $thisApp.config.Playlist_Profile_Directory -Recurse -Filter $playlist_pattern 
+            $existing_playlists = Find-FilesFast -Path $thisApp.config.Playlist_Profile_Directory -Recurse -Filter $playlist_pattern
             if($existing_playlists){
               write-ezlogs "| Prompting user to decide whether to delete existing playlists for first run as this version requires rebuilding them" -showtime -enablelogs -color cyan -logtype Setup -LogLevel 2
               if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Playlists_Confirmation.txt")){
                 $PlaylistsConfirmation = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Playlists_Confirmation.txt")
-              }   
+              }
               $PlaylistsConfirmation += "`n`nPlaylists effected`n: $($existing_playlists.FileName | out-string)"
-              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
               $Button_settings.AffirmativeButtonText = "Yes"
-              $Button_settings.NegativeButtonText = "No"  
-              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+              $Button_settings.NegativeButtonText = "No"
+              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
               $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Keep Playlists?",$PlaylistsConfirmation,$okAndCancel,$button_settings)
               if($result -eq 'Affirmative'){
                 write-ezlogs "User wished to keep existing playlist profiles" -showtime -warning -logtype Setup
@@ -6960,10 +7020,10 @@ function Show-SettingsWindow{
             }
           }elseif($First_Run){
             write-ezlogs "| Prompting to confirm if user is sure they are finished" -logtype Setup
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_settings.AffirmativeButtonText = "Yes"
-            $Button_settings.NegativeButtonText = "No"  
-            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+            $Button_settings.NegativeButtonText = "No"
+            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
             if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Setup_Confirmation.txt")){
               $SetupConfirmation = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Setup_Confirmation.txt")
             }
@@ -6971,107 +7031,107 @@ function Show-SettingsWindow{
             if($result -eq 'Affirmative'){
               write-ezlogs ">>>> User indicated they are finished and ready to continue setup" -showtime -logtype Setup
             }else{
-              write-ezlogs "User indicated they are not finished" -showtime -logtype Setup -warning  
+              write-ezlogs "User indicated they are not finished" -showtime -logtype Setup -warning
               return
             }
           }
           #region Start on Windows Login
           if($hashsetup.Start_On_Windows_Login_Toggle.isOn){
-            $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine', 'Default') 
+            $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine', 'Default')
             foreach ($keyName in $Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\").GetSubKeyNames()) {
               if($Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$keyName").GetValue('DisplayName') -match $($thisApp.Config.App_Name)){
                 $install_folder = $Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$keyName").GetValue('InstallLocation')
               }
-            }  
+            }
             if(!$install_folder){
               $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser', 'Default')
-              foreach ($keyName in $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\").GetSubKeyNames()) {  
+              foreach ($keyName in $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\").GetSubKeyNames()) {
                 if($Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$keyName").GetValue('DisplayName') -match $($thisApp.Config.App_Name)){
                   $install_folder = $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$keyName").GetValue('InstallLocation')
                 }
               }
             }
-            [void]$Registry.Dispose()  
-            $Main_exe = [System.IO.Path]::Combine($install_folder,"$($thisApp.Config.App_Name).exe")         
+            [void]$Registry.Dispose()
+            $Main_exe = [System.IO.Path]::Combine($install_folder,"$($thisApp.Config.App_Name).exe")
             if([System.IO.Directory]::Exists($install_folder)){
               if([System.IO.File]::Exists($Main_exe)){
                 $thisapp.config.Start_On_Windows_Login = $true
-                $thisapp.config.App_Exe_Path = $Main_exe    
+                $thisapp.config.App_Exe_Path = $Main_exe
                 if([System.IO.File]::Exists((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')."$($thisApp.Config.App_Name)")){
-                  write-ezlogs "The app $($thisApp.Config.App_Name) is already configured to start on Windows logon." -logtype Setup -loglevel 2          
+                  write-ezlogs "The app $($thisApp.Config.App_Name) is already configured to start on Windows logon." -logtype Setup -loglevel 2
                 }else{
                   try{
                     New-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -Name $($thisApp.Config.App_Name) -Value $Main_exe -Force -ErrorAction SilentlyContinue
                     if([System.IO.File]::Exists((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')."$($thisApp.Config.App_Name)")){
-                      write-ezlogs "The app $($thisApp.Config.App_Name) has been successfully configured to start automatically upon logon to Windows (current user)" -logtype Setup -LogLevel 2 -Success              
+                      write-ezlogs "The app $($thisApp.Config.App_Name) has been successfully configured to start automatically upon logon to Windows (current user)" -logtype Setup -LogLevel 2 -Success
                     }else{
-                      write-ezlogs "Unable to verify if $($thisApp.Config.App_Name) was successfully configured to start automatically upon logon to Windows (current user) - List of current user Run reg entries $((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run') | out-string)" -Warning -showtime -logtype Setup               
-                    }            
+                      write-ezlogs "Unable to verify if $($thisApp.Config.App_Name) was successfully configured to start automatically upon logon to Windows (current user) - List of current user Run reg entries $((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run') | out-string)" -Warning -showtime -logtype Setup
+                    }
                   }catch{
                     write-ezlogs "An exception occurred attempting to create startup entry for exe path $($Main_exe)" -CatchError $_ -showtime
                     $thisapp.config.Start_On_Windows_Login = $false
                     $hashsetup.Start_On_Windows_Login_Toggle.isOn = $false
                     update-EditorHelp -content "An exception occurred attempting to create startup entry for exe path $($Main_exe)" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -Open -clear -Header 'SAVE CONFIG WARNING'
-                    return              
+                    return
                   }
                 }
-              }else{         
+              }else{
                 $thisapp.config.Start_On_Windows_Login = $false
                 $hashsetup.Start_On_Windows_Login_Toggle.isOn = $false
-                write-ezlogs "Could not find main exe file for $($thisApp.Config.App_Name) in folder ($install_folder). Installation may be corrupt! Please re-install the latest version of $($thisApp.Config.App_Name)" -Warning  -showtime -logtype Setup 
+                write-ezlogs "Could not find main exe file for $($thisApp.Config.App_Name) in folder ($install_folder). Installation may be corrupt! Please re-install the latest version of $($thisApp.Config.App_Name)" -Warning  -showtime -logtype Setup
                 update-EditorHelp -content "Could not find main exe file for $($thisApp.Config.App_Name) in folder ($install_folder).`n`nInstallation may be corrupt! Please re-install the latest version of $($thisApp.Config.App_Name)" -color tomato -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -Open -clear -Header 'SAVE CONFIG ERROR'
                 if([System.IO.File]::Exists((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')."$($thisApp.Config.App_Name)")){
-                  try{ 
+                  try{
                     Remove-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -Name $($thisApp.Config.App_Name) -Force
-                    write-ezlogs "Removed app $($thisApp.Config.App_Name) from starting on Windows logon." -color cyan  -showtime -logtype Setup -LogLevel 2          
+                    write-ezlogs "Removed app $($thisApp.Config.App_Name) from starting on Windows logon." -color cyan  -showtime -logtype Setup -LogLevel 2
                   }catch{
                     write-ezlogs "An exception occurred attempting to remove startup entry for: $($thisApp.Config.App_Name)" -CatchError $_ -showtime
                   }
                 }
-                return                    
+                return
               }
               write-ezlogs ">>>> Saving App Exe Path setting $($thisapp.config.App_Exe_Path)" -color cyan -showtime -logtype Setup
               write-ezlogs ">>>> Saving setting '$($hashsetup.Start_On_Windows_Login_Toggle.content) - $($thisapp.config.Start_On_Windows_Login)' " -color cyan -showtime -logtype Setup
             }else{
-              write-ezlogs "Could not find app install folder ($install_folder). Installation may be corrupt! Please re-install the latest version of $($thisApp.Config.App_Name)" -Warning  -showtime -logtype Setup 
-              $thisapp.config.Start_On_Windows_Login = $false     
+              write-ezlogs "Could not find app install folder ($install_folder). Installation may be corrupt! Please re-install the latest version of $($thisApp.Config.App_Name)" -Warning  -showtime -logtype Setup
+              $thisapp.config.Start_On_Windows_Login = $false
               update-EditorHelp -content "Could not find app install folder ($install_folder).`n`nInstallation may be corrupt! Please re-install the latest version of $($thisApp.Config.App_Name) using the setup installer. Otherwise, disable the start on windows login option" -color tomato -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -Open -clear -Header 'CONFIG ERROR - Start On Windows Login'
               if([System.IO.File]::Exists((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')."$($thisApp.Config.App_Name)")){
-                try{ 
+                try{
                   Remove-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -Name $($thisApp.Config.App_Name) -Force
                   $thisapp.config.Start_On_Windows_Login = $false
-                  write-ezlogs "Removed app $($thisApp.Config.App_Name) from starting on Windows logon." -color cyan  -showtime -logtype Setup -LogLevel 2          
+                  write-ezlogs "Removed app $($thisApp.Config.App_Name) from starting on Windows logon." -color cyan  -showtime -logtype Setup -LogLevel 2
                 }catch{
                   write-ezlogs "An exception occurred attempting to remove startup entry for: $($thisApp.Config.App_Name)" -CatchError $_ -showtime
-                  $hashsetup.Start_On_Windows_Login_Toggle.isOn = $false       
+                  $hashsetup.Start_On_Windows_Login_Toggle.isOn = $false
                 }
               }
-              return        
+              return
             }
           }else{
             if([System.IO.File]::Exists((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')."$($thisApp.Config.App_Name)")){
               try{
                 Remove-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -Name $($thisApp.Config.App_Name) -Force -ErrorAction SilentlyContinue
                 $thisapp.config.Start_On_Windows_Login = $false
-                write-ezlogs "Removed app $($thisApp.Config.App_Name) from starting on Windows logon." -showtime -logtype Setup -LogLevel 2 -Success          
+                write-ezlogs "Removed app $($thisApp.Config.App_Name) from starting on Windows logon." -showtime -logtype Setup -LogLevel 2 -Success
               }catch{
                 write-ezlogs "An exception occurred attempting to remove startup entry for: $($thisApp.Config.App_Name)" -CatchError $_ -showtime
-                update-EditorHelp -content "[WARNING] An exception occurred attempting to remove startup entry for: $($thisApp.Config.App_Name) -- Start on windows login is disabled. See logs for details" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout  -Header 'Setup ERROR!' -clear -Open  
+                update-EditorHelp -content "[WARNING] An exception occurred attempting to remove startup entry for: $($thisApp.Config.App_Name) -- Start on windows login is disabled. See logs for details" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout  -Header 'Setup ERROR!' -clear -Open
                 $hashsetup.Start_On_Windows_Login_Toggle.isOn = $false
-                return      
+                return
               }
             }else{
-              write-ezlogs "The app $($thisApp.Config.App_Name) is not configured to start on Windows logon." -enablelogs -showtime -logtype Setup -LogLevel 2 
+              write-ezlogs "The app $($thisApp.Config.App_Name) is not configured to start on Windows logon." -enablelogs -showtime -logtype Setup -LogLevel 2
               $hashsetup.Start_On_Windows_Login_Toggle.isOn = $false
             }
             $thisapp.config.Start_On_Windows_Login = $false
-            write-ezlogs ">>>> Saving setting '$($hashsetup.Start_On_Windows_Login_Toggle.content) - $($thisapp.config.Start_On_Windows_Login)' "  -color cyan -showtime -logtype Setup -LogLevel 2 
+            write-ezlogs ">>>> Saving setting '$($hashsetup.Start_On_Windows_Login_Toggle.content) - $($thisapp.config.Start_On_Windows_Login)' "  -color cyan -showtime -logtype Setup -LogLevel 2
           }
           #endregion Start on Windows Login
 
           #region High DPI Mode
           if(!$hashsetup.High_DPI_Toggle.isOn -and [System.IO.Directory]::Exists($thisapp.config.App_Exe_Path)){
-            try{ 
+            try{
               $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser', 'Default')
               $keys = $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers\")
               $Keyname = $keys.GetValueNames() | & { process {
@@ -7092,14 +7152,14 @@ function Show-SettingsWindow{
               if($keys -is [System.IDisposable]){
                 $keys.dispose()
               }
-            } 
+            }
           }
           #endregion High DPI Mode
 
           #region Require 1 media type
           if(!$hashsetup.Import_Local_Media_Toggle.isOn -and !$hashsetup.Import_Youtube_Playlists_Toggle.isOn -and !$hashsetup.Import_Spotify_Playlists_Toggle){
-            write-ezlogs "At least 1 Media type to import was not selected! (Local Media, Spotify, or Youtube)" -showtime -warning -logtype Setup  
-            update-EditorHelp -content "[WARNING] You must enable at least 1 Media type to import in order to continue! (Local Media, Spotify, Youtube, or Twitch)" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout  -Header 'Requirements Missing!' -clear -Open                                               
+            write-ezlogs "At least 1 Media type to import was not selected! (Local Media, Spotify, or Youtube)" -showtime -warning -logtype Setup
+            update-EditorHelp -content "[WARNING] You must enable at least 1 Media type to import in order to continue! (Local Media, Spotify, Youtube, or Twitch)" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout  -Header 'Requirements Missing!' -clear -Open
             return
           }
           #endregion Require 1 media type
@@ -7110,26 +7170,26 @@ function Show-SettingsWindow{
 
           #region Audio Output
           try{
-            if($hashsetup.Audio_Output_ComboBox.Selectedindex -ne -1){  
+            if($hashsetup.Audio_Output_ComboBox.Selectedindex -ne -1){
               if($synchash.vlc.AudioOutputDeviceEnum){
                 $devices = ($synchash.vlc.AudioOutputDeviceEnum | Where-Object {$_.Description}).clone()
                 $selecteddevice = $devices | Where-Object {$_.Description -eq $hashsetup.Audio_Output_ComboBox.selecteditem}
-              }                       
+              }
               if($synchash.vlc.AudioOutputDeviceEnum -and $selecteddevice){
                 write-ezlogs ">>>> Selected Audio Device for change $($selecteddevice)" -showtime -logtype Setup
-                $synchash.window.Dispatcher.Invoke("Normal",[action]{ 
+                $synchash.window.Dispatcher.Invoke("Normal",[action]{
                     $synchash.vlc.SetOutputDevice($selecteddevice.deviceidentifier)
                 })
               }
               $thisapp.config.Current_Audio_Output = $hashsetup.Audio_Output_ComboBox.selecteditem
-            }else{     
+            }else{
               if($synchash.vlc.AudioOutputDeviceEnum){
-                $device = $synchash.vlc.AudioOutputDeviceEnum | Where-Object {$_.Description -eq 'Default'}   
+                $device = $synchash.vlc.AudioOutputDeviceEnum | Where-Object {$_.Description -eq 'Default'}
               }
               if($synchash.vlc.AudioOutputDeviceEnum -and $device){
                 write-ezlogs ">>>> Selected Default Audio Device for change $($device)" -showtime -logtype Setup
-                $synchash.window.Dispatcher.Invoke("Normal",[action]{ 
-                    $synchash.vlc.SetOutputDevice($device.deviceidentifier)      
+                $synchash.window.Dispatcher.Invoke("Normal",[action]{
+                    $synchash.vlc.SetOutputDevice($device.deviceidentifier)
                 })
               }
               $thisapp.config.Current_Audio_Output = 'Default'
@@ -7140,7 +7200,7 @@ function Show-SettingsWindow{
           #endregion Audio Output
 
 
-          #---------------------------------------------- 
+          #----------------------------------------------
           #region TODO:Media Control Hotkeys
           #----------------------------------------------
           try{
@@ -7166,7 +7226,7 @@ function Show-SettingsWindow{
               [void]$thisApp.Config.GlobalHotKeys.Remove($Hotkey)
             }
           }catch{
-            write-ezlogs "An exception occurred saving VolUphotkey global hotkey" -CatchError $_       
+            write-ezlogs "An exception occurred saving VolUphotkey global hotkey" -CatchError $_
           }
           try{
             if($HashSetup.VolDownhotkey.Hotkey -is [MahApps.Metro.Controls.HotKey] -and $HashSetup.VolDownhotkey.text){
@@ -7191,7 +7251,7 @@ function Show-SettingsWindow{
               [void]$thisApp.Config.GlobalHotKeys.Remove($Hotkey)
             }
           }catch{
-            write-ezlogs "An exception occurred saving VolDownhotkey global hotkey" -CatchError $_       
+            write-ezlogs "An exception occurred saving VolDownhotkey global hotkey" -CatchError $_
           }
           try{
             if($HashSetup.VolMutehotkey.Hotkey -is [MahApps.Metro.Controls.HotKey] -and $HashSetup.VolMutehotkey.text){
@@ -7216,8 +7276,8 @@ function Show-SettingsWindow{
               [void]$thisApp.Config.GlobalHotKeys.Remove($Hotkey)
             }
           }catch{
-            write-ezlogs "An exception occurred saving VolMutehotkey global hotkey" -CatchError $_       
-          }            
+            write-ezlogs "An exception occurred saving VolMutehotkey global hotkey" -CatchError $_
+          }
           try{
             if($HashSetup.Restarthotkey.Hotkey -is [MahApps.Metro.Controls.HotKey] -and $HashSetup.Restarthotkey.text){
               if($thisApp.Config.GlobalHotKeys.Name -notcontains 'Restarthotkey'){
@@ -7241,7 +7301,7 @@ function Show-SettingsWindow{
               [void]$thisApp.Config.GlobalHotKeys.Remove($Hotkey)
             }
           }catch{
-            write-ezlogs "An exception occurred saving Restarthotkey global hotkey" -CatchError $_       
+            write-ezlogs "An exception occurred saving Restarthotkey global hotkey" -CatchError $_
           }
           try{
             if($HashSetup.Overlayhotkey.Hotkey -is [MahApps.Metro.Controls.HotKey] -and $HashSetup.Overlayhotkey.text){
@@ -7266,18 +7326,18 @@ function Show-SettingsWindow{
               [void]$thisApp.Config.GlobalHotKeys.Remove($Hotkey)
             }
           }catch{
-            write-ezlogs "An exception occurred saving Overlayhotkey global hotkey" -CatchError $_       
+            write-ezlogs "An exception occurred saving Overlayhotkey global hotkey" -CatchError $_
           }
           try{
             Update-MainWindow -thisApp $thisApp -synchash $synchash -PSGlobalHotkeys
           }catch{
             write-ezlogs "An exception occurred executing Get-GlobalHotkeys" -catcherror $_
           }
-          #---------------------------------------------- 
+          #----------------------------------------------
           #endregion TODO:Media Control Hotkeys
           #----------------------------------------------
 
-          #region Import Local Media                                 
+          #region Import Local Media
           if($hashsetup.Import_Local_Media_Toggle.isOn){
             $thisapp.config.Import_Local_Media = $true
             $newLocalMediaCount = 0
@@ -7288,46 +7348,46 @@ function Show-SettingsWindow{
                   write-ezlogs "| Adding new Local Media Directory $($path.path)" -showtime -logtype Setup -LogLevel 2
                   [void]$thisApp.Config.Media_Directories.add($path.path)
                   $newLocalMediaCount++
-                }            
-              }else{       
+                }
+              }else{
                 write-ezlogs "The provide local media path $($path.path) is invalid!" -showtime -warning -logtype Setup
                 if($hashsetup.EditorHelpFlyout.Document.Blocks){
                   $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-                }        
+                }
                 $hashsetup.Editor_Help_Flyout.isOpen = $true
-                $hashsetup.Editor_Help_Flyout.header = 'Local Media' 
-                update-EditorHelp -content "[WARNING] The provide local media path $($path.path) is invalid!" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout           
+                $hashsetup.Editor_Help_Flyout.header = 'Local Media'
+                update-EditorHelp -content "[WARNING] The provide local media path $($path.path) is invalid!" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
                 return
-              } 
+              }
             }
-            $hashSetup.paths_toRemove = $thisApp.Config.Media_Directories | Where-Object {$hashsetup.MediaLocations_Grid.items.path -notcontains $_}    
+            $hashSetup.paths_toRemove = $thisApp.Config.Media_Directories | Where-Object {$hashsetup.MediaLocations_Grid.items.path -notcontains $_}
             if($syncHash.MainGrid_Bottom_TabControl.items -notcontains $syncHash.LocalMedia_Browser_Tab){
               $syncHash.Window.Dispatcher.invoke([action]{
-                  [void]$syncHash.MainGrid_Bottom_TabControl.items.Add($syncHash.LocalMedia_Browser_Tab) 
+                  [void]$syncHash.MainGrid_Bottom_TabControl.items.Add($syncHash.LocalMedia_Browser_Tab)
                   $syncHash.MediaTable.isEnabled = $true
                   $syncHash.LocalMedia_Browser_Tab.isEnabled = $true
                   $syncHash.LocalMedia_Browser_Tab.Visibility = 'Visible'
-              })            
-            }   
+              })
+            }
             if($thisApp.Config.Enable_LocalMedia_Monitor -and $thisApp.Config.Media_Directories -and (!$thisApp.ProfileManagerEnabled -or !$thisApp.LocalMedia_Monitor_Enabled)){
               $thisApp.Config.Media_Directories | foreach {
                 Start-FileWatcher -FolderPath $_ -MonitorSubFolders -use_Runspace -Start_ProfileManager:$(!$thisApp.ProfileManagerEnabled) -synchash $synchash -thisApp $thisApp -Runspace_Guid (New-GUID).Guid
               }
             }elseif(!$thisApp.Config.Enable_LocalMedia_Monitor -and ($thisApp.ProfileManagerEnabled -or $thisApp.LocalMedia_Monitor_Enabled)){
-              Stop-FileWatcher -thisApp $thisApp -synchash $synchash -use_Runspace -Stop_ProfileManager -force  
-            }                   
+              Stop-FileWatcher -thisApp $thisApp -synchash $synchash -use_Runspace -Stop_ProfileManager -force
+            }
           }
           else
           {
             Add-Member -InputObject $thisApp.config -Name "Import_Local_Media" -Value $false -MemberType NoteProperty -Force
             if($thisApp.ProfileManagerEnabled -or $thisApp.LocalMedia_Monitor_Enabled){
-              Stop-FileWatcher -thisApp $thisApp -synchash $synchash -use_Runspace -Stop_ProfileManager -force   
+              Stop-FileWatcher -thisApp $thisApp -synchash $synchash -use_Runspace -Stop_ProfileManager -force
             }
           }
           #TODO: Display Name Syntax Update
           if($thisApp.Config.LocalMedia_Display_Syntax -ne $hashsetup.LocalMedia_Display_Syntax_textbox.text){
             write-ezlogs ">>>> Local Media Default Display Name Syntax changed from: '$($thisApp.Config.LocalMedia_Display_Syntax)' to '$($hashsetup.LocalMedia_Display_Syntax_textbox.text)'" -logtype Setup
-            Add-Member -InputObject $thisapp.config -Name 'LocalMedia_Display_Syntax' -Value $($hashsetup.LocalMedia_Display_Syntax_textbox.text) -MemberType NoteProperty -Force 
+            Add-Member -InputObject $thisapp.config -Name 'LocalMedia_Display_Syntax' -Value $($hashsetup.LocalMedia_Display_Syntax_textbox.text) -MemberType NoteProperty -Force
           }
           #endregion Import Local Media
 
@@ -7341,16 +7401,16 @@ function Show-SettingsWindow{
               if(!$secretstore){
                 write-ezlogs ">>>> Couldnt find secret vault, Attempting to create new application: $Name" -showtime -LogLevel 2 -logtype Setup
                 try{
-                  $secretstore = New-YoutubeApplication -thisApp $thisApp -Name $Name -ConfigPath $ConfigPath                  
+                  $secretstore = New-YoutubeApplication -thisApp $thisApp -Name $Name -ConfigPath $ConfigPath
                 }catch{
-                  write-ezlogs "An exception occurred when setting or configuring the secret vault $Name" -CatchError $_ -showtime -enablelogs 
-                }   
+                  write-ezlogs "An exception occurred when setting or configuring the secret vault $Name" -CatchError $_ -showtime -enablelogs
+                }
               }else{
-                write-ezlogs "Retrieved SecretVault: $Name" -showtime -LogLevel 2 -logtype Setup -Success  
-              }                 
+                write-ezlogs "Retrieved SecretVault: $Name" -showtime -LogLevel 2 -logtype Setup -Success
+              }
             }catch{
               write-ezlogs "[Show-SettingsWindow-Apply] An exception occurred when setting or configuring the secret vault $Name" -CatchError $_ -showtime
-            }            
+            }
             $access_token = Get-secret -name YoutubeAccessToken  -Vault $Name -ErrorAction SilentlyContinue
             $refresh_access_token = Get-secret -name Youtuberefresh_token  -Vault $Name -ErrorAction SilentlyContinue
             if($refresh_access_token){
@@ -7364,23 +7424,23 @@ function Show-SettingsWindow{
                 $refresh_access_token = Get-secret -name Youtuberefresh_token  -Vault $Name -ErrorAction SilentlyContinue
               }catch{
                 write-ezlogs "[Show-SettingsWindow-Apply] An exception occurred getting Secret YoutubeAccessToken" -showtime -catcherror $_
-              } 
+              }
               if($access_token -and $refresh_access_token){
-                write-ezlogs "[Show-SettingsWindow-Apply] [SUCCESS] Authenticated to Youtube and retrieved access tokens" -showtime -logtype Setup -LogLevel 2 -Success                      
+                write-ezlogs "[Show-SettingsWindow-Apply] [SUCCESS] Authenticated to Youtube and retrieved access tokens" -showtime -logtype Setup -LogLevel 2 -Success
               }else{
                 write-ezlogs "[Show-SettingsWindow-Apply] Unable to successfully authenticate to Youtube!" -showtime -warning -logtype Setup
                 $hashsetup.Import_Youtube_Playlists_Toggle.isOn = $false
                 if($hashsetup.EditorHelpFlyout.Document.Blocks){
                   $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-                }        
+                }
                 $hashsetup.Editor_Help_Flyout.isOpen = $true
-                $hashsetup.Editor_Help_Flyout.header = 'Youtube'            
-                update-EditorHelp -content "[WARNING] Unable to successfully authenticate to Youtube! You may try to re-authenticate again or disable Import Youtube" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout      
-                return         
-              }             
+                $hashsetup.Editor_Help_Flyout.header = 'Youtube'
+                update-EditorHelp -content "[WARNING] Unable to successfully authenticate to Youtube! You may try to re-authenticate again or disable Import Youtube" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
+                return
+              }
             }else{
               write-ezlogs "Returned Youtube authentication - access_token_expires: $($access_token_expires)" -showtime -Success -logtype Setup -LogLevel 2
-            }            
+            }
             $newYoutubeMediaCount = 0
             $RemovedYoutubeMediaCount = 0
             $thisApp.config.Import_Youtube_Media = $true
@@ -7388,34 +7448,34 @@ function Show-SettingsWindow{
               $thisApp.config.Youtube_Browser = $hashsetup.Import_Youtube_Auth_ComboBox.Selecteditem.Content
             }else{
               $thisApp.config.Youtube_Browser = $null
-            }                    
+            }
             if(![System.IO.Directory]::Exists("$($thisapp.config.Playlist_Profile_Directory)\Youtube_Playlists")){
               try{
                 [void][System.IO.Directory]::CreateDirectory("$($thisapp.config.Playlist_Profile_Directory)\Youtube_Playlists")
               }catch{
                 write-ezlogs "An exception occurred creating new directory $($thisapp.config.Playlist_Profile_Directory)\Youtube_Playlists" -showtime -catcherror $_
-              }             
+              }
             }
             if([System.IO.File]::Exists("$($thisapp.config.Current_Folder)\Resources\Templates\Playlists_Template.xml")){
               try{
                 $Playlist_Profile = Import-Clixml "$($thisapp.config.Current_Folder)\Resources\Templates\Playlists_Template.xml"
               }catch{
                 write-ezlogs "An exception occurred importing playlist template $($thisapp.config.Current_Folder)\Resources\Templates\Playlists_Template.xml" -showtime -catcherror $_
-              }             
-            }        
+              }
+            }
             foreach($playlist in $hashsetup.YoutubePlaylists_Grid.items){
               if(Test-URL $playlist.path){
                 if($thisApp.Config.Youtube_Playlists -notcontains $playlist.path){
                   try{
                     write-ezlogs "| Adding new Youtube Playlist URL: $($playlist.path) - Name: $($playlist.Name)" -showtime -logtype Setup -LogLevel 3
                     [void]$thisApp.Config.Youtube_Playlists.add($playlist.path)
-                    if($Playlist_Profile -and $playlist.path -notmatch 'Twitch.tv'){  
+                    if($Playlist_Profile -and $playlist.path -notmatch 'Twitch.tv'){
                       if($playlist.Name){
                         $playlist_Name = $playlist.name
                       }else{
                         $playlist_Name = "Custom_$($playlist.id)"
-                      }    
-                      #$playlistName_Cleaned = ([Regex]::Replace($playlist_Name, $pattern3, '')).trim()            
+                      }
+                      #$playlistName_Cleaned = ([Regex]::Replace($playlist_Name, $pattern3, '')).trim()
                       $Playlist_Profile_path = "$($thisapp.config.Playlist_Profile_Directory)\Youtube_Playlists\$($playlist.id).xml"
                       write-ezlogs "| Saving new Youtube Playlist profile to $Playlist_Profile_path" -showtime -logtype Setup -LogLevel 2
                       $Playlist_Profile.name = $playlist_Name
@@ -7430,19 +7490,19 @@ function Show-SettingsWindow{
                         Add-Member -InputObject $Playlist_Profile -Name 'Playlist_Info' -Value $playlist.playlist_info -MemberType NoteProperty -Force
                       }else{
                         $Playlist_Profile.Source = 'Custom'
-                      }  
-                      Export-Clixml -InputObject $Playlist_Profile -path $Playlist_Profile_path -Force -Encoding Default                
+                      }
+                      Export-Clixml -InputObject $Playlist_Profile -path $Playlist_Profile_path -Force -Encoding Default
                     }
                     $newYoutubeMediaCount++
                   }catch{
                     write-ezlogs "An exception occurred adding path $($playlist.path) to Youtube_Playlists" -showtime -catcherror $_
                   }
-                }            
-              }else{        
+                }
+              }else{
                 write-ezlogs "The provided Youtube playlist URL $($playlist.path) is invalid!" -showtime -warning -logtype Setup
                 update-EditorHelp -content "The provided Youtube playlist URL $($playlist.path) is invalid! Please remove it from the Youtube list before continuing" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -Header 'Youtube Import Warning' -clear -Open
                 return
-              } 
+              }
             }
             if($hashsetup.Update){
               $hashSetup.playlists_toRemove = [System.Collections.Generic.List[Object]]::new()
@@ -7459,19 +7519,19 @@ function Show-SettingsWindow{
             if($syncHash.MainGrid_Bottom_TabControl.items -notcontains $syncHash.Youtube_Tabitem){
               $hashSetup.Update_YoutubeMedia_Sources = $true
               $syncHash.Window.Dispatcher.invoke([action]{
-                  [void]$syncHash.MainGrid_Bottom_TabControl.items.Add($syncHash.Youtube_Tabitem) 
+                  [void]$syncHash.MainGrid_Bottom_TabControl.items.Add($syncHash.Youtube_Tabitem)
                   if($syncHash.YoutubeTable){
                     $syncHash.YoutubeTable.isEnabled = $true
-                  }                  
+                  }
                   $syncHash.Youtube_Tabitem.isEnabled = $true
-              })            
+              })
             }
             #Youtube Monitor
             if($hashsetup.Youtube_Update_Toggle.isOn -and $hashsetup.Youtube_Update_Interval_ComboBox.SelectedIndex -eq -1){
               $thisApp.Config.Youtube_Update = $false
-              write-ezlogs "You must specify an interval when enabling option '$($hashsetup.Youtube_Update_Toggle.content)'" -showtime -warning -logtype Setup        
+              write-ezlogs "You must specify an interval when enabling option '$($hashsetup.Youtube_Update_Toggle.content)'" -showtime -warning -logtype Setup
               update-EditorHelp -content "[Warning] You must specify an interval when enabling option '$($hashsetup.Youtube_Update_Toggle.content)'" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -Header 'Youtube' -clear -Open
-              return     
+              return
             }
             if($syncHash.YoutubeTable -and $synchash.YoutubeMedia_View){
               if($thisapp.config.Youtube_Update -and -not [string]::IsNullOrEmpty($thisapp.config.Youtube_Update_Interval) -and $thisapp.config.Youtube_Update_Interval -ne 'On Startup'){
@@ -7488,8 +7548,8 @@ function Show-SettingsWindow{
                 }catch{
                   write-ezlogs 'An exception occurred in Start-YoutubeMonitor' -showtime -catcherror $_
                 }
-              }      
-            }                                        
+              }
+            }
           }else{
             $thisapp.config.Import_Youtube_Media = $false
           }
@@ -7499,9 +7559,9 @@ function Show-SettingsWindow{
 
           #Youtube Download Path
           if([system.io.directory]::Exists($hashsetup.Youtube_Download_textbox.text)){
-            $thisApp.config.Youtube_Download_Path = $($hashsetup.Youtube_Download_textbox.text) 
+            $thisApp.config.Youtube_Download_Path = $($hashsetup.Youtube_Download_textbox.text)
           }else{
-            $thisApp.config.Youtube_Download_Path = ''      
+            $thisApp.config.Youtube_Download_Path = ''
           }
           #Sponsorblock
           $thisapp.config.Sponsorblock_ActionType = $hashsetup.Sponsorblock_ActionType_ComboBox.Selecteditem.Content
@@ -7509,23 +7569,23 @@ function Show-SettingsWindow{
 
           #region Apply Twitch
           $hashsetup.Twitch_Update_textblock.text = ''
-          $hashsetup.Twitch_Update_transitioningControl.content = ''   
+          $hashsetup.Twitch_Update_transitioningControl.content = ''
           #Twitch Monitor
           if($hashsetup.Twitch_Update_Toggle.isOn -and $hashsetup.Twitch_Update_Interval_ComboBox.SelectedIndex -eq -1){
             $thisapp.config.Twitch_Update = $false
             write-ezlogs "You must specify an interval when enabling option '$($hashsetup.Twitch_Update_Toggle.content)'" -showtime -warning -logtype Setup
             if($hashsetup.EditorHelpFlyout.Document.Blocks){
               $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-            }        
+            }
             $hashsetup.Editor_Help_Flyout.isOpen = $true
-            $hashsetup.Editor_Help_Flyout.header = 'Twitch'            
-            update-EditorHelp -content "[Warning]`n`nYou must specify an interval when enabling option '$($hashsetup.Twitch_Update_Toggle.content)'" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout 
+            $hashsetup.Editor_Help_Flyout.header = 'Twitch'
+            update-EditorHelp -content "[Warning]`n`nYou must specify an interval when enabling option '$($hashsetup.Twitch_Update_Toggle.content)'" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
             $hashsetup.Twitch_Update_textblock.text = "[Warning] You must specify an interval when enabling option '$($hashsetup.Twitch_Update_Toggle.content)'"
             $hashsetup.Twitch_Update_textblock.foreground = 'Orange'
             $hashsetup.Twitch_Update_textblock.FontSize = 14
             $hashsetup.Twitch_Update_transitioningControl.content = $hashsetup.Twitch_Update_textblock
-            return     
-          }    
+            return
+          }
           if($thisapp.config.Twitch_Update -and $thisapp.config.Twitch_Update_Interval){
             try{
               Start-TwitchMonitor -Interval $thisapp.config.Twitch_Update_Interval -thisApp $thisapp -synchash $synchash -Verboselog
@@ -7544,7 +7604,7 @@ function Show-SettingsWindow{
             }
           }
 
-          if($hashsetup.Import_Twitch_Playlists_Toggle.isOn){           
+          if($hashsetup.Import_Twitch_Playlists_Toggle.isOn){
             $newTwitchMediaCount = 0
             $RemovedTwitchMediaCount = 0
             $thisApp.config.Import_Twitch_Media = $true
@@ -7560,12 +7620,12 @@ function Show-SettingsWindow{
                   $newTwitchMediaCount++
                 }elseif(!$synchash.All_Twitch_Media -or $synchash.All_Twitch_Media.url -notcontains $playlist.path){
                   $newTwitchMediaCount++
-                }            
-              }else{           
+                }
+              }else{
                 write-ezlogs "The provided Twitch URL $($playlist.path) is invalid!" -showtime -warning -logtype Setup
                 update-EditorHelp -content "The provided Twitch URL $($playlist.path) is invalid! Please remove it from the Twitch list before continuing" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -Header 'Twitch Import Warning' -clear -Open
                 return
-              } 
+              }
             }
             $hashSetup.Twitchplaylists_toRemove = [System.Collections.Generic.List[Object]]::new()
             $Twitchplaylists_toRemove = $thisApp.Config.Twitch_Playlists | where {$hashsetup.TwitchPlaylists_Grid.items.path -notcontains $_.path}
@@ -7576,11 +7636,11 @@ function Show-SettingsWindow{
                 write-ezlogs "| Removing Twitch channel $($playlist.name) from thisApp.Config.Twitch_Playlists" -showtime -logtype Setup -LogLevel 2
                 [void]$thisApp.Config.Twitch_Playlists.Remove($playlist)
               }
-            }                    
+            }
           }else{
             $thisApp.config.Import_Twitch_Media = $false
-          } 
-          
+          }
+
           #Proxies
           if($hashsetup.Twitch_Custom_Proxy_Toggle.isOn){
             $thisApp.config.UseTwitchCustom = $true
@@ -7592,10 +7652,10 @@ function Show-SettingsWindow{
                   [void]$thisApp.config.TwitchProxies.add($proxy.url)
                 }else{
                   write-ezlogs "Twitch Playlist Proxy URL has already been added: $($proxy.url)" -warning -logtype Setup
-                }            
-              }else{           
+                }
+              }else{
                 write-ezlogs "The provided Twitch Playlist Proxy URL '$($proxy.url)' is invalid!" -showtime -warning -logtype Setup
-              } 
+              }
             }
             $Twitch_Proxy_toRemove = $thisApp.config.TwitchProxies | Where-Object {$hashsetup.Twitch_Custom_Proxy_Grid.items.url -notcontains $_}
             foreach($proxy in $Twitch_Proxy_toRemove){
@@ -7604,23 +7664,23 @@ function Show-SettingsWindow{
             }
           }else{
             $thisApp.config.UseTwitchCustom = $false
-          }                      
+          }
           #endregion Apply Twitch
-                         
+
           #region Spicetify
           if($hashsetup.Spicetify_Toggle.isOn){
-            try{    
+            try{
               $thisapp.config.Use_Spicetify = $true
             }catch{
-              write-ezlogs "An exception occurred enabling Spicetify customization" -showtime -catcherror $_  
-            }                       
+              write-ezlogs "An exception occurred enabling Spicetify customization" -showtime -catcherror $_
+            }
           }else{
-            try{                     
+            try{
               if($thisApp.config.Use_Spicetify){
-                $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+                $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
                 $Button_Settings.AffirmativeButtonText = 'Yes'
-                $Button_Settings.NegativeButtonText = 'No'  
-                $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+                $Button_Settings.NegativeButtonText = 'No'
+                $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
                 $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Spicetify - IMPORTANT!","Spicetify is now disabled. However, if Spicetify was previously enabled and applied, you must click the 'Remove from Spotify' button under Spotify Options to complete the process. Its recommended to do this now, but you can also do so later.`nDo you still want to continue?",$okandCancel,$Button_Settings)
                 if($result -eq 'Affirmative'){
                   write-ezlogs "User wished to continue setup without removing Spicetify customizations..." -showtime -warning -logtype Setup
@@ -7628,34 +7688,34 @@ function Show-SettingsWindow{
                   write-ezlogs "User did not wish to continue without removing Spicetify customizations" -showtime -warning -logtype Setup
                   return
                 }
-                $hashsetup.Spicetify_textblock.text = "IMPORTANT! Spicetify is disabled. To remove customizations made to Spotify, you must click 'Remove from Spotify' to complete the process" 
+                $hashsetup.Spicetify_textblock.text = "IMPORTANT! Spicetify is disabled. To remove customizations made to Spotify, you must click 'Remove from Spotify' to complete the process"
                 $hashsetup.Spicetify_textblock.foreground = 'Orange'
                 $hashsetup.Spicetify_textblock.FontSize = 14
-                $hashsetup.Spicetify_transitioningControl.content = $hashsetup.Spicetify_textblock                  
-              }        
-              Add-Member -InputObject $thisapp.config -Name 'Use_Spicetify' -Value $false -MemberType NoteProperty -Force                             
+                $hashsetup.Spicetify_transitioningControl.content = $hashsetup.Spicetify_textblock
+              }
+              Add-Member -InputObject $thisapp.config -Name 'Use_Spicetify' -Value $false -MemberType NoteProperty -Force
             }catch{
               write-ezlogs 'An error occurred while disabling Spicetify customizations' -showtime -catcherror $_
-              Add-Member -InputObject $thisapp.config -Name 'Use_Spicetify' -Value $false -MemberType NoteProperty -Force                
+              Add-Member -InputObject $thisapp.config -Name 'Use_Spicetify' -Value $false -MemberType NoteProperty -Force
             }
-          } 
-          #endregion Spicetify  
-                   
+          }
+          #endregion Spicetify
+
           #region Import Spotify
           if($first_run -and (Get-Process *Spotify* -ErrorAction SilentlyContinue)){
             write-ezlogs "Forcing Spotify client to close.." -showtime -warning -logtype Setup
             Get-Process *Spotify* | Stop-Process -Force -ErrorAction SilentlyContinue
-          } 
+          }
           $newSpotifyMediaCount = 0
-          $RemovedSpotifyMediaCount = 0                          
+          $RemovedSpotifyMediaCount = 0
           if($hashsetup.Import_Spotify_Playlists_Toggle.isOn){
             $thisApp.config.Import_Spotify_Media = $true
             $hashsetup.Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name
             if(!$hashsetup.Spotify_Auth_app.token.access_token){
-              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
               $Button_settings.AffirmativeButtonText = "Yes"
-              $Button_settings.NegativeButtonText = "No"  
-              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+              $Button_settings.NegativeButtonText = "No"
+              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
               $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Invalid/Missing Spotify Credentials","No Spotify credentials were provided or the existing ones are invalid. Do you wish to supply your Spotify credentials now?`n`nNOTE: If you proceed without providing valid credentials, you may not be able play or manage Spotify media",$okAndCancel,$button_settings)
               if($result -eq 'Affirmative'){
                 write-ezlogs ">>>> User wished to provide their Spotify credentials - Starting spotify authentication setup process" -showtime -logtype Setup
@@ -7666,24 +7726,24 @@ function Show-SettingsWindow{
                   if([System.IO.File]::Exists($APIXML)){
                     $Spotify_API = Import-Clixml $APIXML
                     $client_ID = $Spotify_API.ClientID
-                    $client_secret = $Spotify_API.ClientSecret            
+                    $client_secret = $Spotify_API.ClientSecret
                   }
                   if($Spotify_API -and $client_ID -and $client_secret){
                     write-ezlogs "Creating new Spotify Application '$($thisApp.config.App_Name)'" -showtime -logtype Setup
                     #$client_secret = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR((($Spotify_API.ClientSecret | ConvertTo-SecureString))))
-                    #$client_ID = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR((($Spotify_API.ClientID | ConvertTo-SecureString))))            
-                    New-SpotifyApplication -ClientId $client_ID -ClientSecret $client_secret -Name $thisApp.config.App_Name -RedirectUri $Spotify_API.Redirect_URLs 
-                    $hashsetup.Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name               
+                    #$client_ID = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR((($Spotify_API.ClientID | ConvertTo-SecureString))))
+                    New-SpotifyApplication -ClientId $client_ID -ClientSecret $client_secret -Name $thisApp.config.App_Name -RedirectUri $Spotify_API.Redirect_URLs
+                    $hashsetup.Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name
                   }
                 }
                 if($hashsetup.Spotify_Auth_app){
                   try{
-                    $playlists = Get-CurrentUserPlaylists -ApplicationName $thisApp.config.App_Name -thisApp $thisApp               
+                    $playlists = Get-CurrentUserPlaylists -ApplicationName $thisApp.config.App_Name -thisApp $thisApp
                   }catch{
                     write-ezlogs "[Show-SettingsWindow] An exception occurred executing Get-CurrentUserPlaylists" -CatchError $_ -enablelogs
-                  }                             
+                  }
                   if($playlists){
-                    foreach($playlist in $playlists){              
+                    foreach($playlist in $playlists){
                       $playlisturl = $playlist.uri
                       $playlistName = $playlist.name
                       if($hashsetup.SpotifyPlaylists_Grid.items.path -notcontains $playlisturl){
@@ -7696,20 +7756,20 @@ function Show-SettingsWindow{
                     $thisApp.config.Import_Spotify_Media = $true
                     write-ezlogs "Authenticated to Spotify and retrieved Playlists" -showtime -color green -logtype Setup -Success
                     $hashsetup.Spotify_Auth_Status = $true
-                    $hashsetup.Import_Spotify_textbox.text = '' 
+                    $hashsetup.Import_Spotify_textbox.text = ''
                     if($MahDialog_hash.window.Dispatcher){
                       write-ezlogs "[Show-SettingsWindow-Apply] | Closing Weblogin Window" -logtype Setup
                       $MahDialog_hash.window.Dispatcher.Invoke("Normal",[action]{ $MahDialog_hash.window.close() })
-                    }  
+                    }
                     if($syncHash.MainGrid_Bottom_TabControl.items -notcontains $syncHash.Spotify_Tabitem){
                       $syncHash.Window.Dispatcher.invoke([action]{
-                          [void]$syncHash.MainGrid_Bottom_TabControl.items.Add($syncHash.Spotify_Tabitem) 
+                          [void]$syncHash.MainGrid_Bottom_TabControl.items.Add($syncHash.Spotify_Tabitem)
                           if($syncHash.SpotifyTable){
                             $syncHash.SpotifyTable.isEnabled = $true
-                          }                          
+                          }
                           $syncHash.Spotify_Tabitem.isEnabled = $true
-                      })            
-                    }                                              
+                      })
+                    }
                   }else{
                     write-ezlogs "[Show-SettingsWindow] Unable to successfully authenticate to spotify! (No playlists returned!)" -showtime -warning -logtype Setup
                     $thisApp.config.Import_Spotify_Media = $false
@@ -7717,58 +7777,58 @@ function Show-SettingsWindow{
                     $hashsetup.Spotify_Auth_Status = $false
                     if($hashsetup.EditorHelpFlyout.Document.Blocks){
                       $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-                    }        
+                    }
                     $hashsetup.Editor_Help_Flyout.isOpen = $true
-                    $hashsetup.Editor_Help_Flyout.header = 'Spotify'            
+                    $hashsetup.Editor_Help_Flyout.header = 'Spotify'
                     update-EditorHelp -content "[WARNING] Unable to successfully authenticate to spotify! (No playlists returned!) Spotify integration will be unavailable. Please try again or disable Spotify Importing to continue setup" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
-                    Remove-SpotifyApplication -Name $thisApp.config.App_Name 
-                    return              
-                  }               
+                    Remove-SpotifyApplication -Name $thisApp.config.App_Name
+                    return
+                  }
                 }else{
-                  write-ezlogs "Unable to authenticate with Spotify API -- cannot continue" -showtime -warning -logtype Setup      
+                  write-ezlogs "Unable to authenticate with Spotify API -- cannot continue" -showtime -warning -logtype Setup
                   if($hashsetup.EditorHelpFlyout.Document.Blocks){
                     $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-                  }        
+                  }
                   $hashsetup.Editor_Help_Flyout.isOpen = $true
-                  $hashsetup.Editor_Help_Flyout.header = 'Spotify'            
-                  update-EditorHelp -content "[WARNING] Unable to authenticate with Spotify API (Couldn't find API creds!). Spotify integration will be unavailable" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout   
-                  Remove-SpotifyApplication -Name $thisApp.config.App_Name   
+                  $hashsetup.Editor_Help_Flyout.header = 'Spotify'
+                  update-EditorHelp -content "[WARNING] Unable to authenticate with Spotify API (Couldn't find API creds!). Spotify integration will be unavailable" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
+                  Remove-SpotifyApplication -Name $thisApp.config.App_Name
                   return
-                }                
+                }
               }else{
                 write-ezlogs "| User wish to continue without providing Spotify credentials!" -showtime -logtype Setup -Warning
                 $hashsetup.Spotify_Auth_Status = $false
               }
             }else{
               $hashsetup.Spotify_Auth_Status = $true
-            } 
+            }
             if(![System.IO.Directory]::Exists("$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists")){
               try{
                 [void][System.IO.Directory]::CreateDirectory("$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists")
               }catch{
                 write-ezlogs "An exception occurred creating new directory $($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists" -showtime -catcherror $_
-              }             
+              }
             }
             if([System.IO.File]::Exists("$($thisapp.config.Current_Folder)\Resources\Templates\Playlists_Template.xml")){
               try{
                 $Playlist_Profile = Import-Clixml "$($thisapp.config.Current_Folder)\Resources\Templates\Playlists_Template.xml"
               }catch{
                 write-ezlogs "An exception occurred importing playlist template $($thisapp.config.Current_Folder)\Resources\Templates\Playlists_Template.xml" -showtime -catcherror $_
-              }             
-            }        
+              }
+            }
             foreach($playlist in $hashsetup.SpotifyPlaylists_Grid.items){
               if($playlist.path -match 'Spotify'){
                 if($thisApp.Config.Spotify_Playlists -notcontains $playlist.path){
                   try{
                     write-ezlogs "| Adding new Spotify Playlist URL: $($playlist.path) - Name: $($playlist.Name)" -showtime -logtype Setup -LogLevel 3
                     [void]$thisApp.Config.Spotify_Playlists.add($playlist.path)
-                    if($Playlist_Profile -and $playlist.path){  
+                    if($Playlist_Profile -and $playlist.path){
                       if($playlist.Name){
                         $playlist_Name = $playlist.name
                       }else{
                         $playlist_Name = "Custom_$($playlist.id)"
-                      }    
-                      #$playlistName_Cleaned = ([Regex]::Replace($playlist_Name, $pattern3, '')).trim()            
+                      }
+                      #$playlistName_Cleaned = ([Regex]::Replace($playlist_Name, $pattern3, '')).trim()
                       $Playlist_Profile_path = "$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists\$($playlist.id).xml"
                       write-ezlogs "| Saving new Spotify Playlist profile to $Playlist_Profile_path" -showtime -logtype Setup -LogLevel 3
                       $Playlist_Profile.name = $playlist_Name
@@ -7784,24 +7844,24 @@ function Show-SettingsWindow{
                       }else{
                         $Playlist_Profile.Source = 'Custom'
                       }
-                      Export-Clixml -InputObject $Playlist_Profile -path $Playlist_Profile_path -Force -Encoding Default                   
+                      Export-Clixml -InputObject $Playlist_Profile -path $Playlist_Profile_path -Force -Encoding Default
                     }
                     $newSpotifyMediaCount++
                   }catch{
                     write-ezlogs "An exception occurred adding path $($playlist.path) to Spotify_Playlists" -showtime -catcherror $_
                   }
-                }            
+                }
               }else{
-                write-ezlogs "The provided Spotify playlist URL $($playlist.path) is invalid!" -showtime -warning -logtype Setup                 
+                write-ezlogs "The provided Spotify playlist URL $($playlist.path) is invalid!" -showtime -warning -logtype Setup
                 $hashsetup.Import_Spotify_Playlists_Toggle.isOn = $false
                 if($hashsetup.EditorHelpFlyout.Document.Blocks){
                   $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-                }        
+                }
                 $hashsetup.Editor_Help_Flyout.isOpen = $true
-                $hashsetup.Editor_Help_Flyout.header = 'Spotify'            
-                update-EditorHelp -content "[WARNING] A provided Spotify playlist URL ($($playlist.path)) is invalid! Please remove the offending playlist and try again" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout 
+                $hashsetup.Editor_Help_Flyout.header = 'Spotify'
+                update-EditorHelp -content "[WARNING] A provided Spotify playlist URL ($($playlist.path)) is invalid! Please remove the offending playlist and try again" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
                 return
-              } 
+              }
             }
             if($hashsetup.Update){
               $hashSetup.Spotifyplaylists_toRemove = [System.Collections.Generic.List[Object]]::new()
@@ -7818,19 +7878,19 @@ function Show-SettingsWindow{
             if($syncHash.MainGrid_Bottom_TabControl.items -notcontains $syncHash.Spotify_Tabitem){
               $hashsetup.Update_SpotifyMedia_Sources = $true
               $syncHash.Window.Dispatcher.invoke([action]{
-                  [void]$syncHash.MainGrid_Bottom_TabControl.items.Add($syncHash.Spotify_Tabitem) 
+                  [void]$syncHash.MainGrid_Bottom_TabControl.items.Add($syncHash.Spotify_Tabitem)
                   if($syncHash.SpotifyTable){
                     $syncHash.SpotifyTable.isEnabled = $true
-                  }                    
+                  }
                   $syncHash.Spotify_Tabitem.isEnabled = $true
-              })            
+              })
             }
             #Spotify Monitor
             if($hashsetup.Spotify_Update_Toggle.isOn -and $hashsetup.Spotify_Update_Interval_ComboBox.SelectedIndex -eq -1){
               $thisapp.config.Spotify_Update = $false
-              write-ezlogs "You must specify an interval when enabling option '$($hashsetup.Spotify_Update_Toggle.content)'" -showtime -warning -logtype Setup        
+              write-ezlogs "You must specify an interval when enabling option '$($hashsetup.Spotify_Update_Toggle.content)'" -showtime -warning -logtype Setup
               update-EditorHelp -content "[Warning] You must specify an interval when enabling option '$($hashsetup.Spotify_Update_Toggle.content)'" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -Header 'Spotify' -clear -Open
-              return     
+              return
             }
             if($syncHash.SpotifyTable.Itemssource){
               if($thisapp.config.Spotify_Update -and -not [string]::IsNullOrEmpty($thisapp.config.Spotify_Update_Interval) -and $thisapp.config.Spotify_Update_Interval -ne 'On Startup'){
@@ -7846,7 +7906,7 @@ function Show-SettingsWindow{
                 }catch{
                   write-ezlogs 'An exception occurred in Start-SpotifyMonitor' -showtime -catcherror $_
                 }
-              }      
+              }
             }
           }else{
             try{
@@ -7857,11 +7917,11 @@ function Show-SettingsWindow{
             }catch{
               write-ezlogs 'An exception occurred setting Spotify config settings' -showtime -catcherror $_
             }
-          } 
+          }
           $thisApp.Config.Install_Spotify = ($hashsetup.Install_Spotify_Toggle.isOn -eq $true)
           #endregion Import Spotify
 
-          #region Discord Integration         
+          #region Discord Integration
           if($hashsetup.Discord_Integration_Toggle.isOn){
             $thisApp.config.Discord_Integration = $true
             if($synchash.Current_playing_media -and $synchash.DSClientTimer){
@@ -7869,19 +7929,19 @@ function Show-SettingsWindow{
                 Set-DiscordPresense -synchash $synchash -media $synchash.Current_playing_media -thisapp $thisApp -start -Startup
               }catch{
                 write-ezlogs "An exception occurred executing Set-DiscordPresence" -showtime -catcherror $_
-              }           
-            }         
+              }
+            }
           }else{
             try{
               $thisApp.config.Discord_Integration = $false
               Set-DiscordPresense -synchash $synchash -thisapp $thisApp -stop -runspace
             }catch{
               write-ezlogs "An exception occurred executing Set-DiscordPresence" -showtime -catcherror $_
-            }           
+            }
           }
           #endregion Discord Integration
-                                    
-          #region Apply configuration changes 
+
+          #region Apply configuration changes
           if(!$First_run -and $hashsetup.Update){
             $hashsetup.Update_Media_Sources = $true
             if($newLocalMediaCount -ge 1){
@@ -7897,9 +7957,9 @@ function Show-SettingsWindow{
               foreach($path in $hashSetup.paths_toRemove){
                 write-ezlogs "| Removing Local Media Directory $($path)" -showtime -logtype Setup -LogLevel 2
                 [void]$thisApp.Config.Media_Directories.Remove($path)
-              } 
+              }
               if($synchash.All_local_Media.SyncRoot){
-                write-ezlogs "Parsing All_Local_media for media in directory $($path)" -showtime -logtype Setup -LogLevel 2               
+                write-ezlogs "Parsing All_Local_media for media in directory $($path)" -showtime -logtype Setup -LogLevel 2
                 $synchash.LocalMedia_ToRemove = foreach($path in $hashSetup.paths_toRemove){
                   Get-IndexesOf $synchash.All_local_Media.Sourcedirectory -Value $path | & { process {
                       $synchash.All_local_Media[$_]
@@ -7910,7 +7970,7 @@ function Show-SettingsWindow{
                 $synchash.LocalMedia_ToRemove = $synchash.MediaTable.Itemssource.SourceCollection | Where-Object {$_.Sourcedirectory -in $hashSetup.paths_toRemove}
               }
               #Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
-              $hashsetup.Remove_LocalMedia_Sources = $true                
+              $hashsetup.Remove_LocalMedia_Sources = $true
             }else{
               write-ezlogs "No removals found from local media sources" -showtime -logtype Setup -LogLevel 2
               $synchash.LocalMedia_ToRemove = $Null
@@ -7924,15 +7984,15 @@ function Show-SettingsWindow{
             }else{
               write-ezlogs "No additions found to Spotify media sources" -showtime -logtype Setup -LogLevel 2
               $hashsetup.Update_SpotifyMedia_Sources = $false
-            }           
+            }
             if($RemovedSpotifyMediaCount -ge 1){
-              write-ezlogs "Found $RemovedSpotifyMediaCount removals from Spotify media sources" -showtime -logtype Setup -LogLevel 2        
+              write-ezlogs "Found $RemovedSpotifyMediaCount removals from Spotify media sources" -showtime -logtype Setup -LogLevel 2
               $hashsetup.Remove_SpotifyMedia_Sources = $true
             }else{
               write-ezlogs "No removals found from Spotify media sources" -showtime -logtype Setup -LogLevel 2
               $hashsetup.Remove_SpotifyMedia_Sources = $false
-            }            
-                           
+            }
+
             if($newYoutubeMediaCount -ge 1){
               write-ezlogs "Found $newYoutubeMediaCount additions to Youtube media sources" -showtime -logtype Setup -LogLevel 2
               $hashsetup.Update_YoutubeMedia_Sources = $true
@@ -7941,7 +8001,7 @@ function Show-SettingsWindow{
               $hashsetup.Update_YoutubeMedia_Sources = $false
             }
             if($RemovedYoutubeMediaCount -ge 1){
-              write-ezlogs "Found $RemovedYoutubeMediaCount removals from Youtube media sources" -showtime -logtype Setup -LogLevel 2        
+              write-ezlogs "Found $RemovedYoutubeMediaCount removals from Youtube media sources" -showtime -logtype Setup -LogLevel 2
               foreach($path in $hashSetup.playlists_toRemove){
                 if($thisApp.Config.Youtube_Playlists -contains $path){
                   write-ezlogs "| Removing Youtube playlist $($path)" -showtime -logtype Setup -LogLevel 2
@@ -7955,7 +8015,7 @@ function Show-SettingsWindow{
               }
               if($playlists_to_remove){
                 write-ezlogs "| Found $($playlists_to_remove.count) playlists to remove from All_Youtube_media" -showtime -logtype Setup -LogLevel 2
-                $hashsetup.Remove_YoutubeMedia_Sources = $true 
+                $hashsetup.Remove_YoutubeMedia_Sources = $true
                 $hashSetup.playlists_toRemove = $playlists_to_remove
               }else{
                 $hashsetup.Remove_YoutubeMedia_Sources = $false
@@ -7974,7 +8034,7 @@ function Show-SettingsWindow{
               $hashsetup.Remove_TwitchMedia_Sources = $true
             }else{
               write-ezlogs "No removals found from Twitch media sources" -showtime -logtype Setup -LogLevel 2
-            }                    
+            }
           }
           #endregion Apply configuration changes
 
@@ -7983,7 +8043,7 @@ function Show-SettingsWindow{
             write-ezlogs ">>>> Saving configuration to: $($thisApp.Config.Config_Path)" -logtype Setup
             Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
           }catch{
-            write-ezlogs "An exception occurred saving config file to $($thisApp.config.Config_Path)" -showtime -catcherror $_           
+            write-ezlogs "An exception occurred saving config file to $($thisApp.config.Config_Path)" -showtime -catcherror $_
             update-EditorHelp -content "Unable to continue due to critical error, settings may not have saved or may be lost!" -color Tomato  -RichTextBoxControl $hashsetup.EditorHelpFlyout -clear -Header 'SAVE ERROR'
             update-EditorHelp -content "[ERROR] An exception occurred saving config file to $($thisApp.config.Config_Path)`n$($_ | out-string)" -color Tomato  -RichTextBoxControl $hashsetup.EditorHelpFlyout -Open
             return
@@ -7991,29 +8051,29 @@ function Show-SettingsWindow{
           #endregion Save configuration changes
 
           $hashsetup.Accepted = $true
-          Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -close -Dequeue                                  
+          Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -close -Dequeue
         }catch{
           write-ezlogs "An exception occurred when when saving setup settings" -CatchError $_ -showtime
           $hashsetup.Accepted = $false
           $hashsetup.Canceled = $false
           if($hashsetup.EditorHelpFlyout.Document.Blocks){
             $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-          }        
+          }
           $hashsetup.Editor_Help_Flyout.isOpen = $true
-          $hashsetup.Editor_Help_Flyout.header = 'SAVE ERROR' 
-          update-EditorHelp -content "[ERROR] An exception occurred when when saving setup settings -- `n | $($_.exception.message)`n | $($_.InvocationInfo.positionmessage)`n | $($_.ScriptStackTrace)`n" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout 
+          $hashsetup.Editor_Help_Flyout.header = 'SAVE ERROR'
+          update-EditorHelp -content "[ERROR] An exception occurred when when saving setup settings -- `n | $($_.exception.message)`n | $($_.InvocationInfo.positionmessage)`n | $($_.ScriptStackTrace)`n" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
         }
       }.GetNewClosure()
       $hashsetup.Save_Setup_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$hashsetup.Save_Setup_Button_Click_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Apply Settings Button
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Cancel Button
       #----------------------------------------------
       [System.Windows.RoutedEventHandler]$hashsetup.Cancel_Setup_Button_Click_Command = {
-        try{          
+        try{
           $hashsetup = $hashsetup
           $thisApp = $thisApp
           $First_Run = $First_Run
@@ -8022,66 +8082,66 @@ function Show-SettingsWindow{
             $existing_Runspace = Get-runspace -name 'enumerate_files_Scriptblock'
             if($existing_Runspace){
               $existingjob_check = $existing_Runspace | where {$_.name -eq 'enumerate_files_Scriptblock' -and $_.RunspaceAvailability -eq 'Busy' -and $_.RunspaceStateInfo.state -eq 'Opened'}
-              if($existingjob_check){ 
-                $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+              if($existingjob_check){
+                $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
                 $Button_settings.AffirmativeButtonText = "Yes"
-                $Button_settings.NegativeButtonText = "No"  
-                $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+                $Button_settings.NegativeButtonText = "No"
+                $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
                 $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Scan in Progress","App is currently scanning for valid media files, are you sure you wish to cancel?",$okAndCancel,$button_settings)
                 if($result -eq 'Affirmative'){
                   write-ezlogs "User wished to cancel" -showtime -warning -logtype Setup
                   $Stop_Runspace = Stop-Runspace -thisApp $thisApp -runspace_name 'enumerate_files_Scriptblock' -force
                 }else{
-                  write-ezlogs "| User did not wish to cancel" -showtime -logtype Setup 
+                  write-ezlogs "| User did not wish to cancel" -showtime -logtype Setup
                   break
                 }
-              }                    
+              }
             }
           }catch{
             write-ezlogs " An exception occurred checking for existing runspace 'enumerate_files_Scriptblock'" -showtime -catcherror $_
           }
-          $hashsetup.Canceled = $true 
+          $hashsetup.Canceled = $true
           Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -close -Dequeue
           if($First_Run){
             Stop-EZlogs -ErrorSummary $error -clearErrors -stoptimer -logOnly -enablelogs -thisApp $thisApp -globalstopwatch $globalstopwatch
-            Stop-Process $pid 
-            exit 
+            Stop-Process $pid
+            exit
           }else{
             $hashsetup.Update_Media_Sources = $false
-          }                                          
+          }
         }catch{
           write-ezlogs "An exception occurred when when saving setup settings" -CatchError $_ -showtime
           if($hashsetup.EditorHelpFlyout.Document.Blocks){
             $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-          }        
+          }
           $hashsetup.Editor_Help_Flyout.isOpen = $true
-          $hashsetup.Editor_Help_Flyout.header = 'Spotify'            
-          update-EditorHelp -content "[ERROR] An exception occurred when when saving setup settings -- `n | $($_.exception.message)`n | $($_.InvocationInfo.positionmessage)`n | $($_.ScriptStackTrace)`n" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout                       
+          $hashsetup.Editor_Help_Flyout.header = 'Spotify'
+          update-EditorHelp -content "[ERROR] An exception occurred when when saving setup settings -- `n | $($_.exception.message)`n | $($_.InvocationInfo.positionmessage)`n | $($_.ScriptStackTrace)`n" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout
           if($First_Run){
             return
           }else{
             $hashsetup.Update_Media_Sources = $false
-          }                
+          }
         }
       }.GetNewClosure()
       $hashsetup.Cancel_Setup_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$hashsetup.Cancel_Setup_Button_Click_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Cancel Button
-      #----------------------------------------------   
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Window Loaded Event
-      #---------------------------------------------- 
+      #----------------------------------------------
       $hashsetup.Window_Loaded_Command = {
-        param($Sender)    
+        param($Sender)
         try{
           if($hash.Window.IsVisible){
             write-ezlogs ">>>> Hiding Splash Screen" -showtime -logtype Setup
             Update-SplashScreen -hash $hash -hide
-            [void]$hashsetup.Window.Activate() 
+            [void]$hashsetup.Window.Activate()
           }
-          #Register window to installed application ID 
-          $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($hashsetup.Window)   
+          #Register window to installed application ID
+          $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($hashsetup.Window)
           if($thisApp.Config.Installed_AppID){
             $appid = $thisApp.Config.Installed_AppID
           }else{
@@ -8090,7 +8150,7 @@ function Show-SettingsWindow{
           if($Window_Helper.Handle -and $appid){
             $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
             write-ezlogs ">>>> Registering Miniplayer window handle: $($Window_Helper.Handle) -- to appid: $appid" -Dev_mode
-            $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)    
+            $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)
             Add-Member -InputObject $thisapp.config -Name 'Installed_AppID' -Value $appid -MemberType NoteProperty -Force
           }
         }catch{
@@ -8098,13 +8158,13 @@ function Show-SettingsWindow{
         }
       }
       $hashsetup.Window.Add_Loaded($hashsetup.Window_Loaded_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Window Loaded Event
       #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Window Closing Event
-      #---------------------------------------------- 
+      #----------------------------------------------
       $hashsetup.Window_Closing_Command = {
         [CmdletBinding()]
         Param([Parameter()] $Sender,[Parameter()] $CancelEventArgs)
@@ -8113,7 +8173,7 @@ function Show-SettingsWindow{
         $No_SettingsPreload = $No_SettingsPreload
         $thisApp = $thisApp
         $synchash = $synchash
-        if($sender -eq $hashsetup.Window){  
+        if($sender -eq $hashsetup.Window){
           try{
             if(($hashsetup.Update -or $hashsetup.Canceled -or $hashsetup.Accepted)){
               if($hashsetup.Update){
@@ -8128,11 +8188,11 @@ function Show-SettingsWindow{
               [void][System.Windows.Input.FocusManager]::SetFocusedElement([System.Windows.Input.FocusManager]::GetFocusScope($hashsetup.Window),$Null)
               [void][System.Windows.Input.Keyboard]::ClearFocus()
               if(!$First_Run -and $hashsetup.Update_Media_Sources){
-                if($thisapp.config.Import_Local_Media){ 
+                if($thisapp.config.Import_Local_Media){
                   if($hashsetup.Remove_LocalMedia_Sources){
                     if(@($synchash.LocalMedia_ToRemove).count -gt 0){
                       Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'LocalMedia_Progress_Ring' -Property 'isActive' -value $true
-                      Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaTable' -Property 'isEnabled' -value $false 
+                      Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaTable' -Property 'isEnabled' -value $false
                       Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'LocalMedia_Progress_Label' -Property 'text' -value "Removing $(@($synchash.LocalMedia_ToRemove).count) media from library..."
                       $AllMedia_Profile_File_Path = [System.IO.Path]::Combine($thisapp.Config.Media_Profile_Directory,'All-MediaProfile','All-Media-Profile.xml')
                       if([System.IO.File]::Exists($AllMedia_Profile_File_Path)){
@@ -8140,14 +8200,14 @@ function Show-SettingsWindow{
                         $synchash.All_local_Media = Import-SerializedXML -Path $AllMedia_Profile_File_Path
                       }
                       write-ezlogs "| Before Media Profile count: $(@($synchash.All_local_Media).count) - Media to remove count: $(@($synchash.LocalMedia_ToRemove).count)" -showtime -logtype Setup
-                      $synchash.All_local_Media = $synchash.All_local_Media.where({$synchash.LocalMedia_ToRemove.id -notcontains $_.id})      
+                      $synchash.All_local_Media = $synchash.All_local_Media.where({$synchash.LocalMedia_ToRemove.id -notcontains $_.id})
                       write-ezlogs "| After Media Profile count: $(@($synchash.All_local_Media).count)" -showtime -logtype Setup
                       Export-SerializedXML -InputObject $synchash.All_local_Media -Path $AllMedia_Profile_File_Path
                       $tag = 'Import'
                     }else{
                       write-ezlogs "There was no local media to remove!" -showtime -warning -logtype Setup
                     }
-                  }                  
+                  }
                   if($hashsetup.Update_LocalMedia_Sources){
                     write-ezlogs ">>>> Adding/Updating Local media table" -showtime -logtype Setup
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'LocalMedia_Progress_Ring' -Property 'isActive' -value $true
@@ -8155,25 +8215,25 @@ function Show-SettingsWindow{
                     $tag = 'AddNewOnly'
                   }
                   if($tag -and $synchash.Refresh_LocalMedia_timer){
-                    $synchash.Refresh_LocalMedia_timer.tag = $tag            
-                    $synchash.Refresh_LocalMedia_timer.start()                 
-                  }         
+                    $synchash.Refresh_LocalMedia_timer.tag = $tag
+                    $synchash.Refresh_LocalMedia_timer.start()
+                  }
                 }elseif($synchash.MediaTable){
                   if($syncHash.MainGrid_Bottom_TabControl.items -contains $syncHash.LocalMedia_Browser_Tab){
                     write-ezlogs "Setting mediatable itemssource to null and removing local media library tab" -showtime -warning -logtype Setup
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaTable' -Property 'ItemsSource' -value $Null -ClearValue
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MainGrid_Bottom_TabControl' -Property 'items' -Method 'Remove' -Method_Value $syncHash.LocalMedia_Browser_Tab
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MediaTable' -Property 'isEnabled' -value $false
-                    $synchash.All_local_Media = $Null           
+                    $synchash.All_local_Media = $Null
                   }
-                }        
+                }
                 if($thisapp.Config.Import_Spotify_Media){
                   if(($hashsetup.Update_SpotifyMedia_Sources -or $hashsetup.Remove_SpotifyMedia_Sources)){
                     write-ezlogs ">>>> Executing Import-Spotify to update sources" -showtime -logtype Setup
                     Import-Spotify -Media_directories $thisapp.config.Media_Directories -verboselog:$thisapp.Config.Verbose_Logging -synchash $synchash -thisApp $thisapp
-                  }    
+                  }
                 }else{
-                  $AllSpotify_Media_Profile_Directory_Path = [System.IO.Path]::Combine($thisapp.config.Media_Profile_Directory,'All-Spotify_MediaProfile','All-Spotify_Media-Profile.xml')        
+                  $AllSpotify_Media_Profile_Directory_Path = [System.IO.Path]::Combine($thisapp.config.Media_Profile_Directory,'All-Spotify_MediaProfile','All-Spotify_Media-Profile.xml')
                   if([System.IO.File]::exists($AllSpotify_Media_Profile_Directory_Path)){
                     [void][System.IO.File]::Delete($AllSpotify_Media_Profile_Directory_Path)
                   }
@@ -8182,8 +8242,8 @@ function Show-SettingsWindow{
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'SpotifyTable' -Property 'ItemsSource' -value $Null -ClearValue
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MainGrid_Bottom_TabControl' -Property 'items' -Method 'Remove' -Method_Value $syncHash.Spotify_Tabitem
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'SpotifyTable' -Property 'isEnabled' -value $false
-                    $synchash.All_Spotify_Media = $Null         
-                  }         
+                    $synchash.All_Spotify_Media = $Null
+                  }
                 }
                 if($thisapp.Config.Import_Youtube_Media){
                   if($hashSetup.playlists_toRemove -and $hashsetup.Remove_YoutubeMedia_Sources){
@@ -8196,7 +8256,7 @@ function Show-SettingsWindow{
                     [System.Collections.Generic.List[Object]]$all_youtubemedia_profile = $all_youtubemedia_profile | where {$hashSetup.playlists_toRemove.id -notcontains $_.id}
                     write-ezlogs "Updating All Youtube Media profile cache at $All_YoutubeMedia_File_Path" -showtime -logtype Setup
                     Export-SerializedXML -InputObject $all_youtubemedia_profile -path $All_YoutubeMedia_File_Path
-                    #Export-Clixml -InputObject ([System.Collections.Generic.List[Object]]$all_youtubemedia_profile) -path $All_YoutubeMedia_File_Path -Force -Encoding Default 
+                    #Export-Clixml -InputObject ([System.Collections.Generic.List[Object]]$all_youtubemedia_profile) -path $All_YoutubeMedia_File_Path -Force -Encoding Default
                   }
                   if($hashsetup.Update_YoutubeMedia_Sources -or $hashsetup.Remove_YoutubeMedia_Sources){
                     write-ezlogs ">>>> Executing Import-Youtube to update sources" -logtype Setup
@@ -8204,9 +8264,9 @@ function Show-SettingsWindow{
                   }elseif($thisApp.Config.Youtube_Playlists.count -eq 0){
                     write-ezlogs ">>>> Youtube Playlists count is 0 - clearing Youtube library table itemssource" -showtime -logtype Setup
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'YoutubeTable' -Property 'itemssource' -value $Null -ClearValue
-                  }      
+                  }
                 }else{
-                  $AllYoutube_Media_Profile_Directory_Path = [System.IO.Path]::Combine($thisapp.config.Media_Profile_Directory,'All-Youtube_MediaProfile','All-Youtube_Media-Profile.xml')        
+                  $AllYoutube_Media_Profile_Directory_Path = [System.IO.Path]::Combine($thisapp.config.Media_Profile_Directory,'All-Youtube_MediaProfile','All-Youtube_Media-Profile.xml')
                   if([System.IO.File]::exists($AllYoutube_Media_Profile_Directory_Path)){
                     $null = Remove-Item $AllYoutube_Media_Profile_Directory_Path -Force -ErrorAction SilentlyContinue
                     [void][System.IO.File]::Delete($AllYoutube_Media_Profile_Directory_Path)
@@ -8215,10 +8275,10 @@ function Show-SettingsWindow{
                     write-ezlogs "Setting YoutubeTable itemssource to null and removing Youtube media library tab" -showtime -warning -logtype Setup
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'YoutubeTable' -Property 'ItemsSource' -value $Null -ClearValue
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MainGrid_Bottom_TabControl' -Property 'items' -Method 'Remove' -Method_Value $syncHash.Youtube_Tabitem
-                    Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'YoutubeTable' -Property 'isEnabled' -value $false  
-                    $synchash.All_Youtube_Media = $Null        
-                  }                
-                } 
+                    Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'YoutubeTable' -Property 'isEnabled' -value $false
+                    $synchash.All_Youtube_Media = $Null
+                  }
+                }
                 if($thisapp.Config.Import_Twitch_Media){
                   if($hashsetup.Remove_TwitchMedia_Sources){
                     $All_TwitchMedia_File_Path = [System.IO.Path]::Combine($thisapp.Config.Media_Profile_Directory,'All-Twitch_MediaProfile','All-Twitch_Media-Profile.xml')
@@ -8235,9 +8295,9 @@ function Show-SettingsWindow{
                   if($hashsetup.Update_TwitchMedia_Sources -or $hashsetup.Remove_TwitchMedia_Sources){
                     write-ezlogs ">>>> Executing Import-Twitch to update media library - Number of Playlists: $(($thisapp.Config.Twitch_Playlists).count)" -logtype Setup
                     Import-Twitch -Twitch_playlists $thisapp.Config.Twitch_Playlists -verboselog:$thisapp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisapp.config.Media_Profile_Directory -thisApp $thisapp -use_runspace -refresh
-                  }     
+                  }
                 }else{
-                  $AllTwitch_Media_Profile_Directory_Path = [System.IO.Path]::Combine($thisapp.config.Media_Profile_Directory,'All-Twitch_MediaProfile','All-Twitch_Media-Profile.xml')        
+                  $AllTwitch_Media_Profile_Directory_Path = [System.IO.Path]::Combine($thisapp.config.Media_Profile_Directory,'All-Twitch_MediaProfile','All-Twitch_Media-Profile.xml')
                   if([System.IO.File]::exists($AllTwitch_Media_Profile_Directory_Path)){
                     [void][System.IO.File]::Delete($AllTwitch_Media_Profile_Directory_Path)
                   }
@@ -8246,9 +8306,9 @@ function Show-SettingsWindow{
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'TwitchTable' -Property 'ItemsSource' -value $Null -ClearValue
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'MainGrid_Bottom_TabControl' -Property 'items' -Method 'Remove' -Method_Value $syncHash.Twitch_Tabitem
                     Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'TwitchTable' -Property 'isEnabled' -value $false
-                    $synchash.All_Twitch_Media = $Null             
-                  }                
-                }                           
+                    $synchash.All_Twitch_Media = $Null
+                  }
+                }
               }
             }
             $hashsetup.Update_LocalMedia_Sources = $false
@@ -8261,51 +8321,51 @@ function Show-SettingsWindow{
             $hashsetup.Remove_LocalMedia_Sources = $false
           }catch{
             write-ezlogs "An exception occurred closing Show-SettingsWindow window" -showtime -catcherror $_
-          } 
+          }
         }
       }.GetNewClosure()
       $hashsetup.Window.Add_Closing($hashsetup.Window_Closing_Command)
-      #---------------------------------------------- 
+      #----------------------------------------------
       #endregion Window Closing Event
-      #---------------------------------------------- 
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Window Closed Event
-      #---------------------------------------------- 
+      #----------------------------------------------
       $hashsetup.Window_Closed_Command = {
-        param($Sender)    
-        if($sender -eq $hashsetup.Window){    
+        param($Sender)
+        if($sender -eq $hashsetup.Window){
           #$hashsetup.Canceled = $true
           try{
             $existing_Runspace = Stop-Runspace -thisApp $thisApp -runspace_name 'enumerate_files_Scriptblock' -force
           }catch{
             write-ezlogs " An exception occurred stopping existing runspace 'enumerate_files_Scriptblock'" -showtime -catcherror $_
-          }          
+          }
           try{
             if(($hashsetup.Update -or $hashsetup.Canceled -or $hashsetup.Accepted)){
               write-ezlogs "Show-SettingsWindow Closed" -showtime
             }else{
               write-ezlogs "Show-SettingsWindow was not closed with either the cancel button or Save button, exiting" -showtime -warning -logtype Setup
-              Stop-EZlogs -ErrorSummary $error -clearErrors -stoptimer -logOnly -enablelogs -thisApp $thisApp -globalstopwatch $globalstopwatch         
-              Stop-Process $pid 
-              exit 
-            }             
+              Stop-EZlogs -ErrorSummary $error -clearErrors -stoptimer -logOnly -enablelogs -thisApp $thisApp -globalstopwatch $globalstopwatch
+              Stop-Process $pid
+              exit
+            }
           }catch{
             write-ezlogs "An exception occurred closing Show-SettingsWindow window" -showtime -catcherror $_
             return
-          }          
+          }
         }
       }
-      $hashsetup.Window.Add_Closed($hashsetup.Window_Closed_Command)  
-      #---------------------------------------------- 
+      $hashsetup.Window.Add_Closed($hashsetup.Window_Closed_Command)
+      #----------------------------------------------
       #endregion Window Closed Event
-      #----------------------------------------------   
+      #----------------------------------------------
 
-      #---------------------------------------------- 
+      #----------------------------------------------
       #region Window Unloaded Event
       #----------------------------------------------
       $hashsetup.Window_Unloaded_Command = {
-        param($Sender) 
+        param($Sender)
         try{
           write-ezlogs ">>>>> Settings window has unloaded" -logtype Setup -loglevel 2
           if($hashsetup.SnapShots_Hyperlink){
@@ -8313,7 +8373,7 @@ function Show-SettingsWindow{
           }
           if($hashsetup.Log_Path_Hyperlink){
             [void](Get-EventHandlers -Element $hashsetup.Log_Path_Hyperlink -RoutedEvent ([System.Windows.Documents.Hyperlink]::ClickEvent) -RemoveHandlers)
-          }  
+          }
           $hashsetup.MouseDown_Command = $null
           $hashsetup.Next_Button_Command = $null
           $hashsetup.Prev_Button_Command = $Null
@@ -8329,9 +8389,9 @@ function Show-SettingsWindow{
           $hashsetup.Window_Closed_Command = $Null
           $hashsetup.Window.Remove_Closing($hashsetup.Window_Closing_Command)
           $hashsetup.Window_Closing_Command = $Null
-          [void](Get-EventHandlers -Element $hashsetup.Window -RoutedEvent ([MahApps.Metro.Controls.MetroWindow]::LoadedEvent) -RemoveHandlers)
+          [void](Get-EventHandlers -Element $Sender -RoutedEvent ([MahApps.Metro.Controls.MetroWindow]::LoadedEvent) -RemoveHandlers)
           $hashsetup.Window_Loaded_Command = $Null
-          [void](Get-EventHandlers -Element $hashsetup.Window -RoutedEvent ([MahApps.Metro.Controls.MetroWindow]::UnloadedEvent) -RemoveHandlers)
+          [void](Get-EventHandlers -Element $Sender -RoutedEvent ([MahApps.Metro.Controls.MetroWindow]::UnloadedEvent) -RemoveHandlers)
           $hashsetup.Window_Unloaded_Command = $Null
           $hashkeys = [System.Collections.ArrayList]::new($hashsetup.keys)
           $hashkeys | & { process {
@@ -8347,13 +8407,13 @@ function Show-SettingsWindow{
                   $hashsetup.$_.Remove_Toggled($hashsetup."$($_)_Command")
                   $hashsetup."$($_)_Command" = $Null
                 }else{
-                  write-ezlogs ">>>> Couldn't find toggle command for element: $($hashsetup.$_) with name: $($hashsetup.$_.name)" -warning
+                  if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Couldn't find toggle command for element: $($hashsetup.$_) with name: $($hashsetup.$_.name)" -warning -Dev_mode}
                 }
               }elseif($hashsetup.$_ -is [System.Windows.Controls.ComboBox]){
                 [void](Get-EventHandlers -Element $hashsetup.$_ -RoutedEvent ([System.Windows.Controls.ComboBox]::SelectionChangedEvent) -RemoveHandlers)
               }elseif($hashsetup.$_ -is [System.Windows.Threading.DispatcherTimer]){
                 if($hashsetup.$_.IsEnabled){
-                  write-ezlogs ">>>> Stopping running timer ScriptBlock: $($_)" -warning
+                  if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Stopping running timer ScriptBlock: $($_)" -warning -Dev_mode}
                   $hashsetup.$_.stop()
                 }
                 if($hashsetup."$($_)_ScriptBlock"){
@@ -8369,15 +8429,31 @@ function Show-SettingsWindow{
                 if($thisApp.Config.Dev_mode){write-ezlogs -text ">>>> Unregistering Setup UI name: $_" -Dev_mode}
                 [void]$Sender.UnRegisterName($_)
                 [void]$hashsetup.Remove($_)
-
               }
               if($hashsetup.$_ -is [System.Collections.Concurrent.ConcurrentQueue`1[object]]){
                 if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Removing ConcurrentQueue: $($_)" -Dev_mode}
                 $hashsetup.$_ = $Null
               }
           }}
+          if($hashsetup.General_Settings_Scriptblock){
+            $hashsetup.General_Settings_Scriptblock = $Null
+          }
+          if($hashSetup.LocalMedia_Settings_Scriptblock){
+            $hashSetup.LocalMedia_Settings_Scriptblock = $Null
+          }
+          if($hashSetup.SpotifyMedia_Settings_Scriptblock){
+            $hashSetup.SpotifyMedia_Settings_Scriptblock = $Null
+          }
+          if($hashSetup.YoutubeMedia_Settings_Scriptblock){
+            $hashSetup.YoutubeMedia_Settings_Scriptblock = $Null
+          }
+          if($hashSetup.TwitchMedia_Settings_Scriptblock){
+            $hashSetup.TwitchMedia_Settings_Scriptblock = $Null
+          }
+          $Sender.Resources.Clear()
           $hashsetup.Window = $Null
           $hashkeys = $null
+          Remove-Variable hashkeys
           if($hashsetup.appContext){
             write-ezlogs ">>>> Exiting AppContext threading" -logtype Setup -loglevel 2 -GetMemoryUsage -forceCollection
             $hashsetup.appContext.ExitThread()
@@ -8389,23 +8465,24 @@ function Show-SettingsWindow{
             [System.Windows.Threading.Dispatcher]::CurrentDispatcher.InvokeShutdown()
           }
           $hashsetup = $Null
+          Remove-Variable hashsetup
         }catch{
           write-ezlogs "An exception occurred in Settings Window unloaded event" -catcherror $_
-        }    
-      }       
-      $hashsetup.window.Add_Unloaded($hashsetup.Window_Unloaded_Command)  
-      #---------------------------------------------- 
+        }
+      }
+      $hashsetup.window.Add_Unloaded($hashsetup.Window_Unloaded_Command)
+      #----------------------------------------------
       #endregion Window Unloaded Event
       #----------------------------------------------
-   
+
       #############################################################################
       #endregion Initialize UI Controls and Events
-      ############################################################################# 
-      
+      #############################################################################
+
       #Initializate setting groups that will update UI controls and states
       Update-Settings -hashsetup $hashsetup -thisApp $thisApp -Startup
-    }  
-   
+    }
+
     #############################################################################
     #region Display Window
     #############################################################################
@@ -8413,16 +8490,16 @@ function Show-SettingsWindow{
       if($Reload -and $hashsetup.Window.Visibility -in 'Hidden','Collapsed'){
         #Window is already initialized, load/reload all valid settings then display
         Update-Settings -hashsetup $hashsetup -thisApp $thisApp -Update:$Update -First_Run:$First_Run
-        [void]$hashsetup.Window.Dispatcher.InvokeAsync{  
+        [void]$hashsetup.Window.Dispatcher.InvokeAsync{
           $hashsetup.window.Opacity = 1
           $hashsetup.window.Show()
           [void]$hashsetup.window.Activate()
         }.Wait()
       }else{
         #Load/apply all settings to UI controls
-        Update-Settings -hashsetup $hashsetup -thisApp $thisApp -Update:$Update -First_Run:$First_Run
         $setup_ShowUI_Measure = [system.diagnostics.stopwatch]::StartNew()
-        if(!$startHidden){         
+        Update-Settings -hashsetup $hashsetup -thisApp $thisApp -Update:$Update -First_Run:$First_Run
+        if(!$startHidden){
           $hashsetup.window.Opacity = 1
           [void]$hashsetup.window.Show()
           [void]$hashsetup.window.Activate()
@@ -8431,7 +8508,7 @@ function Show-SettingsWindow{
           #Trick to prerender window without showing it - Set opacity to 0, show to render, then hide
           $hashsetup.window.ShowActivated = $false #Prevent window from activating/taking focus while rendering
           $hashsetup.window.Opacity = 0
-          [void]$hashsetup.Window.Dispatcher.InvokeAsync{$hashsetup.window.Show()}.Wait()          
+          [void]$hashsetup.Window.Dispatcher.InvokeAsync{$hashsetup.window.Show()}.Wait()
           $hashsetup.window.Hide()
           $hashsetup.window.ShowActivated = $true
 
@@ -8440,7 +8517,7 @@ function Show-SettingsWindow{
           #$hashsetup.window.Arrange([System.Windows.Rect]::new([System.Windows.Size]::new($hashsetup.window.ActualWidth,$hashsetup.window.ActualHeight)));
         }
         if($setup_ShowUI_Measure){
-          $setup_ShowUI_Measure.stop()   
+          $setup_ShowUI_Measure.stop()
           write-ezlogs ">>>> Setup_ShowUI_Measure" -PerfTimer $setup_ShowUI_Measure
           $setup_ShowUI_Measure = $Null
         }
@@ -8448,9 +8525,9 @@ function Show-SettingsWindow{
           $setup_TotalStart_Measure.stop()
           write-ezlogs ">>>> Setup_TotalStart_Measure" -PerfTimer $setup_TotalStart_Measure
           $setup_TotalStart_Measure = $Null
-        }    
-        #Allow keyboard input to window for TextBoxes, etc              
-        [System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($hashsetup.Window) 
+        }
+        #Allow keyboard input to window for TextBoxes, etc
+        [System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($hashsetup.Window)
 
         #Use ApplicationContext for threading instead of a new [Dispatcher]::Run() so we dont override apps main UI thread if not using runspace
         if($Use_runspace){
@@ -8458,7 +8535,7 @@ function Show-SettingsWindow{
         }elseif($First_Run){
           $hashsetup.appContext = [Windows.Forms.ApplicationContext]::new()
           [void][System.Windows.Forms.Application]::Run($hashsetup.appContext)
-        }   
+        }
       }
     }catch{
       write-ezlogs "An exception occurred when opening main Show-SettingsWindow window" -showtime -CatchError $_
@@ -8466,16 +8543,16 @@ function Show-SettingsWindow{
       if($First_Run){
         #If critical error occurs during first run, inform user and die to prevent potential settings corruption
         Stop-EZlogs -ErrorSummary $error -clearErrors -stoptimer -logOnly -enablelogs -thisApp $thisApp -globalstopwatch $globalstopwatch
-        [void][System.Windows.Forms.MessageBox]::Show("An exception occurred when opening main Show-SettingsWindow window for ($($thisApp.Config.App_name) Media Player - Version: $($thisApp.Config.App_Version) - PID: $($pid))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","CRITICAL ERROR - $($thisApp.Config.App_name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)                
+        [void][System.Windows.Forms.MessageBox]::Show("An exception occurred when opening main Show-SettingsWindow window for ($($thisApp.Config.App_name) Media Player - Version: $($thisApp.Config.App_Version) - PID: $($pid))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.`n`nThis app will now close","CRITICAL ERROR - $($thisApp.Config.App_name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
         Stop-Process $pid
       }else{
         #If not first run, app may still function on error but inform user things are very bad
-        [void][System.Windows.Forms.MessageBox]::Show("An exception occurred when opening main Show-SettingsWindow window for ($($thisApp.Config.App_name) Media Player - Version: $($thisApp.Config.App_Version) - PID: $($pid))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.","CRITICAL ERROR - $($thisApp.Config.App_name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)    
-      }       
-    } 
+        [void][System.Windows.Forms.MessageBox]::Show("An exception occurred when opening main Show-SettingsWindow window for ($($thisApp.Config.App_name) Media Player - Version: $($thisApp.Config.App_Version) - PID: $($pid))`n`nERROR: $($_ | out-string)`n`nRecommened reviewing logs for details.","CRITICAL ERROR - $($thisApp.Config.App_name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error)
+      }
+    }
     #############################################################################
     #endregion Display Window
-    #############################################################################     
+    #############################################################################
   }
   if($Use_runspace){
     #Execute UI in a new thread
@@ -8485,18 +8562,18 @@ function Show-SettingsWindow{
     #Execute UI in main thread - will block all other execution - good during First Run setup
     write-ezlogs ">>>> Starting setup without runspace" -showtime -logtype Setup
     Invoke-Command -ScriptBlock $FirstRun_Scriptblock
-  } 
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Show-SettingsWindow Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-Settings Function
 #----------------------------------------------
 function Update-Settings {
   <#
-          
+
       .SYNOPSIS
       Updates app setting properties and related UI window controls.
 
@@ -8532,10 +8609,10 @@ function Update-Settings {
     [switch]$Startup
   )
   try{
-    $Update_Settings_Timer = [system.diagnostics.stopwatch]::StartNew()    
+    $Update_Settings_Timer = [system.diagnostics.stopwatch]::StartNew()
     if($Startup){
       #############################################################################
-      #region General Settings 
+      #region General Settings
       #############################################################################
       if(!$hashSetup.General_Settings_Scriptblock){
         $hashSetup.General_Settings_Scriptblock = {
@@ -8547,34 +8624,34 @@ function Update-Settings {
             [switch]$verboselog = $verboselog,
             [switch]$use_Runspace = $use_Runspace,
             [switch]$Startup = $Startup
-          )  
-          try{  
+          )
+          try{
             $setup_GeneralSettings_Measure = [system.diagnostics.stopwatch]::StartNew()
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Start Tray Only
             #----------------------------------------------
-            $hashsetup.Start_Tray_only_Toggle.IsOn = $thisApp.config.Start_Tray_only -eq $true   
-            #---------------------------------------------- 
+            $hashsetup.Start_Tray_only_Toggle.IsOn = $thisApp.config.Start_Tray_only -eq $true
+            #----------------------------------------------
             #endregion Start Tray Only
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Start Mini Only
             #----------------------------------------------
             $hashsetup.Start_Mini_only_Toggle.IsOn = $thisApp.config.Start_Mini_only -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Start Mini Only
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Minimize To Tray
             #----------------------------------------------
             $hashsetup.Minimize_To_Tray_Toggle.IsOn = $thisApp.config.Minimize_To_Tray -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Minimize To Tray
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Disable Tray
             #----------------------------------------------
             if($thisApp.config.Disable_Tray){
@@ -8584,7 +8661,7 @@ function Update-Settings {
               $hashsetup.Minimize_To_Tray_Toggle.IsEnabled = $false
               $hashsetup.Minimize_To_Tray_Toggle.IsOn = $false
               $hashsetup.Start_Tray_only_Toggle.IsEnabled = $false
-              $hashsetup.Start_Tray_only_Toggle.IsOn = $false  
+              $hashsetup.Start_Tray_only_Toggle.IsOn = $false
             }else{
               $hashsetup.Disable_Tray_Toggle.IsOn = $false
               $hashsetup.Minimize_To_Tray_Toggle.IsEnabled = $true
@@ -8594,15 +8671,15 @@ function Update-Settings {
             #endregion Disable Tray
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Start on Windows Login
             #----------------------------------------------
             $hashsetup.Start_On_Windows_Login_Toggle.isOn = $thisapp.config.Start_On_Windows_Login -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Start on Windows Login
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Verbose Logging
             #----------------------------------------------
             $hashsetup.Verbose_logging_Toggle.IsOn = $thisapp.config.Dev_mode -eq $true
@@ -8610,40 +8687,40 @@ function Update-Settings {
               $hashsetup.Log_label_transitioningControl.content = $hashsetup.Log_label_transitioningControlContent
               $hashsetup.Verbose_logging_Toggle.isOn = $true
               $hashsetup.Log_StackPanel.Height = [Double]::NaN
-              $hashsetup.Log_Path_textbox.text = $thisapp.Config.Log_file  
-              $hashsetup.Log_Path_Label.IsEnabled = $true      
-              $hashsetup.Log_Path_textbox.IsEnabled = $true     
-              $hashsetup.Log_Path_Browse.IsEnabled = $true  
+              $hashsetup.Log_Path_textbox.text = $thisapp.Config.Log_file
+              $hashsetup.Log_Path_Label.IsEnabled = $true
+              $hashsetup.Log_Path_textbox.IsEnabled = $true
+              $hashsetup.Log_Path_Browse.IsEnabled = $true
             }
             else{
               $hashsetup.Verbose_logging_Toggle.isOn = $false
               $hashsetup.Log_label_transitioningControl.content = ''
-              $hashsetup.Log_StackPanel.Height = '5'      
-              $hashsetup.Log_Path_Label.IsEnabled = $false       
-              $hashsetup.Log_Path_textbox.IsEnabled = $false     
-              $hashsetup.Log_Path_Browse.IsEnabled = $false  
+              $hashsetup.Log_StackPanel.Height = '5'
+              $hashsetup.Log_Path_Label.IsEnabled = $false
+              $hashsetup.Log_Path_textbox.IsEnabled = $false
+              $hashsetup.Log_Path_Browse.IsEnabled = $false
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Verbose Logging
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Notification_Audio
             #----------------------------------------------
             $hashsetup.Notification_Audio_Toggle.isOn = $thisapp.config.Notification_Audio -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Notification_Audio
             #----------------------------------------------
- 
-            #---------------------------------------------- 
+
+            #----------------------------------------------
             #region Snapshots
             #----------------------------------------------
             $hashsetup.SnapShots_Hyperlink.inlines.clear()
             $hashsetup.SnapShots_Toggle.isOn = $thisApp.Config.Video_Snapshots -eq $true
             $hashsetup.App_SnapShots_Toggle.isOn = $thisApp.Config.App_Snapshots -eq $true
             if([system.io.directory]::Exists($thisapp.config.Snapshots_Path)){
-              $hashsetup.SnapShots_textbox.text = $thisapp.config.Snapshots_Path   
-              $hashsetup.SnapShots_Label.BorderBrush = 'LightGreen'   
+              $hashsetup.SnapShots_textbox.text = $thisapp.config.Snapshots_Path
+              $hashsetup.SnapShots_Label.BorderBrush = 'LightGreen'
               $hashsetup.SnapShots_Hyperlink.Inlines.add("Open Snapshots Folder")
               $hashsetup.SnapShots_Hyperlink.NavigateUri = [uri]$thisapp.config.Snapshots_Path
             }else{
@@ -8652,96 +8729,96 @@ function Update-Settings {
               $hashsetup.SnapShots_Hyperlink.inlines.clear()
               $hashsetup.SnapShots_Hyperlink.NavigateUri = $Null
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Snapshots
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Performance Mode
             #----------------------------------------------
             $hashsetup.Performance_Mode_Toggle.isOn = $thisApp.Config.Enable_Performance_Mode -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Performance Mode
             #----------------------------------------------
-        
-            #---------------------------------------------- 
+
+            #----------------------------------------------
             #region High DPI
             #----------------------------------------------
             if($hashsetup.High_DPI_Toggle){
               $hashsetup.High_DPI_Toggle.isOn = $thisApp.Config.Enable_HighDPI -eq $true
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion High DPI
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region DisableTransparency
             #----------------------------------------------
             if($hashsetup.DisableTransparency_Toggle){
               $hashsetup.DisableTransparency_Toggle.isOn = $thisApp.Config.DisableTransparency -eq $true
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion DisableTransparency
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Use Hardware Acceleration
             #----------------------------------------------
             $hashsetup.Use_HardwareAcceleration_Toggle.isOn = $thisapp.config.Use_HardwareAcceleration -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Use Hardware Acceleration
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Enable_WebEQSupport
             #Toggling displays message to user to install/uninstall vb-cable if not already - See related toggle routed event
             #----------------------------------------------
             $hashsetup.Enable_WebEQSupport_Toggle.isOn = $thisapp.config.Enable_WebEQSupport -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Enable_WebEQSupport
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Show Notifications
             #----------------------------------------------
             $hashsetup.Show_Notifications_Toggle.isOn = $thisapp.config.Show_Notifications -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Show Notifications
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Enable_Marquee
             #----------------------------------------------
             $hashsetup.Enable_Marquee_Toggle.isOn = $thisapp.config.Enable_Marquee -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Enable_Marquee
-            #----------------------------------------------  
-    
-            #---------------------------------------------- 
+            #----------------------------------------------
+
+            #----------------------------------------------
             #region Open_VideoPlayer
             #----------------------------------------------
             $hashsetup.Open_VideoPlayer_Toggle.isOn = $thisapp.config.Open_VideoPlayer -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Open_VideoPlayer
-            #----------------------------------------------    
+            #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Remember_Playback_Progress
             #----------------------------------------------
             $hashsetup.Remember_Playback_Progress_Toggle.isOn = $thisapp.config.Remember_Playback_Progress -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Remember_Playback_Progress
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Start_Paused
             #----------------------------------------------
             $hashsetup.Start_Paused_Toggle.isOn = $thisapp.config.Start_Paused -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Start_Paused
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Current_Visualization
             #----------------------------------------------
             if($thisapp.config.Current_Visualization){
@@ -8756,20 +8833,20 @@ function Update-Settings {
               $hashsetup.Current_Visualization_Label.BorderBrush = 'Red'
               $hashsetup.Current_Visualization_ComboBox.Selectedindex = -1
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Current_Visualization
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Use_Visualizations
             #----------------------------------------------
             $hashsetup.Use_Visualizations_Toggle.isOn = $thisapp.config.Use_Visualizations -eq $true
             $hashsetup.Use_Visualizations_Video_Toggle.isOn = ($thisApp.Config.Use_Visualizations_Video -eq $true)
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Use_Visualizations
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Audio_Output
             #----------------------------------------------
             $hashsetup.Audio_Output_transitioningControl.content = ''
@@ -8802,37 +8879,37 @@ function Update-Settings {
                 $AudioDevices = $null
               }
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Audio_Output
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Discord Integration
             #----------------------------------------------
             $hashsetup.Discord_Integration_Toggle.isOn = $thisapp.config.Discord_Integration -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Discord Integration
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Enable_Subtitles
             #----------------------------------------------
             $hashsetup.Enable_Subtitles_Toggle.isOn = $thisapp.config.Enable_Subtitles -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Enable_Subtitles
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Auto_UpdateCheck
             #----------------------------------------------
             if($thisApp.Enable_Update_Features -and $hashsetup.Auto_UpdateCheck_Toggle){
               $hashsetup.Auto_UpdateCheck_Toggle.isOn = $thisapp.config.Auto_UpdateCheck -eq $true
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Auto_UpdateCheck
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region TODO:Media Control Hotkeys
             #----------------------------------------------
             foreach($Hotkey in $thisApp.Config.GlobalHotKeys){
@@ -8866,27 +8943,27 @@ function Update-Settings {
                 $hashsetup.$($hotkey.Name).Hotkey = $Null
               }
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion TODO:Media Control Hotkeys
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Auto_UpdateInstall
             #----------------------------------------------
             $hashsetup.Auto_UpdateInstall_Toggle.isOn = $thisapp.config.Auto_UpdateInstall -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Auto_UpdateInstall
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Enable_MediaCasting
             #----------------------------------------------
             $hashsetup.Enable_MediaCasting_Toggle.isOn = $thisapp.config.Use_MediaCasting -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Enable_MediaCasting
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Cast_HTTPPort
             #----------------------------------------------
             if(-not [string]::IsNullOrEmpty($thisapp.config.Cast_HTTPPort)){
@@ -8894,23 +8971,23 @@ function Update-Settings {
             }else{
               $hashsetup.Cast_HTTPPort_textbox.text = ''
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Cast_HTTPPort
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Audio_OutputModule
             #----------------------------------------------
             if($hashsetup.Audio_OutputModule_ComboBox.selectedindex -ne -1){
               $hashsetup.Audio_OutputModule_Textbox.BorderBrush = 'LightGreen'
             }else{
               $hashsetup.Audio_OutputModule_Textbox.BorderBrush = 'Red'
-            } 
-            #---------------------------------------------- 
+            }
+            #----------------------------------------------
             #endregion Audio_OutputModule
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region vlc_Arguments
             #----------------------------------------------
             if(-not [string]::IsNullOrEmpty($thisapp.config.Libvlc_Global_Gain)){
@@ -8918,45 +8995,45 @@ function Update-Settings {
             }else{
               $hashsetup.vlc_GlobalGain_textbox.text = 4
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion vlc_Arguments
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region vlc_Arguments
             #----------------------------------------------
             if(-not [string]::IsNullOrEmpty($thisapp.config.vlc_Arguments)){
               $hashsetup.vlc_Arguments_textbox.text = $thisapp.config.vlc_Arguments
             }else{
               $hashsetup.vlc_Arguments_textbox.text = ''
-            } 
-            #---------------------------------------------- 
+            }
+            #----------------------------------------------
             #endregion vlc_Arguments
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Install_VPN
             #----------------------------------------------
             $hashsetup.VPN_Toggle.isOn = $thisapp.config.Use_Preferred_VPN -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Install_VPN
             #----------------------------------------------
 
             $setup_GeneralSettings_Measure.stop()
             write-ezlogs "| Setup_GeneralSettings_Measure" -showtime -logtype Setup -PerfTimer $setup_GeneralSettings_Measure -Perf
-            $setup_GeneralSettings_Measure = $null        
+            $setup_GeneralSettings_Measure = $null
           }catch{
             write-ezlogs "An exception occurred in General_Settings_Scriptblock" -catcherror $_
-          }      
+          }
         }.GetNewClosure()
       }
       #############################################################################
-      #endregion General Settings 
-      ############################################################################# 
+      #endregion General Settings
+      #############################################################################
 
       #############################################################################
-      #region Local Media 
-      ############################################################################# 
+      #region Local Media
+      #############################################################################
       if(!$hashSetup.LocalMedia_Settings_Scriptblock){
         $hashSetup.LocalMedia_Settings_Scriptblock = {
           Param (
@@ -8967,13 +9044,13 @@ function Update-Settings {
             [switch]$verboselog = $verboselog,
             [switch]$use_Runspace = $use_Runspace,
             [switch]$Startup = $Startup
-          )  
+          )
           try{
             $setup_LocalMedia_Measure = [system.diagnostics.stopwatch]::StartNew()
             if($hashSetup.LocalMedia_items){
               $hashSetup.LocalMedia_items.clear()
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Import_Local_Media
             #----------------------------------------------
             if($thisApp.Config.Import_Local_Media){
@@ -8987,27 +9064,27 @@ function Update-Settings {
               if(@($thisApp.Config.Media_Directories).count -gt 0){
                 Update-MediaLocations -hashsetup $hashsetup -thisapp $thisApp -synchash $synchash -Directories $thisApp.Config.Media_Directories -SetItemssource -Startup:$Update
               }
-            }  
-            #---------------------------------------------- 
+            }
+            #----------------------------------------------
             #endregion Import_Local_Media
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region SkipDuplicates
             #----------------------------------------------
             $hashsetup.LocalMedia_SkipDuplicates_Toggle.isOn = $thisApp.Config.LocalMedia_SkipDuplicates -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion SkipDuplicates
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region LocalMedia_ImportMode
             #----------------------------------------------
             try{
-              $LocalMedia_ImportMode_Default = 'Fast' 
-              if(-not [string]::IsNullOrEmpty($thisapp.config.LocalMedia_ImportMode)){   
+              $LocalMedia_ImportMode_Default = 'Fast'
+              if(-not [string]::IsNullOrEmpty($thisapp.config.LocalMedia_ImportMode)){
                 $hashsetup.LocalMedia_ImportMode_ComboBox.SelectedItem = $thisapp.config.LocalMedia_ImportMode
-                $hashsetup.LocalMedia_ImportMode_Textbox.BorderBrush = 'Green'      
+                $hashsetup.LocalMedia_ImportMode_Textbox.BorderBrush = 'Green'
               }else{
                 $thisapp.config.LocalMedia_ImportMode = $LocalMedia_ImportMode_Default
                 $hashsetup.LocalMedia_ImportMode_ComboBox.SelectedItem = $LocalMedia_ImportMode_Default
@@ -9016,19 +9093,19 @@ function Update-Settings {
             }catch{
               write-ezlogs 'An exception occurred processing LocalMedia_ImportMode options' -showtime -catcherror $_
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion LocalMedia_ImportMode
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Enable_LocalMedia_Monitor
             #----------------------------------------------
             $hashsetup.Enable_LocalMedia_Monitor_Toggle.isOn = $thisApp.Config.Enable_LocalMedia_Monitor -eq $true
             try{
               $LocalMedia_MonitorMode_Default = 'All'
-              if(-not [string]::IsNullOrEmpty($thisapp.config.LocalMedia_MonitorMode)){   
+              if(-not [string]::IsNullOrEmpty($thisapp.config.LocalMedia_MonitorMode)){
                 $hashsetup.LocalMedia_MonitorMode_ComboBox.SelectedItem = $thisapp.config.LocalMedia_MonitorMode
-                $hashsetup.LocalMedia_MonitorMode_Textbox.BorderBrush = 'Green'      
+                $hashsetup.LocalMedia_MonitorMode_Textbox.BorderBrush = 'Green'
               }else{
                 Add-Member -InputObject $thisapp.config -Name 'LocalMedia_MonitorMode' -Value $LocalMedia_MonitorMode_Default -MemberType NoteProperty -Force
                 $hashsetup.LocalMedia_MonitorMode_ComboBox.SelectedItem = $LocalMedia_MonitorMode_Default
@@ -9037,11 +9114,11 @@ function Update-Settings {
             }catch{
               write-ezlogs 'An exception occurred processing LocalMedia_MonitorMode options' -showtime -catcherror $_
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Enable_LocalMedia_Monitor
-            #----------------------------------------------    
-          
-            #---------------------------------------------- 
+            #----------------------------------------------
+
+            #----------------------------------------------
             #region LocalMedia_Display_Syntax
             #----------------------------------------------
             try{
@@ -9049,27 +9126,27 @@ function Update-Settings {
             }catch{
               write-ezlogs 'An exception occurred setting LocalMedia_Display_Syntax_Textbox' -showtime -catcherror $_
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion LocalMedia_Display_Syntax
-            #----------------------------------------------                             
+            #----------------------------------------------
           }catch{
             write-ezlogs "An exception occurred in General_Settings_Scriptblock" -catcherror $_
           }finally{
             if($setup_LocalMedia_Measure){
               $setup_LocalMedia_Measure.stop()
               write-ezlogs "| Setup_LocalMedia_Measure" -showtime -logtype Setup -PerfTimer $setup_LocalMedia_Measure -perf
-              $setup_LocalMedia_Measure = $Null          
-            } 
-          }      
+              $setup_LocalMedia_Measure = $Null
+            }
+          }
         }.GetNewClosure()
       }
       #############################################################################
-      #endregion Local Media 
-      ############################################################################# 
+      #endregion Local Media
+      #############################################################################
 
       #############################################################################
-      #region Spotify Media 
-      ############################################################################# 
+      #region Spotify Media
+      #############################################################################
       if(!$hashSetup.SpotifyMedia_Settings_Scriptblock){
         $hashSetup.SpotifyMedia_Settings_Scriptblock = {
           Param (
@@ -9080,10 +9157,10 @@ function Update-Settings {
             [switch]$verboselog = $verboselog,
             [switch]$use_Runspace = $use_Runspace,
             [switch]$Startup = $Startup
-          )  
+          )
           try{
             $Setup_Spotify_Measure = [system.diagnostics.stopwatch]::StartNew()
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Spicetify Options
             #----------------------------------------------
             $hashsetup.Spicetify_textblock.text = ''
@@ -9097,11 +9174,11 @@ function Update-Settings {
               $hashsetup.Spicetify_Toggle.ison = $false
               $hashsetup.Spicetify_Remove_Button.IsEnabled = $true
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Spicetify Options
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Spotify WebPlayer
             #----------------------------------------------
             $hashsetup.Spotify_WebPlayer_transitioningControl.Height = '0'
@@ -9116,14 +9193,14 @@ function Update-Settings {
             }else{
               $hashsetup.Spotify_WebPlayer_Toggle.isOn = $false
               if($hashsetup.Spicetify_Toggle -and $thisApp.Config.Use_Spicetify){
-                $hashsetup.Spicetify_Toggle.isOn = $true   
+                $hashsetup.Spicetify_Toggle.isOn = $true
               }
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Spotify WebPlayer
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Import_Spotify_Media
             #----------------------------------------------
             if($thisApp.Config.Import_Spotify_Media){
@@ -9134,16 +9211,16 @@ function Update-Settings {
               $hashsetup.Import_Spotify_Playlists_Toggle.isOn = $true
               $hashsetup.Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name
               if(!$hashsetup.Spotify_Auth_app.token.access_token -and !$First_Run){
-                write-ezlogs "Unable to get Spotify authentication, starting spotify authentication setup process" -showtime -warning -logtype Setup                
+                write-ezlogs "Unable to get Spotify authentication, starting spotify authentication setup process" -showtime -warning -logtype Setup
                 if($hashsetup.Spotify_Auth_app.token.access_token){
                   try{
                     $playlists = Get-CurrentUserPlaylists -ApplicationName $thisApp.config.App_Name -thisApp $thisApp
                   }catch{
                     write-ezlogs "[Show-SettingsWindow] An exception occurred executing Get-CurrentUserPlaylists" -CatchError $_ -enablelogs
-                  }                
+                  }
                   if($playlists){
                     $foundplaylists = 0
-                    foreach($playlist in $playlists){              
+                    foreach($playlist in $playlists){
                       $playlisturl = $playlist.uri
                       $playlistName = $playlist.name
                       if($hashsetup.SpotifyPlaylists_Grid.items.path -notcontains $playlisturl){
@@ -9159,18 +9236,18 @@ function Update-Settings {
                     $hashsetup.Import_Spotify_Playlists_Toggle.isOn = $true
                     $hashsetup.Install_Spotify_Toggle.isEnabled = $true
                     $hashsetup.Spotify_Auth_Status = $true
-                    write-ezlogs "Authenticated to Spotify and retrieved Playlists" -showtime -color green -logtype Setup -Success                           
+                    write-ezlogs "Authenticated to Spotify and retrieved Playlists" -showtime -color green -logtype Setup -Success
                   }else{
                     write-ezlogs "Unable to successfully authenticate to spotify!" -showtime -warning -logtype Setup
                     Add-Member -InputObject $thisApp.config -Name "Import_Spotify_Media" -Value $false -MemberType NoteProperty -Force
                     $hashsetup.Spotify_Playlists_Import.isEnabled = $false
                     $hashsetup.Import_Spotify_Playlists_Toggle.isOn = $false
                     $hashsetup.Install_Spotify_Toggle.isEnabled = $false
-                    $hashsetup.Spotify_Auth_Status = $false            
+                    $hashsetup.Spotify_Auth_Status = $false
                   }
                 }else{
                   $hashsetup.Update_SpotifyStatus_Timer.start()
-                  write-ezlogs "Unable to authenticate with Spotify API -- Spotify_Auth_app.token.access_token was null -- cannot enable Spotify integration" -showtime -warning -logtype Setup        
+                  write-ezlogs "Unable to authenticate with Spotify API -- Spotify_Auth_app.token.access_token was null -- cannot enable Spotify integration" -showtime -warning -logtype Setup
                 }
               }else{
                 write-ezlogs "[Show-SettingsWindow:Startup] Returned Spotify application" -showtime -Success -logtype Setup -LogLevel 2
@@ -9191,13 +9268,13 @@ function Update-Settings {
                 $link_hyperlink.FontWeight = "Bold"
                 [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Spotify_AuthHandler)
                 [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Spotify_AuthHandler)
-                [void]$hashsetup.Import_Spotify_textbox.Inlines.add("If you wish to update or change your Spotify credentials, click ")  
-                [void]$hashsetup.Import_Spotify_textbox.Inlines.add($($link_hyperlink))        
+                [void]$hashsetup.Import_Spotify_textbox.Inlines.add("If you wish to update or change your Spotify credentials, click ")
+                [void]$hashsetup.Import_Spotify_textbox.Inlines.add($($link_hyperlink))
                 $hashsetup.Import_Spotify_textbox.FontSize = '14'
                 $hashsetup.Import_Spotify_transitioningControl.Height = '60'
                 $hashsetup.Import_Spotify_Playlists_Toggle.isOn = $true
                 $hashsetup.Install_Spotify_Toggle.isEnabled = $true
-              } 
+              }
               try{
                 if($synchash.all_playlists){
                   foreach($playlist in $synchash.all_playlists){
@@ -9214,7 +9291,7 @@ function Update-Settings {
                       }
                     }
                   }
-                }       
+                }
               }catch{
                 write-ezlogs "[Show-SettingsWindow] An exception occurred parsing custom playlists for Spotify at $($playlist)" -showtime -catcherror $_
               }
@@ -9222,40 +9299,40 @@ function Update-Settings {
                 foreach($playlist in $thisApp.Config.Spotify_Playlists){
                   if($playlist -match "playlist\:" -or $playlist -match '\/playlist\/'){
                     if($playlist -match "playlist\:"){
-                      $id = ($($playlist) -split('playlist:'))[1].trim() 
+                      $id = ($($playlist) -split('playlist:'))[1].trim()
                     }elseif($playlist -match '\/playlist\/'){
-                      $id = ($($playlist) -split('\/playlist\/'))[1].trim() 
+                      $id = ($($playlist) -split('\/playlist\/'))[1].trim()
                     }
-                    $type = 'Playlist' 
-                    $Name = "Custom_$id"        
+                    $type = 'Playlist'
+                    $Name = "Custom_$id"
                   }elseif($playlist -match "track\:" -or $playlist -match '\/track\/'){
                     if($playlist -match "track\:"){
                       $id = ($($playlist) -split('track:'))[1].trim()
                     }elseif($playlist -match '\/track\/'){
-                      $id = ($($playlist) -split('\/track\/'))[1].trim() 
+                      $id = ($($playlist) -split('\/track\/'))[1].trim()
                     }
-                    $Name = "Custom_$id"   
-                    $type = 'Track'  
-                    $playlist_info = $Null                    
+                    $Name = "Custom_$id"
+                    $type = 'Track'
+                    $playlist_info = $Null
                   }elseif($playlist -match "episode"){
                     if($playlist -match 'episode\:'){
-                      $id = ($($playlist) -split('episode:'))[1].trim()  
+                      $id = ($($playlist) -split('episode:'))[1].trim()
                     }elseif($playlist -match '\/episode\/'){
-                      $id = ($($playlist) -split('\/episode\/'))[1].trim()  
-                    } 
-                    $Name = "Custom_$id"        
-                    $type = 'Episode'   
-                    $playlist_info = $Null                
-                  }elseif($playlist -match "show"){  
-                    if($playlist -match 'episode\:'){
-                      $id = ($($playlist) -split('show:'))[1].trim() 
-                    }elseif($playlist -match '\/show\/'){
-                      $id = ($($playlist) -split('\/show\/'))[1].trim()  
-                    } 
+                      $id = ($($playlist) -split('\/episode\/'))[1].trim()
+                    }
                     $Name = "Custom_$id"
-                    $type = 'Show' 
-                    $playlist_info = $Null                  
-                  } 
+                    $type = 'Episode'
+                    $playlist_info = $Null
+                  }elseif($playlist -match "show"){
+                    if($playlist -match 'episode\:'){
+                      $id = ($($playlist) -split('show:'))[1].trim()
+                    }elseif($playlist -match '\/show\/'){
+                      $id = ($($playlist) -split('\/show\/'))[1].trim()
+                    }
+                    $Name = "Custom_$id"
+                    $type = 'Show'
+                    $playlist_info = $Null
+                  }
                   if($id -match '\?si\='){
                     $id = ($($id) -split('\?si\='))[0].trim()
                   }
@@ -9269,17 +9346,17 @@ function Update-Settings {
                       $playlist_Info = $playlist_Profile.Playlist_Info
                     }catch{
                       write-ezlogs "An exception occurred importing profile $($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists\$($id).xml" -showtime -catcherror $_
-                    }         
-                  }      
+                    }
+                  }
                   Update-SpotifyPlaylists -hashsetup $hashsetup -Path $playlist -id $id -type $type -Name $Name -playlist_info $playlist_info -VerboseLog:$thisApp.Config.Verbose_logging
                 }
               }
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Import_Spotify_Media
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Install Spotify
             #----------------------------------------------
             try{
@@ -9289,7 +9366,7 @@ function Update-Settings {
                     write-ezlogs "Running PowerShell $($psversiontable.PSVersion.Major), Importing Module Appx with parameter -usewindowspowershell" -showtime -warning -logtype Setup
                     if(!(get-command Get-appxpackage -ErrorAction SilentlyContinue)){
                       Import-module Appx -usewindowspowershell -DisableNameChecking -ErrorAction SilentlyContinue
-                    }            
+                    }
                   }catch{
                     write-ezlogs "[SETUP] An exception occurred executing import-module appx -usewindowspowershell" -CatchError $_
                   }
@@ -9318,11 +9395,11 @@ function Update-Settings {
             }catch{
               write-ezlogs "An exception occurred processing Install_Spotify options" -showtime -catcherror $_
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Install Spotify
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Spotify Updates
             #----------------------------------------------
             if($thisapp.config.Spotify_Update){
@@ -9332,11 +9409,11 @@ function Update-Settings {
               $hashsetup.Spotify_Update_Toggle.isOn = $false
               $hashsetup.Spotify_Update_Interval_ComboBox.IsEnabled = $false
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Spotify Updates
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Spotify Update Interval
             #----------------------------------------------
             if($thisapp.config.Spotify_Update_Interval){
@@ -9357,10 +9434,10 @@ function Update-Settings {
             }else{
               $hashsetup.Spotify_Update_Interval_ComboBox.SelectedIndex = -1
               $hashsetup.Spotify_Update_Interval_Label.BorderBrush = 'Red'
-            } 
-            #---------------------------------------------- 
+            }
+            #----------------------------------------------
             #endregion Spotify Update Interval
-            #----------------------------------------------   
+            #----------------------------------------------
           }catch{
             write-ezlogs "An exception occurred in SpotifyMedia_Settings_Scriptblock" -catcherror $_
           }finally{
@@ -9368,17 +9445,17 @@ function Update-Settings {
               $Setup_Spotify_Measure.stop()
               write-ezlogs "| Setup_Spotify_Measure" -showtime -logtype Setup -PerfTimer $Setup_Spotify_Measure -Perf
               $Setup_Spotify_Measure = $Null
-            }        
-          }      
+            }
+          }
         }.GetNewClosure()
       }
       #############################################################################
-      #endregion Spotify Media 
-      ############################################################################# 
+      #endregion Spotify Media
+      #############################################################################
 
       #############################################################################
-      #region Youtube Media 
-      ############################################################################# 
+      #region Youtube Media
+      #############################################################################
       if(!$hashSetup.YoutubeMedia_Settings_Scriptblock){
         $hashSetup.YoutubeMedia_Settings_Scriptblock = {
           Param (
@@ -9389,10 +9466,10 @@ function Update-Settings {
             [switch]$verboselog = $verboselog,
             [switch]$use_Runspace = $use_Runspace,
             [switch]$Startup = $Startup
-          )  
+          )
           try{
             $Setup_Youtube_Measure = [system.diagnostics.stopwatch]::StartNew()
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Youtube WebPlayer
             #----------------------------------------------
             $hashsetup.Youtube_WebPlayer_transitioningControl.content = ''
@@ -9409,33 +9486,44 @@ function Update-Settings {
               $hashsetup.Youtube_WebPlayer_Toggle.isOn = $false
               $hashsetup.Use_invidious_Toggle.IsEnabled = $false
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Youtube WebPlayer
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Use_invidious
             #----------------------------------------------
             if($thisApp.Config.Use_invidious){
               $hashsetup.Use_invidious_Toggle.isOn = $true
-              $hashsetup.Use_invidious_grid.BorderBrush = 'LightGreen' 
             }else{
               $hashsetup.Use_invidious_Toggle.isOn = $false
-              $hashsetup.Use_invidious_grid.BorderBrush = 'Red'
             }
-            #---------------------------------------------- 
+            if((Test-ValidPath -Type URL $thisApp.Config.InvidiousURL)){
+              $hashsetup.InvidiousURL_textbox.Text = "$($thisApp.Config.InvidiousURL)"
+              if($hashsetup.InvidiousURL_Label){
+                $hashsetup.InvidiousURL_Label.BorderBrush = 'Green'
+                $hashsetup.InvidiousURL_textbox.ToolTip = ''
+              }
+            }else{
+              $hashsetup.InvidiousURL_textbox.Text = ''
+              if($hashsetup.InvidiousURL_Label){
+                $hashsetup.InvidiousURL_Label.BorderBrush = 'Red'
+                $hashsetup.InvidiousURL_textbox.ToolTip = 'No valid URL entered'
+              }
+            }
+            #----------------------------------------------
             #endregion Use_invidious
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Youtube Updates
             #----------------------------------------------
             $hashsetup.Youtube_Update_Toggle.isOn = ($thisapp.config.Youtube_Update -eq $true)
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Youtube Updates
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Youtube Update Interval
             #----------------------------------------------
             if($thisapp.config.Youtube_Update_Interval){
@@ -9457,11 +9545,11 @@ function Update-Settings {
               $hashsetup.Youtube_Update_Interval_ComboBox.SelectedIndex = -1
               $hashsetup.Youtube_Update_Interval_Label.BorderBrush = 'Red'
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Youtube Update Interval
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Enable Sponsorblock
             #----------------------------------------------
             if($thisapp.config.Enable_Sponsorblock){
@@ -9471,11 +9559,11 @@ function Update-Settings {
               $hashsetup.Enable_Sponsorblock_Toggle.isOn = $false
               $hashsetup.Sponsorblock_ActionType_ComboBox.IsEnabled = $false
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Enable Sponsorblock
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Sponsorblock ActionType
             #----------------------------------------------
             try{
@@ -9483,33 +9571,33 @@ function Update-Settings {
                 $hashsetup.Sponsorblock_ActionType_ComboBox.SelectedItem = $hashsetup.Sponsorblock_ActionType_ComboBox.items | where {$_.content -eq $thisApp.Config.Sponsorblock_ActionType}
               }else{
                 $hashsetup.Sponsorblock_ActionType_ComboBox.SelectedIndex = 0
-              }      
+              }
             }catch{
               write-ezlogs 'An exception occurred parsing Sponsorblock ActionType' -showtime -catcherror $_
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Sponsorblock ActionType
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Enable YoutubeComments
             #----------------------------------------------
             if($hashsetup.Enable_YoutubeComments_Toggle){
               $hashsetup.Enable_YoutubeComments_Toggle.isOn = $thisapp.config.Enable_YoutubeComments -eq $true
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Enable YoutubeComments
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region PlayLink_OnDrop
             #----------------------------------------------
             $hashsetup.PlayLink_OnDrop_Toggle.isOn = $thisapp.config.PlayLink_OnDrop -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion PlayLink_OnDrop
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Youtube_Quality
             #----------------------------------------------
             if($thisapp.config.Youtube_Quality){
@@ -9524,11 +9612,11 @@ function Update-Settings {
             }else{
               $hashsetup.Youtube_Quality_Label.BorderBrush = 'Red'
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Youtube_Quality
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Webview2 Extensions
             #----------------------------------------------
             try{
@@ -9536,42 +9624,42 @@ function Update-Settings {
             }catch{
               write-ezlogs "An exception occurred adding webview2 extensions to config" -catcherror $_
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Webview2 Extensions
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Import_Youtube_Media
             #----------------------------------------------
             if($hashSetup.YoutubePlaylists_itemsArray){
               $hashSetup.YoutubePlaylists_itemsArray.clear()
-            }       
+            }
             if($hashsetup.Import_Youtube_textbox.Inlines){
               $hashsetup.Import_Youtube_textbox.Inlines.clear()
             }
             if($thisApp.Config.Import_Youtube_Media){
-              if(@($thisApp.Config.Youtube_Playlists).count -gt 0){        
+              if(@($thisApp.Config.Youtube_Playlists).count -gt 0){
                 foreach($playlist in $thisApp.Config.Youtube_Playlists){
                   if($hashSetup.YoutubePlaylists_itemsArray.Path -notcontains $playlist){
                     if($playlist -match 'youtube\.com' -or $playlist -match 'youtu\.be'){
                       if($playlist -match 'tv\.youtube'){
                         if($playlist -match "v="){
-                          $id = ($($playlist) -split('v='))[1].trim() 
+                          $id = ($($playlist) -split('v='))[1].trim()
                         }elseif($playlist -match "\/watch\/"){
-                          $id = ($($playlist) -split('/watch/'))[1].trim() 
+                          $id = ($($playlist) -split('/watch/'))[1].trim()
                         }
                         $Name = "Custom_$id"
                         $type = "YoutubeTV"
                       }elseif($playlist -match "v="){
-                        $id = ($($playlist) -split('v='))[1].trim()  
-                        $type = 'YoutubeVideo' 
-                        $Name = "Custom_$id"        
+                        $id = ($($playlist) -split('v='))[1].trim()
+                        $type = 'YoutubeVideo'
+                        $Name = "Custom_$id"
                       }elseif($playlist -match 'list='){
-                        $id = ($($playlist) -split('list='))[1].trim() 
-                        $Name = "Custom_$id"   
-                        $type = 'YoutubePlaylist'                      
+                        $id = ($($playlist) -split('list='))[1].trim()
+                        $Name = "Custom_$id"
+                        $type = 'YoutubePlaylist'
                       }elseif($playlist -match 'youtube\.com\/channel\/'){
-                        $id = $((Get-Culture).textinfo.totitlecase(($playlist | split-path -leaf).tolower())) 
+                        $id = $((Get-Culture).textinfo.totitlecase(($playlist | split-path -leaf).tolower()))
                         $Name = "Custom_$id"
                         $type = 'YoutubeChannel'
                       }elseif($playlist -match "\/watch\/"){
@@ -9579,7 +9667,7 @@ function Update-Settings {
                         $Name = "Custom_$id"
                         $type = 'YoutubeVideo'
                       }elseif($playlist -match 'twitch\.tv'){
-                        $id = $((Get-Culture).textinfo.totitlecase(($playlist | split-path -leaf).tolower())) 
+                        $id = $((Get-Culture).textinfo.totitlecase(($playlist | split-path -leaf).tolower()))
                         $Name = $id
                         $type = 'TwitchChannel'
                       }elseif($playlist -notmatch "v=" -and $playlist -notmatch '\?' -and $playlist -notmatch '\&'){
@@ -9600,22 +9688,22 @@ function Update-Settings {
                         $playlist_Info = $playlist_Profile.Playlist_Info
                       }catch{
                         write-ezlogs "An exception occurred importing profile $($thisapp.config.Playlist_Profile_Directory)\Youtube_Playlists\$($id).xml" -showtime -catcherror $_
-                      }         
-                    } 
-                    if(!$hashSetup.YoutubePlaylists_itemsArray.Number){ 
+                      }
+                    }
+                    if(!$hashSetup.YoutubePlaylists_itemsArray.Number){
                       $Number = 1
                     }else{
                       $Number = $hashSetup.YoutubePlaylists_itemsArray.Number | select -last 1
                       $Number++
                     }
                     [void]$hashSetup.YoutubePlaylists_itemsArray.add([PSCustomObject]@{
-                        Number=$Number;       
+                        Number=$Number;
                         ID = $id
                         Name=$Name
                         Path=$playlist
                         Type=$type
                         Playlist_Info = $playlist_info
-                    }) 
+                    })
                   }
                 }
                 try{
@@ -9627,8 +9715,8 @@ function Update-Settings {
                       if($playlist.PlayList_tracks.values){
                         $PlayList_tracks = $playlist.PlayList_tracks.values.where({$_.Playlist_URL -match 'youtu\.be' -or $_ -match 'youtube\.com'})
                       }
-                      foreach($list in $PlayList_tracks){      
-                        $customplaylist_Name = $Null       
+                      foreach($list in $PlayList_tracks){
+                        $customplaylist_Name = $Null
                         if($list.Playlist_URL){
                           $customplaylist_Name = $hashSetup.YoutubePlaylists_itemsArray | where {$_.path -eq $list.Playlist_URL}
                           if($customplaylist_Name.name -and $customplaylist_Name.name -ne $list.Playlist){
@@ -9672,8 +9760,8 @@ function Update-Settings {
                 $hashsetup.Import_Youtube_textbox.Inlines.add("Click ")
                 [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashSetup.Youtube_AuthHandler)
                 [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashSetup.Youtube_AuthHandler)
-                [void]$hashsetup.Import_Youtube_textbox.Inlines.add($($link_hyperlink))        
-                [void]$hashsetup.Import_Youtube_textbox.Inlines.add(" to provide your Youtube account credentials.")   
+                [void]$hashsetup.Import_Youtube_textbox.Inlines.add($($link_hyperlink))
+                [void]$hashsetup.Import_Youtube_textbox.Inlines.add(" to provide your Youtube account credentials.")
                 $hashsetup.Import_Youtube_textbox.Foreground = "Orange"
                 $hashsetup.Import_Youtube_transitioningControl.Height = '60'
                 $hashsetup.Youtube_Playlists_Import.isEnabled = $false
@@ -9691,11 +9779,11 @@ function Update-Settings {
                 $hashsetup.Import_Youtube_textbox.Inlines.add("Click ")
                 [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashSetup.Youtube_AuthHandler)
                 [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashSetup.Youtube_AuthHandler)
-                [void]$hashsetup.Import_Youtube_textbox.Inlines.add($($link_hyperlink))        
-                [void]$hashsetup.Import_Youtube_textbox.Inlines.add(" to update your Youtube account credentials")   
+                [void]$hashsetup.Import_Youtube_textbox.Inlines.add($($link_hyperlink))
+                [void]$hashsetup.Import_Youtube_textbox.Inlines.add(" to update your Youtube account credentials")
                 $hashsetup.Import_Youtube_textbox.Foreground = "Orange"
                 $hashsetup.Import_Youtube_transitioningControl.Height = '60'
-                $hashsetup.Youtube_Playlists_Import.isEnabled = $false    
+                $hashsetup.Youtube_Playlists_Import.isEnabled = $false
               }else{
                 write-ezlogs "Returned Youtube authentication - (Expires: $($access_token_expires))" -showtime -logtype Setup -LogLevel 2 -Success
                 $hashsetup.Import_Youtube_Status_textbox.Text="[VALID]"
@@ -9709,7 +9797,7 @@ function Update-Settings {
                 [void]$link_hyperlink.Inlines.add("AUTHENTICATE")
                 [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashSetup.Youtube_AuthHandler)
                 [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashSetup.Youtube_AuthHandler)
-                [void]$hashsetup.Import_Youtube_textbox.Inlines.add("If you wish to update or change your Youtube credentials, click ") 
+                [void]$hashsetup.Import_Youtube_textbox.Inlines.add("If you wish to update or change your Youtube credentials, click ")
                 [void]$hashsetup.Import_Youtube_textbox.Inlines.add($($link_hyperlink))
                 $hashsetup.Import_Youtube_textbox.Foreground = "LightGreen"
                 $hashsetup.Import_Youtube_textbox.FontSize = '14'
@@ -9721,56 +9809,56 @@ function Update-Settings {
               $hashsetup.Import_Youtube_Auth_Toggle.isEnabled = $true
               $hashsetup.Youtube_Playlists_Browse.IsEnabled = $true
               $hashsetup.YoutubePlaylists_Grid.IsEnabled = $true
-              $hashsetup.YoutubePlaylists_Grid.MaxHeight = '250'                 
+              $hashsetup.YoutubePlaylists_Grid.MaxHeight = '250'
             }else{
               $hashsetup.YoutubePlaylists_Grid.MaxHeight = '0'
               $hashsetup.Import_Youtube_textbox.text = ""
               $hashsetup.Import_Youtube_transitioningControl.Height = '0'
               $hashsetup.Youtube_Playlists_Import.isEnabled = $false
-            } 
-            #---------------------------------------------- 
+            }
+            #----------------------------------------------
             #endregion Import_Youtube_Media
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Youtube_Browser
             #----------------------------------------------
-            if($thisApp.config.Youtube_Browser){     
+            if($thisApp.config.Youtube_Browser){
               $hashsetup.Import_Youtube_Auth_ComboBox.selecteditem = $hashsetup.Import_Youtube_Auth_ComboBox.items | where {$_.content -eq $thisApp.config.Youtube_Browser}
             }else{
               $hashsetup.Import_Youtube_Auth_ComboBox.selectedindex = -1
-            } 
-            if($hashsetup.Import_Youtube_Auth_ComboBox.selectedindex -ne -1){     
+            }
+            if($hashsetup.Import_Youtube_Auth_ComboBox.selectedindex -ne -1){
               $hashsetup.Import_Youtube_Auth_Label.BorderBrush = "Green"
             }else{
               $hashsetup.Import_Youtube_Auth_Label.BorderBrush = "Red"
-            } 
-            if($thisApp.config.Import_Youtube_Browser_Auth){     
+            }
+            if($thisApp.config.Import_Youtube_Browser_Auth){
               $hashsetup.Import_Youtube_Auth_Toggle.isOn = $true
               $hashsetup.Import_Youtube_Auth_ComboBox.IsEnabled = $true
             }else{
               $hashsetup.Import_Youtube_Auth_Toggle.isOn = $false
               $hashsetup.Import_Youtube_Auth_ComboBox.IsEnabled = $false
-            } 
-            #---------------------------------------------- 
+            }
+            #----------------------------------------------
             #endregion Youtube_Browser
-            #----------------------------------------------  
-    
-            #---------------------------------------------- 
+            #----------------------------------------------
+
+            #----------------------------------------------
             #region Import_My_Youtube
             #----------------------------------------------
             $hashsetup.Youtube_My_Playlists_Import.isChecked = $thisApp.Config.Import_My_Youtube_Media -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Import_My_Youtube
             #----------------------------------------------
-          
-            #---------------------------------------------- 
+
+            #----------------------------------------------
             #region Youtube_My_Subscriptions
             #----------------------------------------------
             $hashsetup.Youtube_My_Subscriptions_Import.isChecked = $thisApp.Config.Import_My_Youtube_Subscriptions -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Youtube_My_Subscriptions
-            #----------------------------------------------  
+            #----------------------------------------------
           }catch{
             write-ezlogs "An exception occurred in YoutubeMedia_Settings_Scriptblock" -catcherror $_
           }finally{
@@ -9778,17 +9866,17 @@ function Update-Settings {
               $Setup_Youtube_Measure.stop()
               write-ezlogs "| Setup_Youtube_Measure" -showtime -logtype Setup -PerfTimer $Setup_Youtube_Measure -Perf
               $Setup_Youtube_Measure = $Null
-            }        
-          }      
+            }
+          }
         }.GetNewClosure()
-      }      
+      }
       #############################################################################
-      #endregion Youtube Media 
+      #endregion Youtube Media
       #############################################################################
 
       #############################################################################
-      #region Twitch Media 
-      ############################################################################# 
+      #region Twitch Media
+      #############################################################################
       if(!$hashSetup.TwitchMedia_Settings_Scriptblock){
         $hashSetup.TwitchMedia_Settings_Scriptblock = {
           Param (
@@ -9799,18 +9887,18 @@ function Update-Settings {
             [switch]$verboselog = $verboselog,
             [switch]$use_Runspace = $use_Runspace,
             [switch]$Startup = $Startup
-          )  
+          )
           try{
             $Setup_Twitch_Measure = [system.diagnostics.stopwatch]::StartNew()
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Twitch Updates
             #----------------------------------------------
             $hashsetup.Twitch_Update_Toggle.isOn = $thisapp.config.Twitch_Update -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Twitch Updates
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Twitch Update Interval
             #----------------------------------------------
             $hashsetup.Twitch_Update_transitioningControl.content = ''
@@ -9832,65 +9920,65 @@ function Update-Settings {
               $hashsetup.Twitch_Update_Toggle.isOn = $false
               $thisapp.config.Twitch_Update = $false
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Twitch Update Interval
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Enable_Twitch_Notifications
             #----------------------------------------------
             $hashsetup.Enable_Twitch_Notifications_Toggle.isOn = $thisapp.config.Enable_Twitch_Notifications -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Enable_Twitch_Notifications
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region ForceUse_YTDLP
             #----------------------------------------------
             $hashsetup.ForceUse_YTDLP_Toggle.isOn = $thisapp.config.ForceUse_YTDLP -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion ForceUse_YTDLP
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Skip_Twitch_Ads_Toggle
             #----------------------------------------------
             $hashsetup.Skip_Twitch_Ads_Toggle.isOn = $thisapp.config.Skip_Twitch_Ads -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Skip_Twitch_Ads_Toggle
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Mute_Twitch_Ads_Toggle
             #----------------------------------------------
             $hashsetup.Mute_Twitch_Ads_Toggle.isOn = $thisapp.config.Mute_Twitch_Ads -eq $true
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Mute_Twitch_Ads_Toggle
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Twitch_TTVLOL
             #----------------------------------------------
             if($thisapp.config.Use_Twitch_TTVLOL){
               $hashsetup.Twitch_TTVLOL_Toggle.isOn = $true
               if($hashsetup.Twitch_luminous_Toggle.isOn){
                 $hashsetup.Twitch_luminous_Toggle.isOn = $false
-              }     
+              }
               if($thisapp.config.Use_Twitch_luminous){
                 $thisapp.config.Use_Twitch_luminous = $false
-              } 
-              if($hashsetup.Twitch_Custom_Proxy_Toggle.isOn){
-                $hashsetup.Twitch_Custom_Proxy_Toggle.isOn = $false               
               }
-              $thisapp.config.UseTwitchCustom = $false                
+              if($hashsetup.Twitch_Custom_Proxy_Toggle.isOn){
+                $hashsetup.Twitch_Custom_Proxy_Toggle.isOn = $false
+              }
+              $thisapp.config.UseTwitchCustom = $false
             }else{
               $hashsetup.Twitch_TTVLOL_Toggle.isOn = $false
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Twitch_TTVLOL
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Twitch_Quality
             #----------------------------------------------
             if($thisapp.config.Twitch_Quality){
@@ -9905,11 +9993,11 @@ function Update-Settings {
             }else{
               $hashsetup.Twitch_Quality_Label.BorderBrush = 'Red'
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Twitch_Quality
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Streamlink_Interface
             #----------------------------------------------
             try{
@@ -9937,11 +10025,11 @@ function Update-Settings {
                 [void]$Network_Adapter.dispose()
               }
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Streamlink_Interface
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Streamlink_Arguments
             #----------------------------------------------
             if(-not [string]::IsNullOrEmpty($thisapp.config.Streamlink_Arguments)){
@@ -9949,11 +10037,11 @@ function Update-Settings {
             }else{
               $hashsetup.Streamlink_Arguments_textbox.text = ''
             }
-            #---------------------------------------------- 
+            #----------------------------------------------
             #endregion Streamlink_Arguments
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Streamlink_Logging
             #----------------------------------------------
             if(-not [string]::IsNullOrEmpty($thisapp.config.Streamlink_Verbose_logging)){
@@ -9965,12 +10053,12 @@ function Update-Settings {
               $hashsetup.Streamlink_Logging_Label.BorderBrush = 'LightGreen'
             }else{
               $hashsetup.Streamlink_Logging_Label.BorderBrush = 'Red'
-            } 
-            #---------------------------------------------- 
+            }
+            #----------------------------------------------
             #endregion Streamlink_Logging
             #----------------------------------------------
 
-            #---------------------------------------------- 
+            #----------------------------------------------
             #region Import_Twitch_Media
             #----------------------------------------------
             if($hashSetup.TwitchPlaylists_items){
@@ -9986,11 +10074,11 @@ function Update-Settings {
                     if($playlist.Name){
                       $Name = $playlist.Name
                     }else{
-                      $Name = $((Get-Culture).textinfo.totitlecase(($playlist.path | split-path -leaf).tolower())) 
-                    }             
+                      $Name = $((Get-Culture).textinfo.totitlecase(($playlist.path | split-path -leaf).tolower()))
+                    }
                     $type = 'TwitchChannel'
                     Update-TwitchPlaylists -hashsetup $hashsetup -Path $playlist.path -id $playlist.Id -Number $playlist.Number -Followed $playlist.Followed -type $type -Name $Name -VerboseLog:$thisApp.Config.Verbose_logging
-                  }       
+                  }
                 }
                 Update-TwitchPlaylists -hashsetup $hashsetup -SetItemsSource -VerboseLog:$thisApp.Config.Verbose_logging
               }
@@ -10002,15 +10090,15 @@ function Update-Settings {
                 $link_hyperlink = [System.Windows.Documents.Hyperlink]::new()
                 $link_hyperlink.NavigateUri = $hyperlink
                 $link_hyperlink.ToolTip = "Open Twitch Authentication Capture"
-                $link_hyperlink.Foreground = "LightBlue"    
+                $link_hyperlink.Foreground = "LightBlue"
                 $hashsetup.Import_Twitch_Status_textbox.Text="[NONE]"
                 $hashsetup.Import_Twitch_Status_textbox.Foreground = "Orange"
                 $hashsetup.Import_Twitch_textbox.Inlines.add("Click ")
                 [void]$link_hyperlink.Inlines.add("AUTHENTICATE")
                 [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Twitch_AuthHandler)
                 [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Twitch_AuthHandler)
-                [void]$hashsetup.Import_Twitch_textbox.Inlines.add($($link_hyperlink))        
-                [void]$hashsetup.Import_Twitch_textbox.Inlines.add(" to provide your Twitch account credentials.")   
+                [void]$hashsetup.Import_Twitch_textbox.Inlines.add($($link_hyperlink))
+                [void]$hashsetup.Import_Twitch_textbox.Inlines.add(" to provide your Twitch account credentials.")
                 $hashsetup.Import_Twitch_textbox.Foreground = "Orange"
                 $hashsetup.Import_Twitch_textbox.FontSize = '14'
                 $hashsetup.Import_Twitch_transitioningControl.Height = '80'
@@ -10029,15 +10117,15 @@ function Update-Settings {
                 [void]$link_hyperlink.Inlines.add("AUTHENTICATE")
                 [void]$link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Twitch_AuthHandler)
                 [void]$link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashsetup.Twitch_AuthHandler)
-                [void]$hashsetup.Import_Twitch_textbox.Inlines.add("If you wish to update or change your Twitch credentials, click ")  
-                [void]$hashsetup.Import_Twitch_textbox.Inlines.add($($link_hyperlink))        
+                [void]$hashsetup.Import_Twitch_textbox.Inlines.add("If you wish to update or change your Twitch credentials, click ")
+                [void]$hashsetup.Import_Twitch_textbox.Inlines.add($($link_hyperlink))
                 $hashsetup.Import_Twitch_textbox.Foreground = "LightGreen"
                 $hashsetup.Import_Twitch_textbox.FontSize = '14'
                 $hashsetup.Import_Twitch_transitioningControl.Height = '60'
                 $hashsetup.Twitch_Playlists_Import.isEnabled = $true
                 $hashsetup.Import_Twitch_Playlists_Toggle.tag = 'Startup'
                 $hashsetup.Import_Twitch_Playlists_Toggle.isOn = $true
-              }                 
+              }
               $hashsetup.Twitch_Playlists_Browse.IsEnabled = $true
               $hashsetup.TwitchPlaylists_Grid.IsEnabled = $true
               $hashsetup.TwitchPlaylists_Grid.MaxHeight = '250'
@@ -10046,10 +10134,10 @@ function Update-Settings {
               $hashsetup.Import_Twitch_textbox.text = ""
               $hashsetup.Import_Twitch_transitioningControl.Height = '0'
               $hashsetup.Twitch_Playlists_Import.isEnabled = $false
-            }  
-            #---------------------------------------------- 
+            }
+            #----------------------------------------------
             #endregion Import_Twitch_Media
-            #---------------------------------------------- 
+            #----------------------------------------------
           }catch{
             write-ezlogs "An exception occurred in TwitchMedia_Settings_Scriptblock" -catcherror $_
           }finally{
@@ -10057,12 +10145,12 @@ function Update-Settings {
               $Setup_Twitch_Measure.stop()
               write-ezlogs "| Setup_Twitch_Measure" -showtime -logtype Setup -PerfTimer $Setup_Twitch_Measure -Perf
               $Setup_Twitch_Measure = $Null
-            }                  
-          }      
+            }
+          }
         }.GetNewClosure()
-      }    
+      }
       #############################################################################
-      #endregion Twitch Media 
+      #endregion Twitch Media
       #############################################################################
     }else{
       try{
@@ -10073,8 +10161,8 @@ function Update-Settings {
         Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisapp -ScriptBlock $hashSetup.TwitchMedia_Settings_Scriptblock -Dequeue
       }catch{
         write-ezlogs "An exception occurred in Update-Settings" -catcherror $_
-      }    
-    }  
+      }
+    }
   }catch{
     write-ezlogs "An exception occurred in Update-Settings" -showtime -catcherror $_
   }finally{
@@ -10082,10 +10170,10 @@ function Update-Settings {
       $Update_Settings_Timer.stop()
       write-ezlogs ">>>> Update_Settings_Timer" -PerfTimer $Update_Settings_Timer -GetMemoryUsage -forceCollection
       $Update_Settings_Timer = $Null
-    }  
-  }   
+    }
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-Settings Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Show-SettingsWindow','Update-EditorHelp','Update-SettingsWindow','Update-Settings','Update-MediaLocations','Update-SpotifyPlaylists','Update-TwitchPlaylists','Invoke-YoutubeImport')

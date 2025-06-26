@@ -2,14 +2,14 @@
     .Name
     Initialize-Vlc
 
-    .Version 
+    .Version
     0.1.1
 
     .SYNOPSIS
     Creates and initializes controls and events for libvlc
 
     .DESCRIPTION
-       
+
     .Configurable Variables
 
     .Requirements
@@ -27,7 +27,7 @@
 #>
 
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize-Vlc Function
 #----------------------------------------------
 Function Initialize-VLC
@@ -40,31 +40,15 @@ Function Initialize-VLC
     [switch]$Startup_Playback,
     $VideoView,
     [switch]$NewMediaPlayer
-  ) 
+  )
   try{
-    #if($thisApp.Config.Verbose_Logging){write-ezlogs ">>>> Initializing Libvlc" -showtime}
-    #$vlc = [LibVLCSharp.Shared.Core]::Initialize("$($thisApp.Config.Current_folder)\Resources\Libvlc")
-    #$videoView = [LibVLCSharp.WPF.VideoView]::new()  
-    #$libvlc = [LibVLCSharp.Shared.LibVLC]::new('--file-logging',"--logfile=$($thisapp.config.Vlc_Log_file)","--log-verbose=$($thisapp.config.Vlc_Verbose_logging)")
-    #$libvlc.SetLogFile("$($logfile_directory)\$($thisScript.Name)-$($thisApp.config.App_Version)-VLC.log")
-
-
-    <#    [xml]$xaml = [System.IO.File]::ReadAllText("$($thisApp.Config.Current_folder)\Views\VideoViewGrid.xaml").replace('Views/Styles.xaml',"$($thisApp.Config.Current_folder)`\Views`\Styles.xaml")
-        $reader = (New-Object System.Xml.XmlNodeReader $xaml) 
-        $VideoView_Grid = [Windows.Markup.XamlReader]::Load($reader)
-        $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | foreach {$synchash."$($_.Name)" = $VideoView_Grid.FindName($_.Name)}
-        if($VideoView.content -ne $synchash.VideoView_Grid){
-        $VideoView.addChild($synchash.VideoView_Grid)
-    }#>
-
-
-    if(!$synchash.VLC -and $Startup_Playback){   
-      write-ezlogs ">>>> Initializing new lbivlc media player instance for startup playback" -showtime -logtype Libvlc -loglevel 2
-      if($thisApp.Config.Libvlc_Version -eq '4'){        
+    if(!$synchash.VLC -and $Startup_Playback){
+      write-ezlogs ">>>> Initializing new lbivlc media player instance for startup playback" -logtype Libvlc -loglevel 2
+      if($thisApp.Config.Libvlc_Version -eq '4'){
         $synchash.VLC = [System.WeakReference]::new([LibVLCSharp.MediaPlayer]::new($synchash.libvlc)).Target
         if($thisApp.Config.Enable_ChromeCast){
           $synchash.RendererDiscoverer = [LibVLCSharp.RendererDiscoverer]::new($synchash.libvlc)
-        }        
+        }
       }else{
         $synchash.VLC = [System.WeakReference]::new([LibVLCSharp.Shared.MediaPlayer]::new($synchash.libvlc)).Target
       }
@@ -87,7 +71,7 @@ Function Initialize-VLC
               if($synchash.renderitems -contains $e.RendererItem){
                 write-ezlogs "Removing from renderitems list" -Warning
                 [void]$synchash.renderitems.Remove($e.RendererItem)
-              }           
+              }
             }catch{
               write-ezlogs "An exception occurred in RendererDiscoverer.add_ItemDeleted"
             }
@@ -95,15 +79,13 @@ Function Initialize-VLC
         [void]$synchash.RendererDiscoverer.start()
       }
 
-      
       #Prevent vlc from catching input events unless using visualizations
+      #TODO: This doesnt seem to make any difference. Hotkeys for visualizations dont work.
       if($thisApp.Config.Use_Visualizations){
         $synchash.VLC.EnableKeyInput = $true
       }else{
         $synchash.VLC.EnableKeyInput = $false
       }
-      #$synchash.VLC.EnableMouseInput = $false
-
       Add-VLCRegisteredEvents -synchash $synchash -thisApp $thisApp
       if($thisapp.config.Current_Audio_Output -and $synchash.vlc.AudioOutputDeviceEnum){
         $device = $synchash.vlc.AudioOutputDeviceEnum.where({$_.Description -eq $thisapp.config.Current_Audio_Output})
@@ -114,24 +96,24 @@ Function Initialize-VLC
           }else{
             if($thisApp.Config.Dev_mode){write-ezlogs "Unable to set audio output device for vlc to $($device.Description)" -warning -logtype Libvlc -Dev_mode}
           }
-        }     
+        }
       }
     }
     if($startup -and $synchash.Volume_Slider -and -not [string]::IsNullOrEmpty($thisapp.Config.Media_Volume)){
-      write-ezlogs "[VLC_STARTUP] | Setting Volume_Slider Value to Config.Media_Volume: $($thisapp.Config.Media_Volume)" -loglevel 2 -logtype Libvlc
+      write-ezlogs "[VLC_STARTUP] | Setting Volume_Slider Value to Config.Media_Volume: $($thisapp.Config.Media_Volume)" -logtype Libvlc
       $synchash.Volume_Slider.value = $thisapp.Config.Media_Volume
     }
     if(-not [string]::IsNullOrEmpty($synchash.Volume_Slider.value)){
       if($synchash.vlc -and $synchash.vlc.Volume -ne $synchash.Volume_Slider.value){
-        write-ezlogs "[VLC_STARTUP] | Setting vlc volume to Volume_Slider Value: $($synchash.Volume_Slider.value)" -loglevel 2 -logtype Libvlc
+        write-ezlogs "[VLC_STARTUP] | Setting vlc volume to Volume_Slider Value: $($synchash.Volume_Slider.value)" -logtype Libvlc
         if($thisApp.Config.Libvlc_Version -eq '4'){
           $synchash.vlc.SetVolume($synchash.Volume_Slider.value)
         }else{
           $synchash.vlc.Volume = $synchash.Volume_Slider.value
         }
-      }         
+      }
     }elseif(-not [string]::IsNullOrEmpty($thisapp.Config.Media_Volume) -and $synchash.vlc -and $synchash.vlc.Volume -ne $thisapp.Config.Media_Volume){
-      write-ezlogs "[VLC_STARTUP] | Setting vlc volume to Config Media Volume: $($thisapp.Config.Media_Volume)" -loglevel 2 -logtype Libvlc
+      write-ezlogs "[VLC_STARTUP] | Setting vlc volume to Config Media Volume: $($thisapp.Config.Media_Volume)" -logtype Libvlc
       $synchash.Volume_Slider.value = $thisapp.Config.Media_Volume
       if($thisApp.Config.Libvlc_Version -eq '4'){
         $synchash.vlc.SetVolume($thisapp.Config.Media_Volume)
@@ -139,7 +121,7 @@ Function Initialize-VLC
         $synchash.vlc.Volume = $thisapp.Config.Media_Volume
       }
     }else{
-      write-ezlogs "[VLC_STARTUP] | Volume level unknown??: $($synchash.Volume_Slider.value)" -loglevel 2 -Warning -logtype Libvlc
+      write-ezlogs "[VLC_STARTUP] | Volume level unknown??: $($synchash.Volume_Slider.value)" -Warning -logtype Libvlc
       $thisapp.Config.Media_Volume = 100
     }
     if($synchash.VideoView_Mute_Icon){
@@ -157,7 +139,7 @@ Function Initialize-VLC
         $synchash.MuteButton_ToggleButton.isChecked = $true
       }
     }
-    if($VideoView -and $synchash.VLC){    
+    if($VideoView -and $synchash.VLC){
       $VideoView.MediaPlayer = $synchash.VLC
     }
     if($synchash.VLC_Grid.Visibility -ne 'Visible'){
@@ -172,42 +154,23 @@ Function Initialize-VLC
         param($sender)
         try{
           if($sender.Visibility -in 'Hidden','Collapsed'){
-            write-ezlogs ">>>> Video View visibility changed: $($sender.Visibility)" -showtime -warning
-            if($synchash.VideoView_Grid -and $synchash.VideoView_Grid.Visibility -eq 'Visible'){
-              #write-ezlogs "| hiding VideoView_Grid and setting MaxHeight to 0" -showtime -warning -Dev_mode
-              #$synchash.VideoView_Grid.Visibility = 'Collapsed'
-              #$synchash.VideoView_Grid.MaxHeight = 0
-            }
+            write-ezlogs ">>>> Video View visibility changed: $($sender.Visibility)" -warning
             if($sender.IsEnabled){
-              write-ezlogs "| Disabling VideoView control" -showtime -warning -Dev_mode
+              write-ezlogs "| Disabling VideoView control" -warning -Dev_mode
               $sender.IsEnabled = $false
-            }                         
-          }elseif($sender.Visibility -eq 'Visible'){            
-            if($synchash.VideoView_Grid.Visibility -in 'Hidden','Collapsed'){
-              #write-ezlogs ">>>> Video View is Visible and VideoView_Grid is not, setting VideoView_Grid to Visible and MaxHeight to infinity" -showtime -warning
-              #$synchash.VideoView_Grid.Visibility = 'Visible'
-              #$synchash.VideoView_Grid.MaxHeight = [Double]::PositiveInfinity
             }
+          }elseif($sender.Visibility -eq 'Visible'){
             if(!$sender.IsEnabled){
-              write-ezlogs "| Enabling VideoView control" -showtime -warning -Dev_mode
+              write-ezlogs "| Enabling VideoView control" -warning -Dev_mode
               $sender.IsEnabled = $true
             }
             if($synchash.VideoView_Overlay_Grid.Visibility -in 'Hidden','Collapsed'){
-              write-ezlogs ">>>> Video View is Visible and VideoView_Overlay_Grid is not, setting VideoView_Overlay_Grid to Visible" -showtime -warning -Dev_mode
+              write-ezlogs ">>>> Video View is Visible and VideoView_Overlay_Grid is not, setting VideoView_Overlay_Grid to Visible" -warning -Dev_mode
               $synchash.VideoView_Overlay_Grid.Visibility = 'Visible'
-            }
-            if(!$synchash.vlc.IsPlaying -and !$synchash.VideoView_Grid.Parent.Parent.AllowsTransparency -and $thisApp.Config.Enable_YoutubeComments -and $synchash.VideoView_Grid.Parent.Parent -is [System.Windows.Window]){
-              #TODO: Fixes the issue where libvlc video player window background sometimes becomes solid white or flashes white if AllowsTransparency  is false on floating window
-              #https://code.videolan.org/videolan/LibVLCSharp/-/issues/555
-              #UPDATE: This no longer seems to work after updating libvlcsharp to 3.9.3, but that version fixes a crash so it overrides this issue
-              #write-ezlogs "| Calling Hide() then Show() on VideoView floating window to prevent background from becoming solid white" -showtime -warning
-              #$synchash.VideoView_Grid.Parent.Parent.hide()
-              #$synchash.VideoView_Grid.Parent.Parent.Show()
-              #$synchash.VideoView_Grid.Parent.Parent.Activate()
             }
           }
         }catch{
-          write-ezlogs "An exception occurred in videoView.add_IsVisibleChanged" -showtime -catcherror $_
+          write-ezlogs "An exception occurred in videoView.add_IsVisibleChanged" -catcherror $_
         }
       }
       [void]$synchash.VideoView.Remove_IsVisibleChanged($synchash.VideoView_IsVisibleChanged_Command)
@@ -222,15 +185,15 @@ Function Initialize-VLC
       }
     }
   }catch{
-    write-ezlogs 'An exception occurred An exception occurred initializing libvlc' -showtime -catcherror $_
-  } 
+    write-ezlogs 'An exception occurred An exception occurred initializing libvlc' -catcherror $_
+  }
 
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize-Vlc Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize-EQ Function
 #----------------------------------------------
 Function Initialize-EQ
@@ -238,33 +201,33 @@ Function Initialize-EQ
   param (
     $synchash,
     $thisApp,
-    [switch]$Startup_Playback
-  ) 
+    [switch]$Startup_Playback,
+    [switch]$Verboselog
+  )
   try{
-    write-ezlogs ">>>> Initialize-EQ Startup -- Startup_Playback: $Startup_Playback" -loglevel 2 -logtype Libvlc
+    write-ezlogs ">>>> Initialize-EQ Startup -- Startup_Playback: $Startup_Playback" -logtype Libvlc
     #EQ Preset Routed Event
-    #$audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))') 
     [System.Windows.RoutedEventHandler]$Synchash.EQPreset_Menuitem_Command = {
       param($sender)
-      try{     
+      try{
         if($sender.parent.parent.PlacementTarget.parent.parent.TemplatedParent.Name -eq 'DeletePreset_Button'){
           if($synchash.AudioOptions_Viewer.isVisible){
             $window = $synchash.AudioOptions_Viewer
           }else{
             $window = $synchash.Window
           }
-          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
           $Button_Settings.AffirmativeButtonText = 'Yes'
-          $Button_Settings.NegativeButtonText = 'No'  
-          $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+          $Button_Settings.NegativeButtonText = 'No'
+          $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
           $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($window,"Delete Preset $($this.Header)","Are you sure you wish to delete the EQ Preset: $($this.Header)?",$okandCancel,$Button_Settings)
           if($result -eq 'Affirmative'){
-            write-ezlogs ">>>> User wishes to delete the preset $($this.Header)" -showtime -logtype Libvlc -loglevel 2
+            write-ezlogs ">>>> User wishes to delete the preset $($this.Header)" -logtype Libvlc -loglevel 2
             Remove-EQPreset -PresetName $this.Header -thisApp $thisApp -EQPreset_Profile_Directory $thisApp.config.EQPreset_Profile_Directory -synchash $synchash -Verboselog:$thisApp.Config.Verbose_logging
             if(-not [string]::IsNullOrEmpty($thisapp.config.EQ_Selected_Preset) -and $thisApp.Config.EQ_Selected_Preset -eq $this.Header){
               Add-Member -InputObject $thisapp.config -Name 'EQ_Selected_Preset' -Value '' -MemberType NoteProperty -Force
               $synchash.EQ_Timer.start()
-            }         
+            }
             if($synchash.CurrentSaveMenuItem.Header -eq "Save as '$($this.Header)'"){
               $synchash.CurrentSaveMenuItem.Header = ""
               $synchash.CurrentSaveMenuItem.Height = '0'
@@ -276,7 +239,7 @@ Function Initialize-EQ
             }
             [void]$synchash.DeletePreset_Button.items.remove($this)
           }else{
-            write-ezlogs "User did not wish to delete the preset $($this.Header)" -warning -showtime -logtype Libvlc
+            write-ezlogs "User did not wish to delete the preset $($this.Header)" -warning -logtype Libvlc
           }
         }else{
           foreach($item in $synchash.LoadPreset_Button.items){
@@ -289,9 +252,9 @@ Function Initialize-EQ
           Add-Member -InputObject $thisapp.config -Name 'EQ_Selected_Preset' -Value $this.Header -MemberType NoteProperty -Force
           $synchash.EQ_Timer.start()
           foreach($preset in $thisapp.config.EQ_Presets){
-            if($synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton" -and $synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton".IsChecked){                   
+            if($synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton" -and $synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton".IsChecked){
               $synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton".IsChecked = $false
-            }              
+            }
           }
           if($synchash.EQ_CustomPreset1_ToggleButton.isChecked){
             $synchash.EQ_CustomPreset1_ToggleButton.isChecked = $false
@@ -311,29 +274,29 @@ Function Initialize-EQ
           }
         }
       }catch{
-        write-ezlogs "An exception occurred in EQPreset_Menuitem_Command routed event" -showtime -catcherror $_
+        write-ezlogs "An exception occurred in EQPreset_Menuitem_Command routed event" -catcherror $_
       }
     }
 
     [System.Windows.RoutedEventHandler]$Synchash.EQPreset_Button_Command = {
       param($sender)
-      try{                
+      try{
         if($sender -eq $synchash.EQ_CustomPreset1_ToggleButton -or $sender -eq $synchash.EQ_CustomPreset2_ToggleButton){
-          $Selected_Preset = ($thisapp.config.Custom_EQ_Presets | Where-Object {$_.Preset_Name -eq $sender.tag})                 
+          $Selected_Preset = ($thisapp.config.Custom_EQ_Presets | Where-Object {$_.Preset_Name -eq $sender.tag})
         }else{
-          $Selected_Preset = $thisapp.config.EQ_Presets | Where-Object {$_.Preset_ID -ne $null -and $_.Preset_ID -eq $sender.Uid}
-        }        
-        if($sender.IsChecked -and $Selected_Preset.Preset_Name){   
+          $Selected_Preset = $thisapp.config.EQ_Presets | Where-Object {$null -ne $_.Preset_ID -and $_.Preset_ID -eq $sender.Uid}
+        }
+        if($sender.IsChecked -and $Selected_Preset.Preset_Name){
           $thisApp.Config.EQ_Selected_Preset = $Selected_Preset.Preset_Name
         }else{
           $sender.IsChecked = $false
           $thisApp.Config.EQ_Selected_Preset = ''
         }
         foreach($preset in $thisapp.config.EQ_Presets){
-          if($synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton" -and $synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton" -ne $sender){                  
+          if($synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton" -and $synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton" -ne $sender){
             $synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton".IsChecked = $false
-          }              
-        }           
+          }
+        }
         $synchash.EQ_Timer.start()
         if($sender -eq $synchash.EQ_CustomPreset1_ToggleButton){
           $synchash.EQ_CustomPreset2_ToggleButton.isChecked = $false
@@ -356,7 +319,7 @@ Function Initialize-EQ
           $synchash.CurrentSaveMenuItem.Uid = $Null
         }
       }catch{
-        write-ezlogs "An exception occurred in EQPreset_Menuitem_Command routed event" -showtime -catcherror $_
+        write-ezlogs "An exception occurred in EQPreset_Menuitem_Command routed event" -catcherror $_
       }
     }
 
@@ -365,7 +328,7 @@ Function Initialize-EQ
       $Equalizer = [LibVLCSharp.Equalizer]::new()
     }else{
       $Equalizer = [LibVLCSharp.Shared.Equalizer]::new()
-    }   
+    }
     $bandcount = $Equalizer.BandCount
     $preset_Count = $Equalizer.PresetCount
     [System.Collections.Generic.List[EQ_Preset]]$eq_presets = 0..$preset_Count | & { process {
@@ -375,7 +338,7 @@ Function Initialize-EQ
             'Preset_Name' = $PresetName
             'Preset_ID' = $_
           }
-          if($thisApp.Config.Dev_mode){write-ezlogs "Adding Fixed Preset Name: $($PresetName) - Preset ID: $($_)" -showtime -logtype Libvlc -Dev_mode}
+          if($thisApp.Config.Dev_mode){write-ezlogs "Adding Fixed Preset Name: $($PresetName) - Preset ID: $($_)" -logtype Libvlc -Dev_mode}
           if($synchash."EQ_Preset_$($_)_ToggleButton"){
             [void]$synchash."EQ_Preset_$($_)_ToggleButton".AddHandler([System.Windows.Controls.Button]::ClickEvent,$Synchash.EQPreset_Button_Command)
             if($thisApp.Config.EQ_Selected_Preset -eq $PresetName){
@@ -386,17 +349,16 @@ Function Initialize-EQ
         }
     }}
     $thisapp.config.EQ_Presets = $eq_presets
-  
+
     #eq Bands
     try{
       [System.Collections.Generic.List[EQ_Band]]$eq_bands = 0..$bandcount | & { process {
           $bandvalue = $null
-          if($Equalizer.BandFrequency($_) -ne -1){  
+          if($Equalizer.BandFrequency($_) -ne -1){
             if($thisapp.Config.EQ_Bands){
               $Configured_Band = $thisapp.Config.EQ_Bands[$thisapp.Config.EQ_Bands.Band_ID.IndexOf($_)]
             }
-            #$Configured_Band = $thisapp.Config.EQ_Bands | where {$_.Band_ID -eq $band_id}
-            if($Configured_Band.Band_Value  -ne $null){$bandvalue = $Configured_Band.Band_Value}else{$bandvalue = 0}
+            if($null -ne $Configured_Band.Band_Value){$bandvalue = $Configured_Band.Band_Value}else{$bandvalue = 0}
             $newRow = [EQ_Band]@{
               'Band' = $Equalizer.BandFrequency($_)
               'Band_Name' = "EQ_$($_)"
@@ -404,46 +366,45 @@ Function Initialize-EQ
               'Band_Value' = $bandvalue
             }
             $frequency_name = $null
-            if($synchash."EQ_$($_)"){            
+            if($synchash."EQ_$($_)"){
               if($($Equalizer.BandFrequency($_)  / 1000) -lt 1){$frequency_name = "$([math]::Round($Equalizer.BandFrequency($_),1))Hz"}else{$frequency_name = "$([math]::Round($Equalizer.BandFrequency($_)/1000,1))kHz"}
-              write-ezlogs "Setting band frequency $frequency_name" -showtime -logtype Libvlc -loglevel 4
+              write-ezlogs "Setting band frequency $frequency_name" -logtype Libvlc -LogLevel 0 -Verboselog:$Verboselog
               $synchash."EQ_$($_)_Text".text = $frequency_name
-              if($Configured_Band.Band_Value -ne $null){
+              if($null -ne $Configured_Band.Band_Value){
                 $synchash."EQ_$($_)".Value = $Configured_Band.Band_Value
               }else{
                 $synchash."EQ_$($_)".Value = 0
               }
               $synchash."EQ_$($_)".Add_ValueChanged({
                   $Band_to_modify = $thisapp.Config.EQ_Bands[$thisapp.Config.EQ_Bands.Band_Name.IndexOf($this.Name)]
-                  #$Band_to_modify = $thisapp.config.EQ_Bands | where {$_.Band_Name -eq $this.Name}
-                  if($Band_to_modify){ 
+                  if($Band_to_modify){
                     try{
                       $Band_to_modify.Band_Value = $this.Value
-                      if($synchash.Equalizer -ne $null){
+                      if($null -ne $synchash.Equalizer){
                         $current_band_value = $synchash.Equalizer.Amp($Band_to_modify.Band_ID)
                         if($current_band_value -ne $this.Value){
-                          [void]$synchash.Equalizer.SetAmp($this.Value,$Band_to_modify.Band_ID)                    
-                          write-ezlogs "| Set New value $($this.Value)" -showtime -logtype Libvlc -loglevel 4 
-                          if($thisapp.config.Enable_EQ){[void]$synchash.vlc.SetEqualizer($synchash.Equalizer)}                     
+                          [void]$synchash.Equalizer.SetAmp($this.Value,$Band_to_modify.Band_ID)
+                          write-ezlogs "| Set New value $($this.Value)" -logtype Libvlc -LogLevel 0 -Verboselog:$Verboselog
+                          if($thisapp.config.Enable_EQ){[void]$synchash.vlc.SetEqualizer($synchash.Equalizer)}
                         }
                       }else{
-                        write-ezlogs "| Creating new Equalizer" -loglevel 2 -logtype Libvlc
+                        write-ezlogs "| Creating new Equalizer" -logtype Libvlc
                         if($thisApp.Config.Libvlc_Version -eq '4'){
                           $synchash.Equalizer = [LibVLCSharp.Equalizer]::new()
                         }else{
                           $synchash.Equalizer = [LibVLCSharp.Shared.Equalizer]::new()
-                        } 
-                        $synchash.Equalizer.SetAmp($this.Value,$Band_to_modify.Band_ID)                      
-                        if($thisapp.Config.EQ_Preamp -ne $null){
+                        }
+                        $synchash.Equalizer.SetAmp($this.Value,$Band_to_modify.Band_ID)
+                        if($null -ne $thisapp.Config.EQ_Preamp){
                           [void]$synchash.Equalizer.SetPreamp($thisapp.Config.EQ_Preamp)
                         }else{
                           [void]$synchash.Equalizer.SetPreamp(12)
                           $synchash.Preamp_Slider.value = 12
                           $thisApp.Config.EQ_Preamp = 12
-                        }                 
+                        }
                         if($thisapp.config.Enable_EQ -and $synchash.vlc){
                           [void]$synchash.vlc.SetEqualizer($synchash.Equalizer)
-                        }                  
+                        }
                       }
                       if($synchash.current_soundout.PlaybackState -eq 'Playing' -and $synchash.Current_VirtualEQ.WaveFormat){
                         try{
@@ -451,15 +412,15 @@ Function Initialize-EQ
                         }catch{
                           $Cscore_Band = $Null
                         }
-                        if($Cscore_Band -ne $Null){
+                        if($Null -ne $Cscore_Band){
                           $Cscore_Band.AverageGainDB = $this.Value
                         }
                       }
                     }catch{
-                      write-ezlogs "An exception occurred changing value in $($synchash."EQ_$($_)") to $($this.Value)" -showtime -catcherror $_
+                      write-ezlogs "An exception occurred changing value in $($synchash."EQ_$($_)") to $($this.Value)" -catcherror $_
                     }
                   }
-              })       
+              })
             }
             $newRow
           }
@@ -470,7 +431,7 @@ Function Initialize-EQ
     }
     if($synchash.Enable_EQ_Toggle){
       if($thisapp.config.Enable_EQ){
-        $synchash.Enable_EQ_Toggle.isChecked = $true     
+        $synchash.Enable_EQ_Toggle.isChecked = $true
         if($thisApp.Config.Current_Theme.PrimaryAccentColor){
           $synchash.Audio_Flyout.Tag = [System.Windows.Media.SolidColorBrush]::new($thisApp.Config.Current_Theme.PrimaryAccentColor.ToString())
         }else{
@@ -482,28 +443,28 @@ Function Initialize-EQ
       }
       $synchash.Enable_EQ_Toggle.Add_Checked({
           try{
-            if($synchash.Enable_EQ_Toggle.isChecked){    
+            if($synchash.Enable_EQ_Toggle.isChecked){
               if(!$synchash.Equalizer){
-                write-ezlogs "| Creating new Equalizer" -loglevel 2 -logtype Libvlc
+                write-ezlogs "| Creating new Equalizer" -logtype Libvlc
                 if($thisApp.Config.Libvlc_Version -eq '4'){
                   $synchash.Equalizer = [LibVLCSharp.Equalizer]::new()
                 }else{
                   $synchash.Equalizer = [LibVLCSharp.Shared.Equalizer]::new()
-                } 
-              }      
+                }
+              }
               if($synchash.vlc){
-                if($thisapp.Config.EQ_Preamp -ne $null){
-                  write-ezlogs "| Setting Preamp to: $($thisapp.Config.EQ_Preamp)" -loglevel 2 -logtype Libvlc
+                if($null -ne $thisapp.Config.EQ_Preamp){
+                  write-ezlogs "| Setting Preamp to: $($thisapp.Config.EQ_Preamp)" -logtype Libvlc
                   $synchash.Preamp_Slider.value = $thisapp.Config.EQ_Preamp
                   [void]$synchash.Equalizer.SetPreamp($thisapp.Config.EQ_Preamp)
                 }else{
-                  write-ezlogs "| Setting Preamp to default: 12" -loglevel 2 -logtype Libvlc
+                  write-ezlogs "| Setting Preamp to default: 12" -logtype Libvlc
                   [void]$synchash.Equalizer.SetPreamp(12)
-                }              
+                }
                 [void]$synchash.vlc.SetEqualizer($synchash.Equalizer)
               }else{
-                write-ezlogs "Libvlc is not initialized!" -showtime -warning -logtype Libvlc
-              }                      
+                write-ezlogs "Libvlc is not initialized!" -warning -logtype Libvlc
+              }
               if($thisApp.Config.Current_Theme.PrimaryAccentColor){
                 $synchash.Audio_Flyout.Tag = [System.Windows.Media.SolidColorBrush]::new($thisApp.Config.Current_Theme.PrimaryAccentColor.ToString())
               }else{
@@ -514,20 +475,20 @@ Function Initialize-EQ
               }elseif($thisapp.Config.Import_Spotify_Media -and $thisApp.Config.Use_Spicetify -and ($synchash.Spicetify.is_playing -or $synchash.Spotify_Status -eq 'Playing')){
                 Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchash -start -wait -Startlibvlc -ProcessName 'spotify.exe'
               }
-              write-ezlogs ">>>> EQ Enabled - Preamp: $($synchash.Equalizer.preamp)" -showtime -logtype Libvlc -loglevel 2
+              write-ezlogs ">>>> EQ Enabled - Preamp: $($synchash.Equalizer.preamp)" -logtype Libvlc
               $thisapp.config.Enable_EQ = $true
-            }      
+            }
           }catch{
-            write-ezlogs "An exception occurred in Enable_EQ_Toggle Checked event" -showtime -catcherror $_
+            write-ezlogs "An exception occurred in Enable_EQ_Toggle Checked event" -catcherror $_
           }
       })
       $synchash.Enable_EQ_Toggle.Add_UnChecked({
           try{
             if($synchash.vlc){
-              write-ezlogs ">>>> Disabling EQ!" -showtime -logtype Libvlc
+              write-ezlogs ">>>> Disabling EQ!" -logtype Libvlc
               [void]$synchash.vlc.UnsetEqualizer()
             }else{
-              write-ezlogs "Libvlc is not initialized!" -showtime -warning -logtype Libvlc
+              write-ezlogs "Libvlc is not initialized!" -warning -logtype Libvlc
             }
             $thisapp.config.Enable_EQ = $false
             if($synchash.Audio_Flyout){
@@ -535,25 +496,25 @@ Function Initialize-EQ
             }
             if($synchash.Enable_EQ2Pass_Toggle.isChecked){
               $synchash.Enable_EQ2Pass_Toggle.isChecked  = $false
-            }                                  
+            }
             if((($synchash.Spotify_WebPlayer_title -and $thisApp.Config.Spotify_WebPlayer) -or ($synchash.WebPlayer_State -ne 0 -and $synchash.Youtube_WebPlayer_title))){
               write-ezlogs "| Stopping ApplicationAudioDevice routing for EQ"
               Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchash -stop -Stoplibvlc
             }
             if($synchash.Equalizer){
-              write-ezlogs "| Disposing Equalizer" -showtime -logtype Libvlc
+              write-ezlogs "| Disposing Equalizer" -logtype Libvlc
               $synchash.Equalizer.Dispose()
               $synchash.Equalizer = $Null
-            }                              
+            }
           }catch{
-            write-ezlogs "An exception occurred in Enable_EQ_Toggle UnChecked event" -showtime -catcherror $_
+            write-ezlogs "An exception occurred in Enable_EQ_Toggle UnChecked event" -catcherror $_
           }
       })
     }
     if($synchash.EQPower_ToggleButton){
       $synchash.EQPower_ToggleButton.add_Click({
           Param($sender)
-          try{               
+          try{
             write-ezlogs ">>>> Closing Audio Options Viewer" -showtime
             $synchash.AudioButton_ToggleButton.isChecked = $false
             $synchash.AudioOptions_Viewer.close()
@@ -570,30 +531,30 @@ Function Initialize-EQ
       }
       $synchash.Enable_EQWeb_Toggle.Add_Checked({
           try{
-            if($synchash.Enable_EQWeb_Toggle.isChecked -and $thisapp.config.Enable_WebEQSupport){    
+            if($synchash.Enable_EQWeb_Toggle.isChecked -and $thisapp.config.Enable_WebEQSupport){
               if(!$synchash.vlc.isPlaying -and ($synchash.current_soundout.PlaybackState -ne 'Playing' -and !$synchash.Current_VirtualEQ.WaveFormat)){
                 try{
                   Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchash -start -Startlibvlc
                 }catch{
                   write-ezlogs "An exception occurred enabling EQ for Cscore virtual EQ - current soundout: $($synchash.current_soundout | out-string)" -catcherror $_
                 }
-              }                      
-            }      
+              }
+            }
           }catch{
-            write-ezlogs "An exception occurred in Enable_EQWeb_Toggle Checked event" -showtime -catcherror $_
+            write-ezlogs "An exception occurred in Enable_EQWeb_Toggle Checked event" -catcherror $_
           }
       })
       $synchash.Enable_EQWeb_Toggle.Add_UnChecked({
-          try{ 
+          try{
             if(($synchash.current_soundout.PlaybackState -eq 'Playing' -and $synchash.Current_VirtualEQ.WaveFormat)){
               try{
                 Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchash -stop
               }catch{
                 write-ezlogs "An exception occurred disabling EQ for Cscore virtual EQ - current soundout: $($synchash.current_soundout | out-string)" -catcherror $_
               }
-            }                                      
+            }
           }catch{
-            write-ezlogs "An exception occurred in Enable_EQWeb_Toggle Checked event" -showtime -catcherror $_
+            write-ezlogs "An exception occurred in Enable_EQWeb_Toggle Checked event" -catcherror $_
           }
       })
     }
@@ -610,9 +571,9 @@ Function Initialize-EQ
 
       $synchash.Enable_EQ2Pass_Toggle.add_Click({
           try{
-            Update-LibVLC -thisApp $thisApp -synchash $synchash                 
+            Update-LibVLC -thisApp $thisApp -synchash $synchash
           }catch{
-            write-ezlogs "An exception occurred in Enable_EQ2Pass_Toggle addclick event" -showtime -catcherror $_
+            write-ezlogs "An exception occurred in Enable_EQ2Pass_Toggle addclick event" -catcherror $_
           }
       })
     }
@@ -624,13 +585,13 @@ Function Initialize-EQ
         $synchash = $synchash
         $thisApp = $thisApp
         $result = Open-FileDialog -Title "Select the EQ Preset file you wish to import"  -filter "XML Files (*.xml)|*.xml" -CheckPathExists
-        if([system.io.file]::Exists($result)){ 
+        if([system.io.file]::Exists($result)){
           $Preset_Directory_Path = [System.IO.Path]::Combine($thisApp.config.EQPreset_Profile_Directory,'Custom-EQPresets')
           if(![System.IO.Directory]::Exists($Preset_Directory_Path)){
             [void][System.IO.Directory]::CreateDirectory($Preset_Directory_Path)
           }
           $EQ_Preset = Import-Clixml $result
-          $Preset_Path_Name = "$($EQ_Preset.Preset_Name)-Custom-EQPreset.xml" 
+          $Preset_Path_Name = "$($EQ_Preset.Preset_Name)-Custom-EQPreset.xml"
           $Import_Preset_Destination_path =  [System.IO.Path]::Combine($Preset_Directory_Path,$Preset_Path_Name)
           if($synchash.AudioOptions_Viewer.isVisible){
             $window = $synchash.AudioOptions_Viewer
@@ -638,20 +599,21 @@ Function Initialize-EQ
             $window = $synchash.Window
           }
           if([string]::IsNullOrEmpty($EQ_Preset.Preset_ID)){
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Ok'
             $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-            $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($window,"Invalid Preset!","The file ($($result)) does not appear to be a valid EQ Preset that can be imported",$okandCancel,$Button_Settings)
+            $Null = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($window,"Invalid Preset!","The file ($($result)) does not appear to be a valid EQ Preset that can be imported",$okandCancel,$Button_Settings)
             return
           }elseif($thisapp.config.EQ_Presets.Preset_Name -contains  $EQ_Preset.Preset_Name){
-            write-ezlogs "The imported preset name ($($EQ_Preset.Preset_Name)) matches the name of one of the Fixed Presets. Fixed Presets cannot be overwritten. Sorry!" -showtime -warning -logtype Libvlc
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            write-ezlogs "The imported preset name ($($EQ_Preset.Preset_Name)) matches the name of one of the Fixed Presets. Fixed Presets cannot be overwritten. Sorry!" -warning -logtype Libvlc
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Ok'
             $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-            $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($window,"Invalid Preset Name!","The preset name you provided ($($EQ_Preset.Preset_Name)) matches the name of one of the Fixed Presets.`n`nFixed Presets cannot be overwritten (Sorry!), please provided a different name",$okandCancel,$Button_Settings) 
-            return 
-          }elseif($thisapp.config.Custom_EQ_Presets.Preset_Name -contains $EQ_Preset.Preset_Name -or [system.io.file]::Exists($Import_Preset_Destination_path)){       
-            $CustomDialog_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new() 
+            $Null = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($window,"Invalid Preset Name!","The preset name you provided ($($EQ_Preset.Preset_Name)) matches the name of one of the Fixed Presets.`n`nFixed Presets cannot be overwritten (Sorry!), please provided a different name",$okandCancel,$Button_Settings)
+            return
+          }elseif($thisapp.config.Custom_EQ_Presets.Preset_Name -contains $EQ_Preset.Preset_Name -or [system.io.file]::Exists($Import_Preset_Destination_path)){
+            #TODO: Replace this with Show-CustomWindow
+            $CustomDialog_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $CustomDialog_Settings.ColorScheme = [MahApps.Metro.Controls.Dialogs.MetroDialogColorScheme]::Theme
             $CustomDialog_Settings.OwnerCanCloseWithDialog = $true
             $synchash.EQCustomDialog  = [MahApps.Metro.Controls.Dialogs.CustomDialog]::new($window)
@@ -663,8 +625,8 @@ Function Initialize-EQ
             $synchash.EQCustomDialog.AddChild($synchash.EQDialogWindow)
             $synchash.DialogButtonClose.Content = "No"
             $synchash.DialogButtonClose.add_click({
-                try{               
-                  write-ezlogs "User did not wish to overwrite playlist $($EQ_Preset.Preset_Name)" -showtime -logtype Libvlc
+                try{
+                  write-ezlogs "User did not wish to overwrite playlist $($EQ_Preset.Preset_Name)" -logtype Libvlc
                   $synchash.EQDialogBrowse_Result = $null
                   [void]$synchash.Remove('EQDialogBrowse_Result')
                   $synchash.SetEQasActive = $false
@@ -681,13 +643,12 @@ Function Initialize-EQ
             $synchash.Dialog_WebURL_Label.content = ""
             $synchash.Dialog_WebURL_Label.Visibility = 'Hidden'
             $synchash.Dialog_Browse_Label.content = ""
-            $synchash.Dialog_Browse_Label.Visibility = 'Hidden'                      
+            $synchash.Dialog_Browse_Label.Visibility = 'Hidden'
             $synchash.Dialog_Remote_URL_Textbox.MaxWidth="0"
             $synchash.Dialog_Local_File_Textbox.MaxWidth="0"
             $synchash.Dialog_Remote_URL_Textbox.Margin="82,0,0,0"
             $synchash.Dialog_Browse_Label.Visibility = 'Hidden'
             $synchash.Dialog_Browse_Label.Width="0"
-            #$synchash.Dialog_RootStackPanel.Width = "500"
             $synchash.Dialog_Local_File_Textbox.Margin="10,0,0,0"
             $synchash.Dialog_Title_Label.content = "A custom preset with name ($($EQ_Preset.Preset_Name)) already exists. Do you wish to overwrite it with the imported preset?"
             $synchash.Dialog_Add_Button.Content="Yes"
@@ -696,22 +657,22 @@ Function Initialize-EQ
             $synchash.Dialog_Separator_Label.Content = ''
             $synchash.EQDialogBrowse_Result = $result
             $synchash.Dialog_Add_Button.add_click({
-                try{               
+                try{
                   $EQ_Preset = Import-Clixml $synchash.EQDialogBrowse_Result
-                  $Preset_Path_Name = "$($EQ_Preset.Preset_Name)-Custom-EQPreset.xml" 
+                  $Preset_Path_Name = "$($EQ_Preset.Preset_Name)-Custom-EQPreset.xml"
                   $Import_Preset_Destination_path =  [System.IO.Path]::Combine($Preset_Directory_Path,$Preset_Path_Name)
-                  write-ezlogs "User wished to overwrite EQ Preset: $($EQ_Preset.Preset_Name)" -showtime -logtype Libvlc
+                  write-ezlogs "User wished to overwrite EQ Preset: $($EQ_Preset.Preset_Name)" -logtype Libvlc
                   $synchash.SetEQasActive = $synchash.Dialog_StartPlayback_Toggle.isOn
                   $synchash.EQCustomDialog.RequestCloseAsync()
-                  write-ezlogs ">>>> Saving imported preset to $Import_Preset_Destination_path" -showtime -logtype Libvlc
+                  write-ezlogs ">>>> Saving imported preset to $Import_Preset_Destination_path" -logtype Libvlc
                   $new_preset = Add-EQPreset -PresetName $($EQ_Preset.Preset_Name) -EQ_Bands $($EQ_Preset.EQ_Bands) -EQ_Preamp $EQ_Preset.EQ_Preamp -thisApp $thisapp -synchash $synchash -verboselog -Apply_EQ
                   $synchash.EQCustomDialog = $Null
-                  if($xaml){                   
+                  if($xaml){
                     $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | & { process {
                         if($synchash.keys -contains "$($_.Name)"){
                           write-ezlogs "| Removing key from synchash: $($_.Name)" -logtype Libvlc
-                          [void]$synchash.Remove($_.Name)                    
-                        }  
+                          [void]$synchash.Remove($_.Name)
+                        }
                     }}
                   }
                   $synchash.EQDialogBrowse_Result = $null
@@ -720,16 +681,16 @@ Function Initialize-EQ
                   write-ezlogs "An exception occurred in DialogButtonClose.add_click" -catcherror $_
                 }
             })
-            $dialog = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowMetroDialogAsync($window, $synchash.EQCustomDialog, $CustomDialog_Settings)
+            $null = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowMetroDialogAsync($window, $synchash.EQCustomDialog, $CustomDialog_Settings)
           }else{
-            write-ezlogs ">>>> Saving imported preset to $Import_Preset_Destination_path" -showtime -logtype Libvlc
+            write-ezlogs ">>>> Saving imported preset to $Import_Preset_Destination_path" -logtype Libvlc
             $new_preset = Add-EQPreset -PresetName $($EQ_Preset.Preset_Name) -EQ_Bands $($EQ_Preset.EQ_Bands) -EQ_Preamp $EQ_Preset.EQ_Preamp -thisApp $thisapp -synchash $synchash -verboselog -Apply_EQ
           }
         }else{
-          write-ezlogs "No valid EQ Preset to import was found at $($result)" -showtime -warning
-        }                          
+          write-ezlogs "No valid EQ Preset to import was found at $($result)" -warning
+        }
       }catch{
-        write-ezlogs "An exception occurred in EQPreset_Import_Command routed event" -showtime -catcherror $_
+        write-ezlogs "An exception occurred in EQPreset_Import_Command routed event" -catcherror $_
       }
     }
 
@@ -751,24 +712,20 @@ Function Initialize-EQ
       $menu_separator.OpacityMask = $synchash.Window.TryFindResource('SeparatorGradient')
       if($synchash.LoadPreset_Button.items -notcontains $menu_separator){
         [void]$synchash.LoadPreset_Button.items.add($menu_separator)
-      }      
+      }
     }
     #custom EQ presets
-    if($synchash.LoadPreset){    
+    if($synchash.LoadPreset){
       $synchash.LoadPreset.Source = "$($thisApp.Config.Current_Folder)\Resources\Skins\MonitorButton.png"
-      #$synchash.LoadPreset.Source.Freeze()
     }
-    if($synchash.SavePreset){    
+    if($synchash.SavePreset){
       $synchash.SavePreset.Source = "$($thisApp.Config.Current_Folder)\Resources\Skins\MonitorButton.png"
-      #$synchash.SavePreset.Source.Freeze()
     }
-    if($synchash.DeletePreset){    
+    if($synchash.DeletePreset){
       $synchash.DeletePreset.Source = "$($thisApp.Config.Current_Folder)\Resources\Skins\MonitorButton.png"
-      #$synchash.DeletePreset.Source.Freeze()
     }
-    if($synchash.ResetEQ){    
+    if($synchash.ResetEQ){
       $synchash.ResetEQ.Source = "$($thisApp.Config.Current_Folder)\Resources\Skins\MonitorButton.png"
-      #$synchash.ResetEQ.Source.Freeze()
     }
     if($thisapp.config.Custom_EQ_Presets.Preset_Name -and $synchash.LoadPreset_Button){
       foreach($preset in $thisapp.config.Custom_EQ_Presets){
@@ -781,7 +738,7 @@ Function Initialize-EQ
           }
           [void]$Menuitem.RemoveHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Synchash.EQPreset_Menuitem_Command)
           [void]$Menuitem.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Synchash.EQPreset_Menuitem_Command)
-          [void]$synchash.LoadPreset_Button.items.add($Menuitem)     
+          [void]$synchash.LoadPreset_Button.items.add($Menuitem)
         }
         if($synchash.DeletePreset_Button.items.header -notcontains $preset.Preset_Name -and $preset.Preset_Name -ne 'Memory 1' -and $preset.Preset_Name -ne 'Memory 2' -and $thisapp.config.EQ_Presets.Preset_Name -notcontains $preset.Preset_Name){
           $deleteMenuitem = [System.Windows.Controls.MenuItem]::new()
@@ -789,8 +746,8 @@ Function Initialize-EQ
           $deleteMenuitem.Header = $preset.Preset_Name
           [void]$deleteMenuitem.RemoveHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Synchash.EQPreset_Menuitem_Command)
           [void]$deleteMenuitem.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Synchash.EQPreset_Menuitem_Command)
-          [void]$synchash.DeletePreset_Button.items.add($deleteMenuitem) 
-        }                  
+          [void]$synchash.DeletePreset_Button.items.add($deleteMenuitem)
+        }
       }
       if($synchash.EQ_CustomPreset1_ToggleButton -and $synchash.EQ_CustomPreset2_ToggleButton){
         if($thisapp.config.EQ_Selected_Preset -eq 'Memory 1'){
@@ -807,12 +764,12 @@ Function Initialize-EQ
       try{
         $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
         $pattern = "[$illegal]"
-        write-ezlogs "SaveMenuItem command: $($sender.header)" -showtime -logtype Libvlc
+        write-ezlogs "SaveMenuItem command: $($sender.header)" -logtype Libvlc
         if($sender -eq $synchash.CurrentSaveMenuItem -and [string]::IsNullOrEmpty($sender.header)){
-          write-ezlogs "CurrentSaveMenuItem is currently empty" -showtime -warning -logtype Libvlc
+          write-ezlogs "CurrentSaveMenuItem is currently empty" -warning -logtype Libvlc
           return
-        }elseif($sender -eq $synchash.CurrentSaveMenuItem){          
-          $PresetName = ($thisapp.config.Custom_EQ_Presets | where {$_.Preset_ID -eq $synchash.CurrentSaveMenuItem.Uid}).Preset_Name
+        }elseif($sender -eq $synchash.CurrentSaveMenuItem){
+          $PresetName = ($thisapp.config.Custom_EQ_Presets | Where-Object {$_.Preset_ID -eq $synchash.CurrentSaveMenuItem.Uid}).Preset_Name
         }elseif($sender.Header -eq 'Save to Memory 1'){
           $PresetName = 'Memory 1'
         }elseif($sender.Header -eq 'Save to Memory 2'){
@@ -823,38 +780,38 @@ Function Initialize-EQ
           }else{
             $window = $synchash.Window
           }
-          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()        
+          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
           $PresetName = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalInputExternal($window,'Save Preset','Enter the name for the new preset',$Button_Settings)
           [int]$character_Count = ($PresetName | measure-object -Character -ErrorAction SilentlyContinue).Characters
           if([int]$character_Count -ge 75){
-            write-ezlogs "Preset name too long! ($character_Count characters). Please choose a name 75 characters or less " -showtime -warning -logtype Libvlc
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            write-ezlogs "Preset name too long! ($character_Count characters). Please choose a name 75 characters or less " -warning -logtype Libvlc
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Ok'
             $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-            $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($window,"Invalid Preset Name!","The Preset name is too long! (Count: $character_Count). Please choose a name with 100 characters or less",$okandCancel,$Button_Settings) 
-            return 
+            $Null = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($window,"Invalid Preset Name!","The Preset name is too long! (Count: $character_Count). Please choose a name with 100 characters or less",$okandCancel,$Button_Settings)
+            return
           }
           if($PresetName -match $pattern){
-            write-ezlogs "The preset name you provided ($PresetName) contains one or more invalid characters, please provided a different name" -showtime -warning -logtype Libvlc
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            write-ezlogs "The preset name you provided ($PresetName) contains one or more invalid characters, please provided a different name" -warning -logtype Libvlc
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Ok'
             $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-            $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($window,"Invalid Preset Name!","The preset name you provided ($PresetName) contains one or more invalid characters, please provided a different name",$okandCancel,$Button_Settings) 
-            return          
-          }   
+            $Null = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($window,"Invalid Preset Name!","The preset name you provided ($PresetName) contains one or more invalid characters, please provided a different name",$okandCancel,$Button_Settings)
+            return
+          }
           if($thisapp.config.EQ_Presets.Preset_Name -contains $PresetName){
-            write-ezlogs "The preset name provided ($PresetName) matches the name of one of the Fixed Presets. Fixed Presets cannot be overwritten" -showtime -warning -logtype Libvlc
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
+            write-ezlogs "The preset name provided ($PresetName) matches the name of one of the Fixed Presets. Fixed Presets cannot be overwritten" -warning -logtype Libvlc
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Ok'
             $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-            $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($window,"Invalid Preset Name!","The preset name you provided ($PresetName) matches the name of one of the Fixed Presets.`n`nFixed Presets cannot be overwritten, please provided a different name",$okandCancel,$Button_Settings) 
-            return        
-          }             
-        }       
-        if(-not [string]::IsNullOrEmpty($PresetName)){      
-          write-ezlogs ">>>> Saving new Preset $PresetName" -showtime -color cyan -logtype Libvlc -loglevel 2
-          $current_EQ_Bands = $thisapp.Config.EQ_Bands        
-          $new_preset = Add-EQPreset -PresetName $PresetName -EQ_Bands $current_EQ_Bands -EQ_Preamp $thisApp.Config.EQ_Preamp -thisApp $thisapp -synchash $synchash -verboselog 
+            $Null = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($window,"Invalid Preset Name!","The preset name you provided ($PresetName) matches the name of one of the Fixed Presets.`n`nFixed Presets cannot be overwritten, please provided a different name",$okandCancel,$Button_Settings)
+            return
+          }
+        }
+        if(-not [string]::IsNullOrEmpty($PresetName)){
+          write-ezlogs ">>>> Saving new Preset $PresetName" -color cyan -logtype Libvlc -loglevel 2
+          $current_EQ_Bands = $thisapp.Config.EQ_Bands
+          $new_preset = Add-EQPreset -PresetName $PresetName -EQ_Bands $current_EQ_Bands -EQ_Preamp $thisApp.Config.EQ_Preamp -thisApp $thisapp -synchash $synchash -verboselog
           if($new_preset.Preset_Name){
             if($synchash.LoadPreset_Button.items.header -notcontains $new_preset.Preset_Name -and $new_preset.Preset_Name -ne 'Memory 1' -and $new_preset.Preset_Name -ne 'Memory 2' -and $thisapp.config.EQ_Presets.Preset_Name -notcontains $new_preset.Preset_Name){
               $Menuitem = [System.Windows.Controls.MenuItem]::new()
@@ -865,10 +822,10 @@ Function Initialize-EQ
               }
               [void]$Menuitem.RemoveHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Synchash.EQPreset_Menuitem_Command)
               [void]$Menuitem.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Synchash.EQPreset_Menuitem_Command)
-              [void]$synchash.LoadPreset_Button.items.add($Menuitem)      
+              [void]$synchash.LoadPreset_Button.items.add($Menuitem)
             }else{
-              write-ezlogs "An existing preset with name $PresetName already exists -- updated to current values" -showtime -warning -logtype Libvlc
-            } 
+              write-ezlogs "An existing preset with name $PresetName already exists -- updated to current values" -warning -logtype Libvlc
+            }
             foreach($item in $synchash.LoadPreset_Button.items){
               if($item.Header -eq $new_preset.Preset_Name){
                 $item.isChecked = $true
@@ -877,9 +834,9 @@ Function Initialize-EQ
               }
             }
             foreach($presets in $thisapp.config.EQ_Presets){
-              if($synchash."EQ_Preset_$($presets.Preset_ID)_ToggleButton" -and $synchash."EQ_Preset_$($presets.Preset_ID)_ToggleButton".isChecked -and $presets.Preset_ID -ne $new_preset.Preset_ID){      
-                $synchash."EQ_Preset_$($presets.Preset_ID)_ToggleButton".IsChecked = $false                           
-              }              
+              if($synchash."EQ_Preset_$($presets.Preset_ID)_ToggleButton" -and $synchash."EQ_Preset_$($presets.Preset_ID)_ToggleButton".isChecked -and $presets.Preset_ID -ne $new_preset.Preset_ID){
+                $synchash."EQ_Preset_$($presets.Preset_ID)_ToggleButton".IsChecked = $false
+              }
             }
             if($synchash."EQ_Preset_$($new_preset.Preset_ID)_ToggleButton" -and !$synchash."EQ_Preset_$($new_preset.Preset_ID)_ToggleButton".isChecked){
               $synchash."EQ_Preset_$($new_preset.Preset_ID)_ToggleButton".isChecked = $true
@@ -888,7 +845,7 @@ Function Initialize-EQ
               if(-not [string]::IsNullOrEmpty($thisapp.config.EQ_Selected_Preset)){
                 $synchash.CurrentSaveMenuItem.Header = "Save as '$($thisapp.config.EQ_Selected_Preset)'"
                 $synchash.CurrentSaveMenuItem.Height = [double]::NaN
-                $synchash.CurrentSaveMenuItem.Uid = ($thisapp.config.Custom_EQ_Presets | where {$_.Preset_Name -eq $thisapp.config.EQ_Selected_Preset}).Preset_ID
+                $synchash.CurrentSaveMenuItem.Uid = ($thisapp.config.Custom_EQ_Presets | Where-Object {$_.Preset_Name -eq $thisapp.config.EQ_Selected_Preset}).Preset_ID
               }else{
                 $synchash.CurrentSaveMenuItem.Header = ""
                 $synchash.CurrentSaveMenuItem.Height = '0'
@@ -901,24 +858,24 @@ Function Initialize-EQ
             }elseif($new_preset.Preset_Name -eq 'Memory 2'){
               $synchash.EQ_CustomPreset2_ToggleButton.isChecked = $true
               $synchash.EQ_CustomPreset1_ToggleButton.isChecked = $false
-            }                                         
+            }
           }else{
-            write-ezlogs 'Unable to add Preset as no preset profile was returned when adding!' -showtime -warning -logtype Libvlc
-          }          
+            write-ezlogs 'Unable to add Preset as no preset profile was returned when adding!' -warning -logtype Libvlc
+          }
         }else{
-          write-ezlogs "The provided name is not valid or was not provided! -- $PresetName" -showtime -warning -logtype Libvlc
+          write-ezlogs "The provided name is not valid or was not provided! -- $PresetName" -warning -logtype Libvlc
         }
       }catch{
-        write-ezlogs "An exception occurred in EQPreset_Menuitem_Command routed event" -showtime -catcherror $_
+        write-ezlogs "An exception occurred in EQPreset_Menuitem_Command routed event" -catcherror $_
       }
     }
 
     if($synchash.SavePreset_Button){
       $synchash.CurrentSaveMenuItem = [System.Windows.Controls.MenuItem]::new()
       $synchash.CurrentSaveMenuItem.IsCheckable = $false
-      if(-not [string]::IsNullOrEmpty($thisapp.config.EQ_Selected_Preset) -and $thisapp.config.EQ_Presets.Preset_Name -notcontains $thisapp.config.EQ_Selected_Preset){        
+      if(-not [string]::IsNullOrEmpty($thisapp.config.EQ_Selected_Preset) -and $thisapp.config.EQ_Presets.Preset_Name -notcontains $thisapp.config.EQ_Selected_Preset){
         $synchash.CurrentSaveMenuItem.Header = "Save as '$($thisapp.config.EQ_Selected_Preset)'"
-        $synchash.CurrentSaveMenuItem.Uid = ($thisapp.config.Custom_EQ_Presets | where {$_.Preset_Name -eq $thisapp.config.EQ_Selected_Preset}).Preset_ID
+        $synchash.CurrentSaveMenuItem.Uid = ($thisapp.config.Custom_EQ_Presets | Where-Object {$_.Preset_Name -eq $thisapp.config.EQ_Selected_Preset}).Preset_ID
       }else{
         $synchash.CurrentSaveMenuItem.Height = '0'
       }
@@ -944,8 +901,8 @@ Function Initialize-EQ
       $synchash.SaveMenuItem_Memory2 = [System.Windows.Controls.MenuItem]::new()
       $synchash.SaveMenuItem_Memory2.IsCheckable = $false
       $synchash.SaveMenuItem_Memory2.Header = "Save to Memory 2"
-      [void]$synchash.SaveMenuItem_Memory2.RemoveHandler([System.Windows.Controls.MenuItem]::ClickEvent,$synchash.SaveMenuItem_Command) 
-      [void]$synchash.SaveMenuItem_Memory2.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$synchash.SaveMenuItem_Command)   
+      [void]$synchash.SaveMenuItem_Memory2.RemoveHandler([System.Windows.Controls.MenuItem]::ClickEvent,$synchash.SaveMenuItem_Command)
+      [void]$synchash.SaveMenuItem_Memory2.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$synchash.SaveMenuItem_Command)
       if($synchash.SavePreset_Button.items -notcontains $synchash.SaveMenuItem_Memory2){
         [void]$synchash.SavePreset_Button.items.add($synchash.SaveMenuItem_Memory2)
       }
@@ -958,7 +915,7 @@ Function Initialize-EQ
         [void]$synchash.SavePreset_Button.items.add($synchash.SaveMenuItem_New)
       }
     }
-    
+
     #Memory Preset Buttons
     if($synchash.EQ_CustomPreset1_ToggleButton){
       $synchash.EQ_CustomPreset1_ToggleButton.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$Synchash.EQPreset_Button_Command)
@@ -976,10 +933,10 @@ Function Initialize-EQ
           try{
             Add-Member -InputObject $thisapp.config -Name 'EQ_Selected_Preset' -Value '' -MemberType NoteProperty -Force
             foreach($preset in $thisapp.config.EQ_Presets){
-              if($synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton" -and $synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton".isChecked){                  
+              if($synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton" -and $synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton".isChecked){
                 $synchash."EQ_Preset_$($preset.Preset_ID)_ToggleButton".IsChecked = $false
-              }              
-            }               
+              }
+            }
             foreach($item in $synchash.LoadPreset_Button.items){
               if($item.isChecked){
                 $item.isChecked = $false
@@ -998,7 +955,7 @@ Function Initialize-EQ
             $thisApp.Config.EQ_Preamp = 12
             $synchash.EQ_Timer.start()
           }catch{
-            write-ezlogs "An exception occurred in ResetEQ_Button.add_click" -showtime -catcherror $_
+            write-ezlogs "An exception occurred in ResetEQ_Button.add_click" -catcherror $_
           }
       })
     }
@@ -1007,7 +964,7 @@ Function Initialize-EQ
     if($synchash.Preamp_Slider_Background){
       $EQ_Slider_Back = "$($thisApp.Config.current_folder)\Resources\Skins\Audio\EQ_Slider_Back.png"
       if([system.io.file]::Exists($EQ_Slider_Back)){
-        $stream_image = [System.IO.File]::OpenRead($EQ_Slider_Back) 
+        $stream_image = [System.IO.File]::OpenRead($EQ_Slider_Back)
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -1036,182 +993,167 @@ Function Initialize-EQ
         $synchash.Preamp_Slider.Value = $thisapp.Config.EQ_Preamp
       }else{
         $synchash.Preamp_Slider.Value = 12
-      } 
+      }
       $synchash.Preamp_Slider.Add_ValueChanged({
           try{
-            write-ezlogs ">>>> Changing Pre-amp value to $($this.value)" -loglevel 2 -logtype Libvlc         
+            write-ezlogs ">>>> Changing Pre-amp value to $($this.value)" -logtype Libvlc
             $thisapp.Config.EQ_Preamp = $this.value
-            if($synchash.Equalizer -ne $null -and $thisapp.config.Enable_EQ){
-              write-ezlogs "| Setting EQ Pre-amp value to $($this.value)" -loglevel 2 -logtype Libvlc
+            if($null -ne $synchash.Equalizer -and $thisapp.config.Enable_EQ){
+              write-ezlogs "| Setting EQ Pre-amp value to $($this.value)" -logtype Libvlc
               [void]$synchash.Equalizer.SetPreamp($this.value)
-            }  
-            if($thisapp.config.Enable_EQ -and $synchash.vlc -and $synchash.Equalizer -ne $Null){
+            }
+            if($thisapp.config.Enable_EQ -and $synchash.vlc -and $Null -ne $synchash.Equalizer){
               [void]$synchash.vlc.SetEqualizer($synchash.Equalizer)
-            } 
+            }
             $Preset_to_Modify = ($thisapp.config.Custom_EQ_Presets | Where-Object {$_.Preset_Name -eq $thisapp.config.EQ_Selected_Preset})
-            if([System.IO.File]::Exists($Preset_to_Modify.Preset_Path)){  
+            if([System.IO.File]::Exists($Preset_to_Modify.Preset_Path)){
               $preset = Import-Clixml $Preset_to_Modify.Preset_Path
             }
             if($preset){
               Add-Member -InputObject $preset -Name 'EQ_Preamp' -Value $this.value -MemberType NoteProperty -Force
-            }      
+            }
           }catch{
-            write-ezlogs "An exception occurred setting the EQ preamp to $($this.value)" -showtime -catcherror $_
+            write-ezlogs "An exception occurred setting the EQ preamp to $($this.value)" -catcherror $_
           }
       })
     }
-    
+
     $synchash.EQ_Timer = [System.Windows.Threading.DispatcherTimer]::new()
     $synchash.EQ_Timer.Add_tick({
         try{
-          write-ezlogs '[EQ_Timer] >>>> Updating EQ settings' -showtime -loglevel 2 -logtype Libvlc
-          $EQ_Selected_Preset = $thisapp.config.EQ_Selected_Preset 
+          write-ezlogs '[EQ_Timer] >>>> Updating EQ settings' -logtype Libvlc -LogLevel 0 -Verboselog:$Verboselog
+          $EQ_Selected_Preset = $thisapp.config.EQ_Selected_Preset
           if(-not [string]::IsNullOrEmpty($EQ_Selected_Preset)){
             $new_preset = ($thisapp.config.EQ_Presets | Where-Object {$_.preset_name -eq $EQ_Selected_Preset})
             if(!$new_preset){$new_preset = ($thisapp.config.Custom_EQ_Presets | Where-Object {$_.preset_name -eq $EQ_Selected_Preset})}
-            #Add-Member -InputObject $thisapp.config -Name 'EQ_Selected_Preset' -Value $EQ_Selected_Preset -MemberType NoteProperty -Force
-            if([System.IO.File]::Exists($new_preset.Preset_Path)){        
-              write-ezlogs ">>>> Getting custom EQ Preset profile: $($new_preset.Preset_Path)" -showtime -loglevel 2 -logtype Libvlc
+            if([System.IO.File]::Exists($new_preset.Preset_Path)){
+              write-ezlogs ">>>> Getting custom EQ Preset profile: $($new_preset.Preset_Path)" -logtype Libvlc
               $preset = Import-Clixml $new_preset.Preset_Path
               if($preset.EQ_Bands){
                 if(!$synchash.Equalizer -and $thisapp.config.Enable_EQ){
-                  write-ezlogs "| Creating new Equalizer" -loglevel 2 -logtype Libvlc
+                  write-ezlogs "| Creating new Equalizer" -logtype Libvlc
                   if($thisApp.Config.Libvlc_Version -eq '4'){
                     $synchash.Equalizer = [LibVLCSharp.Equalizer]::new()
                   }else{
                     $synchash.Equalizer = [LibVLCSharp.Shared.Equalizer]::new()
-                  } 
+                  }
                 }
                 if($synchash.AudioOptions_Viewer.isVisible -and $this.tag -eq 'StartMedia'){
-                  write-ezlogs "| AudioOptions_Viewer is open, setting EQ Preamp to preamp slider value: $($synchash.Preamp_Slider.value)" -loglevel 2 -logtype Libvlc
+                  write-ezlogs "| AudioOptions_Viewer is open, setting EQ Preamp to preamp slider value: $($synchash.Preamp_Slider.value)" -logtype Libvlc
                   $EQ_Preamp = $synchash.Preamp_Slider.value
                 }elseif(-not [string]::IsNullOrEmpty($preset.EQ_Preamp)){
-                  write-ezlogs "| Setting Preamp from Preset profile $($preset.EQ_Preamp)" -loglevel 2 -logtype Libvlc
+                  write-ezlogs "| Setting Preamp from Preset profile: $($preset.EQ_Preamp)" -logtype Libvlc -LogLevel 0 -Verboselog:$Verboselog
                   $EQ_Preamp = $preset.EQ_Preamp
                 }elseif(-not [string]::IsNullOrEmpty($thisApp.Config.EQ_Preamp)){
-                  write-ezlogs "| Setting Preamp from config preamp $($preset.EQ_Preamp)" -loglevel 2 -logtype Libvlc
-                  $EQ_Preamp = $thisApp.Config.EQ_Preamp                 
+                  write-ezlogs "| Setting Preamp from config preamp: $($preset.EQ_Preamp)" -logtype Libvlc -LogLevel 0 -Verboselog:$Verboselog
+                  $EQ_Preamp = $thisApp.Config.EQ_Preamp
                 }else{
-                  write-ezlogs "| Setting Preamp to default: 12" -loglevel 2 -logtype Libvlc
+                  write-ezlogs "| Setting Preamp to default: 12" -logtype Libvlc
                   $EQ_Preamp = 12
-                }                                       
-                Add-Member -InputObject $thisapp.config -Name 'EQ_Preamp' -Value $EQ_Preamp -MemberType NoteProperty -Force
+                }
+                $thisApp.Config.EQ_Preamp = $EQ_Preamp
                 if(!$synchash.AudioOptions_Viewer.isVisible -or $this.tag -ne 'StartMedia'){
                   $synchash.Preamp_Slider.value = $EQ_Preamp
-                }                
+                }
                 foreach($band in $preset.EQ_Bands){
                   if(!$synchash.AudioOptions_Viewer.isVisible -or $this.tag -ne 'StartMedia'){
                     $synchash."$($band.Band_Name)".Value = $band.Band_value
-                  }                    
-                  if($synchash."$($band.Band_Name)".Value -ne $null -and $synchash.Equalizer){
-                    [void]$synchash.Equalizer.SetAmp($synchash."$($band.Band_Name)".Value,$band.Band_ID) 
-                    write-ezlogs "| Applying EQ_$($band.Band_ID) to Value: $($band.Band_Value)" -showtime -loglevel 2 -logtype Libvlc -Dev_mode
-                  }                         
-                }               
+                  }
+                  if($null -ne $synchash."$($band.Band_Name)".Value -and $synchash.Equalizer){
+                    [void]$synchash.Equalizer.SetAmp($synchash."$($band.Band_Name)".Value,$band.Band_ID)
+                    write-ezlogs "| Applying EQ_$($band.Band_ID) to Value: $($band.Band_Value)" -logtype Libvlc -Dev_mode
+                  }
+                }
                 if($synchash.Equalizer -and $thisapp.config.Enable_EQ -and $synchash.vlc){
-                  write-ezlogs "| Applying EQ to VLC" -loglevel 2 -logtype Libvlc
+                  write-ezlogs "| Applying EQ to VLC" -logtype Libvlc -LogLevel 0 -Verboselog:$Verboselog
                   [void]$synchash.Equalizer.SetPreamp($synchash.Preamp_Slider.value)
                   [void]$synchash.vlc.SetEqualizer($synchash.Equalizer)
                 }
               }
-            }elseif($new_preset.preset_id -ne $null){
-              write-ezlogs ">>>> Setting Equalizer to preset $($new_preset.preset_name) - ID $($new_preset.preset_id)" -showtime -loglevel 2 -logtype Libvlc
+            }elseif($null -ne $new_preset.preset_id){
+              write-ezlogs ">>>> Setting Equalizer to preset: $($new_preset.preset_name) - ID: $($new_preset.preset_id)" -logtype Libvlc
               try{
                 if($thisapp.config.Enable_EQ){
-                  write-ezlogs "| Creating new Equalizer" -loglevel 2 -logtype Libvlc
+                  write-ezlogs "| Creating new Equalizer" -logtype Libvlc
                   if($thisApp.Config.Libvlc_Version -eq '4'){
                     $synchash.Equalizer = [LibVLCSharp.Equalizer]::new($new_preset.preset_id)
                   }else{
                     $synchash.Equalizer = [LibVLCSharp.Shared.Equalizer]::new($new_preset.preset_id)
                   }
-                }              
-                if($thisapp.Config.EQ_Preamp -ne $null){
+                }
+                if($null -ne $thisapp.Config.EQ_Preamp){
                   $EQ_Preamp = $thisapp.Config.EQ_Preamp
                   if($thisapp.config.Enable_EQ -and $synchash.Equalizer){
                     $synchash.Equalizer.SetPreamp($thisapp.Config.EQ_Preamp)
-                  }                 
+                  }
                 }else{
                   $EQ_Preamp = 12
-                } 
+                }
                 if($synchash.Preamp_Slider){
                   $synchash.Preamp_Slider.value = $EQ_Preamp
-                }                          
-                write-ezlogs "| Preamp: $($synchash.Equalizer.preamp)" -showtime -loglevel 2 -logtype Libvlc
+                }
+                write-ezlogs "| Preamp: $($synchash.Equalizer.preamp)" -logtype Libvlc
                 if($thisapp.config.Enable_EQ -and $synchash.VLC -and $synchash.Equalizer){
-                  write-ezlogs "| Applying EQ to VLC" -loglevel 2 -logtype Libvlc
+                  write-ezlogs "| Applying EQ to VLC" -logtype Libvlc
                   [void]$synchash.vlc.SetEqualizer($synchash.Equalizer)
                   $synchash.Equalizer.SetPreamp($EQ_Preamp)
                 }else{
-                  write-ezlogs "[EQ_Timer] EQ is not enabled or VLC is not initialized" -showtime -warning -logtype Libvlc
+                  write-ezlogs "[EQ_Timer] EQ is not enabled or VLC is not initialized" -warning -logtype Libvlc
                 }
                 foreach($band in $thisapp.config.EQ_Bands){
                   if($synchash.Equalizer){
                     $band.Band_value = $synchash.Equalizer.Amp($band.Band_ID)
                   }
-                  if($synchash."$($band.Band_Name)" -and $band.Band_value -ne $null){$synchash."$($band.Band_Name)".Value = $band.Band_value}
+                  if($synchash."$($band.Band_Name)" -and $null -ne $band.Band_value){$synchash."$($band.Band_Name)".Value = $band.Band_value}
                 }
               }catch{
-                write-ezlogs "[EQ_Timer] An exception occurred attempting to apply new Equalizer preset $($new_preset.preset_name) with id $($new_preset.preset_id)" -showtime -catcherror $_
+                write-ezlogs "[EQ_Timer] An exception occurred attempting to apply new Equalizer preset $($new_preset.preset_name) with id $($new_preset.preset_id)" -catcherror $_
                 $this.Stop()
               }
-            }else{write-ezlogs "[EQ_Timer] Unable to determine eq preset $($new_preset | Out-String)" -showtime -warning -logtype Libvlc}        
+            }else{write-ezlogs "[EQ_Timer] Unable to determine eq preset $($new_preset | Out-String)" -warning -logtype Libvlc}
           }else{
-            Add-Member -InputObject $thisapp.config -Name 'EQ_Selected_Preset' -Value '' -MemberType NoteProperty -Force
-            write-ezlogs '[EQ_Timer] >>>> Resetting Equalizer to default 0 values' -showtime -loglevel 2 -logtype Libvlc
-            try{ 
-              if($synchash.vlc -and $thisapp.config.Enable_EQ){ 
-                write-ezlogs "| Creating new Equalizer" -loglevel 2 -logtype Libvlc              
+            $thisApp.Config.EQ_Selected_Preset = ''
+            write-ezlogs '[EQ_Timer] >>>> Resetting Equalizer to default 0 values' -logtype Libvlc
+            try{
+              if($synchash.vlc -and $thisapp.config.Enable_EQ){
+                write-ezlogs "| Creating new Equalizer" -logtype Libvlc
                 if($thisApp.Config.Libvlc_Version -eq '4'){
                   $synchash.Equalizer = [LibVLCSharp.Equalizer]::new()
                 }else{
-                  $synchash.Equalizer = [LibVLCSharp.Shared.Equalizer]::new()                 
+                  $synchash.Equalizer = [LibVLCSharp.Shared.Equalizer]::new()
                 }
-                if($thisapp.Config.EQ_Preamp -ne $null){
+                if($null -ne $thisapp.Config.EQ_Preamp){
                   [void]$synchash.Equalizer.SetPreamp($thisapp.Config.EQ_Preamp)
-                  $synchash.Preamp_Slider.Value = $thisapp.Config.EQ_Preamp 
+                  $synchash.Preamp_Slider.Value = $thisapp.Config.EQ_Preamp
                 }else{
                   [void]$synchash.Equalizer.SetPreamp(12)
-                  $synchash.Preamp_Slider.Value = 12 
+                  $synchash.Preamp_Slider.Value = 12
                 }
-                [void]$synchash.vlc.SetEqualizer($synchash.Equalizer)                      
+                [void]$synchash.vlc.SetEqualizer($synchash.Equalizer)
               }elseif($synchash.vlc){
-                write-ezlogs "| Setting Pre-amp to default (12) and unsetting Eq from VLC" -loglevel 2 -logtype Libvlc
+                write-ezlogs "| Setting Pre-amp to default (12) and unsetting Eq from VLC" -logtype Libvlc
                 if($synchash.Equalizer){
                   [void]$synchash.Equalizer.SetPreamp(12)
-                }               
-                [void]$synchash.vlc.UnsetEqualizer() 
-              }                                                    
+                }
+                [void]$synchash.vlc.UnsetEqualizer()
+              }
               foreach($band in $thisapp.config.EQ_Bands){
                 if($synchash."$($band.Band_Name)"){$synchash."$($band.Band_Name)".Value = $band.Band_Value}
-              }            
+              }
             }catch{
-              write-ezlogs 'An exception occurred resetting Equalizer to default values' -showtime -catcherror $_
+              write-ezlogs 'An exception occurred resetting Equalizer to default values' -catcherror $_
               $this.Stop()
-            }        
-          }          
+            }
+          }
           $this.Stop()
         }catch{
-          write-ezlogs "An exception occurred in EQ_Timer" -showtime -catcherror $_
+          write-ezlogs "An exception occurred in EQ_Timer" -catcherror $_
         }finally{
           $this.tag = $Null
           $this.Stop()
         }
     })
-  
-    #apply eq
-    <#    if($Equalizer -ne $null -and $thisapp.config.Enable_EQ){
-        if(!$synchash.Equalizer){
-        write-ezlogs "| Creating new Equalizer" -loglevel 2 -logtype Libvlc
-        $synchash.Equalizer = $Equalizer
-        }
-        if($synchash.vlc){
-        $null = $synchash.vlc.SetEqualizer($synchash.Equalizer)
-        }else{
-        write-ezlogs "[Initialize-EQ] Unable to set Equalizer, libvlc is not initialized!" -showtime -warning -logtype Libvlc
-        $synchash.Equalizer.dispose()
-        $synchash.Equalizer = $Null
-        }
-    }#>
+
     if($Equalizer){
       [void]$Equalizer.dispose()
       $Equalizer = $Null
@@ -1234,34 +1176,35 @@ Function Initialize-EQ
     #Initialization complete, dispose vlc until we need it again
     if($synchash.vlc -and !$Startup_Playback){
       if($synchash.vlc -is [System.IDisposable]){
-        write-ezlogs "| Disposing vlc - Startup_Playback: $Startup_Playback" -logtype Libvlc
+        write-ezlogs "| Disposing vlc - Startup_Playback: $Startup_Playback" -logtype Libvlc -LogLevel 0 -Verboselog:$Verboselog
         $synchash.vlc.dispose()
         $synchash.vlc = $Null
       }
       if($synchash.VideoView.MediaPlayer -is [System.IDisposable]){
-        write-ezlogs "| Disposing VideoView.MediaPlayer" -logtype Libvlc
+        write-ezlogs "| Disposing VideoView.MediaPlayer" -logtype Libvlc -LogLevel 0 -Verboselog:$Verboselog
         $synchash.VideoView.MediaPlayer.dispose()
         $synchash.VideoView.MediaPlayer = $Null
       }
       if($synchash.libvlc -is [System.IDisposable]){
-        write-ezlogs ">>>> Disposing Libvlc" -logtype Libvlc
+        write-ezlogs ">>>> Disposing Libvlc" -logtype Libvlc -LogLevel 0 -Verboselog:$Verboselog
         $synchash.libvlc.dispose()
         $synchash.libvlc = $Null
-      }     
+      }
     }
   }catch{
-    write-ezlogs 'An exception occurred An exception occurred initializing libvlc EQ' -showtime -catcherror $_
+    write-ezlogs 'An exception occurred An exception occurred initializing libvlc EQ' -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize-EQ Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-LibVLC Function
 #----------------------------------------------
 Function Update-LibVLC
 {
+  [CmdletBinding(SupportsShouldProcess = $true)]
   param (
     $synchash,
     $thisApp,
@@ -1272,46 +1215,44 @@ Function Update-LibVLC
     [switch]$UpdateVideoView,
     [switch]$UpdateMainPlayer,
     [switch]$UnRegisterEvents,
-    [switch]$ForceVisualizations
-  ) 
+    [switch]$ForceVisualizations,
+    [switch]$Verboselog
+  )
   try{
     if($thisApp.Config.Use_Visualizations -and $thisApp.Config.Use_Visualizations_Video){
-      $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mpeg|(?i)mpg4|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))') 
+      $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mpeg|(?i)mpg4|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))')
     }else{
-      $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))') 
+      $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))')
     }
-    if($synchash.Equalizer -ne $null -or $force){
+    if($null -ne $synchash.Equalizer -or $force){
       if($synchash.timer.isEnabled){
         $synchash.timer.stop()
-      }    
+      }
       if($UpdateStreamlink -and $synchash.streamlink -and -not [string]::IsNullOrEmpty($synchash.current_playing_Media.id) -and (Get-Process Streamlink*)){
-        write-ezlogs "Playback from Streamlink content requires restarting, executing start_media_timer" -warning -logtype Libvlc -loglevel 2
+        write-ezlogs "Playback from Streamlink content requires restarting, executing start_media_timer" -warning -logtype Libvlc
         $synchash.Start_media = $synchash.current_playing_Media
         if($EnableCasting){
           $synchash.start_media_timer.tag = 'EnableCasting'
         }
-        $synchash.start_media_timer.start()  
+        $synchash.start_media_timer.start()
         return
       }
       $currenttime = $synchash.VLC.Time
       if(!$media_link){
         $media_link = $synchash.vlc.media.Mrl
-      }      
+      }
       $synchash.VLC_IsPlaying_State = $false
       if($UnRegisterEvents){
         Add-VLCRegisteredEvents -synchash $synchash -thisApp $thisApp -UnregisterOnly
-      }      
+      }
       if($synchash.libvlc -is [System.IDisposable]){
-        write-ezlogs ">>>> Disposing Libvlc" -logtype Libvlc -loglevel 2
+        write-ezlogs ">>>> Disposing Libvlc" -logtype Libvlc
         $synchash.libvlc.dispose()
         $synchash.libvlc = $Null
       }
-      if($synchash.vlc.state -eq 'Playing' -or $synchash.vlc.state -match 'Paused'){                  
+      if($synchash.vlc.state -eq 'Playing' -or $synchash.vlc.state -match 'Paused'){
         write-ezlogs ">>>> Stopping Libvlc media player" -warning -logtype Libvlc
         [void]$synchash.vlc.stop()
-        #$synchash.vlc.dispose()
-        #$synchash.vlc = $Null
-        #$synchash.VideoView.MediaPlayer = $Null
       }
       #Recreate new libvlc/media player instance with args
       $vlcArgs = [System.Collections.Generic.List[String]]::new()
@@ -1319,40 +1260,38 @@ Function Update-LibVLC
       [void]$vlcArgs.add("--logfile=$($thisapp.config.Vlc_Log_file)")
       [void]$vlcArgs.add("--mouse-events")
       [void]$vlcArgs.add("--log-verbose=$($thisapp.config.Vlc_Verbose_logging)")
-      [void]$vlcArgs.add("--logmode=text")      
+      [void]$vlcArgs.add("--logmode=text")
       [void]$vlcArgs.add("--osd")
-      #TODO: Make global libvlc gain configurable
       [double]$doubleref = [double]::NaN
       if(-not [string]::IsNullOrEmpty($thisApp.Config.Libvlc_Global_Gain) -and [double]::TryParse($thisApp.Config.Libvlc_Global_Gain,[ref]$doubleref)){
-        write-ezlogs "| Applying custom global gain for libvlc: $($thisApp.Config.Libvlc_Global_Gain)" -logtype Libvlc -loglevel 2
+        write-ezlogs "| Applying custom global gain for libvlc: $($thisApp.Config.Libvlc_Global_Gain)" -logtype Libvlc
         [void]$vlcArgs.add("--gain=$($thisApp.Config.Libvlc_Global_Gain)")
       }else{
-        write-ezlogs "| Setting default global gain for libvlc: 4" -logtype Libvlc -loglevel 2
+        write-ezlogs "| Setting default global gain for libvlc: 4" -logtype Libvlc
         [void]$vlcArgs.add('--gain=4.0') #Set gain to 4 which is default that VLC uses but for some reason libvlc does not
       }
       #TODO: Add Video Output Module to config
-      #Use opengl for windows with tone mapping set to 2 (Reinhard) to properly play HDR video on SDR displays         
+      #Use opengl for windows with tone mapping set to 2 (Reinhard) to properly play HDR video on SDR displays
       #[void]($vlcArgs.add("--vout=glwin32"))
       #[void]($vlcArgs.add('--tone-mapping=2'))
 
-      #[void]$vlcArgs.add("--volume-step=2.56")
       #Sadly no audio filters work with libvlc, all are overridden by the built-in EQ - hopefully libvlc 4 will fix
       if($thisapp.config.Enable_EQ2Pass){
         [void]$vlcArgs.add("--equalizer-2pass")
-        write-ezlogs ">>>> EQ2Pass Enabled" -showtime -logtype Libvlc -loglevel 2
+        write-ezlogs ">>>> EQ2Pass Enabled" -logtype Libvlc
       }
       if($Loopback_Recording){
         [void]$vlcArgs.add("--wasapi-loopback")
       }
-      #TODO: 
-      if($thisApp.Config.Use_Visualizations -and (($media_link -match $audio_media_pattern) -or $ForceVisualizations)){ 
+
+      if($thisApp.Config.Use_Visualizations -and (($media_link -match $audio_media_pattern) -or $ForceVisualizations)){
         [void]$vlcArgs.add("--video-on-top")
         #[void]$vlcArgs.add("--spect-show-original")
         if($thisApp.Config.Current_Visualization -eq 'ProjectM' -and [system.io.Directory]::Exists("$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop")){
           if($synchash.VideoViewFloat.IsInitialized){
-            write-ezlogs "| Using VideoViewFloat window for ProjectM dimensions" -logtype Libvlc
+            write-ezlogs "| Using VideoViewFloat window for ProjectM dimensions" -logtype Libvlc -LogLevel 0 -Verboselog:$Verboselog
             $ProjectMWidth = $synchash.VideoViewFloat.ActualWidth
-            $ProjectMHeight = $synchash.VideoViewFloat.ActualHeight            
+            $ProjectMHeight = $synchash.VideoViewFloat.ActualHeight
           }else{
             $ProjectMWidth = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Width - 10
             $ProjectMHeight = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Height - 10
@@ -1360,53 +1299,50 @@ Function Update-LibVLC
           [void]$vlcArgs.add("--audio-visual=projectm")
           [void]$vlcArgs.add("--projectm-preset-path=$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop")
           [void]$vlcArgs.add("--projectm-width=$($ProjectMWidth)")
-          [void]$vlcArgs.add("--projectm-height=$($ProjectMHeight)")   
-          #[void]$vlcArgs.add("--keyboard-events")  
+          [void]$vlcArgs.add("--projectm-height=$($ProjectMHeight)")
           if($thisApp.Config.Use_Visualizations_Video){
             [void]$vlcArgs.add("--no-video")
           }
           #[void]$vlcArgs.add("--embedded-video")
+          #TODO: Make Projectm settings configurable in settings UI
           [void]$vlcArgs.add("--projectm-meshx=64")
           [void]$vlcArgs.add("--projectm-meshy=48")
           [void]$vlcArgs.add("--projectm-texture-size=1024")
-          #[void]$vlcArgs.add("--effect-list=spectrum")
-          #[void]$vlcArgs.add("--projectm-title-font=$($thisApp.Config.Current_Folder)\Resources\Fonts\digital-7.ttf")      
-          #[void]$vlcArgs.add("--vout=glwin32")
-          #[void]$vlcArgs.add('--tone-mapping=2')
+          #[void]$vlcArgs.add("--projectm-title-font=$($thisApp.Config.Current_Folder)\Resources\Fonts\digital-7.ttf")
           write-ezlogs "| Enabling ProjectM Visualizations: --projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`" --projectm-width=$($ProjectMWidth) --projectm-height=$($ProjectMHeight)" -Warning -logtype Libvlc
-        }elseif($thisApp.Config.Current_Visualization -eq 'Spectrum'){    
-          write-ezlogs "Enabling Visualization plugin '$($thisApp.Config.Current_Visualization)'" -showtime -logtype Libvlc -loglevel 2       
+        }elseif($thisApp.Config.Current_Visualization -eq 'Spectrum'){
+          write-ezlogs "Enabling Visualization plugin '$($thisApp.Config.Current_Visualization)'" -logtype Libvlc
           [void]$vlcArgs.add("--audio-visual=Visual")
           [void]$vlcArgs.add("--effect-list=spectrum")
         }else{
-          write-ezlogs "Enabling Visualization plugin '$($thisApp.Config.Current_Visualization)'" -showtime -logtype Libvlc -loglevel 2  
+          write-ezlogs "Enabling Visualization plugin '$($thisApp.Config.Current_Visualization)'" -logtype Libvlc
           [void]$vlcArgs.add("--audio-visual=$($thisApp.Config.Current_Visualization)")
           [void]$vlcArgs.add("--effect-list=spectrum")
-        }                                                                         
-      }else{  
-        [void]$vlcArgs.add("--file-caching=1000")  
-        write-ezlogs "| New libvlc instance, no visualization, (file-caching: 1000)" -showtime -loglevel 2 -logtype Libvlc      
+        }
+      }else{
+        [void]$vlcArgs.add("--file-caching=1000")
+        write-ezlogs "| New libvlc instance, no visualization, (file-caching: 1000)" -logtype Libvlc
       }
       if(-not [string]::IsNullOrEmpty($thisapp.config.vlc_Arguments)){
         try{
-          $thisapp.config.vlc_Arguments -split ',' | & { process {               
+          $thisapp.config.vlc_Arguments -split ',' | & { process {
               if([regex]::Escape($_) -match '--' -and $vlcArgs -notcontains $_){
-                write-ezlogs "| Adding custom Libvlc option: $($_)" -loglevel 2 -logtype Libvlc
+                write-ezlogs "| Adding custom Libvlc option: $($_)" -logtype Libvlc
                 [void]($vlcArgs.add("$($_)"))
               }else{
-                write-ezlogs "Cannot add custom libvlc option $($_) - it does not meet the required format or is already added!" -warning -loglevel 2 -logtype Libvlc
+                write-ezlogs "Cannot add custom libvlc option $($_) - it does not meet the required format or is already added!" -warning -logtype Libvlc
               }
           }}
         }catch{
           write-ezlogs "An exception occurred processing custom VLC arguments" -catcherror $_
-        }          
+        }
       }
       [String[]]$libvlc_arguments = $vlcArgs | & { process {
-          if($thisApp.Config.Dev_mode){write-ezlogs "| Applying Libvlc option: $($_)" -loglevel 2 -logtype Libvlc -Dev_mode} 
+          if($thisApp.Config.Dev_mode){write-ezlogs "| Applying Libvlc option: $($_)" -logtype Libvlc -Dev_mode}
           if([regex]::Escape($_) -match '--'){
             $_
           }else{
-            write-ezlogs "Cannot apply libvlc option $($_) - it does not meet the required format!" -warning -loglevel 2 -logtype Libvlc
+            write-ezlogs "Cannot apply libvlc option $($_) - it does not meet the required format!" -warning -logtype Libvlc
           }
       }}
       try{
@@ -1427,7 +1363,6 @@ Function Update-LibVLC
         }
         if((($synchash.Spotify_WebPlayer_title -and $thisApp.Config.Spotify_WebPlayer) -or ($synchash.WebPlayer_State -ne 0 -and $synchash.Youtube_WebPlayer_title))){
           Set-ApplicationAudioDevice -thisApp $thisApp -synchash $synchash -start -wait -Startlibvlc
-          #$synchash.Update_Libvlc_Status = $false
           return
         }
         if($thisApp.Config.Enable_EQ -and $media_link -eq 'dshow://'){
@@ -1439,7 +1374,7 @@ Function Update-LibVLC
           }else{
             write-ezlogs "Unable to find required 'CABLE Input (VB-Audio Virtual Cable)' audio device - cannot enable EQ for Webplayer!" -AlertUI -Warning -synchash $synchash
           }
-        }          
+        }
       }catch{
         write-ezlogs "An exception occurred setting Libvlc user agent" -catcherror $_
       }finally{
@@ -1454,20 +1389,19 @@ Function Update-LibVLC
       }
       if($UpdateMainPlayer){
         Update-MainPlayer -synchash $synchash -thisApp $thisApp -Now_Playing_Label "PLAYING" -New_MediaPlayer -media_link $media_link -Saved_Media_Progress $currenttime -start_media_Timer -EnableCasting:$EnableCasting
-      }    
-      #$synchash.Update_Libvlc_Status = $false
+      }
     }else{
-      write-ezlogs "Equalizer has not been initialized..unable to enable 2pass" -showtime -warning
-    } 
+      write-ezlogs "Equalizer has not been initialized..unable to enable 2pass" -warning
+    }
   }catch{
-    write-ezlogs 'An exception occurred An exception in Update-LibVLC' -showtime -catcherror $_
-  } 
+    write-ezlogs 'An exception occurred An exception in Update-LibVLC' -catcherror $_
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-LibVLC Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Close-LibVLC Function
 #----------------------------------------------
 Function Close-LibVLC
@@ -1476,21 +1410,21 @@ Function Close-LibVLC
     $synchash,
     $thisApp,
     [switch]$DisposeMediaPlayer
-  ) 
+  )
   try{
     if($synchash.vlc -is [System.IDisposable] -and $DisposeMediaPlayer){
       $synchash.vlc.dispose()
     }
-    if($synchash.libvlc){
-      write-ezlogs ">>>> Disposing Libvlc" -loglevel 2
+    if($synchash.libvlc -is [System.IDisposable]){
+      write-ezlogs ">>>> Disposing Libvlc"
       $synchash.libvlc.dispose()
       $synchash.libvlc = $Null
     }
   }catch{
-    write-ezlogs 'An exception occurred An exception in Close-LibVLC' -showtime -catcherror $_
-  } 
+    write-ezlogs 'An exception occurred An exception in Close-LibVLC' -catcherror $_
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Close-LibVLC Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Initialize-Vlc','Initialize-EQ','Update-LibVLC','Close-LibVLC')

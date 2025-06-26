@@ -2,14 +2,14 @@
     .Name
     Initialize-WebView2
 
-    .Version 
+    .Version
     0.1.0
 
     .SYNOPSIS
     Creates and initializes controls and events for WebView2
 
     .DESCRIPTION
-       
+
     .Configurable Variables
 
     .Requirements
@@ -26,14 +26,14 @@
 
 #>
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-Webview2Extensions
 #----------------------------------------------
 Function Get-Webview2Extensions{
   [CmdletBinding()]
   Param(
     $thisApp
-  ) 
+  )
   try{
     $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
     $pattern = "[™₀$illegal]"
@@ -72,15 +72,15 @@ Function Get-Webview2Extensions{
         }
         $name = ([Regex]::Replace($name, $pattern, '')).trim()
         if('Webview2_Extensions' -in $thisApp.Config.psobject.properties.name -and $Path -notin $thisApp.Config.Webview2_Extensions.path){
-          $Size = '16'      
+          $Size = '16'
           if($json.icons.$Size){
             $Icon = "$($Path)\$($json.icons.$Size)"
           }else{
-            $Size = $json.icons.psobject.properties.name | select -last 1
+            $Size = $json.icons.psobject.properties.name | Select-Object -last 1
             if($Size){
               $Icon = "$($Path)\$($json.icons.$Size)"
             }
-          }       
+          }
           $newRow = [WebExtension]@{
             'Name' = $name
             'ID' = ''
@@ -98,7 +98,7 @@ Function Get-Webview2Extensions{
               write-ezlogs ">>>> Updating extension ($($Extension.Name)) with new path: $Path" -logtype Webview2
               $Extension.path = $Path
             }
-            $Size = '16'                            
+            $Size = '16'
             if($json.icons.$Size){
               $Icon = "$($Path)\$($json.icons.$Size)"
             }else{
@@ -116,13 +116,13 @@ Function Get-Webview2Extensions{
     $newRow = $null
   }catch{
     write-ezlogs "An exception occurred adding webview2 extensions to config in Get-Webview2Extensions" -catcherror $_
-  }  
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-Webview2Extensions
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Add-Webview2Extension
 #----------------------------------------------
 Function Add-Webview2Extension{
@@ -131,14 +131,15 @@ Function Add-Webview2Extension{
     $synchash,
     $thisApp,
     $Extensions,
-    $WebView2
-  ) 
+    $WebView2,
+    [switch]$Verboselog
+  )
   try{
     if($synchash.WebExtensions_Button){
       try{
         #$synchash.WebExtensions_Button.items.clear()
         $Extensions | & { process {
-            $Extension = $_      
+            $Extension = $_
             if($Extension.Name -notin 'Microsoft Clipboard Extension','Microsoft Edge PDF Viewer'){
               $EnabledExtension = $thisApp.Config.Webview2_Extensions | Where-Object {$_.name -eq $Extension.Name}
               if(!$EnabledExtension -and $Extension.ID){
@@ -166,25 +167,25 @@ Function Add-Webview2Extension{
                     if($Size){
                       $icon = "$($EnabledExtension.Path)\$($json.icons.$Size)"
                     }
-                  }     
-                }                            
+                  }
+                }
                 if([system.io.file]::exists($icon)){
-                  $stream_image = [System.IO.File]::OpenRead($icon) 
+                  $stream_image = [System.IO.File]::OpenRead($icon)
                   $image = [System.Windows.Media.Imaging.BitmapImage]::new()
                   $image.BeginInit()
-                  $image.CacheOption = 'OnLoad'    
+                  $image.CacheOption = 'OnLoad'
                   $image.StreamSource = $stream_image
                   $image.DecodePixelWidth = $Size
-                  $image.EndInit()        
+                  $image.EndInit()
                   $menuItem_imagecontrol = [System.Windows.Controls.Image]::new()
                   $menuItem_imagecontrol.Source = $image
                   $MenuItem.icon = $menuItem_imagecontrol
-                  $image.Freeze() 
+                  $image.Freeze()
                   $stream_image.Close()
                   $stream_image.Dispose()
-                  $stream_image = $null                                                                             
-                }                           
-                $MenuItem.IsCheckable = $false  
+                  $stream_image = $null
+                }
+                $MenuItem.IsCheckable = $false
                 $MenuItem.tag = $Extension.id
                 if($json.browser_action.default_popup){
                   $MenuItem.Uid = $json.browser_action.default_popup
@@ -192,7 +193,7 @@ Function Add-Webview2Extension{
                   $MenuItem.Uid = $json.options_ui.page
                 }elseif($json.options_page){
                   $MenuItem.Uid = $json.options_page
-                }                             
+                }
                 $MenuItem.Add_Click({
                     try{
                       if(-not [string]::IsNullOrEmpty($this.tag)){
@@ -200,7 +201,7 @@ Function Add-Webview2Extension{
                           $Extensionurl = "chrome-extension://$($this.tag)/$($this.Uid)"
                         }else{
                           $Extensionurl = "chrome-extension://$($this.tag)"
-                        }                                      
+                        }
                         Write-EZLogs ">>>> Opening Webbrowser extension url: $Extensionurl" -logtype Webview2
                         $NewWindowScript = @"
                                       console.log('Opening new extension window: $Extensionurl');
@@ -212,28 +213,28 @@ Function Add-Webview2Extension{
                       Write-EZLogs "An exception occurred in add_checked for menuitem: $($this.Header)" -catcherror $_
                     }
                 })
-                Write-EZLogs "| Adding extension to WebExtensions_Button: $($EnabledExtension.Name)" -logtype Webview2
+                Write-EZLogs "| Adding extension to WebExtensions_Button: $($EnabledExtension.Name)" -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
                 $synchash.WebExtensions_Button.items.add($MenuItem)
               }elseif($synchash.WebExtensions_Button.items.Header -contains $EnabledExtension.Name){
                 write-ezlogs "Extension: $($Extension.Name) -- already added to WebExtensions_Button" -Warning -logtype Webview2 -Dev_mode
               }else{
                 write-ezlogs "Unable to find extension: $($Extension.Name) -- to add to WebExtensions_Button" -Warning -logtype Webview2
-              }  
-            }     
+              }
+            }
         }}
       }catch{
         Write-EZLogs 'An exception occurred in WebExtensions_Button.add_Loaded' -catcherror $_
-      }    
+      }
     }
   }catch{
     Write-EZLogs 'An exception occurred in Add-Webview2Extension' -showtime -catcherror $_
-  }  
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Add-Webview2Extension
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Remove-YoutubeWebPlayer Function
 #----------------------------------------------
 Function Remove-YoutubeWebPlayer
@@ -241,7 +242,7 @@ Function Remove-YoutubeWebPlayer
   [CmdletBinding()]
   param (
     $synchash
-  ) 
+  )
   try{
     if($synchash.YoutubeWebView2 -is [System.IDisposable]){
       write-ezlogs ">>>> Disposing Youtube Webplayer Webview2 instance" -showtime -Warning
@@ -264,7 +265,7 @@ Function Remove-YoutubeWebPlayer
         $synchash.YoutubeWebView2.CoreWebView2.Remove_WebResourceRequested($synchash.YoutubeWebview2_CoreWebView2_WebResourceRequested_ScriptBlock)
       }
       if($synchash.YoutubeWebView2_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock){
-        $synchash.YoutubeWebView2.CoreWebView2.Remove_IsDocumentPlayingAudioChanged($synchash.YoutubeWebView2_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock) 
+        $synchash.YoutubeWebView2.CoreWebView2.Remove_IsDocumentPlayingAudioChanged($synchash.YoutubeWebView2_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock)
       }
       if($synchash.YoutubeWebView2_CoreWebView2_IsMutedChanged_ScriptBlock){
         $synchash.YoutubeWebView2.CoreWebView2.Remove_IsMutedChanged($synchash.YoutubeWebView2_CoreWebView2_IsMutedChanged_ScriptBlock)
@@ -278,11 +279,11 @@ Function Remove-YoutubeWebPlayer
     Write-EZLogs 'An exception occurred creating YoutubeWebView2 Enviroment' -showtime -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Remove-YoutubeWebPlayer Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Remove-WebBrowser Function
 #----------------------------------------------
 Function Remove-WebBrowser
@@ -290,7 +291,7 @@ Function Remove-WebBrowser
   [CmdletBinding()]
   param (
     $synchash
-  ) 
+  )
   try{
     if($synchash.WebBrowser -is [System.IDisposable]){
       write-ezlogs ">>>> Disposing WebBrowser Webview2 instance" -showtime -Warning -logtype Webview2
@@ -316,7 +317,7 @@ Function Remove-WebBrowser
         $synchash.WebBrowser.CoreWebView2.Remove_NewWindowRequested($synchash.WebBrowser_CoreWebView2_NewWindowRequested_ScriptBlock)
       }
       if($synchash.WebBrowser_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock){
-        $synchash.WebBrowser.CoreWebView2.Remove_IsDocumentPlayingAudioChanged($synchash.WebBrowser_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock) 
+        $synchash.WebBrowser.CoreWebView2.Remove_IsDocumentPlayingAudioChanged($synchash.WebBrowser_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock)
       }
       if($synchash.WebBrowserWebView2_ContextMenuRequested_Scriptblock){
         $synchash.WebBrowser.CoreWebView2.Remove_ContextMenuRequested($synchash.WebBrowserWebView2_ContextMenuRequested_Scriptblock)
@@ -336,11 +337,11 @@ Function Remove-WebBrowser
     Write-EZLogs 'An exception occurred disposing WebBrowser Enviroment' -showtime -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Remove-WebBrowser Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize-YoutubeWebPlayer Function
 #----------------------------------------------
 Function Initialize-YoutubeWebPlayer
@@ -349,8 +350,9 @@ Function Initialize-YoutubeWebPlayer
   param (
     $synchash,
     $thisApp,
-    $thisScript
-  ) 
+    $thisScript,
+    [switch]$Verboselog
+  )
   try{
     if(!$synchash.YoutubeWebView2 -or !$synchash.YoutubeWebView2.CoreWebView2){
       Write-EZLogs '#### Creating new YoutubeWebView2 instance' -showtime -logtype Webview2 -linesbefore 1
@@ -362,19 +364,19 @@ Function Initialize-YoutubeWebPlayer
     <#    if([Environment]::GetEnvironmentVariable('WEBVIEW2_DEFAULT_BACKGROUND_COLOR') -ne '#FF000000'){
         [void][Environment]::SetEnvironmentVariable("WEBVIEW2_DEFAULT_BACKGROUND_COLOR",'#FF000000')
     }#>
- 
+
     $synchash.YoutubeWebView2Options = [Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions]::new()
     $synchash.YoutubeWebView2Options.IsCustomCrashReportingEnabled = $true
     # --disable-web-security
     $synchash.YoutubeWebView2Options.AdditionalBrowserArguments = '--autoplay-policy=no-user-gesture-required --Disable-features=HardwareMediaKeyHandling,OverscrollHistoryNavigation,msExperimentalScrolling'
-    #TODO: Extensions 
+    #TODO: Extensions
     if(-not [string]::IsNullOrEmpty($synchash.YoutubeWebView2Options.AreBrowserExtensionsEnabled)){
       Write-EZLogs '>>>> Enabling browser extension support for YoutubeWebView2' -logtype Webview2
       Get-Webview2Extensions -thisApp $thisApp
       $synchash.YoutubeWebView2Options.AreBrowserExtensionsEnabled = $true
       $synchash.YoutubeWebView2.CreationProperties = [Microsoft.Web.WebView2.Wpf.CoreWebView2CreationProperties]::new()
       $synchash.YoutubeWebView2.CreationProperties.AreBrowserExtensionsEnabled = $true
-      Write-EZLogs "| YoutubeWebView2 CreationProperties -- AdditionalBrowserArgument: $($synchash.YoutubeWebView2.CreationProperties.AdditionalBrowserArguments) -- AreBrowserExtensionsEnabled: $($synchash.YoutubeWebView2.CreationProperties.AreBrowserExtensionsEnabled)" -logtype Webview2 -Dev_mode    
+      Write-EZLogs "| YoutubeWebView2 CreationProperties -- AdditionalBrowserArgument: $($synchash.YoutubeWebView2.CreationProperties.AdditionalBrowserArguments) -- AreBrowserExtensionsEnabled: $($synchash.YoutubeWebView2.CreationProperties.AreBrowserExtensionsEnabled)" -logtype Webview2 -Dev_mode
     }
     $synchash.YoutubeWebView2Env = [Microsoft.Web.WebView2.Core.CoreWebView2Environment]::CreateAsync(
       [String]::Empty, [IO.Path]::Combine([String[]]($($thisApp.config.Temp_Folder), 'Webview2') ), $synchash.YoutubeWebView2Options
@@ -401,13 +403,14 @@ Function Initialize-YoutubeWebPlayer
     param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs]$e)
     $synchash = $synchash
     $thisApp = $thisApp
-    try{     
+    $Verboselog = $Verboselog
+    try{
       if($e.IsSuccess){
         $logtype = 'Webview2'
         Write-EZLogs ">>>> YoutubeWebview2 NavigationCompleted for $($sender.source)" -showtime -logtype $logtype
         #$synchash.YoutubeWebView2.CoreWebView2.Settings.UserAgent = "Chrome"
         #$synchash.YoutubeWebView2.CoreWebView2.Settings.UserAgent =  "Android"
-        if(($thisApp.Config.Use_invidious -or $sender.source -match 'yewtu.be|invidious') -and $sender.source -notmatch 'tv\.youtube\.com'){
+        if((($thisApp.Config.Use_invidious -and (Test-ValidPath -Type URL $thisApp.Config.InvidiousURL)) -or $sender.source -match 'yewtu.be|invidious') -and $sender.source -notmatch 'tv\.youtube\.com'){
           Write-EZLogs ">>>> Adding YoutubeWebview2 Script for Invidious session" -showtime -logtype $logtype
           $synchash.YoutubeWebView2_Script = @"
 var options = {
@@ -492,7 +495,7 @@ if (options.quality === 'dash') {
                 qualityLevels.forEach(function (level, index) {
                     level.enabled = (index === targetQualityLevel);
                     });
-               
+
 }
 
 else remove_all_video_times();
@@ -507,39 +510,39 @@ console.log(video_data);
   var playerdataJson =
   {
     Key: 'player_data',
-    Value: player_data 
+    Value: player_data
   };
   var videodataObject =
   {
     Key: 'video_data',
-    Value: video_data 
+    Value: video_data
   };
   var playerObject =
   {
     Key: 'player',
-    Value: player 
+    Value: player
   };
   var timeJson =
   {
     Key: 'time',
-    Value: time 
+    Value: time
   };
   var volumeObject =
   {
     Key: 'volume',
-    Value: volume 
+    Value: volume
   };
-    window.chrome.webview.postMessage(playerdataJson);  
+    window.chrome.webview.postMessage(playerdataJson);
     window.chrome.webview.postMessage(videodataObject);
     window.chrome.webview.postMessage(playerObject);
     window.chrome.webview.postMessage(timeJson);
-    window.chrome.webview.postMessage(volumeObject);   
+    window.chrome.webview.postMessage(volumeObject);
     let lastUpdated = 0;
 
     console.log('Navigation Complete Script Finished:');
 "@
         }else{
-          Write-EZLogs ">>>> Adding YoutubeWebview2 Script for Youtube session" -showtime -logtype $logtype
+          Write-EZLogs ">>>> Adding YoutubeWebview2 Script for Youtube session" -showtime -logtype $logtype -LogLevel 0 -Verboselog:$Verboselog
           $synchash.YoutubeWebView2_Script = @"
 console.log('Setting up Youtube element move_player:');
 var player = document.getElementById('movie_player');
@@ -975,20 +978,20 @@ try {
 } catch (e) {
  console.log('Exception occurred posting player objects and properties ', e);
 }
-"@        
-        } 
-        $YT_ADblockScript = "$($thisApp.Config.Current_Folder)\Resources\Ad Blocking\Youtube_ADBlock2.js"  
+"@
+        }
+        $YT_ADblockScript = "$($thisApp.Config.Current_Folder)\Resources\Ad Blocking\Youtube_ADBlock2.js"
         if([system.io.file]::Exists($YT_ADblockScript)){
           if(!$synchash.YoutubeWebView2_Adblock_Script -or $thisApp.Config.Dev_mode){
             $synchash.YoutubeWebView2_Adblock_Script = [system.io.file]::ReadAllText($YT_ADblockScript)
           }
-          Write-EZLogs '>>>> Injecting custom Youtube Adblock script' -logtype $logtype
+          Write-EZLogs '>>>> Injecting custom Youtube Adblock script' -logtype $logtype -LogLevel 0 -Verboselog:$Verboselog
           $synchash.YoutubeWebView2.ExecuteScriptAsync(
-            $synchash.YoutubeWebView2_Adblock_Script       
+            $synchash.YoutubeWebView2_Adblock_Script
           )
-        }  
+        }
         Write-EZLogs '| Executing YoutubeWebView2_Script' -showtime -logtype $logtype -Dev_mode
-        $synchash.YoutubeWebView2.ExecuteScriptAsync(        
+        $synchash.YoutubeWebView2.ExecuteScriptAsync(
           $synchash.YoutubeWebView2_Script
         )
         if($synchash.Current_playing_media.id -and $synchash.Current_playing_media.url -notmatch 'tv\.youtube\.com'){
@@ -997,7 +1000,7 @@ try {
           }else{
             $youtube = Get-Youtubeurl -URL $synchash.Current_playing_media.url -thisApp $thisApp
             $YoutubeID = $youtube.id
-          }        
+          }
           if($YoutubeID){
             if($thisApp.Config.Enable_Sponsorblock -and $thisApp.Config.Sponsorblock_ActionType){
               $thisApp.SponsorBlock = Get-SponsorBlock -videoId $YoutubeID -actionType $thisApp.Config.Sponsorblock_ActionType
@@ -1007,7 +1010,7 @@ try {
             try{
               Write-EZLogs "| Executing Youtube dislike lookup: https://returnyoutubedislikeapi.com/votes?videoId=$($YoutubeID)" -showtime -logtype $logtype -Dev_mode
               $req = [System.Net.HTTPWebRequest]::Create("https://returnyoutubedislikeapi.com/votes?videoId=$($YoutubeID)")
-              $req.Method = 'GET'         
+              $req.Method = 'GET'
               $req.Timeout = 5000
               $response = $req.GetResponse()
               $strm = $response.GetResponseStream()
@@ -1025,7 +1028,7 @@ try {
               }
               if($sr){
                 $sr.Dispose()
-              }   
+              }
               $req = $null
             }
           }
@@ -1036,7 +1039,7 @@ try {
             $Likes = $($youtube_ds.likes -as [decimal]).ToString('N0')
           }
           if($synchash.Likes_Total -and $synchash.DisLikes_Total){
-            if($youtube_ds){            
+            if($youtube_ds){
               $synchash.Likes_Total.Visibility = 'Visible'
               $synchash.Likes_Total.text = $Likes
               $synchash.DisLikes_Total.text = $DisLikes
@@ -1058,19 +1061,19 @@ try {
    console.log('Youtube Dislikes: $($DisLikes)');
   }
 
-"@  
+"@
           if($DisLikes){
-            Write-EZLogs "| Youtube dislikes: $($DisLikes), Executing YoutubeDislikes_Script" -logtype $logtype
+            Write-EZLogs "| Youtube dislikes: $($DisLikes), Executing YoutubeDislikes_Script" -logtype $logtype -LogLevel 0 -Verboselog:$Verboselog
             $synchash.YoutubeWebView2.ExecuteScriptAsync(
               $synchash.YoutubeDislikes_Script
             )
-          } 
+          }
           $synchash.YoutubeWebView2_Youtube_returnDislike_Script = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Youtube\Return Youtube Dislike.user.js")
-          Write-EZLogs '| Executing Youtube_returnDislike_Script' -logtype $logtype
+          Write-EZLogs '| Executing Youtube_returnDislike_Script' -logtype $logtype -LogLevel 0 -Verboselog:$Verboselog
           $synchash.YoutubeWebView2.ExecuteScriptAsync(
             $synchash.YoutubeWebView2_Youtube_returnDislike_Script
           )
-        } 
+        }
         Write-EZLogs "| Post navigation execution complete: BrowserProcessID: $($synchash.YoutubeWebView2.CoreWebview2.BrowserProcessId) - DocumentTitle: $($synchash.YoutubeWebView2.CoreWebview2.DocumentTitle) - ContainsFullScreenElement: $($synchash.YoutubeWebView2.CoreWebview2.ContainsFullScreenElement)" -logtype $logtype -loglevel 3
       }else{
         Write-EZLogs "YoutubeWebView2 Navigation to source: '$($sender.source)' was not successful -- HttpStatusCode: $($e.HttpStatusCode) -- WebErrorStatus: $($e.WebErrorStatus)" -logtype Webview2 -warning
@@ -1107,7 +1110,7 @@ try {
         $Settings.IsSwipeNavigationEnabled = $false
         #$Settings.UserAgent = ""
         #$Settings.UserAgent = "Mozilla/5.0 (PS4; Leanback Shell) Gecko/20100101 Firefox/65.0 LeanbackShell/01.00.01.75 Sony PS4/ (PS4, , no, CH)"
-        $synchash.YoutubeWebView2.CoreWebView2.AddWebResourceRequestedFilter('*', [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext]::All)    
+        $synchash.YoutubeWebView2.CoreWebView2.AddWebResourceRequestedFilter('*', [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext]::All)
         $synchash.YoutubeWebview2.CoreWebview2.MemoryUsageTargetLevel = 'Low'
         if($synchash.YoutubeWebView2.CoreWebView2.Profile.PreferredTrackingPreventionLevel -ne 'Strict'){
           Write-EZLogs '[YoutubeWebView2] | Setting CoreWebView2.Profile.PreferredTrackingPreventionLevel to Strict' -showtime -logtype $logtype
@@ -1139,26 +1142,26 @@ try {
             try{
               $Youtube_cookie = $synchash.YoutubeWebView2.CoreWebView2.CookieManager.CreateCookie($cookie.name, $($cookie.value), '.youtube.com', '/')
               $Youtube_cookie.IsSecure = $cookie.isSecure
-              $synchash.YoutubeWebView2.CoreWebView2.CookieManager.AddOrUpdateCookie($Youtube_cookie) 
+              $synchash.YoutubeWebView2.CoreWebView2.CookieManager.AddOrUpdateCookie($Youtube_cookie)
             }catch{
               Write-EZLogs "[YoutubeWebView2] An exception occurred adding youtube cookie $($cookie | Out-String)" -catcherror $_
             }finally{
               $Youtube_cookie = $null
-            }  
-          }                
+            }
+          }
         }
         $synchash.YoutubeWebview2_CoreWebView2_WebResourceRequested_ScriptBlock = {
           Param($Sender,[Microsoft.Web.WebView2.Core.CoreWebView2WebResourceRequestedEventArgs]$e)
-          $logtype = 'Webview2'  
+          $logtype = 'Webview2'
           try{
             $Cookies = ($e.Request.Headers.Where({$_.key -eq 'cookie'})).value
             if($Cookies){
               if($Cookies -notmatch 'OptanonAlertBoxClosed'){
                 $OptanonAlertBoxClosed = $synchash.YoutubeWebView2.CoreWebView2.CookieManager.CreateCookie('OptanonAlertBoxClosed', $(Get-Date -Format 'yyy-MM-ddTHH:mm:ss.192Z'), '.spotify.com', '/')
-                $synchash.YoutubeWebView2.CoreWebView2.CookieManager.AddOrUpdateCookie($OptanonAlertBoxClosed) 
+                $synchash.YoutubeWebView2.CoreWebView2.CookieManager.AddOrUpdateCookie($OptanonAlertBoxClosed)
               }
               if($synchash.YoutubeWebView2.Source -match 'spotify\.com'){
-                $cookiedurldomain = '.spotify.com'                
+                $cookiedurldomain = '.spotify.com'
               }elseif($synchash.YoutubeWebView2.Source -match 'google\.com'){
                 $cookiedurldomain = '.google.com'
               }elseif($synchash.YoutubeWebView2.Source -match 'youtube\.com|youtu\.be'){
@@ -1173,12 +1176,12 @@ try {
                       if($cookiename){
                         $cookiename = $cookiename.trim()
                       }
-                      $cookievalue = ([regex]::matches($cookie, "$cookiename=(?<value>.*)").foreach({$_.groups[1].value})) 
-                    } 
+                      $cookievalue = ([regex]::matches($cookie, "$cookiename=(?<value>.*)").foreach({$_.groups[1].value}))
+                    }
                     switch ($cookiename){
                       'SIDCC' {
                         $isSecure = $false
-                      } 
+                      }
                       'SID' {
                         $isSecure = $false
                       }
@@ -1230,29 +1233,29 @@ try {
                       '__Host-GAPS' {
                         $skip = $true
                         $isSecure = $false
-                      }                        
+                      }
                       Default {
                         $skip = $false
                         $isSecure = $true
                       }
                     }
-                    if(!$skip){   
+                    if(!$skip){
                       if($thisApp.Config.Youtube_Cookies.name){
-                        $index = $thisApp.Config.Youtube_Cookies.name.IndexOf($cookiename) 
+                        $index = $thisApp.Config.Youtube_Cookies.name.IndexOf($cookiename)
                         if($index -ne -1){
-                          $ExistingCookie = $thisApp.Config.Youtube_Cookies[$index] 
-                        }                             
-                      }   
+                          $ExistingCookie = $thisApp.Config.Youtube_Cookies[$index]
+                        }
+                      }
                       if($cookiename -and $cookievalue -and !$ExistingCookie){
                         $null = $thisApp.Config.Youtube_Cookies.add([cookie]@{
                             'Name'           = $cookiename
                             'isSecure'       = $isSecure
                             'Value'          = $cookievalue.trim()
                             'cookiedurldomain' = $cookiedurldomain
-                        })          
-                        Write-EZLogs "[YoutubeWebView2] >>>> Found and new Youtube cookie  -- Name: $cookiename -- Value: $($cookievalue)" -showtime -logtype $logtype -Dev_mode                              
+                        })
+                        Write-EZLogs "[YoutubeWebView2] >>>> Found and new Youtube cookie  -- Name: $cookiename -- Value: $($cookievalue)" -showtime -logtype $logtype -Dev_mode
                       }elseif($cookiename -and $cookievalue -and $ExistingCookie.name -eq $cookiename -and $ExistingCookie.value -and $ExistingCookie.value -ne $cookievalue){
-                        Write-EZLogs "[YoutubeWebView2] >>>> Found and updated Youtube cookie  -- Name: $cookiename -- Value: $($cookievalue)" -showtime -logtype $logtype -Dev_mode 
+                        Write-EZLogs "[YoutubeWebView2] >>>> Found and updated Youtube cookie  -- Name: $cookiename -- Value: $($cookievalue)" -showtime -logtype $logtype -Dev_mode
                         $ExistingCookie.value = $cookievalue.trim()
                       }
                     }
@@ -1260,77 +1263,105 @@ try {
                 }catch{
                   Write-EZLogs "[YoutubeWebView2] An exception occurred saving youtube cookie $($cookie | Out-String)" -showtime -catcherror $_
                 }
-              }                                        
+              }
             }
           }catch{
             Write-EZLogs 'An exception occurred in YoutubeWebView2 CoreWebView2 WebResourceRequested Event' -showtime -catcherror $_
-          }  
+          }
         }
         $synchash.YoutubeWebView2.CoreWebView2.add_WebResourceRequested($synchash.YoutubeWebview2_CoreWebView2_WebResourceRequested_ScriptBlock)
 
         #TODO: Extensions - Put in Function
-        if($synchash.YoutubeWebView2Options.AreBrowserExtensionsEnabled -and $thisApp.Config.Webview2_Extensions.Count -gt 0){           
+        if($synchash.YoutubeWebView2Options.AreBrowserExtensionsEnabled -and $thisApp.Config.Webview2_Extensions.Count -gt 0){
           try{
-            Write-EZLogs '[YoutubeWebView2] >>>> Loading YoutubeWebView2 extensions' -logtype Webview2
+            Write-EZLogs '>>>> Loading YoutubeWebView2 extensions' -logtype Webview2
+            $Extensions = $thisApp.Config.Webview2_Extensions
             $Task = $synchash.YoutubeWebView2.CoreWebView2.Profile.GetBrowserExtensionsAsync()
             $Task.GetAwaiter().OnCompleted(
               [Action]{
-                Write-EZLogs "[YoutubeWebView2] | Installed YoutubeWebView2 extensions: $($Task.Result.name -join ' | ')" -logtype Webview2
-                $thisApp.Config.Webview2_Extensions | & { process {
-                    $InstallTask = $null
-                    $Extension = $_
-                    try{
-                      if($Extension.isEnabled){
-                        if([system.io.directory]::Exists($Extension.path) -and $Extension.Name){
-                          if($Extension.Name -notin $Task.Result.name){
-                            Write-EZLogs "[YoutubeWebView2] >>>> Installing YoutubeWebView2 extension: $($Extension.Name)" -logtype Webview2
-                            $InstallTask = $synchash.YoutubeWebView2.CoreWebView2.Profile.AddBrowserExtensionAsync($Extension.path)
-                            $InstallTask.GetAwaiter().OnCompleted(
-                              [Action]{
-                                if($InstallTask){
-                                  Write-EZLogs "[YoutubeWebView2] Installed extension: $($InstallTask.Result.Name) - this: $($this | out-string)" -logtype Webview2 -Success
-                                }
-                              }
-                            )
+                try{
+                  Write-EZLogs "| Installed YoutubeWebView2 extensions: $($Task.Result.name -join ', ')" -logtype Webview2
+                  $Extensions | & { process {
+                      $InstallTask = $null
+                      $Extension = $_
+                      try{
+                        if($Extension.isEnabled){
+                          if([system.io.directory]::Exists($Extension.path) -and $Extension.Name){
+                            $ExtensionName = $Task.Result.name | Where-Object {$_ -eq $Extension.Name -or $_ -match $Extension.Name}
+                            if(!$ExtensionName){
+                              Write-EZLogs "| Installing YoutubeWebView2 extension: $($Extension.Name)" -logtype Webview2
+                              $InstallTask = $synchash.YoutubeWebView2.CoreWebView2.Profile.AddBrowserExtensionAsync($Extension.path)
+                              $Synchash.WebBrowserExt_IsInstalling = $true
+                              $InstallTask.GetAwaiter().OnCompleted(
+                                [Action]{
+                                  if($InstallTask){
+                                    try{
+                                      Write-EZLogs "Installed extension: $($InstallTask.Result.Name)" -logtype Webview2 -Success
+                                      if($Extension.id -ne $InstallTask.Result.ID){
+                                        $ExtensionUpdateIndex = $thisApp.Config.Webview2_Extensions.name.IndexOf($InstallTask.Result.Name)
+                                        if($ExtensionUpdateIndex -eq -1){
+                                          $ExtensionUpdate = $thisApp.Config.Webview2_Extensions | Where-Object {$InstallTask.Result.Name -match $_.Name}
+                                        }else{
+                                          $ExtensionUpdate = $thisApp.Config.Webview2_Extensions[$ExtensionUpdateIndex]
+                                        }
+                                        if($ExtensionUpdate){
+                                          Write-EZLogs "| Updating installed extension from id '$($ExtensionUpdate.ID)' to new id '$($InstallTask.Result.ID)' for extension: $($InstallTask.Result.Name)" -logtype Webview2
+                                          $ExtensionUpdate.id = $InstallTask.Result.ID
+                                        }else{
+                                          Write-EZLogs "Unable to find extension with name '$($InstallTask.Result.Name)' in Config.Webview2_Extensions" -logtype Webview2 -warning
+                                        }
+                                      }else{
+                                        Write-EZLogs "| Installed extension id: $($InstallTask.Result.ID)" -logtype Webview2
+                                      }
+                                    }catch{
+                                      Write-EZLogs "An exception occurred loading YoutubeWebView2 extension: $($Extension | Out-String)" -catcherror $_
+                                    }finally{
+                                      Add-Webview2Extension -synchash $synchash -thisapp $thisApp -Extensions $Extension
+                                      if($synchash.Youtube_WebPlayer_URL -and ($synchash.Youtube_WebPlayer_URL -match 'youtube' -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious') -and $synchash.YoutubeWebView2.Source -ne $synchash.Youtube_WebPlayer_URL){
+                                        Write-EZLogs "[YoutubeWebView2] >>>> Navigating with YoutubeWebView2 CoreWebView2.Navigate: $($synchash.Youtube_WebPlayer_URL)" -logtype Webview2
+                                        $synchash.YoutubeWebView2.CoreWebView2.Navigate($synchash.Youtube_WebPlayer_URL)
+                                      }
+                                    }
+                                  }
+                                }.GetNewClosure()
+                              )
+                            }
+                          }else{
+                            Write-EZLogs "Cannot find path or name for extension: $($Extension)" -logtype Webview2 -warning
                           }
-                        }else{
-                          Write-EZLogs "[YoutubeWebView2] Cannot find path or name for extension: $($Extension.name) -- path: $($Extension.path) -- disabling extension" -logtype Webview2 -warning
-                          $Extension.isEnabled = $false
                         }
+                      }catch{
+                        Write-EZLogs "An exception occurred loading YoutubeWebView2 extension: $($Extension | Out-String)" -catcherror $_
                       }
-                    }catch{
-                      Write-EZLogs "An exception occurred loading YoutubeWebView2 extension: $($Extension | Out-String)" -catcherror $_
-                    }
-                }}
-                if($Task){
-                  $null = $Task.Dispose()
-                  $Task = $Null
-                }                                                              
-              }.GetNewClosure() 
+                  }}
+                }catch{
+                  Write-EZLogs "An exception occurred loading YoutubeWebView2 extensions: $($Task.Result | Out-String)" -catcherror $_
+                }finally{
+                  Add-Webview2Extension -synchash $synchash -thisapp $thisApp -Extensions $Task.Result
+                  if($Task){
+                    $null = $Task.Dispose()
+                    $task = $Null
+                  }
+                }
+              }.GetNewClosure()
             )
           }catch{
             Write-EZLogs 'An exception occurred loading YoutubeWebView2 extensions' -catcherror $_
           }finally{
             if($synchash.Youtube_WebPlayer_URL -and $synchash.Youtube_WebPlayer_URL -match 'youtube' -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
-              Write-EZLogs "[YoutubeWebView2] >>>> Navigating with YoutubeWebView2 CoreWebView2.Navigate: $($synchash.Youtube_WebPlayer_URL)" -enablelogs -showtime -logtype $logtype 
-              $synchash.YoutubeWebView2.CoreWebView2.Navigate($synchash.Youtube_WebPlayer_URL)      
-              if($synchash.YoutubeWebView2.Source -notmatch ($synchash.Youtube_WebPlayer_URL)){
-                Write-EZLogs "[YoutubeWebView2] >>>> YoutubeWebview2 Source: $($synchash.YoutubeWebView2.Source) -- Youtube_WebPlayer_URL: $($synchash.Youtube_WebPlayer_URL)" -enablelogs -Dev_mode -warning -logtype $logtype 
-              }
+              Write-EZLogs "[YoutubeWebView2] >>>> Navigating with YoutubeWebView2 CoreWebView2.Navigate: $($synchash.Youtube_WebPlayer_URL)" -logtype $logtype
+              $synchash.YoutubeWebView2.CoreWebView2.Navigate($synchash.Youtube_WebPlayer_URL)
             }
           }
         }else{
           if($synchash.Youtube_WebPlayer_URL -and $synchash.Youtube_WebPlayer_URL -match 'youtube' -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
-            Write-EZLogs "[YoutubeWebView2] >>>> Navigating with YoutubeWebView2 CoreWebView2.Navigate: $($synchash.Youtube_WebPlayer_URL)" -enablelogs -showtime -logtype $logtype 
-            $synchash.YoutubeWebView2.CoreWebView2.Navigate($synchash.Youtube_WebPlayer_URL)      
-            if($synchash.YoutubeWebView2.Source -notmatch ($synchash.Youtube_WebPlayer_URL)){
-              Write-EZLogs "[YoutubeWebView2] >>>> YoutubeWebview2 Source: $($synchash.YoutubeWebView2.Source) -- Youtube_WebPlayer_URL: $($synchash.Youtube_WebPlayer_URL)" -enablelogs -Dev_mode -warning -logtype $logtype 
-            }
+            Write-EZLogs "[YoutubeWebView2] >>>> Navigating with YoutubeWebView2 CoreWebView2.Navigate: $($synchash.Youtube_WebPlayer_URL)" -enablelogs -showtime -logtype $logtype
+            $synchash.YoutubeWebView2.CoreWebView2.Navigate($synchash.Youtube_WebPlayer_URL)
           }
         }
         $synchash.YoutubeWebView2_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock = {
           Param($Sender)
-          $logtype = 'Webview2'    
+          $logtype = 'Webview2'
           try{
             if($synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio){
               Write-EZLogs "[YoutubeWebView2] >>>> YoutubeWebview2 Audio has begun playing audio - WebPlayer_State: $($synchash.WebPlayer_State)" -showtime -logtype $logtype -Dev_mode
@@ -1344,17 +1375,17 @@ try {
               if($synchash.YoutubeWebview2.CoreWebview2.IsSuspended){
                 $tryresume = $synchash.YoutubeWebView2.CoreWebView2.Resume()
                 Write-EZLogs "[YoutubeWebView2] | YoutubeWebview2 IsSuspended - attempting to resume with Resume() - Result: $($tryresume)" -logtype $logtype
-              } 
+              }
               if($synchash.Timer.isEnabled){
-                $synchash.Timer.Stop() 
-              } 
+                $synchash.Timer.Stop()
+              }
               if(!$synchash.WebPlayer_Playing_timer.isEnabled){
                 Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -start
-              }          
+              }
               if($thisApp.Config.Dev_mode){
                 Write-EZLogs "[YoutubeWebView2] YoutubeWebview2.CoreWebView2: $($synchash.YoutubeWebView2.CoreWebView2 | Out-String)" -loglevel 3 -logtype $logtype
                 Write-EZLogs "[YoutubeWebView2] YoutubeWebview2.CoreWebView2.Settings: $($synchash.YoutubeWebView2.CoreWebView2.Settings | Select-Object * | Out-String)" -loglevel 3 -logtype $logtype
-              }           
+              }
             }elseif($synchash.WebPlayer_State -eq 0){
               Write-EZLogs '[YoutubeWebView2] >>>> YoutubeWebView2 stopped playing audio' -loglevel 2 -logtype $logtype -linesbefore 1
               Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -Stop
@@ -1363,28 +1394,28 @@ try {
               Write-EZLogs '[YoutubeWebView2] | YoutubeWebView2 is Muted, checking Mute button' -loglevel 2 -logtype $logtype
               $synchash.MuteButton_ToggleButton.isChecked = $true
             }elseif($synchash.MuteButton_ToggleButton.isChecked){
-              Write-EZLogs '[YoutubeWebView2] | YoutubeWebView2 is NOT muted and mute button is checked, unchecking Mute button' -loglevel 2 -logtype $logtype            
+              Write-EZLogs '[YoutubeWebView2] | YoutubeWebView2 is NOT muted and mute button is checked, unchecking Mute button' -loglevel 2 -logtype $logtype
               $synchash.MuteButton_ToggleButton.isChecked = $false
-            } 
+            }
           }catch{
             Write-EZLogs '[YoutubeWebView2] An exception occurred in YoutubeWebView2.CoreWebView2.add_IsDocumentPlayingAudioChanged' -catcherror $_
-          }   
-        }           
-        $synchash.YoutubeWebView2.CoreWebView2.add_IsDocumentPlayingAudioChanged($synchash.YoutubeWebView2_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock) 
+          }
+        }
+        $synchash.YoutubeWebView2.CoreWebView2.add_IsDocumentPlayingAudioChanged($synchash.YoutubeWebView2_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock)
 
         if($thisApp.Config.Dev_mode){
           $synchash.YoutubeWebView2_CoreWebView2_IsMutedChanged_ScriptBlock = {
             Param($Sender)
-            $logtype = 'Webview2'    
+            $logtype = 'Webview2'
             try{
               if($Sender.IsMuted){
                 Write-EZLogs '#### YoutubeWebView2 Audio has been muted' -showtime -loglevel 2 -logtype $logtype -Dev_mode
               }else{
                 Write-EZLogs '#### YoutubeWebView2 Audio has been un-muted' -showtime -loglevel 2 -logtype $logtype -Dev_mode
-              } 
+              }
             }catch{
               Write-EZLogs '[YoutubeWebView2] An exception occurred in YoutubeWebView2.CoreWebView2.add_IsMutedChanged' -catcherror $_
-            }   
+            }
           }
           $synchash.YoutubeWebView2.CoreWebView2.add_IsMutedChanged($synchash.YoutubeWebView2_CoreWebView2_IsMutedChanged_ScriptBlock)
         }
@@ -1401,9 +1432,9 @@ try {
           Write-EZLogs '[YoutubeWebView2] >>>> Enabling DevToolsProtocolEventReceived event for YoutubeWebview2' -Dev_mode
           $CallDevtools = $synchash.YoutubeWebview2.CoreWebView2.CallDevToolsProtocolMethodAsync('Log.enable', '{}')
           $CallDevtools = $synchash.YoutubeWebview2.CoreWebView2.CallDevToolsProtocolMethodAsync('Runtime.enable', '{}')
-          $YoutubeWebview2_DevToolsProtocolEventReceivedLog = $synchash.YoutubeWebview2.CoreWebView2.GetDevToolsProtocolEventReceiver('Log.entryAdded')   
+          $YoutubeWebview2_DevToolsProtocolEventReceivedLog = $synchash.YoutubeWebview2.CoreWebView2.GetDevToolsProtocolEventReceiver('Log.entryAdded')
           $YoutubeWebview2_DevToolsProtocolEventReceivedRuntime = $synchash.YoutubeWebview2.CoreWebView2.GetDevToolsProtocolEventReceiver('Runtime.consoleAPICalled')
-          if($YoutubeWebview2_DevToolsProtocolEventReceivedLog){         
+          if($YoutubeWebview2_DevToolsProtocolEventReceivedLog){
             Write-EZLogs '| Registering DevTools Event Log' -Dev_mode
             $YoutubeWebview2_DevToolsProtocolEventReceivedLog.add_DevToolsProtocolEventReceived({
                 Param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2DevToolsProtocolEventReceivedEventArgs]$e)
@@ -1419,24 +1450,24 @@ try {
                       if(-not [string]::IsNullOrEmpty($eventmessage.args.className)){
                         Write-EZLogs "[YoutubeWebView2] | [$(($eventmessage.args.className))]: $($eventmessage.args.description)" -Dev_mode -logtype $logtype
                       }else{
-                        if(-not [string]::IsNullOrEmpty($eventmessage.args.description)){                           
+                        if(-not [string]::IsNullOrEmpty($eventmessage.args.description)){
                           Write-EZLogs "[YoutubeWebView2] | $(($eventmessage.args.type)): $($eventmessage.args.value) -- Description: $($eventmessage.args.description)" -Dev_mode -logtype $logtype
                         }else{
                           Write-EZLogs "[YoutubeWebView2] | [$(($eventmessage.args.type))]: $($eventmessage.args.value)" -Dev_mode -logtype $logtype
-                        }                         
-                      }                  
+                        }
+                      }
                     }elseif($eventmessage){
                       Write-EZLogs "[YoutubeWebView2] | JSON message: $($eventmessage | Out-String)" -Dev_mode -logtype $logtype
-                    }                    
+                    }
                   }elseif($e){
                     Write-EZLogs "[YoutubeWebView2] | CoreWebView2DevToolsProtocolEventReceivedEventArgs: $($e | Out-String)" -Dev_mode -logtype $logtype
-                  }                  
+                  }
                 }catch{
                   Write-EZLogs '[YoutubeWebView2] An exception occurred in Logs.DevToolsProtocolEventReceived' -catcherror $_
                 }
             })
           }
-          if($YoutubeWebview2_DevToolsProtocolEventReceivedRuntime){         
+          if($YoutubeWebview2_DevToolsProtocolEventReceivedRuntime){
             Write-EZLogs '[YoutubeWebView2] | Registering DevTools Event Runtime' -Dev_mode
             $YoutubeWebview2_DevToolsProtocolEventReceivedRuntime.add_DevToolsProtocolEventReceived({
                 Param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2DevToolsProtocolEventReceivedEventArgs]$e)
@@ -1451,37 +1482,37 @@ try {
                       if(-not [string]::IsNullOrEmpty(($eventmessage.args.className | Out-String))){
                         Write-EZLogs "[YoutubeWebView2] | [$(($eventmessage.args.className))]: $($eventmessage.args.description)" -Dev_mode -logtype $logtype
                       }else{
-                        if(-not [string]::IsNullOrEmpty(($eventmessage.args.description | Out-String))){                           
+                        if(-not [string]::IsNullOrEmpty(($eventmessage.args.description | Out-String))){
                           Write-EZLogs "[YoutubeWebView2] | $(($eventmessage.args.type)): $($eventmessage.args.value) -- Description: $($eventmessage.args.description)" -Dev_mode -logtype $logtype
                         }else{
                           Write-EZLogs "[YoutubeWebView2] | [$(($eventmessage.args.type))]: $($eventmessage.args.value)" -Dev_mode -logtype $logtype
-                        }                         
-                      }                  
+                        }
+                      }
                     }elseif($eventmessage){
                       Write-EZLogs "[YoutubeWebView2] | JSON message: $($eventmessage | Out-String)" -Dev_mode -logtype $logtype
-                    }                    
+                    }
                   }elseif($e){
                     Write-EZLogs "[YoutubeWebView2] | CoreWebView2DevToolsProtocolEventReceivedEventArgs: $($e | Out-String)" -Dev_mode -logtype $logtype
-                  }                  
+                  }
                 }catch{
                   Write-EZLogs '[YoutubeWebView2] An exception occurred in Runtime.add_DevToolsProtocolEventReceived' -catcherror $_
                 }
             })
           }
-        }         
+        }
       }else{
         Write-EZLogs "[YoutubeWebView2] An issue occurred initializing YoutubeWebView2: $($event.InitializationException | Out-String)" -warning -AlertUI -logtype Webview2
-      }                                   
+      }
     }catch{
       Write-EZLogs "[YoutubeWebView2] An exception occurred in YoutubeWebView2 CoreWebView2InitializationCompleted Event: $($synchash.YoutubeWebView2.CoreWebView2 | Out-String)" -showtime -catcherror $_
-    } 
+    }
   }
   $synchash.YoutubeWebView2.Add_CoreWebView2InitializationCompleted($synchash.YoutubeWebView2_CoreWebView2InitializationCompleted_Scriptblock)
   if(!$synchash.YoutubeWebView2.CoreWebView2){
     $synchash.YoutubeWebView2Env.GetAwaiter().OnCompleted(
       [Action]{
         Write-EZLogs ">>>> Executing YoutubeWebview2 EnsureCoreWebView2Async for YoutubeWebview2env result -- BrowserVersionString: $($synchash.YoutubeWebView2Env.Result.BrowserVersionString) -- UserDataFolder: $($synchash.YoutubeWebView2Env.Result.UserDataFolder)" -showtime -logtype Webview2
-        $synchash.YoutubeWebView2.EnsureCoreWebView2Async($synchash.YoutubeWebView2Env.Result)     
+        $synchash.YoutubeWebView2.EnsureCoreWebView2Async($synchash.YoutubeWebView2Env.Result)
       }
     )
   }
@@ -1490,7 +1521,8 @@ try {
       $sender,
       [Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs]$e,
       $synchash = $synchash,
-      $thisApp = $thisApp
+      $thisApp = $thisApp,
+      $Verboselog = $Verboselog
     )
     try{
       $result = $e.WebMessageAsJson | ConvertFrom-Json -ErrorAction SilentlyContinue
@@ -1507,12 +1539,12 @@ try {
               }
             }catch{
               Write-EZLogs '[YoutubeWebView2_WebMessageReceived] An exception occurred retrying playback without embed for Youtube' -showtime -catcherror $_
-            }             
+            }
             return
           }
-          Write-EZLogs "| Source $($e.Source)" -logtype Webview2 -Warning                
-          Write-EZLogs "| errorCode $($result.value.errorCode) - cpn: $($result.value.cpn)" -logtype Webview2 -Warning 
-        } 
+          Write-EZLogs "| Source $($e.Source)" -logtype Webview2 -Warning
+          Write-EZLogs "| errorCode $($result.value.errorCode) - cpn: $($result.value.cpn)" -logtype Webview2 -Warning
+        }
         if($result.value.author){
           try{
             if($synchash.Youtube_webplayer_current_Media.author -ne $result.value.author){
@@ -1543,7 +1575,7 @@ try {
         }
         $chatURL = "https://www.youtube.com/live_chat?v=$($result.value.video_id)"
         if($thisApp.Config.Enable_YoutubeComments -and $result.value.video_id -and $result.value.isLive -and $synchash.ChatView_URL -ne $chatURL -and $synchash.Current_Playing_media.url -notmatch 'tv\.youtube\.com'){
-          $synchash.ChatView_URL = $chatURL       
+          $synchash.ChatView_URL = $chatURL
           write-ezlogs "| Youtube video is live, updating chatview with YT live chat url: $chatURL"
           Update-ChatView -synchash $synchash -thisApp $thisApp -Navigate -ChatView_URL $chatURL -show:$thisApp.Config.Chat_View
         }
@@ -1553,7 +1585,7 @@ try {
             $synchash.Youtube_WebPlayer_title = "$($result.value.title)"
           }
           if($synchash.Now_Playing_title_Label.DataContext -ne "$($result.value.title)"){
-            Write-EZLogs "| Updating Youtube title from webplayer videodata from value: $($synchash.Now_Playing_title_Label.DataContext) - to new value: $($result.value.title)" -showtime -logtype Webview2 -LogLevel 2
+            Write-EZLogs "| Updating Youtube title from webplayer videodata from value: $($synchash.Now_Playing_title_Label.DataContext) - to new value: $($result.value.title)" -logtype Webview2
             $synchash.Now_Playing_title_Label.DataContext = "$($result.value.title)"
           }
           if($synchash.Current_playing_media -and $synchash.Current_playing_media.Title -ne "$($result.value.title)"){
@@ -1568,7 +1600,7 @@ try {
           }
           if($result.value.video_id){
             if($thisApp.Config.Enable_Sponsorblock -and $thisApp.Config.Sponsorblock_ActionType -and !$result.value.isLive){
-              Write-EZLogs "| Updating SponsorBlock with Youtube id: $($result.value.video_id)" -loglevel 2 -logtype Webview2 
+              Write-EZLogs "| Updating SponsorBlock with Youtube id: $($result.value.video_id)" -loglevel 2 -logtype Webview2
               $thisApp.SponsorBlock = Get-SponsorBlock -videoId $result.value.video_id -actionType $thisApp.Config.Sponsorblock_ActionType
             }else{
               $thisApp.SponsorBlock = $null
@@ -1576,7 +1608,7 @@ try {
             Write-EZLogs "| Getting Youtube dislikes for video id: $($result.value.video_id)" -showtime -logtype Webview2 -LogLevel 2
             try{
               $req = [System.Net.HTTPWebRequest]::Create("https://returnyoutubedislikeapi.com/votes?videoId=$($result.value.video_id)")
-              $req.Method = 'GET'         
+              $req.Method = 'GET'
               $req.Timeout = 5000
               $response = $req.GetResponse()
               $strm = $response.GetResponseStream()
@@ -1598,7 +1630,7 @@ try {
               }
               if($sr){
                 $sr.Dispose()
-              }   
+              }
               $req = $null
             }
             if($youtube_ds.dislikes){
@@ -1625,16 +1657,16 @@ try {
             #Update current video thumbnail/images
             $Imageurl = "https://i.ytimg.com/vi/$($result.value.video_id)/mqdefault.jpg"
             if($synchash.Current_Playing_media -is [Media] -and $synchash.Current_Playing_media.thumbnail -ne $Imageurl){
-              write-ezlogs "| Updating current media thumbnail from: $($synchash.Current_Playing_media.thumbnail) -- to: $Imageurl" -logtype Webview2
+              write-ezlogs "| Updating current media thumbnail from: $($synchash.Current_Playing_media.thumbnail) -- to: $Imageurl" -logtype Webview2 -loglevel 0 -Verboselog:$Verboselog
               $synchash.Current_Playing_media.thumbnail = $Imageurl
               if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
                 if($thisApp.Config.dev_mode){write-ezlogs "Creating image cache directory: $($thisApp.config.image_Cache_path)" -Dev_mode}
                 [void][System.IO.Directory]::CreateDirectory($thisApp.config.image_Cache_path)
-              }                   
+              }
               $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),'Youtube',"$($result.value.video_id).png")
               if([System.IO.File]::Exists($image_Cache_path)){
                 $cached_image = $image_Cache_path
-              }elseif($Imageurl){         
+              }elseif($Imageurl){
                 if($thisApp.Config.dev_mode){write-ezlogs "| Destination path for cached image: $image_Cache_path" -Dev_mode}
                 if(!([System.IO.File]::Exists($image_Cache_path))){
                   try{
@@ -1655,7 +1687,7 @@ try {
                           $webclient = $Null
                         }
                       }
-                    }             
+                    }
                     if([System.IO.File]::Exists($image_Cache_path)){
                       $stream_image = [System.IO.File]::OpenRead($image_Cache_path)
                       $image = [System.Windows.Media.Imaging.BitmapImage]::new()
@@ -1674,17 +1706,17 @@ try {
                       $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($bmp))
                       $save_stream = [System.IO.FileStream]::new("$image_Cache_path",'Create')
                       $encoder.Save($save_stream)
-                      $save_stream.Dispose()                      
+                      $save_stream.Dispose()
                     }
-                    $cached_image = $image_Cache_path            
+                    $cached_image = $image_Cache_path
                   }catch{
                     $cached_image = $Null
                     write-ezlogs "An exception occurred attempting to download $image to path $image_Cache_path" -catcherror $_
                   }
-                }           
+                }
               }else{
                 write-ezlogs "Cannot Download image $image to cache path $image_Cache_path - URL is invalid" -warning
-                $cached_image = $Null        
+                $cached_image = $Null
               }
               $iconkind = 'Youtube'
               $iconcolor = '#FFFF0000'
@@ -1694,22 +1726,22 @@ try {
                 $stamped_image = $null
               }
               if([System.IO.File]::Exists($stamped_image)){
-                if($synchash.MediaView_Image){             
+                if($synchash.MediaView_Image){
                   $synchash.MediaView_Image.Source = $stamped_image
                 }
                 Update-MediaTransportControls -synchash $synchash -thisApp $thisApp -Media $synchash.Current_playing_media -thumbnail $stamped_image
               }
             }
           }
-        }      
+        }
       }
       if($result.key -eq 'time'){
         $synchash.WebPlayer_finished_state = $false
         $synchash.MediaPlayer_CurrentDuration = $result.value
-        #write-ezlogs ">>>> Youtube playback current time: $($result.value) -- Sponsorblock.segments: $($thisApp.SponsorBlock.segment)" -dev_mode 
+        #write-ezlogs ">>>> Youtube playback current time: $($result.value) -- Sponsorblock.segments: $($thisApp.SponsorBlock.segment)" -dev_mode
         if($thisApp.Config.Enable_Sponsorblock -and -not [string]::IsNullOrEmpty($thisApp.Config.Sponsorblock_ActionType) -and -not [string]::IsNullOrEmpty($thisApp.SponsorBlock.videoId) -and -not [string]::IsNullOrEmpty($synchash.Current_playing_media.id) -and $synchash.Current_playing_media.id -in $thisApp.SponsorBlock.videoId){
-          try{        
-            $currentime = [timespan]::FromSeconds($result.value)   
+          try{
+            $currentime = [timespan]::FromSeconds($result.value)
             $Segment = $thisApp.SponsorBlock | Where-Object {[timespan]::FromSeconds($_.segment[0]) -eq $currentime -or ($currentime -gt [timespan]::FromSeconds($_.segment[0]) -and $currentime -lt [timespan]::FromSeconds($_.segment[1]))}
             if($Segment){
               if($thisApp.Config.Sponsorblock_ActionType -eq 'Skip'){
@@ -1731,7 +1763,7 @@ try {
 }
 "@
                 $synchash.YoutubeWebView2.ExecuteScriptAsync(
-                  $YoutubeWebView2_SeekScript      
+                  $YoutubeWebView2_SeekScript
                 )
               }elseif($thisApp.Config.Sponsorblock_ActionType -eq 'Mute'){
                 if(!$synchash.YoutubeWebView2.CoreWebView2.IsMuted){
@@ -1750,15 +1782,15 @@ try {
       }
       if($result.key -eq 'state'){
         if($synchash.WebPlayer_State -ne $result.value){
-          if($thisApp.Config.Dev_mode){Write-EZLogs "Youtube Web message received State: $($result.value)" -showtime -logtype Webview2 -Dev_mode}    
+          if($thisApp.Config.Dev_mode){Write-EZLogs "Youtube Web message received State: $($result.value)" -showtime -logtype Webview2 -Dev_mode}
           $synchash.WebPlayer_State = $result.value
         }
         if($synchash.WebPlayer_State -eq 1){
           $synchash.WebPlayer_finished_state = $false
           if(!$synchash.WebPlayer_Playing_timer.isEnabled){
             Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -Start
-          }        
-          $Current_playlist_items = $synchash.PlayQueue_TreeView.Items 
+          }
+          $Current_playlist_items = $synchash.PlayQueue_TreeView.Items
           if($Current_playlist_items){
             $queue_index = $Current_playlist_items.id.indexof($synchash.Current_playing_media.id)
             if($queue_index -ne -1){
@@ -1789,7 +1821,7 @@ try {
                 }
                 if($Current_playing.FontWeight -ne 'Bold'){
                   $Current_playing.FontWeight = 'Bold'
-                  $Current_playing.FontSize = '14' 
+                  $Current_playing.FontSize = '14'
                   $Current_playing.PlayIconRecordVisibility = 'Hidden'
                   $Current_playing.PlayIconRecordRepeat = '1x'
                   $Current_playing.PlayIcon = 'CompactDiscSolid'
@@ -1797,7 +1829,7 @@ try {
                   $Current_playing.NumberVisibility = 'Hidden'
                   $Current_playing.NumberFontSize = '0'
                   $Current_playing.PlayIconRecordVisibility = 'Hidden'
-                  $Current_playing.PlayIconVisibility = 'Visible' 
+                  $Current_playing.PlayIconVisibility = 'Visible'
                   $Current_playing.PlayIconEnabled = $true
                   if($synchash.PlayQueue_TreeView.itemssource){
                     $synchash.PlayQueue_TreeView.itemssource.refresh()
@@ -1806,18 +1838,18 @@ try {
                   }
                   try{
                     $synchash.Update_Playing_Playlist_Timer.tag = $Current_playing
-                    $synchash.Update_Playing_Playlist_Timer.start()             
+                    $synchash.Update_Playing_Playlist_Timer.start()
                   }catch{
                     Write-EZLogs "An exception occurred updating properties for current_playing $($Current_playing | Out-String)" -showtime -catcherror $_
                   }
-                }         
+                }
               }catch{
                 Write-EZLogs "An exception occurred updating properties for current_playing $($Current_playing | Out-String)" -showtime -catcherror $_
               }
             }
             if($synchash.VideoView_Play_Icon.kind -ne 'PauseCircleOutline'){
               $synchash.VideoView_Play_Icon.kind = 'PauseCircleOutline'
-            }           
+            }
             if($synchash.PauseButton_ToggleButton.isChecked){
               $synchash.PauseButton_ToggleButton.isChecked = $false
             }
@@ -1864,7 +1896,7 @@ try {
             if($Current_playing){
               try{
                 $Current_playing.FontWeight = 'Bold'
-                $Current_playing.FontSize = '14' 
+                $Current_playing.FontSize = '14'
                 $Current_playing.NumberVisibility = 'Hidden'
                 $Current_playing.NumberFontSize = '0'
                 $Current_playing.PlayIconRepeat = '1x'
@@ -1877,10 +1909,10 @@ try {
                 }
                 try{
                   $synchash.Update_Playing_Playlist_Timer.tag = $Current_playing
-                  $synchash.Update_Playing_Playlist_Timer.start()             
+                  $synchash.Update_Playing_Playlist_Timer.start()
                 }catch{
                   Write-EZLogs "An exception occurred updating properties for current_playing $($Current_playing | Out-String)" -showtime -catcherror $_
-                }         
+                }
               }catch{
                 Write-EZLogs "An exception occurred updating properties for current_playing $($Current_playing | Out-String)" -showtime -catcherror $_
               }
@@ -1890,10 +1922,10 @@ try {
             }
             if($synchash.PauseButton_ToggleButton -and !$synchash.PauseButton_ToggleButton.isChecked){
               $synchash.PauseButton_ToggleButton.isChecked = $true
-            } 
+            }
             if($synchash.MiniPlayButton_ToggleButton -and $synchash.MiniPlayButton_ToggleButton.uid -ne 'IsPaused'){
               $synchash.MiniPlayButton_ToggleButton.uid = 'IsPaused'
-            }                
+            }
             if($synchash.PlayButton_ToggleButton -and $synchash.PlayButton_ToggleButton.Uid -ne 'IsPaused'){
               $synchash.PlayButton_ToggleButton.Uid = 'IsPaused'
             }
@@ -1905,17 +1937,17 @@ try {
             }
             if($synchash.PlayIcon1_Storyboard.Storyboard){
               Get-WPFAnimation -thisApp $thisApp -synchash $synchash -Action Pause
-            }                                           
+            }
           }
         }elseif(($synchash.WebPlayer_State -eq 0 -or $synchash.WebPlayer_State -eq 99) -and ($synchash.Current_playing_media.Url -notmatch 'tv\.youtube\.com' -and $synchash.Current_playing_media.Type -notmatch 'YoutubeTV' -and !$synchash.WebPlayer_finished_state)){
           Write-EZLogs ">>>> Youtube webplayer $($result.key): $($result.value)" -showtime -logtype Webview2
           if(($thisApp.config.Auto_Playback -and $synchash.Youtube_WebPlayer_URL -match '\&list=') -and $synchash.WebPlayer_State -eq 99 -or ($synchash.WebPlayer_State -eq 0 -and $synchash.WebPlayer_Continue)){
-            write-ezlogs "| Youtube webplayer is playing a playlist, Auto_Playback is enabled so letting playback continue to next video" -warning -logtype Webview2     
+            write-ezlogs "| Youtube webplayer is playing a playlist, Auto_Playback is enabled so letting playback continue to next video" -warning -logtype Webview2
             if($synchash.WebPlayer_State -eq 0 -and $synchash.WebPlayer_Continue){
               $synchash.WebPlayer_Continue = $false
             }else{
               $synchash.WebPlayer_Continue = $true
-            }              
+            }
             return
           }else{
             $synchash.Youtube_WebPlayer_title = $null
@@ -1936,7 +1968,7 @@ try {
               }else{
                 Write-EZLogs '| Youtube Webplayer reports finished, Auto_Playback enabled, executing Skip-Media' -showtime
                 Skip-Media -synchash $synchash -thisApp $thisApp
-              }               
+              }
             }else{
               Stop-Media -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -UpdateQueue -StopMonitor
             }
@@ -1969,7 +2001,7 @@ try {
             }
             if($thisApp.Config.Discord_Integration){
               if($synchash.DSClient.IsInitialized){
-                $details = "$($result.value)"                     
+                $details = "$($result.value)"
                 if($synchash.Current_playing_media.url){
                   $url = $synchash.Current_playing_media.url
                 }elseif($synchash.Current_playing_media.Uri){
@@ -1992,14 +2024,14 @@ try {
                   $Artist = "$($synchash.Current_playing_media.Playlist)"
                 }else{
                   $Artist = $null
-                } 
+                }
                 if($Artist){
                   $State = "Channel: $Artist"
                 }else{
                   $State = "on $SmallImageText"
                 }
                 $LargeImageText = "$($thisApp.Config.App_Name) - $($thisApp.Config.App_Version)"
-                $buttons = New-DSButton -Label $Label -Url $url    
+                $buttons = New-DSButton -Label $Label -Url $url
                 $Assets = New-DSAsset -SmallImageKey $SmallImageKey -SmallImageText $SmallImageText -LargeImageText $LargeImageText -LargeImageKey 'samson_icon_notext1'
                 Write-EZLogs ">>>> Updating Youtube Title from webplayer for Discord_Integration - title: $($synchash.Youtube_WebPlayer_title) - Artist: $($Artist)" -showtime -logtype Discord -LogLevel 2
                 $null = Update-DSRichPresence -Details $details -State $State -Buttons $buttons -Assets $Assets -ActivityType Watching
@@ -2010,25 +2042,25 @@ try {
             }elseif($synchash.DSClient.IsInitialized){
               Write-EZLogs ">>>> Discord client is initialized but Discord integration is not enabled, stopping discord" -showtime -logtype Discord -LogLevel 2 -warning
               Set-DiscordPresense -thisApp $thisapp -synchash $synchash -Stop
-            }          
-          } 
+            }
+          }
         }
       }elseif($result.key -eq 'player_data'){
         if(!($synchash.Youtube_WebPlayer_title) -and $result.value.title -and $synchash.Now_Playing_Title_Label.DataContext -ne "$($result.value.title)"){
           Write-EZLogs "Updating Youtube Title from webplayer player_data from value: $($synchash.Now_Playing_Title_Label.DataContext) - to new value: $($result.value.title)" -showtime -logtype Webview2 -LogLevel 2
           $synchash.Now_Playing_Title_Label.DataContext = "$($result.value.title)"
-        }             
-      } 
+        }
+      }
       if($result.key -eq 'video_data'){
         if($thisApp.Config.Dev_mode){Write-EZLogs "Web message received video_data: $($result.value.params | Out-String)" -showtime -logtype Webview2 -LogLevel 4}
         $synchash.Invidious_webplayer_current_Media = $result.value
-      }       
+      }
       if($result.key -eq 'duration' -and $synchash.MediaPlayer_TotalDuration -ne $result.value){
         if($thisApp.Config.Dev_mode){Write-EZLogs "Web message received duration: $($result.value)" -showtime -logtype Webview2 -LogLevel 2 -Dev_mode}
         $synchash.MediaPlayer_TotalDuration = $result.value
       }
       if($result.key -eq 'volume'){
-        if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
+        if(($thisApp.Config.Use_invidious -and (Test-ValidPath -Type URL $thisApp.Config.InvidiousURL)) -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
           $volume = $result.value * 100
         }else{
           $volume = $result.value
@@ -2050,7 +2082,7 @@ try {
         if($synchash.Volume_Slider.value -ne $thisApp.Config.Media_Volume){
           if($thisApp.Config.Dev_mode){Write-EZLogs "Web message received volume: $($result.value) - changing volume_slider value from: $($synchash.Volume_Slider.value) -- to: $($thisApp.Config.Media_Volume)" -showtime -logtype Webview2 -Dev_mode}
           $synchash.Volume_Slider.value = $thisApp.Config.Media_Volume
-        }          
+        }
         if($synchash.VideoView_Mute_Icon){
           if($synchash.Volume_Slider.value -ge 75){
             $synchash.VideoView_Mute_Icon.kind = 'VolumeHigh'
@@ -2066,11 +2098,11 @@ try {
       if($result.key -eq 'MuteStatus'){
         if(-not [string]::IsNullOrEmpty($result.value)){
           if($synchash.MuteButton_ToggleButton){
-            if($result.value -and !$synchash.MuteButton_ToggleButton.isChecked){    
-              if($thisApp.Config.Dev_mode){Write-EZLogs "Youtube Web message received MuteStatus: $($result.value) -- checking mute togglebutton" -showtime -logtype Webview2 -Dev_mode}             
+            if($result.value -and !$synchash.MuteButton_ToggleButton.isChecked){
+              if($thisApp.Config.Dev_mode){Write-EZLogs "Youtube Web message received MuteStatus: $($result.value) -- checking mute togglebutton" -showtime -logtype Webview2 -Dev_mode}
               $synchash.MuteButton_ToggleButton.isChecked = $true
             }elseif(!$result.value -and $synchash.MuteButton_ToggleButton.isChecked){
-              if($thisApp.Config.Dev_mode){Write-EZLogs "Youtube Web message received MuteStatus: $($result.value) -- umchecking mute togglebutton" -showtime -logtype Webview2 -Dev_mode}   
+              if($thisApp.Config.Dev_mode){Write-EZLogs "Youtube Web message received MuteStatus: $($result.value) -- umchecking mute togglebutton" -showtime -logtype Webview2 -Dev_mode}
               $synchash.MuteButton_ToggleButton.isChecked = $false
             }
           }
@@ -2088,7 +2120,7 @@ try {
             }
           }
         }
-      } 
+      }
       <#      if($thisApp.Config.Dev_mode -and $result.key -eq 'videoUrl' -and $result.value){
           write-ezlogs "Web message received videoUrl : $($result.value | out-string)" -showtime -Dev_mode -logtype Webview2
       }#>
@@ -2109,7 +2141,7 @@ try {
               }
             }catch{
               Write-EZLogs 'An exception occurred retrying playback without embed for Youtube' -showtime -catcherror $_
-            }             
+            }
             return
           }else{
             Update-Notifications  -Level 'WARNING' -Message 'Youtube ERROR 5: The requested content cannot be played in an HTML5 player or another error related to the HTML5 player has occurred' -VerboseLog -Message_color 'Orange' -thisApp $thisApp -synchash $synchash -Open_Flyout -MessageFontWeight bold -LevelFontWeight Bold -No_runspace
@@ -2119,20 +2151,20 @@ try {
         }else{
           Write-EZLogs "[YoutubeWebview2] Youtube ERROR: $($result.value)" -showtime -warning -logtype Webview2 -LogLevel 2
         }
-      }  
+      }
       if($result.key -eq 'fullscreenchange'){
         if($thisApp.Config.Dev_mode){Write-EZLogs '[YoutubeWebview2] >>>> Received Youtube fullscreenchange event' -showtime -logtype Webview2 -LogLevel 2 -Dev_mode}
-      }  
+      }
       if($result.key -eq 'fullscreenbutton'){
         Write-EZLogs '[YoutubeWebview2] >>>> Received Youtube fullscreenbutton click event' -showtime -logtype Webview2 -LogLevel 2
         if($result.value.isTrusted -and !$synchash.MediaViewAnchorable.isFloating -and !$synchash.VideoViewFloat.isVisible){
           try{
             Write-EZLogs '[YoutubeWebview2] | Invoking Set-VideoPlayer' -showtime -logtype Webview2 -LogLevel 2
             $synchash.YT_fullscreenbutton_Event = [DateTime]::Now
-            Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action FullScreen                 
+            Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action FullScreen
           }catch{
             Write-EZLogs 'An exception occurred in MiniOpenButton_Button.add_Click' -CatchError $_ -showtime
-          }              
+          }
         }elseif($result.value.isTrusted -and $synchash.MediaViewAnchorable.isFloating -and $synchash.VideoViewFloat.WindowState -eq 'Maximized' -and [DateTime]::Now.Subtract([TimeSpan]::FromSeconds(1)) -gt $synchash.YT_fullscreenbutton_Event){
           $synchash.YT_fullscreenbutton_Event = [DateTime]::Now
           Write-EZLogs '[YoutubeWebview2] | Video player is floating, maximized, setting to normal' -logtype Webview2 -LogLevel 2
@@ -2140,9 +2172,9 @@ try {
         }elseif($result.value.isTrusted -and $synchash.MediaViewAnchorable.isFloating -and $synchash.VideoViewFloat.WindowState -ne 'Maximized' -and [DateTime]::Now.Subtract([TimeSpan]::FromSeconds(1)) -gt $synchash.YT_fullscreenbutton_Event){
           $synchash.YT_fullscreenbutton_Event = [DateTime]::Now
           Write-EZLogs '[YoutubeWebview2] | Video player is floating, maximized, setting to Maximized' -logtype Webview2 -LogLevel 2
-          Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Maximized 
-        } 
-      } 
+          Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Maximized
+        }
+      }
       if($result.key -eq 'currentquality'){
         Write-EZLogs "[YoutubeWebview2] >>>> Received current Youtube quality: $($result.value)" -showtime -logtype Webview2 -LogLevel 2
         if($result.value -and $synchash.DisplayPanel_VideoQuality_TextBlock){
@@ -2152,16 +2184,16 @@ try {
     }catch{
       Write-EZLogs 'An exception occurred in YoutubeWebView2 WebMessageReceived event' -showtime -catcherror $_
       $synchash.WebPlayer_Continue = $false
-    }   
+    }
   }
   $synchash.YoutubeWebView2.Remove_WebMessageReceived($synchash.YoutubeWebView2_WebMessageReceived)
   $synchash.YoutubeWebView2.add_WebMessageReceived($synchash.YoutubeWebView2_WebMessageReceived)
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize-YoutubeWebPlayer Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region New-WebContextMenu Function
 #----------------------------------------------
 function New-WebContextMenu{
@@ -2170,7 +2202,7 @@ function New-WebContextMenu{
     $e,
     $menulist,
     $cm
-  )       
+  )
   try{
     for($i = 0; $i -lt $menulist.count; $i++){
       $current = $menulist[$i]
@@ -2200,11 +2232,11 @@ function New-WebContextMenu{
     Write-EZLogs 'An exception occurred in New-WebContextMenu' -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion New-WebContextMenu Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize-WebPlayer Function
 #----------------------------------------------
 Function Initialize-WebPlayer
@@ -2214,7 +2246,7 @@ Function Initialize-WebPlayer
     $synchash,
     $thisApp,
     $thisScript
-  ) 
+  )
   try{
     if(!$synchash.WebView2 -or !$synchash.Webview2.CoreWebView2){
       Write-EZLogs '>>>> Creating new Webview2 instance' -showtime -logtype Webview2
@@ -2224,7 +2256,7 @@ Function Initialize-WebPlayer
     if($synchash.WebView2Env.IsCompleted){
       Write-EZLogs ">>>> WebView2Env already initialized - UserDataFolder: $($synchash.WebView2Env.Result.UserDataFolder)" -showtime -logtype Webview2
       $synchash.Webview2.EnsureCoreWebView2Async( $synchash.WebView2Env.Result )
-    }else{      
+    }else{
       $synchash.WebView2Options = [Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions]::new()
       $synchash.WebView2Options.IsCustomCrashReportingEnabled = $true
       $synchash.WebView2Options.AdditionalBrowserArguments = '--autoplay-policy=no-user-gesture-required --Disable-features=HardwareMediaKeyHandling,OverscrollHistoryNavigation,msExperimentalScrolling'
@@ -2236,7 +2268,7 @@ Function Initialize-WebPlayer
           [Action]{
             Write-EZLogs "Initialzing new WebView2Env: $($synchash.WebView2Env)" -showtime -logtype Webview2
             $synchash.WebView2.EnsureCoreWebView2Async( $synchash.WebView2Env.Result )
-      
+
           }
         )
       }
@@ -2275,7 +2307,7 @@ try {
    type: "PUT",
    data: '{"uris": ["spotify:$($synchash.Spotify_WebPlayer.Spotifytype):$($synchash.Session_SpotifyId)"]}',
    beforeSend: function(xhr){xhr.setRequestHeader('Authorization', 'Bearer ' + _token );},
-   success: function(data) { 
+   success: function(data) {
      console.log('Started Playback for spotify:$($synchash.Spotify_WebPlayer.Spotifytype):$($synchash.Session_SpotifyId) - deviceid', device_id);
      console.log(data)
    }
@@ -2298,7 +2330,7 @@ try {
         Key: 'account_error',
         Value: e
       };
-      window.chrome.webview.postMessage(account_errorObject); 
+      window.chrome.webview.postMessage(account_errorObject);
   });
   // Playback status updates
   SpotifyWeb.currState = {}
@@ -2306,8 +2338,8 @@ try {
     //console.log(state);
     //`$('#current-track').attr('src', state.track_window.current_track.album.images[0].url);
     `$('#current-track-name').text(```${state.track_window.current_track.name} - `${state.track_window.current_track.album.name}``);
-     SpotifyWeb.currState.current_track = state.track_window.current_track  
-     SpotifyWeb.currState.position = state.position;   
+     SpotifyWeb.currState.current_track = state.track_window.current_track
+     SpotifyWeb.currState.position = state.position;
      SpotifyWeb.currState.duration = state.duration;
      SpotifyWeb.currState.updateTime = performance.now()
      SpotifyWeb.currState.current_track = state.track_window.current_track;
@@ -2315,7 +2347,7 @@ try {
      console.log(state.track_window.current_track);
      console.log(previous);
     if (
-        SpotifyWeb.currState 
+        SpotifyWeb.currState
         && previous
         && previous.uid == state.track_window.current_track.uid
         && state.paused
@@ -2327,11 +2359,11 @@ try {
         Key: 'playbackended',
         Value: true
       };
-        window.chrome.webview.postMessage(playbackended); 
+        window.chrome.webview.postMessage(playbackended);
       } else{
         SpotifyWeb.currState.playbackstate = 1
         SpotifyWeb.currState.paused = state.paused;
-      }   
+      }
     //console.log(state.track_window.previous_tracks);
   });
 // Play a specified track on the Web Playback SDK's device ID
@@ -2345,7 +2377,7 @@ try {
     Key: 'SpotifyDeviceID',
     Value: data.device_id
   };
-    window.chrome.webview.postMessage(SpotifyDeviceID);     
+    window.chrome.webview.postMessage(SpotifyDeviceID);
     // Play a track using our new device ID
     //play(data.device_id);
   });
@@ -2354,20 +2386,20 @@ try {
 
 "@
           $synchash.WebView2.ExecuteScriptAsync(
-            $synchash.Spotify_StartScript_Webview2      
+            $synchash.Spotify_StartScript_Webview2
           )
         }else{
           $synchash.WebView2.ExecuteScriptAsync(
-            $synchash.Webview2_Script       
-          )   
-        }     
+            $synchash.Webview2_Script
+          )
+        }
       }catch{
         Write-EZLogs 'An exception occurred in SpotifyWebview2_NavigationCompleted_Scriptblock' -catcherror $_
       }
     }
   }
   $synchash.WebView2.Remove_NavigationCompleted($synchash.SpotifyWebview2_NavigationCompleted)
-  $synchash.WebView2.Add_NavigationCompleted($synchash.SpotifyWebview2_NavigationCompleted)   
+  $synchash.WebView2.Add_NavigationCompleted($synchash.SpotifyWebview2_NavigationCompleted)
 
   if(!$synchash.SpotifyWebview2_InitializationCompleted){
     $synchash.SpotifyWebview2_InitializationCompleted = [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs]]{
@@ -2376,9 +2408,9 @@ try {
         $synchash = $synchash
         $thisApp = $thisApp
         Write-EZLogs '>>>> WebView2 CoreWebView2InitializationCompleted' -showtime -logtype Webview2
-        if($e.IsSuccess){   
+        if($e.IsSuccess){
           [Microsoft.Web.WebView2.Core.CoreWebView2Settings]$Settings = $synchash.WebView2.CoreWebView2.Settings
-          if($synchash.WebView2.CoreWebView2){           
+          if($synchash.WebView2.CoreWebView2){
             $Settings.AreDefaultContextMenusEnabled  = $true
             $Settings.AreDefaultScriptDialogsEnabled = $true
             $Settings.AreDevToolsEnabled             = $true
@@ -2394,27 +2426,27 @@ try {
             $Settings.IsSwipeNavigationEnabled = $false
           }
           if($thisApp.Config.Dev_mode){Write-EZLogs "| Webview2 CoreWebview2: $($synchash.WebView2.CoreWebView2 | Out-String)" -showtime -logtype Webview2 -Dev_mode}
-          $synchash.WebView2.CoreWebView2.AddWebResourceRequestedFilter('*', [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext]::All)               
+          $synchash.WebView2.CoreWebView2.AddWebResourceRequestedFilter('*', [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext]::All)
           if($thisApp.Config.Spotify_SP_DC){
             Write-EZLogs "Adding Spotify Cookie $($thisApp.Config.Spotify_SP_DC)" -showtime -logtype Webview2 -Dev_mode
             $OptanonAlertBoxClosed = $synchash.WebView2.CoreWebView2.CookieManager.CreateCookie('OptanonAlertBoxClosed', $(Get-Date -Format 'yyy-MM-ddTHH:mm:ss.192Z'), '.spotify.com', '/')
-            $synchash.WebView2.CoreWebView2.CookieManager.AddOrUpdateCookie($OptanonAlertBoxClosed)           
+            $synchash.WebView2.CoreWebView2.CookieManager.AddOrUpdateCookie($OptanonAlertBoxClosed)
             $sp_dc = $synchash.WebView2.CoreWebView2.CookieManager.CreateCookie('sp_dc', $thisApp.Config.Spotify_SP_DC, '.spotify.com', '/')
             $sp_dc.IsSecure = $true
-            $synchash.WebView2.CoreWebView2.CookieManager.AddOrUpdateCookie($sp_dc)   
-          }        
+            $synchash.WebView2.CoreWebView2.CookieManager.AddOrUpdateCookie($sp_dc)
+          }
           $synchash.Webview2.CoreWebView2.add_WebResourceRequested({
               [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceRequestedEventArgs]$e = $args[1]
               try{
                 $Cookies = ($e.Request.Headers | Where-Object {$_.key -eq 'cookie'}).value
                 if($Cookies){
                   $Cookies = $Cookies -split ';'
-                  $sp_dc = $Cookies | Where-Object {$_ -match 'sp_dc=(?<value>.*)'}       
+                  $sp_dc = $Cookies | Where-Object {$_ -match 'sp_dc=(?<value>.*)'}
                   if($sp_dc){
                     $existin_sp_dc = ([regex]::matches($sp_dc,  'sp_dc=(?<value>.*)') | & { process {$_.groups[1].value}})
                     $thisApp.Config.Spotify_SP_DC = $existin_sp_dc
-                    if($thisApp.Config.Dev_mode){Write-EZLogs "Found SP_DC $($existin_sp_dc | Out-String)" -showtime -logtype Webview2 -Dev_mode}                           
-                  }                                          
+                    if($thisApp.Config.Dev_mode){Write-EZLogs "Found SP_DC $($existin_sp_dc | Out-String)" -showtime -logtype Webview2 -Dev_mode}
+                  }
                 }
               }catch{
                 Write-EZLogs 'An exception occurred in CoreWebView2 WebResourceRequested Event' -showtime -catcherror $_
@@ -2427,8 +2459,8 @@ try {
             }else{
               Write-EZLogs ">>>> Navigating with CoreWebView2.Navigate: $($synchash.Spotify_WebPlayer_URL)" -logtype Webview2
               $synchash.WebView2.CoreWebView2.Navigate($synchash.Spotify_WebPlayer_URL)
-            }        
-          }      
+            }
+          }
           $synchash.Webview2.CoreWebView2.add_IsDocumentPlayingAudioChanged({
               if($synchash.Webview2.CoreWebView2.IsDocumentPlayingAudio){
                 Write-EZLogs '>>>> Spotify Webview2 Audio has begun playing, starting webplayer_playing_timer' -showtime -logtype Webview2
@@ -2440,21 +2472,21 @@ try {
                   $synchash.Spotify_WebPlayer.is_started = $true
                 }
                 if($synchash.Timer.isEnabled){
-                  $synchash.Timer.Stop()  
+                  $synchash.Timer.Stop()
                 }
-                Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -start           
-                Write-EZLogs "| Webview2.CoreWebView2 PID: $($synchash.Webview2.CoreWebView2.BrowserProcessId) -- DocumentTitle: $($synchash.Webview2.CoreWebView2.DocumentTitle)" -loglevel 2 -logtype Webview2   
+                Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -start
+                Write-EZLogs "| Webview2.CoreWebView2 PID: $($synchash.Webview2.CoreWebView2.BrowserProcessId) -- DocumentTitle: $($synchash.Webview2.CoreWebView2.DocumentTitle)" -loglevel 2 -logtype Webview2
                 if(-not [string]::IsNullOrEmpty($synchash.Current_Audio_Session.GroupingParam) -and $synchash.Managed_AudioSession_Processes -notcontains $synchash.Webview2.CoreWebView2.BrowserProcessId){
                   Set-AudioSessions -thisApp $thisApp -synchash $synchash
-                }   
+                }
               }else{
-                Write-EZLogs '>>>> Spotify Web Player has stopped playing audio' -logtype Webview2                  
+                Write-EZLogs '>>>> Spotify Web Player has stopped playing audio' -logtype Webview2
               }
           })
-      
+
           $synchash.Webview2.CoreWebView2.add_IsMutedChanged({
               if($synchash.Webview2.CoreWebView2.IsMuted){
-                Write-EZLogs '#### Webview2 Audio has been muted' -showtime -logtype Webview2      
+                Write-EZLogs '#### Webview2 Audio has been muted' -showtime -logtype Webview2
               }else{
                 Write-EZLogs '#### Webview2 Audio has been un-muted' -showtime -logtype Webview2
               }
@@ -2463,9 +2495,9 @@ try {
             Write-EZLogs '>>> Enabling DevToolsProtocolEventReceived event for SpotifyWebview2' -Dev_mode -logtype Webview2
             $CallDevtools = $synchash.Webview2.CoreWebView2.CallDevToolsProtocolMethodAsync('Log.enable', '{}')
             $CallDevtools = $synchash.Webview2.CoreWebView2.CallDevToolsProtocolMethodAsync('Runtime.enable', '{}')
-            $SpotifyWebview2_DevToolsProtocolEventReceivedLog = $synchash.Webview2.CoreWebView2.GetDevToolsProtocolEventReceiver('Log.entryAdded')   
-            $SpotifyWebview2_DevToolsProtocolEventReceivedRuntime = $synchash.Webview2.CoreWebView2.GetDevToolsProtocolEventReceiver('Runtime.consoleAPICalled')      
-            if($SpotifyWebview2_DevToolsProtocolEventReceivedLog){         
+            $SpotifyWebview2_DevToolsProtocolEventReceivedLog = $synchash.Webview2.CoreWebView2.GetDevToolsProtocolEventReceiver('Log.entryAdded')
+            $SpotifyWebview2_DevToolsProtocolEventReceivedRuntime = $synchash.Webview2.CoreWebView2.GetDevToolsProtocolEventReceiver('Runtime.consoleAPICalled')
+            if($SpotifyWebview2_DevToolsProtocolEventReceivedLog){
               Write-EZLogs '| Registering Spotify DevTools Event Log' -Dev_mode -logtype Webview2
               $SpotifyWebview2_DevToolsProtocolEventReceivedLog.add_DevToolsProtocolEventReceived({
                   Param($sender)
@@ -2481,24 +2513,24 @@ try {
                         if(-not [string]::IsNullOrEmpty($eventmessage.args.className)){
                           Write-EZLogs "| [$(($eventmessage.args.className))]: $($eventmessage.args.description)" -Dev_mode -logtype Webview2
                         }else{
-                          if(-not [string]::IsNullOrEmpty($eventmessage.args.description)){                           
+                          if(-not [string]::IsNullOrEmpty($eventmessage.args.description)){
                             Write-EZLogs "| $(($eventmessage.args.type)): $($eventmessage.args.value) -- Description: $($eventmessage.args.description)" -Dev_mode -logtype Webview2
                           }else{
                             Write-EZLogs "| [$(($eventmessage.args.type))]: $($eventmessage.args.value)" -Dev_mode -logtype Webview2
-                          }                         
-                        }                  
+                          }
+                        }
                       }else{
                         Write-EZLogs "| JSON message: $($eventmessage | Out-String)" -Dev_mode -logtype Webview2
-                      }                    
+                      }
                     }else{
                       Write-EZLogs "| Args: $($args | Out-String)" -Dev_mode -logtype Webview2
-                    }                  
+                    }
                   }catch{
                     Write-EZLogs 'An exception occurred in Logs.DevToolsProtocolEventReceived' -catcherror $_
                   }
               })
             }
-            if($SpotifyWebview2_DevToolsProtocolEventReceivedRuntime){         
+            if($SpotifyWebview2_DevToolsProtocolEventReceivedRuntime){
               Write-EZLogs '| Registering Spotify DevTools Event Runtime' -Dev_mode -logtype Webview2
               $SpotifyWebview2_DevToolsProtocolEventReceivedRuntime.add_DevToolsProtocolEventReceived({
                   Param($sender)
@@ -2513,18 +2545,18 @@ try {
                         if(-not [string]::IsNullOrEmpty(($eventmessage.args.className | Out-String))){
                           Write-EZLogs "| [$(($eventmessage.args.className))]: $($eventmessage.args.description)" -Dev_mode -logtype Webview2
                         }else{
-                          if(-not [string]::IsNullOrEmpty(($eventmessage.args.description | Out-String))){                           
+                          if(-not [string]::IsNullOrEmpty(($eventmessage.args.description | Out-String))){
                             Write-EZLogs "| $(($eventmessage.args.type)): $($eventmessage.args.value) -- Description: $($eventmessage.args.description)" -Dev_mode -logtype Webview2
                           }else{
                             Write-EZLogs "| [$(($eventmessage.args.type))]: $($eventmessage.args.value)" -Dev_mode -logtype Webview2
-                          }                         
-                        }                  
+                          }
+                        }
                       }else{
                         Write-EZLogs "| JSON message: $($eventmessage | Out-String)" -Dev_mode -logtype Webview2
-                      }                    
+                      }
                     }else{
                       Write-EZLogs "| Args: $($args | Out-String)" -Dev_mode -logtype Webview2
-                    }                  
+                    }
                   }catch{
                     Write-EZLogs 'An exception occurred in Runtime.add_DevToolsProtocolEventReceived' -catcherror $_
                   }
@@ -2540,12 +2572,12 @@ try {
               }catch{
                 Write-EZLogs 'An exception occurred in Webview2.CoreWebView2.add_ProcessFailed' -catcherror $_
               }
-          }) 
+          })
           $synchash.Webview2.CoreWebView2.MemoryUsageTargetLevel = 'Low'
         }else{
           Write-EZLogs "An issue occurred initializing WebView2: $($e.InitializationException | Out-String) - CoreWebView2: $($synchash.WebView2.CoreWebView2 | Out-String)" -warning -logtype Webview2
           Update-Notifications  -Level 'WARNING' -Message 'An issue occurred initializing WebView2 - See logs for details' -VerboseLog -Message_color 'Orange' -thisApp $thisApp -synchash $synchash -Open_Flyout -MessageFontWeight bold -LevelFontWeight Bold -No_runspace
-        }                                  
+        }
       }catch{
         Write-EZLogs 'An exception occurred in CoreWebView2InitializationCompleted Event' -showtime -catcherror $_
       }
@@ -2553,7 +2585,7 @@ try {
   }
   $synchash.WebView2.Remove_CoreWebView2InitializationCompleted($synchash.SpotifyWebview2_InitializationCompleted)
   $synchash.WebView2.Add_CoreWebView2InitializationCompleted($synchash.SpotifyWebview2_InitializationCompleted)
- 
+
   if(!$synchash.SpotifyWebview2_WebMessageReceived){
     $synchash.SpotifyWebview2_WebMessageReceived = {
       Param(
@@ -2569,13 +2601,13 @@ try {
             Write-EZLogs "Web message received Time: $($result.value)" -showtime -logtype Webview2
             $synchash.MediaPlayer_CurrentDuration = $result.value
           }
-          if($result.key -eq 'state'){           
+          if($result.key -eq 'state'){
             if($synchash.WebPlayer_State -ne $result.value){
-              if($thisApp.Config.Dev_mode){Write-EZLogs "Spotify Web message received State: $($result.value)" -showtime -logtype Webview2 -Dev_mode}   
+              if($thisApp.Config.Dev_mode){Write-EZLogs "Spotify Web message received State: $($result.value)" -showtime -logtype Webview2 -Dev_mode}
               $synchash.WebPlayer_State = $result.value
             }
-            if($synchash.WebPlayer_State -eq 1){ 
-              $Current_playlist_items = $synchash.PlayQueue_TreeView.Items 
+            if($synchash.WebPlayer_State -eq 1){
+              $Current_playlist_items = $synchash.PlayQueue_TreeView.Items
               if($Current_playlist_items.id){
                 $queue_index = $Current_playlist_items.id.indexof($synchash.Current_playing_media.id)
                 if($queue_index -ne -1){
@@ -2586,7 +2618,7 @@ try {
               }
               if($Current_playing.FontWeight -ne 'Bold'){
                 $Current_playing.FontWeight = 'Bold'
-                $Current_playing.FontSize = '14' 
+                $Current_playing.FontSize = '14'
                 $Current_playing.PlayIcon = 'CompactDiscSolid'
                 #$current_playing.PlayIconRecord = "RecordRec"
                 $Current_playing.NumberVisibility = 'Hidden'
@@ -2599,8 +2631,8 @@ try {
                   write-ezlogs "| Performance_Mode enabled - Disabling playicon animation" -Warning -Dev_mode
                   $Current_playing.PlayIconRepeat = '1x'
                   $Current_playing.PlayIconEnabled = $false
-                }                   
-                $Current_playing.PlayIconVisibility = 'Visible'                
+                }
+                $Current_playing.PlayIconVisibility = 'Visible'
                 if($synchash.PlayQueue_TreeView.itemssource){
                   $synchash.PlayQueue_TreeView.itemssource.refresh()
                 }elseif($synchash.PlayQueue_TreeView.items){
@@ -2608,7 +2640,7 @@ try {
                 }
                 try{
                   $synchash.Update_Playing_Playlist_Timer.tag = $Current_playing
-                  $synchash.Update_Playing_Playlist_Timer.start()             
+                  $synchash.Update_Playing_Playlist_Timer.start()
                 }catch{
                   Write-EZLogs "An exception occurred updating properties for current_playing $($Current_playing | Out-String)" -showtime -catcherror $_
                 }
@@ -2618,7 +2650,7 @@ try {
                 write-ezlogs ">>>> Spotify is playing - Current_playing: $($Current_playing | out-string)" -showtime
               }
             }elseif($synchash.WebPlayer_State -eq 2){
-              $Current_playlist_items = $synchash.PlayQueue_TreeView.Items 
+              $Current_playlist_items = $synchash.PlayQueue_TreeView.Items
               if($Current_playlist_items.id){
                 $queue_index = $Current_playlist_items.id.indexof($synchash.Current_playing_media.id)
                 if($queue_index -ne -1){
@@ -2627,16 +2659,16 @@ try {
                   $Current_playing = $Current_playlist_items.where({$_.id -eq $synchash.Current_playing_media.id}) | Select-Object -Unique
                 }
               }
-              if($Current_playing.PlayIconVisibility -eq 'Visible'){          
+              if($Current_playing.PlayIconVisibility -eq 'Visible'){
                 $Current_playing.FontWeight = 'Bold'
                 $Current_playing.FontSize = '14'
                 #$current_playing.PlayIconRecord = "CompactDiscSolid"
                 $Current_playing.NumberVisibility = 'Hidden'
                 $Current_playing.NumberFontSize = 0
-                $Current_playing.PlayIconRepeat = '1x' 
-                #$current_playing.PlayIconRecordVisibility = "Visible"   
-                $Current_playing.PlayIconVisibility = 'Hidden' 
-                $Current_playing.PlayIconEnabled = $true  
+                $Current_playing.PlayIconRepeat = '1x'
+                #$current_playing.PlayIconRecordVisibility = "Visible"
+                $Current_playing.PlayIconVisibility = 'Hidden'
+                $Current_playing.PlayIconEnabled = $true
                 if($synchash.PlayQueue_TreeView.itemssource){
                   $synchash.PlayQueue_TreeView.itemssource.refresh()
                 }elseif($synchash.PlayQueue_TreeView.items){
@@ -2644,13 +2676,13 @@ try {
                 }
                 try{
                   $synchash.Update_Playing_Playlist_Timer.tag = $Current_playing
-                  $synchash.Update_Playing_Playlist_Timer.start()             
+                  $synchash.Update_Playing_Playlist_Timer.start()
                 }catch{
                   Write-EZLogs "An exception occurred updating properties for current_playing $($Current_playing | Out-String)" -showtime -catcherror $_
                 }
                 if($synchash.PlayIcon1_Storyboard.Storyboard){
                   Get-WPFAnimation -thisApp $thisApp -synchash $synchash -Action Pause
-                } 
+                }
                 write-ezlogs ">>>> Spotify is paused - Current_playing: $($Current_playing | out-string)" -showtime
               }
             }
@@ -2660,12 +2692,12 @@ try {
             if($result.value.title -and $synchash.Now_Playing_Title_Label.DataContext -ne "$($result.value.title)"){
               Write-EZLogs "Updating Now Playing Spotify title with player_data title: $($result.value.title)" -showtime -logtype Webview2
               $synchash.Now_Playing_Title_Label.DataContext = "$($result.value.title)"
-            }           
-          } 
+            }
+          }
           if($result.key -eq 'video_data'){
             if($thisApp.Config.Dev_mode){Write-EZLogs "Web message received video_data: $($result.value | Out-String)" -showtime -logtype Webview2 -Dev_mode}
             $synchash.Invidious_webplayer_current_Media = $result.value
-          } 
+          }
           if($result.key -eq 'duration'){
             if($thisApp.Config.Dev_mode){Write-EZLogs "Web message received duration: $($result.value | Out-String)" -showtime -logtype Webview2 -Dev_mode}
             $synchash.MediaPlayer_TotalDuration = $result.value
@@ -2673,14 +2705,14 @@ try {
           if($result.key -eq 'volume'){
             if($thisApp.Config.Dev_mode){Write-EZLogs "Web message received volume: $($result.value | Out-String)" -showtime -logtype Webview2 -Dev_mode}
             $synchash.MediaPlayer_CurrentVolume = $result.value
-          } 
+          }
           if($result.key -eq 'videodata'){
             $synchash.Youtube_webplayer_current_Media = $result.value
             #if($thisApp.Config.Verbose_Logging){write-ezlogs "Web message received videodata : $($result.value | out-string)" -showtime}
           }
           #if($result.key -eq 'videoUrl'){
           #if($thisApp.Config.Verbose_Logging){write-ezlogs "Web message received videoUrl : $($result.value | out-string)" -showtime -logtype Webview2}
-          #} 
+          #}
           if($result.key -eq 'error'){
             Write-EZLogs "Web message received error : $($result.value)" -showtime -warning -logtype Webview2
             if($result.value -eq '150'){
@@ -2696,12 +2728,12 @@ try {
               Write-EZLogs 'Youtube ERROR 2: The request contains an invalid parameter value. For example, this error occurs if you specify a video ID that does not have 11 characters, or if the video ID contains invalid characters, such as exclamation points or asterisks' -showtime -warning -logtype Webview2
               Update-Notifications  -Level 'WARNING' -Message 'Youtube ERROR 2: The request contains an invalid parameter value. For example, this error occurs if you specify a video ID that does not have 11 characters, or if the video ID contains invalid characters, such as exclamation points or asterisks' -VerboseLog -Message_color 'Orange' -thisApp $thisApp -synchash $synchash -Open_Flyout -MessageFontWeight bold -LevelFontWeight Bold -No_runspace
             }
-          } 
+          }
           if($result.key -eq 'account_error'){
             Write-EZLogs "Spotify Web Player Account Error Received : $($result.value.message)" -showtime -warning -AlertUI -logtype Webview2
             $synchash.Stop_media_timer.start()
           }
-          if($result.key -eq 'playbackended'){              
+          if($result.key -eq 'playbackended'){
             if($synchash.Spotify_WebPlayer_State -and $synchash.Spotify_WebPlayer_State.playbackstate -ne 0 -and $synchash.Spotify_WebPlayer_State.current_track.id -and $synchash.Spotify_WebPlayer){
               if($thisApp.Config.Dev_mode){Write-EZLogs "Web message received playbackended: $($synchash.Spotify_WebPlayer_State.playbackstate | Out-String)" -showtime -Dev_mode -logtype Webview2}
               $synchash.Spotify_WebPlayer_State.playbackstate = 0
@@ -2725,23 +2757,23 @@ try {
               }
               return
             }
-          } 
+          }
           if($result.key -eq 'Spotify_state'){
             if($thisApp.Config.Verbose_Logging){Write-EZLogs "Web message received Spotify_state: $($result.value)" -showtime -logtype Webview2}
-            $synchash.Spotify_WebPlayer_State = $result.value            
+            $synchash.Spotify_WebPlayer_State = $result.value
             if($synchash.Spotify_WebPlayer_State.current_track.name -and $synchash.Now_Playing_Title_Label.DataContext -ne "$($synchash.Spotify_WebPlayer_State.current_track.name)"){
               Write-EZLogs ">>>> Updating Now Playing title (from: $($synchash.Now_Playing_Title_Label.DataContext)) with Spotify track name: $($synchash.Spotify_WebPlayer_State.current_track.name)" -showtime -logtype Webview2
               $synchash.Now_Playing_Title_Label.DataContext = "$($synchash.Spotify_WebPlayer_State.current_track.name)"
               Write-EZLogs "| Spotify current track artists: $($synchash.Spotify_WebPlayer_State.current_track.artists)" -Dev_mode -logtype Webview2
             }
-            if($synchash.Spotify_WebPlayer_State.current_track.Artists.name -and $synchash.Now_Playing_Artist_Label.DataContext -ne "$($synchash.Spotify_WebPlayer_State.current_track.Artists.name)"){          
+            if($synchash.Spotify_WebPlayer_State.current_track.Artists.name -and $synchash.Now_Playing_Artist_Label.DataContext -ne "$($synchash.Spotify_WebPlayer_State.current_track.Artists.name)"){
               Write-EZLogs ">>>> Updating Now Playing artist (from: $($synchash.Now_Playing_Artist_Label.DataContext)) with Spotify artist name: $($synchash.Spotify_WebPlayer_State.current_track.Artists.name)" -showtime -logtype Webview2
               $synchash.Now_Playing_Artist_Label.DataContext = "$($synchash.Spotify_WebPlayer_State.current_track.Artists.name)"
               #Update-MainWindow -synchash $synchash -thisApp $thisApp -Control 'Now_Playing_Artist_Label' -Property 'DataContext' -value "$($synchash.Spotify_WebPlayer_State.current_track.Artists.name)"
             }
             if($synchash.Spotify_WebPlayer_State.duration){
               $synchash.MediaPlayer_TotalDuration = [timespan]::FromMilliseconds($synchash.Spotify_WebPlayer_State.duration).TotalSeconds
-            }  
+            }
             if($synchash.Spotify_WebPlayer_State.newposition){
               $synchash.MediaPlayer_CurrentDuration = $synchash.Spotify_WebPlayer_State.newposition
             }
@@ -2754,17 +2786,17 @@ try {
                 $Current_playing = $Current_playlist_items.where({$_.id -eq $synchash.Current_playing_media.id}) | Select-Object -Unique
               }
             }
-            if($synchash.Spotify_WebPlayer_State.Paused){  
+            if($synchash.Spotify_WebPlayer_State.Paused){
               if($synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled){
                 $synchash.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus = 'Paused'
                 $synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
-              } 
+              }
               if($synchash.PauseButton_ToggleButton){
                 $synchash.PauseButton_ToggleButton.isChecked = $true
-              } 
+              }
               if($synchash.MiniPlayButton_ToggleButton -and $synchash.MiniPlayButton_ToggleButton.Uid -ne 'IsPaused'){
                 $synchash.MiniPlayButton_ToggleButton.uid = 'IsPaused'
-              }                
+              }
               if($synchash.PlayButton_ToggleButton.Uid -ne 'IsPaused'){
                 $synchash.PlayButton_ToggleButton.Uid = 'IsPaused'
               }
@@ -2773,14 +2805,14 @@ try {
               }
               if($synchash.PlayIcon1_Storyboard.Storyboard){
                 Get-WPFAnimation -thisApp $thisApp -synchash $synchash -Action Pause
-              }               
+              }
               if($synchash.PlayIcon_PackIcon -and $synchash.TaskbarItem_PlayButton){
                 $synchash.TaskbarItem_PlayButton.ImageSource = $synchash.PlayIcon_PackIcon
               }
-              if($Current_playing.PlayIconRepeat -eq 'Forever'){     
+              if($Current_playing.PlayIconRepeat -eq 'Forever'){
                 $Current_playing.PlayIconVisibility = 'Visible'
-                $Current_playing.PlayIconRepeat = '1x' 
-                $Current_playing.PlayIconEnabled = $false  
+                $Current_playing.PlayIconRepeat = '1x'
+                $Current_playing.PlayIconEnabled = $false
                 if($synchash.PlayQueue_TreeView.itemssource){
                   $synchash.PlayQueue_TreeView.itemssource.refresh()
                 }elseif($synchash.PlayQueue_TreeView.items){
@@ -2788,14 +2820,14 @@ try {
                 }
                 try{
                   $synchash.Update_Playing_Playlist_Timer.tag = $Current_playing
-                  $synchash.Update_Playing_Playlist_Timer.start()             
+                  $synchash.Update_Playing_Playlist_Timer.start()
                 }catch{
                   Write-EZLogs "An exception occurred updating properties for current_playing $($Current_playing | Out-String)" -showtime -catcherror $_
-                }               
+                }
               }
               if($synchash.VideoView_Play_Icon){
                 $synchash.VideoView_Play_Icon.kind = 'PlayCircleOutline'
-              }                          
+              }
             }else{
               if($synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled){
                 $synchash.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus = 'Playing'
@@ -2803,10 +2835,10 @@ try {
               }
               if($synchash.PauseButton_ToggleButton){
                 $synchash.PauseButton_ToggleButton.isChecked = $false
-              } 
+              }
               if($synchash.MiniPlayButton_ToggleButton.Uid -eq 'IsPaused'){
                 $synchash.MiniPlayButton_ToggleButton.uid = $null
-              }                
+              }
               if($synchash.PlayButton_ToggleButton.Uid -eq 'IsPaused'){
                 $synchash.PlayButton_ToggleButton.Uid = $null
               }
@@ -2818,25 +2850,25 @@ try {
               }
               if($synchash.VideoView_Play_Icon -and $synchash.VideoView_Play_Icon.kind -ne 'PauseCircleOutline'){
                 $synchash.VideoView_Play_Icon.kind = 'PauseCircleOutline'
-              } 
+              }
               if($synchash.PauseIcon_PackIcon -and $synchash.TaskbarItem_PlayButton){
                 $synchash.TaskbarItem_PlayButton.ImageSource = $synchash.PauseIcon_PackIcon
               }
               if($Current_playing){
                 try{
                   if(!$thisApp.Config.Enable_Performance_Mode -and !$thisApp.Force_Performance_Mode -and $Current_playing.PlayIconRepeat -eq '1x'){
-                    $Current_playing.PlayIconRepeat = 'Forever' 
+                    $Current_playing.PlayIconRepeat = 'Forever'
                     $Update = $true
                     if(!$Current_playing.PlayIconEnabled){
                       $Update = $true
                       $Current_playing.PlayIconEnabled = $true
                     }
-                  }elseif($thisApp.Config.Enable_Performance_Mode -or $thisApp.Force_Performance_Mode){                     
+                  }elseif($thisApp.Config.Enable_Performance_Mode -or $thisApp.Force_Performance_Mode){
                     if($Current_playing.PlayIconRepeat -eq 'Forever'){
                       write-ezlogs "| Performance_Mode enabled - Disabling playicon animation" -Warning -Dev_mode
                       $Update = $true
                       $Current_playing.PlayIconRepeat = '1x'
-                    } 
+                    }
                     if($Current_playing.PlayIconEnabled){
                       $Update = $true
                       $Current_playing.PlayIconEnabled = $false
@@ -2846,15 +2878,15 @@ try {
                     $Update = $true
                     $Current_playing.PlayIconVisibility = 'Visible'
                   }
-                  if($Update){                   
+                  if($Update){
                     if($synchash.PlayQueue_TreeView.itemssource){
                       $synchash.PlayQueue_TreeView.itemssource.refresh()
                     }elseif($synchash.PlayQueue_TreeView.items){
                       $synchash.PlayQueue_TreeView.items.refresh()
                     }
                     $synchash.Update_Playing_Playlist_Timer.tag = $Current_playing
-                    $synchash.Update_Playing_Playlist_Timer.start()    
-                  }         
+                    $synchash.Update_Playing_Playlist_Timer.start()
+                  }
                 }catch{
                   Write-EZLogs "An exception occurred updating properties for current_playing $($Current_playing | Out-String)" -showtime -catcherror $_
                 }
@@ -2881,7 +2913,7 @@ try {
                 $synchash.MuteButton_ToggleButton.isChecked = $true
               }
             }
-          }  
+          }
           if($result.key -eq 'SpotifyDeviceID'){
             #$synchash.Current_Spotify_Deviceid = $result.value
             if($synchash.Spotify_WebPlayer){
@@ -2889,12 +2921,12 @@ try {
               $synchash.Spotify_WebPlayer.Deviceid = $result.value
               if($synchash.Spotify_WebPlayer.Deviceid -and $($synchash.Spotify_WebPlayer.Spotifytype) -and $($synchash.Spotify_WebPlayer.SpotifyId)){
                 try{
-                  Write-EZLogs ">>>> Starting spotify playback and web timer - Deviceid: $($synchash.Spotify_WebPlayer.Deviceid) - spotifyid: $($synchash.Spotify_WebPlayer.SpotifyId)" -showtime -logtype Webview2   
+                  Write-EZLogs ">>>> Starting spotify playback and web timer - Deviceid: $($synchash.Spotify_WebPlayer.Deviceid) - spotifyid: $($synchash.Spotify_WebPlayer.SpotifyId)" -showtime -logtype Webview2
                   if(($synchash.vlc.IsPlaying -or $synchash.Vlc.state -match 'Paused') -and !$([string]$synchash.vlc.media.Mrl).StartsWith('dshow://')){
                     write-ezlogs "| Stopping current VLC playback of: $($synchash.vlc.media.Mrl)" -logtype Webview2
                     $synchash.VLC_IsPlaying_State = $false
                     $synchash.vlc.Stop()
-                  }  
+                  }
                   if($synchash.WebView2.CoreWebView2 -ne $null){
                     $Spotify_StartPlayback = @"
 try{
@@ -2905,7 +2937,7 @@ try {
    type: "PUT",
    data: '{"uris": ["spotify:$($synchash.Spotify_WebPlayer.Spotifytype):$($synchash.Session_SpotifyId)"]}',
    beforeSend: function(xhr){xhr.setRequestHeader('Authorization', 'Bearer ' + '$($synchash.Spotify_WebPlayer.SpotifyToken)' );},
-   success: function(data) { 
+   success: function(data) {
      console.log('Started Playback for spotify:$($synchash.Spotify_WebPlayer.Spotifytype):$($synchash.Session_SpotifyId) - deviceid: $($synchash.Spotify_WebPlayer.Deviceid)');
      console.log(data)
    }
@@ -2935,22 +2967,22 @@ try {
                 }finally{
                   if(!$synchash.Spotify_WebPlayer.is_started){
                     Write-EZLogs 'It didnt start...maybe attempt again?' -showtime -warning -logtype Webview2
-                    $start_playback = Start-Playback -TrackUris "spotify:$($synchash.Spotify_WebPlayer.Spotifytype):$($synchash.Spotify_WebPlayer.SpotifyId)" -ApplicationName $thisApp.config.App_Name -DeviceId:$synchash.Spotify_WebPlayer.Deviceid 
+                    $start_playback = Start-Playback -TrackUris "spotify:$($synchash.Spotify_WebPlayer.Spotifytype):$($synchash.Spotify_WebPlayer.SpotifyId)" -ApplicationName $thisApp.config.App_Name -DeviceId:$synchash.Spotify_WebPlayer.Deviceid
                     <#                    $startSpotifyPlayback_Scriptblock = {
                         $start_playback = Start-Playback -TrackUris "spotify:$($synchash.Spotify_WebPlayer.Spotifytype):$($synchash.Spotify_WebPlayer.SpotifyId)" -ApplicationName $thisApp.config.App_Name -DeviceId:$synchash.Spotify_WebPlayer.Deviceid
                         }
-                        $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}} 
-                    Start-Runspace -scriptblock $startSpotifyPlayback_Scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'Start_SpotifyPlayback_RUNSPACE' -thisApp $thisApp -synchash $synchash -ApartmentState STA -CheckforExisting #>     
+                        $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
+                    Start-Runspace -scriptblock $startSpotifyPlayback_Scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'Start_SpotifyPlayback_RUNSPACE' -thisApp $thisApp -synchash $synchash -ApartmentState STA -CheckforExisting #>
                   }
                 }
               }else{
                 Write-EZLogs "Not doing anything with received SpotifyDeviceID - Spotify_WebPlayer: $($synchash.Spotify_WebPlayer | out-string)" -showtime -logtype Webview2 -warning
               }
             }else{
-              Write-EZLogs 'Unable to find synchash.Spotify_WebPlayer hashtable!' -warning -logtype Webview2 
+              Write-EZLogs 'Unable to find synchash.Spotify_WebPlayer hashtable!' -warning -logtype Webview2
             }
-          }                                                                               
-        }   
+          }
+        }
       }catch{
         Write-EZLogs 'An exception occurred in Webview2 WebMessageReceived event' -showtime -catcherror $_
       }
@@ -2959,11 +2991,11 @@ try {
   $synchash.WebView2.Remove_WebMessageReceived($synchash.SpotifyWebview2_WebMessageReceived)
   $synchash.WebView2.add_WebMessageReceived($synchash.SpotifyWebview2_WebMessageReceived)
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize-WebPlayer Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize-WebBrowser Function
 #----------------------------------------------
 Function Initialize-WebBrowser
@@ -2973,8 +3005,9 @@ Function Initialize-WebBrowser
     $synchash,
     $thisApp,
     $thisScript,
-    [switch]$dev_mode
-  ) 
+    [switch]$dev_mode,
+    [switch]$Verboselog
+  )
   try{
     $Initialize_WebBrowser_Measure = [system.diagnostics.stopwatch]::StartNew()
     if($synchash.WebBrowserGrid.Children -contains $synchash.WebBrowser){
@@ -2987,7 +3020,7 @@ Function Initialize-WebBrowser
       $synchash.WebView2_VisibleChange_Command = {
         param($sender,[System.Windows.DependencyPropertyChangedEventArgs]$e)
         try{
-          Write-EZLogs ">>>> Visibility changed for: $($sender.name) -- Visibility: $($sender.visibility) -- NewValue: $($e.NewValue) -- CoreWebview2.IsSuspended: $($synchash."$($sender.name)".CoreWebview2.IsSuspended)" -logtype Webview2
+          Write-EZLogs ">>>> Visibility changed for: $($sender.name) -- Visibility: $($sender.visibility) -- NewValue: $($e.NewValue) -- CoreWebview2.IsSuspended: $($synchash."$($sender.name)".CoreWebview2.IsSuspended)" -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
           if($sender.name -eq 'WebBrowser' -and ($sender.visibility -eq 'Visible' -or $e.NewValue -eq $true) -and $synchash."$($sender.name)".CoreWebview2.IsSuspended){
             Write-EZLogs "| $($sender.name) is now visible and is currently suspended, executing Resume()" -logtype Webview2
             $synchash."$($sender.name)".CoreWebview2.Resume()
@@ -2997,7 +3030,7 @@ Function Initialize-WebBrowser
         }
       }
     }
-   
+
     if(!$synchash.WebBrowser -or !$synchash.WebBrowser.CoreWebView2){
       Write-EZLogs '#### Creating new WebBrowser instance' -showtime -logtype Webview2 -linesbefore 1
       $synchash.WebBrowser = [Microsoft.Web.WebView2.Wpf.WebView2]::new()
@@ -3008,7 +3041,7 @@ Function Initialize-WebBrowser
       $synchash.WebBrowser.Add_IsVisibleChanged($synchash.WebView2_VisibleChange_Command)
     }
     if($synchash.WebBrowserGrid.Children -contains $synchash.AirControl){
-      Write-EZLogs '| Removing Aircontrol from WebBrowserGrid' -loglevel 2 -logtype Webview2
+      Write-EZLogs '| Removing Aircontrol from WebBrowserGrid' -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
       [void]$synchash.WebBrowserGrid.children.Remove($synchash.AirControl)
       $synchash.AirControl.Front = $null
       $synchash.AirControl.Back = $null
@@ -3027,10 +3060,10 @@ Function Initialize-WebBrowser
       }
     }
     if($synchash.WebView2Env.IsCompleted -and $synchash.WebBrowser.CoreWebView2){
-      Write-EZLogs ">>>> WebView2Env already initialized: $($synchash.WebView2Env.Result)" -showtime -logtype Webview2
+      Write-EZLogs ">>>> WebView2Env already initialized: $($synchash.WebView2Env.Result)" -logtype Webview2
       $synchash.WebBrowser.EnsureCoreWebView2Async($synchash.WebView2Env.Result)
     }else{
-      Write-EZLogs '>>>> Initializing new WebView2Env' -showtime -logtype Webview2
+      Write-EZLogs '>>>> Initializing new WebView2Env' -logtype Webview2
       $synchash.WebBrowserOptions = [Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions]::new()
       $synchash.WebBrowserOptions.IsCustomCrashReportingEnabled = $true
 
@@ -3043,7 +3076,7 @@ Function Initialize-WebBrowser
         $synchash.WebBrowser.CreationProperties.AreBrowserExtensionsEnabled = $true
         if($thisApp.Config.Dev_mode){Write-EZLogs "| WebBrowser CreationProperties: $($synchash.WebBrowser.CreationProperties | Out-String)" -logtype Webview2 -Dev_mode}
       }
-      #--edge-webview-enable-builtin-background-extensions 
+      #--edge-webview-enable-builtin-background-extensions
       $synchash.WebBrowserOptions.AdditionalBrowserArguments = '--autoplay-policy=no-user-gesture-required --Disable-features=HardwareMediaKeyHandling,OverscrollHistoryNavigation,msExperimentalScrolling'
       $synchash.WebView2Env = [Microsoft.Web.WebView2.Core.CoreWebView2Environment]::CreateAsync(
         [String]::Empty, [IO.Path]::Combine([String[]]($($thisApp.config.Temp_Folder), 'Webview2') ), $synchash.WebBrowserOptions
@@ -3062,6 +3095,7 @@ Function Initialize-WebBrowser
       param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs]$e)
       $synchash = $synchash
       $thisApp = $thisApp
+      $Verboselog = $Verboselog
       try{
         Write-EZLogs ">>>> WebBrowser Navigation completed -- Sender: $($sender.Name) -- Source: $($sender.source)" -showtime -logtype Webview2
         if($e.IsSuccess){
@@ -3069,10 +3103,10 @@ Function Initialize-WebBrowser
           if($url -match 'youtube\.com|youtu\.be' -and $url -notmatch 'accounts\.google\.com'){
             $synchash.WebBrowser_Youtube_URL = $sender.source
             $Youtube = Get-YoutubeUrl -thisApp $thisApp -URL $url
-            Write-EZLogs "| Youtube page $($synchash.WebBrowser_Youtube_URL)" -loglevel 2 -logtype Webview2
+            Write-EZLogs "| Youtube page: $($synchash.WebBrowser_Youtube_URL)" -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
           }
           if($Youtube.id -and $url -notmatch 'tv\.youtube\.com' -and $url -notmatch 'accounts\.google\.com'){
-            Write-EZLogs "| Youtube id: $($Youtube.id)" -loglevel 2 -logtype Webview2 
+            Write-EZLogs "| Youtube id: $($Youtube.id)" -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
             if($thisApp.Config.Enable_Sponsorblock -and $thisApp.Config.Sponsorblock_ActionType){
               $thisApp.SponsorBlock = Get-SponsorBlock -videoId $Youtube.id -actionType $thisApp.Config.Sponsorblock_ActionType
             }else{
@@ -3080,13 +3114,13 @@ Function Initialize-WebBrowser
             }
             try{
               $req = [System.Net.HTTPWebRequest]::Create("https://returnyoutubedislikeapi.com/votes?videoId=$($Youtube.id)")
-              $req.Method = 'GET'         
-              $req.Timeout = 5000    
+              $req.Method = 'GET'
+              $req.Timeout = 5000
               $response = $req.GetResponse()
               $strm = $response.GetResponseStream()
               $sr = [System.IO.Streamreader]::new($strm)
               $output = $sr.ReadToEnd()
-              $youtube_ds = $output | ConvertFrom-Json   
+              $youtube_ds = $output | ConvertFrom-Json
               $response.Dispose()
               $strm.Dispose()
               $sr.Dispose()
@@ -3102,8 +3136,8 @@ Function Initialize-WebBrowser
               }
               if($sr){
                 $sr.Dispose()
-              }   
-              $req = $null          
+              }
+              $req = $null
             }
             if($youtube_ds.dislikes){
               $DisLikes = $($youtube_ds.dislikes -as [decimal]).ToString('N0')
@@ -3132,8 +3166,8 @@ Function Initialize-WebBrowser
    var dsbutton = document.getElementById("menu-container")?.querySelector("#top-level-buttons-computed");
    dsbutton.children[1].querySelector("#text").innerText = $($DisLikes);
   }
-"@  
-          } 
+"@
+          }
           $synchash.WebBrowser_Script = @"
 
  var player = document.getElementById('movie_player');
@@ -3141,7 +3175,7 @@ Function Initialize-WebBrowser
 
 var YTTV = false;
           try {
-            //var AdblockApplied = false;   
+            //var AdblockApplied = false;
             //var adblockresult = runBlockYoutube();
             //if(adblockresult.success){
               //AdblockApplied = adblockresult.success;
@@ -3152,7 +3186,7 @@ var YTTV = false;
           }
 if(player){
 function onYouTubePlayerStateChange(event) {
-    console.log('Player State Changed ', event); 
+    console.log('Player State Changed ', event);
     if(event == 1){
      var oldquality = player.getPlaybackQuality();
      console.log('Old Quality:', oldquality);
@@ -3189,9 +3223,9 @@ function onYouTubePlayerStateChange(event) {
           Value: newquality
         };
         window.chrome.webview.postMessage(currentquality);
-      }     
+      }
       console.log('New Quality:', newquality);
-    } 
+    }
       var fullscreen_button = document.getElementsByClassName("ytp-fullscreen-button");
       var YTTV_fullscreen_button = document.getElementsByClassName("yib-button style-scope ytu-icon-button");
         if(fullscreen_button.length > 0){
@@ -3201,12 +3235,12 @@ function onYouTubePlayerStateChange(event) {
           var fullscreenbuttonObject =
           {
             Key: 'fullscreenbutton',
-            Value: event 
+            Value: event
           };
           window.chrome.webview.postMessage(fullscreenbuttonObject);
      });
         }
-      
+
       if(YTTV_fullscreen_button[23].ariaLabel == 'Full screen (f)' && !YTTV){
        YTTV = true;
        console.log('Setting YTTV Fullscreen button click event',YTTV_fullscreen_button[23]);
@@ -3215,11 +3249,11 @@ function onYouTubePlayerStateChange(event) {
         var fullscreenbuttonObject =
         {
           Key: 'fullscreenbutton',
-          Value: event 
+          Value: event
         };
         window.chrome.webview.postMessage(fullscreenbuttonObject);
    });
-      }else{      
+      }else{
 
       }
           try {
@@ -3247,7 +3281,7 @@ function onYoutubePlayerfullscreenchange(event) {
   var fullscreenObject =
   {
     Key: 'fullscreenchange',
-    Value: event 
+    Value: event
   };
   window.chrome.webview.postMessage(fullscreenObject);
 }
@@ -3258,7 +3292,7 @@ function onYoutubevolumechange(event) {
   var volumeObject =
   {
     Key: 'volume',
-    Value: volume 
+    Value: volume
   };
   window.chrome.webview.postMessage(volumeObject);
 }
@@ -3270,7 +3304,7 @@ function onYouTubeError(event) {
   var ErrorObject =
   {
     Key: 'error',
-    Value: event 
+    Value: event
   };
   window.chrome.webview.postMessage(ErrorObject);
 }
@@ -3293,7 +3327,7 @@ function getChangedVolume () {
   var volumeObject =
   {
     Key: 'volume',
-    Value: volume 
+    Value: volume
   };
   window.chrome.webview.postMessage(volumeObject);
 
@@ -3306,7 +3340,7 @@ function getChangedVolume () {
     var videodataObject =
     {
       Key: 'videodata',
-      Value: videodata 
+      Value: videodata
     };
     window.chrome.webview.postMessage(videodataObject);
   }
@@ -3327,22 +3361,22 @@ function getChangedVolume () {
   var timeJson =
   {
     Key: 'time',
-    Value: time 
+    Value: time
   };
   var jsonObject =
   {
     Key: 'state',
-    Value: state 
+    Value: state
   };
   var durationObject =
   {
     Key: 'duration',
-    Value: duration 
+    Value: duration
   };
   var volumeObject =
   {
     Key: 'volume',
-    Value: volume 
+    Value: volume
   };
   var videoUrlObject =
   {
@@ -3357,12 +3391,12 @@ function getChangedVolume () {
 
 
     window.chrome.webview.postMessage(MuteStatus);
-    window.chrome.webview.postMessage(timeJson);  
+    window.chrome.webview.postMessage(timeJson);
     window.chrome.webview.postMessage(jsonObject);
     window.chrome.webview.postMessage(durationObject);
-    //window.chrome.webview.postMessage(volumeObject);   
+    //window.chrome.webview.postMessage(volumeObject);
     window.chrome.webview.postMessage(videoUrlObject);
-}else{      
+}else{
 var player = videojs.getAllPlayers()[0];
 if(player){
   var source = player.currentSource();
@@ -3377,10 +3411,10 @@ if(player){
 
 }
 
-"@ 
+"@
           if($sender.source -notmatch 'accounts\.google\.com' -and ($sender.source -match 'youtube\.com' -or $sender.source -match 'youtu\.be')){
             $WebBrowser_Youtube_returnDislike_Script = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Youtube\Return Youtube Dislike.user.js")
-            Write-EZLogs '>>>> Executing Return Youtube Dislike scripts' -loglevel 2 -logtype Webview2
+            Write-EZLogs '>>>> Executing Return Youtube Dislike scripts' -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
             $sender.ExecuteScriptAsync(
               $WebBrowser_Youtube_returnDislike_Script
             )
@@ -3389,7 +3423,7 @@ if(player){
               if(!$synchash.YoutubeWebView2_Adblock_Script -or $thisApp.Config.Dev_mode){
                 $synchash.YoutubeWebView2_Adblock_Script = [system.io.file]::ReadAllText($YT_ADblockScript)
               }
-              Write-EZLogs '>>>> Injecting custom Youtube Adblock script' -logtype Webview2
+              Write-EZLogs '>>>> Injecting custom Youtube Adblock script' -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
               $sender.ExecuteScriptAsync(
                 $synchash.YoutubeWebView2_Adblock_Script
               )
@@ -3408,8 +3442,8 @@ if(player){
             if($synchash.WebBrowser2_NewWindowEvent.uri -match 'chrome-extension\:'){
               Write-EZLogs "| Requested window is extension: $($synchash.WebBrowser2_NewWindowEvent.uri)" -loglevel 2 -logtype Webview2
             }else{
-              $synchash.WebBrowser2_NewWindowEvent.NewWindow = $synchash."WebBrowser_Webview2_$($synchash.WebBrowser_tabs)".CoreWebView2 
-            }          
+              $synchash.WebBrowser2_NewWindowEvent.NewWindow = $synchash."WebBrowser_Webview2_$($synchash.WebBrowser_tabs)".CoreWebView2
+            }
             $synchash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)".title = $sender.CoreWebview2.DocumentTitle
             $synchash.WebBrowser2_Deferral.Complete()
             $synchash.WebBrowser2_NewWindowEvent = $null
@@ -3419,11 +3453,11 @@ if(player){
             if($synchash.WebBrowser2_NewWindowEvent.uri -match 'chrome-extension\:'){
               Write-EZLogs "| Requested window is extension: $($synchash.WebBrowser2_NewWindowEvent.uri)" -loglevel 2 -logtype Webview2
             }else{
-              $synchash.WebBrowser2_NewWindowEvent.NewWindow = $synchash."$($sender.Name)".CoreWebView2 
-            }  
+              $synchash.WebBrowser2_NewWindowEvent.NewWindow = $synchash."$($sender.Name)".CoreWebView2
+            }
             if('title' -in $synchash."$($sender.Name)".psobject.properties.name){
               $synchash."$($sender.Name)".title = $sender.CoreWebview2.DocumentTitle
-            }            
+            }
             $synchash.WebBrowser2_Deferral.Complete()
             $synchash.WebBrowser2_NewWindowEvent = $null
             $synchash.WebBrowser2_Deferral = $null
@@ -3432,28 +3466,28 @@ if(player){
           }
           $sender.ExecuteScriptAsync(
             $synchash.WebBrowser_Script
-          )   
+          )
           if($sender.source -match 'twitch\.tv'){
             if(!$synchash.Chat_Twitch_Emotes_Script){
-              $synchash.Chat_Twitch_Emotes_Script = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Twitch\twitch-bttv.js")  
-            }              
-            Write-EZLogs '>>>> Executing Chat_Twitch_BTTV_Script' -showtime -logtype Webview2
+              $synchash.Chat_Twitch_Emotes_Script = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Twitch\twitch-bttv.js")
+            }
+            Write-EZLogs '>>>> Executing Chat_Twitch_BTTV_Script' -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
             $sender.ExecuteScriptAsync(
               $synchash.Chat_Twitch_Emotes_Script
-            )  
+            )
           }
           if($sender.source -match 'spotify\.com'){
             if(!$synchash.Spotify_Web_Script){
-              $synchash.Spotify_Web_Script = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Spotify\SpotifyWeb.js")  
-            }              
+              $synchash.Spotify_Web_Script = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Spotify\SpotifyWeb.js")
+            }
             Write-EZLogs '>>>> Executing SpotifyWeb Script' -showtime -logtype Webview2
             $sender.ExecuteScriptAsync(
               $synchash.Spotify_Web_Script
-            )  
+            )
           }
         }else{
           Write-EZLogs "Navigation to source $($sender.source) was not successful -- HttpStatusCode: $($e.HttpStatusCode) -- WebErrorStatus: $($e.WebErrorStatus)" -logtype Webview2 -warning
-        }    
+        }
       }catch{
         Write-EZLogs 'An exception occurred in WebBrowser_NavigationCompleted_Scriptblock' -catcherror $_
       }
@@ -3463,8 +3497,8 @@ if(player){
     )
     $synchash.WebBrowser.Add_NavigationCompleted(
       $synchash.WebBrowser_NavigationCompleted_Scriptblock
-    ) 
-  
+    )
+
     $synchash.WebBrowser_NavigationStarting_Scriptblock = [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs]]{
       param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs]$e)
       try{
@@ -3480,10 +3514,9 @@ if(player){
       Param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs]$event)
       $synchash = $synchash
       try{
-        if($event.IsSuccess){ 
+        if($event.IsSuccess){
           try{
-            Write-EZLogs '>>>> WebBrowserWebView2 CoreWebView2InitializationCompleted' -showtime -LogLevel 2 -logtype Webview2
-
+            Write-EZLogs '>>>> WebBrowserWebView2 CoreWebView2InitializationCompleted' -logtype Webview2
             $synchash.WebBrowser_CoreWebView2_ProcessFailed_ScriptBlock = {
               Param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2ProcessFailedEventArgs]$e)
               try{
@@ -3491,23 +3524,23 @@ if(player){
                 Write-EZLogs "Webview2.CoreWebView2: $($sender | Out-String)" -Dev_mode
               }catch{
                 Write-EZLogs 'An exception occurred in Webview2.CoreWebView2.add_ProcessFailed' -catcherror $_
-              }           
+              }
             }
             $synchash.WebBrowser.CoreWebView2.add_ProcessFailed($synchash.WebBrowser_CoreWebView2_ProcessFailed_ScriptBlock)
 
             $synchash.WebBrowser_CoreWebView2_NewWindowRequested_ScriptBlock = [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2NewWindowRequestedEventArgs]]{
-              Param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2NewWindowRequestedEventArgs]$event)           
+              Param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2NewWindowRequestedEventArgs]$event)
               $synchash = $synchash
               try{
-                Write-EZLogs "[WebBrowser] New Window Requested - event.IsSuccess: $($event.IsSuccess)" -loglevel 2 -logtype Webview2   
+                Write-EZLogs "[WebBrowser] New Window Requested - event.IsSuccess: $($event.IsSuccess)" -loglevel 2 -logtype Webview2
                 if($synchash.DockingDocumentPane.children -notcontains $synchash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)" -and $event.IsUserInitiated){
-                  #if($syncHash.MainGrid_Bottom_TabControl.items -notcontains $synchash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)"){                  
+                  #if($syncHash.MainGrid_Bottom_TabControl.items -notcontains $synchash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)"){
                   try{
-                    $synchash.WebBrowser_tabs++   
+                    $synchash.WebBrowser_tabs++
                     $event.handled = $true
                     [Microsoft.Web.WebView2.Core.CoreWebView2Deferral]$Deferral = $event.GetDeferral()
-                    $synchash.WebBrowser2_NewWindowEvent = $event  
-                    $synchash.WebBrowser2_Deferral = $Deferral   
+                    $synchash.WebBrowser2_NewWindowEvent = $event
+                    $synchash.WebBrowser2_Deferral = $Deferral
                     $synchash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)" = [AvalonDock.Layout.LayoutAnchorable]::new()
                     $synchash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)".IconSource = $synchash.WebBrowserAnchorable.IconSource
                     $synchash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)".ContentId = "WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)"
@@ -3552,7 +3585,7 @@ if(player){
                       $synchash."WebBrowser_Webview2_$($synchash.WebBrowser_tabs)_env".GetAwaiter().OnCompleted(
                         [Action]{
                           Write-EZLogs ">>>> Executing WebBrowser_Webview2_$($synchash.WebBrowser_tabs)_env EnsureCoreWebView2Async" -showtime -logtype Webview2
-                          $synchash."WebBrowser_Webview2_$($synchash.WebBrowser_tabs)".EnsureCoreWebView2Async( $synchash."WebBrowser_Webview2_$($synchash.WebBrowser_tabs)_env".Result )     
+                          $synchash."WebBrowser_Webview2_$($synchash.WebBrowser_tabs)".EnsureCoreWebView2Async( $synchash."WebBrowser_Webview2_$($synchash.WebBrowser_tabs)_env".Result )
                         }
                       )
                     }
@@ -3570,12 +3603,12 @@ if(player){
                     $null = $synchash.DockingDocumentPane.children.Add($synchash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)")
                     $synchash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)".float()
                     #$synchash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)".DockAsDocument()
-                    #$Null = $syncHash.MainGrid_Bottom_TabControl.items.Add($syncHash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)")  
+                    #$Null = $syncHash.MainGrid_Bottom_TabControl.items.Add($syncHash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)")
                     #$synchash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)".isSelected = $true
                     $synchash."WebBrowser_TabWindow_$($synchash.WebBrowser_tabs)".show()
                   }catch{
                     Write-EZLogs 'An exception occurred creating WebBrowser2_Webview Enviroment' -showtime -catcherror $_
-                  }            
+                  }
                 }
               }catch{
                 Write-EZLogs 'An exception occurred in webbrowser webview2 newwindowrequested event' -CatchError $_
@@ -3600,22 +3633,22 @@ if(player){
             $isYoutube = $true
             if($synchash.txtUrl.text -match 'youtube\.com' -or $synchash.txtUrl.text -match 'youtu\.be' -or $synchash.txtUrl.text -match 'google\.com'){
               $isYoutube = $true
-            }                  
-            $synchash.WebBrowser.CoreWebView2.AddWebResourceRequestedFilter('*', [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext]::All)    
+            }
+            $synchash.WebBrowser.CoreWebView2.AddWebResourceRequestedFilter('*', [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext]::All)
             if($thisApp.Config.WebBrowser_PrivateMode){
               Write-EZLogs '[WebBrowser] | Enabling private mode for WebBrowser' -showtime -logtype Webview2
               $synchash.WebBrowser.CoreWebView2.Profile.IsInPrivateModeEnabled = $true
             }
             if($synchash.WebBrowser.CoreWebView2.Profile.IsInPrivateModeEnabled){
               Write-EZLogs '[WebBrowser] | WebBrowser is currently in private mode' -showtime -logtype Webview2 -warning
-            }                      
-            if($thisApp.Config.Chat_WebView2_Cookie -and $synchash.txtUrl.text -match 'twitch\.tv'){           
+            }
+            if($thisApp.Config.Chat_WebView2_Cookie -and $synchash.txtUrl.text -match 'twitch\.tv'){
               Write-EZLogs "[WebBrowser] | Adding Twitch chat Cookie" -showtime -logtype Webview2 -Dev_mode
               $twilight_user_cookie = $synchash.WebBrowser.CoreWebView2.CookieManager.CreateCookie('twilight-user', $thisApp.Config.Chat_WebView2_Cookie, '.twitch.tv', '/')
               $twilight_user_cookie.IsSecure = $true
-              $synchash.WebBrowser.CoreWebView2.CookieManager.AddOrUpdateCookie($twilight_user_cookie)    
-            } 
-            #If saved cookies exist, add them to Webview2  
+              $synchash.WebBrowser.CoreWebView2.CookieManager.AddOrUpdateCookie($twilight_user_cookie)
+            }
+            #If saved cookies exist, add them to Webview2
             if($isYoutube){
               foreach($cookie in $thisApp.Config.Youtube_Cookies){
                 if(($cookie.cookiedurldomain -eq '.youtube.com' -or $cookie.cookiedurldomain -eq '.google.com') -and $cookie.name -in 'PREF', '__Secure-1PSID', '__Secure-3PAPISID', 'LOGIN_INFO', '__Secure-1PAPISID', 'OptanonAlertBoxClosed' -and -not [string]::IsNullOrEmpty($cookie.value)){
@@ -3623,37 +3656,37 @@ if(player){
                   try{
                     $Youtube_cookie = $synchash.WebBrowser.CoreWebView2.CookieManager.CreateCookie($cookie.name, $($cookie.value), '.youtube.com', '/')
                     $Youtube_cookie.IsSecure = $cookie.isSecure
-                    $synchash.WebBrowser.CoreWebView2.CookieManager.AddOrUpdateCookie($Youtube_cookie) 
+                    $synchash.WebBrowser.CoreWebView2.CookieManager.AddOrUpdateCookie($Youtube_cookie)
                   }catch{
                     Write-EZLogs "[WebBrowser] An exception occurred adding youtube cookie $($cookie | Out-String)" -catcherror $_
                   }finally{
                     $Youtube_cookie = $null
-                  }  
-                }                
+                  }
+                }
               }
-            }                                           
+            }
           }catch{
             Write-EZLogs '[WebBrowser] An exception occurred in CoreWebView2InitializationCompleted Event' -showtime -catcherror $_
-          } 
+          }
 
           $synchash.WebBrowser_CoreWebView2_WebResourceRequested_ScriptBlock = {
             Param($Sender,[Microsoft.Web.WebView2.Core.CoreWebView2WebResourceRequestedEventArgs]$e)
             try{
               $Cookies = ($e.Request.Headers | Where-Object {$_.key -eq 'cookie'}).value
               if($synchash.WebBrowser.Source -match 'spotify\.com'){
-                $cookiedurldomain = '.spotify.com'                
+                $cookiedurldomain = '.spotify.com'
               }elseif($synchash.WebBrowser.Source -match 'google\.com'){
                 $cookiedurldomain = '.google.com'
               }elseif($synchash.WebBrowser.Source -match 'youtube\.com' -or $synchash.WebBrowser.Source -match 'youtu\.be'){
                 $cookiedurldomain = '.youtube.com'
               }
               if($Cookies){
-                if($thisApp.Config.Dev_mode -and $Cookies -notmatch 'OptanonAlertBoxClosed'){    
+                if($thisApp.Config.Dev_mode -and $Cookies -notmatch 'OptanonAlertBoxClosed'){
                   Write-EZLogs ">>>> Adding WebBrowser OptanonAlertBoxClosed cookie for URL domain: $($cookiedurldomain)" -logtype Webview2
                   $OptanonAlertBoxClosed = $synchash.WebBrowser.CoreWebView2.CookieManager.CreateCookie('OptanonAlertBoxClosed', $(Get-Date -Format 'yyy-MM-ddTHH:mm:ss.192Z'), $cookiedurldomain, '/')
-                  $Null = $synchash.WebBrowser.CoreWebView2.CookieManager.AddOrUpdateCookie($OptanonAlertBoxClosed) 
-                }               
-                $Cookies = $Cookies -split ';' 
+                  $Null = $synchash.WebBrowser.CoreWebView2.CookieManager.AddOrUpdateCookie($OptanonAlertBoxClosed)
+                }
+                $Cookies = $Cookies -split ';'
                 foreach($cookie in $Cookies){
                   try{
                     if($cookiedurldomain -eq '.youtube.com' -or $cookiedurldomain -eq '.google.com'){
@@ -3662,12 +3695,12 @@ if(player){
                         if($cookiename){
                           $cookiename = $cookiename.trim()
                         }
-                        $cookievalue = ([regex]::matches($cookie, "$cookiename=(?<value>.*)") | & { process {$_.groups[1].value}}) 
-                      } 
+                        $cookievalue = ([regex]::matches($cookie, "$cookiename=(?<value>.*)") | & { process {$_.groups[1].value}})
+                      }
                       switch ($cookiename){
                         'SIDCC' {
                           $isSecure = $false
-                        } 
+                        }
                         'SID' {
                           $isSecure = $false
                         }
@@ -3691,7 +3724,7 @@ if(player){
                         'test_cookie' {
                           $skip = $true
                           $isSecure = $false
-                        } 
+                        }
                         'DEVICE_INFO' {
                           $skip = $true
                           $isSecure = $false
@@ -3731,27 +3764,27 @@ if(player){
                       }
                       if(!$skip){
                         if($thisApp.Config.Youtube_Cookies.name){
-                          $index = $thisApp.Config.Youtube_Cookies.name.IndexOf($cookiename) 
+                          $index = $thisApp.Config.Youtube_Cookies.name.IndexOf($cookiename)
                           if($index -ne -1){
-                            $ExistingCookie = $thisApp.Config.Youtube_Cookies[$index] 
-                          } 
+                            $ExistingCookie = $thisApp.Config.Youtube_Cookies[$index]
+                          }
                         }
-                        #$null = $thisApp.Config.Youtube_Cookies.Clear()               
-                        if($cookiename -and $cookievalue -and !$ExistingCookie){ 
+                        #$null = $thisApp.Config.Youtube_Cookies.Clear()
+                        if($cookiename -and $cookievalue -and !$ExistingCookie){
                           $null = $thisApp.Config.Youtube_Cookies.add([cookie]@{
                               'Name'           = $cookiename
                               'isSecure'       = $isSecure
                               'Value'          = $cookievalue.trim()
                               'cookiedurldomain' = $cookiedurldomain
                           })
-                          Write-EZLogs "[WebBrowser] Found and adding new Youtube cookie  -- Name: $cookiename -- Value: $($cookievalue)" -showtime -logtype Webview2 -Dev_mode                              
+                          Write-EZLogs "[WebBrowser] Found and adding new Youtube cookie  -- Name: $cookiename -- Value: $($cookievalue)" -showtime -logtype Webview2 -Dev_mode
                         }elseif($cookiename -and $cookievalue -and $ExistingCookie.name -eq $cookiename -and $ExistingCookie.value -and $ExistingCookie.value -ne $cookievalue){
-                          Write-EZLogs "[WebBrowser] Found and updated Youtube cookie  -- Name: $cookiename -- Value: $($cookievalue.trim())" -showtime -logtype Webview2 -Dev_mode 
-                          $ExistingCookie.value = $cookievalue.trim() 
+                          Write-EZLogs "[WebBrowser] Found and updated Youtube cookie  -- Name: $cookiename -- Value: $($cookievalue.trim())" -showtime -logtype Webview2 -Dev_mode
+                          $ExistingCookie.value = $cookievalue.trim()
                         }
                       }
                     }
-                    $twilight_user = $Cookies | Where-Object {$_ -match 'twilight-user=(?<value>.*)'}       
+                    $twilight_user = $Cookies | Where-Object {$_ -match 'twilight-user=(?<value>.*)'}
                     if($twilight_user -and $thisApp.Config.Chat_WebView2_Cookie -ne $twilight_user){
                       $existin_twilight_user = ([regex]::matches($twilight_user,  'twilight-user=(?<value>.*)') | & { process {$_.groups[1].value}})
                       $thisApp.Config.Chat_WebView2_Cookie = $existin_twilight_user
@@ -3760,7 +3793,7 @@ if(player){
                   }catch{
                     Write-EZLogs "[WebBrowser] An exception occurred saving youtube cookie $($cookie | Out-String)" -showtime -catcherror $_
                   }
-                }                                                         
+                }
               }
             }catch{
               Write-EZLogs '[WebBrowser] An exception occurred in CoreWebView2 WebResourceRequested Event' -showtime -catcherror $_
@@ -3768,10 +3801,10 @@ if(player){
               $newRow = $null
               $cookiename = $null
               $cookievalue = $null
-            } 
+            }
           }
           $synchash.WebBrowser.CoreWebView2.add_WebResourceRequested($synchash.WebBrowser_CoreWebView2_WebResourceRequested_ScriptBlock)
-          
+
           if($synchash.WebBrowser_url){
             $NavigateUrl = $synchash.WebBrowser_url
           }else{
@@ -3779,7 +3812,7 @@ if(player){
             $synchash.WebBrowser_url = 'https://www.youtube.com'
           }
           #TODO: Extensions - Put into function
-          if($synchash.WebBrowserOptions.AreBrowserExtensionsEnabled -and $thisApp.Config.Webview2_Extensions.Count -gt 0){           
+          if($synchash.WebBrowserOptions.AreBrowserExtensionsEnabled -and $thisApp.Config.Webview2_Extensions.Count -gt 0){
             try{
               Write-EZLogs '>>>> Loading Webbrowser extensions' -logtype Webview2
               $Extensions = $thisApp.Config.Webview2_Extensions
@@ -3803,7 +3836,7 @@ if(player){
                                   [Action]{
                                     if($InstallTask){
                                       try{
-                                        Write-EZLogs "Installed extension: $($InstallTask.Result | out-string)" -logtype Webview2 -Success
+                                        Write-EZLogs "Installed extension: $($InstallTask.Result.Name)" -logtype Webview2 -Success
                                         if($Extension.id -ne $InstallTask.Result.ID){
                                           $ExtensionUpdateIndex = $thisApp.Config.Webview2_Extensions.name.IndexOf($InstallTask.Result.Name)
                                           if($ExtensionUpdateIndex -eq -1){
@@ -3816,14 +3849,14 @@ if(player){
                                             $ExtensionUpdate.id = $InstallTask.Result.ID
                                           }else{
                                             Write-EZLogs "Unable to find extension with name '$($InstallTask.Result.Name)' in Config.Webview2_Extensions" -logtype Webview2 -warning
-                                          }                                                                         
+                                          }
                                         }else{
                                           Write-EZLogs "| Installed extension id: $($InstallTask.Result.ID)" -logtype Webview2
                                         }
                                       }catch{
                                         Write-EZLogs "An exception occurred loading Webbrowser extension: $($Extension | Out-String)" -catcherror $_
                                       }finally{
-                                        Add-Webview2Extension -synchash $synchash -thisapp $thisApp -Extensions $Extension -WebView2 $synchash.WebBrowser
+                                        Add-Webview2Extension -synchash $synchash -thisapp $thisApp -Extensions $Extension
                                       }
                                     }
                                   }.GetNewClosure()
@@ -3840,7 +3873,7 @@ if(player){
                   }catch{
                     Write-EZLogs "An exception occurred loading Webbrowser extensions: $($Task.Result | Out-String)" -catcherror $_
                   }finally{
-                    Add-Webview2Extension -synchash $synchash -thisapp $thisApp -Extensions $Task.Result -WebView2 $synchash.WebBrowser 
+                    Add-Webview2Extension -synchash $synchash -thisapp $thisApp -Extensions $Task.Result
                     if($Task){
                       $null = $Task.Dispose()
                       $task = $Null
@@ -3851,11 +3884,11 @@ if(player){
                       $synchash.txtUrl.text = $synchash.WebBrowser_url
                     }elseif($NavigateUrl -and $synchash.WebBrowser.Source -ne $synchash.txtUrl.text){
                       Write-EZLogs "[WebBrowser] >>>> Navigating WebBrowser to $NavigateUrl" -logtype Webview2
-                      $synchash.WebBrowser.CoreWebView2.Navigate($NavigateUrl) 
+                      $synchash.WebBrowser.CoreWebView2.Navigate($NavigateUrl)
                       $synchash.txtUrl.text = $NavigateUrl
                     }
-                  }                                       
-                }.GetNewClosure() 
+                  }
+                }.GetNewClosure()
               )
             }catch{
               Write-EZLogs 'An exception occurred loading Webbrowser extensions' -catcherror $_
@@ -3863,18 +3896,18 @@ if(player){
           }else{
             if($synchash.WebBrowser_url){
               Write-EZLogs "[WebBrowser] >>>> Navigating WebBrowser to $($synchash.WebBrowser_url)" -logtype Webview2
-              $synchash.WebBrowser.CoreWebView2.Navigate($synchash.WebBrowser_url) 
+              $synchash.WebBrowser.CoreWebView2.Navigate($synchash.WebBrowser_url)
             }else{
               Write-EZLogs "[WebBrowser] >>>> Navigating WebBrowser to $NavigateUrl" -logtype Webview2
-              $synchash.WebBrowser.CoreWebView2.Navigate($NavigateUrl) 
+              $synchash.WebBrowser.CoreWebView2.Navigate($NavigateUrl)
             }
-          }   
-          
+          }
+
           $synchash.WebBrowser_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock = {
             try{
               $synchashWeak = [System.WeakReference]::new($synchash)
-              if($synchashWeak.Target.WebBrowser.CoreWebView2.IsDocumentPlayingAudio){       
-                #$synchash.WebBrowser.CoreWebView2.TrySuspendAsync()                                             
+              if($synchashWeak.Target.WebBrowser.CoreWebView2.IsDocumentPlayingAudio){
+                #$synchash.WebBrowser.CoreWebView2.TrySuspendAsync()
                 if(-not [string]::IsNullOrEmpty($synchashWeak.Target.Current_Audio_Session.GroupingParam) -and $synchashWeak.Target.Managed_AudioSession_Processes -notcontains $synchashWeak.Target.WebBrowser.CoreWebView2.BrowserProcessId){
                   Write-EZLogs "[WebBrowser] WebBrowser.CoreWebView2: $($synchashWeak.Target.WebBrowser.CoreWebView2.DocumentTitle) - Source: $($synchashWeak.Target.WebBrowser.CoreWebView2.Source) - ContainsFullScreenElement: $($synchashWeak.Target.WebBrowser.CoreWebView2.ContainsFullScreenElement)" -loglevel 2 -logtype Webview2
                   Write-EZLogs "[WebBrowser] >>>> Webview2 Audio has begun playing: Audio: $($synchashWeak.Target.WebBrowser.CoreWebView2.IsDocumentPlayingAudio) Mute: $($synchashWeak.Target.WebBrowser.CoreWebView2.IsMuted)" -showtime -loglevel 2 -logtype Webview2
@@ -3884,20 +3917,20 @@ if(player){
                   Set-AudioSessions -thisApp $thisApp -synchash $synchashWeak.Target
                   if($synchashWeak.Target.Managed_AudioSession_Processes){
                     $null = $synchashWeak.Target.Managed_AudioSession_Processes.add($synchashWeak.Target.WebBrowser.CoreWebView2.BrowserProcessId)
-                  }                
+                  }
                 }
-              }elseif($synchashWeak.Target.WebBrowser.CoreWebView2.IsMuted){        
-                Write-EZLogs '#### WebBrowser Audio has been muted' -showtime -LogLevel 2 
+              }elseif($synchashWeak.Target.WebBrowser.CoreWebView2.IsMuted){
+                Write-EZLogs '#### WebBrowser Audio has been muted' -showtime -LogLevel 2
               }
             }catch{
               Write-EZLogs '[WebBrowser] An exception occurred in WebBrowser.CoreWebView2.IsDocumentPlayingAudioChanged' -catcherror $_
-            }    
-          }        
-          $synchash.WebBrowser.CoreWebView2.add_IsDocumentPlayingAudioChanged($synchash.WebBrowser_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock)  
+            }
+          }
+          $synchash.WebBrowser.CoreWebView2.add_IsDocumentPlayingAudioChanged($synchash.WebBrowser_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock)
 
           if(!$Synchash.WebView2_Playlist_SelectedCommand){
             $Synchash.WebView2_Playlist_SelectedCommand = {
-              try{  
+              try{
                 $LinkUri = $synchash.WebView2_ContextMenuLink
                 $linktext = $synchash.WebView2_ContextMenuText
                 $Channel = $synchash.WebView2_ContextMenuChannel
@@ -3919,15 +3952,15 @@ if(player){
                   Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -AddtoPlaylist $Playlist_name
                 }else{
                   Write-EZLogs "[WebBrowser] The provided URL is not valid or unable to find playlist! -- $LinkUri" -showtime -warning -logtype Youtube
-                }                
+                }
               }catch{
                 Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
-              }            
+              }
             }
           }
           if(!$Synchash.WebView2_Add_New_Playlist_SelectedCommand){
             $Synchash.WebView2_Add_New_Playlist_SelectedCommand = {
-              try{  
+              try{
                 $LinkUri = $synchash.WebView2_ContextMenuLink
                 $linktext = $synchash.WebView2_ContextMenuText
                 $Channel = $synchash.WebView2_ContextMenuChannel
@@ -3936,7 +3969,7 @@ if(player){
                 if(-not [string]::IsNullOrEmpty($Playlist_name)){
                   $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
                   $pattern = "[™`�$illegal]"
-                  $Playlist_name = ([Regex]::Replace($Playlist_name, $pattern, '')).trim() 
+                  $Playlist_name = ([Regex]::Replace($Playlist_name, $pattern, '')).trim()
                   [int]$character_Count = ($Playlist_name | measure-object -Character -ErrorAction SilentlyContinue).Characters
                   if([int]$character_Count -ge 100){
                     write-ezlogs "Playlist name too long! ($character_Count characters). Please choose a name 100 characters or less " -showtime -warning
@@ -3958,12 +3991,12 @@ if(player){
                   Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -AddtoPlaylist $Playlist_name
                 }else{
                   Write-EZLogs "[WebBrowser] The provided URL is not valid or no valud playlist name was provided! -- $LinkUri" -showtime -warning -logtype Youtube
-                }                
+                }
               }catch{
                 Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
-              }             
+              }
             }
-          }         
+          }
           $synchash.WebBrowserWebView2_ContextMenuRequested_Scriptblock = [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuRequestedEventArgs]]{
             Param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuRequestedEventArgs]$e)
             try{
@@ -3980,7 +4013,7 @@ if(player){
               $synchashWeak.Target.WebView2_ContextMenuLinkType = $Null
               $synchashWeak.Target.WebView2_ContextMenuSpotifyID = $Null
               $menulist = $e.MenuItems
-              if($e.ContextMenuTarget.LinkUri -match 'youtube|youtu\.be|youtube\-nocookie\.com' -and ($e.ContextMenuTarget.LinkUri -match 'v=|\/watch\/|\/v\/|list\=')){ 
+              if($e.ContextMenuTarget.LinkUri -match 'youtube|youtu\.be|youtube\-nocookie\.com' -and ($e.ContextMenuTarget.LinkUri -match 'v=|\/watch\/|\/v\/|list\=')){
                 $synchashWeak.Target.WebView2_ContextMenuLink = $e.ContextMenuTarget.LinkUri
                 $synchashWeak.Target.WebView2_ContextMenuText = $e.contextMenuTarget.LinkText
                 #Download and Add to Youtube library
@@ -3990,11 +4023,11 @@ if(player){
                     $image_bytes = [System.IO.File]::ReadAllBytes($DownloadIcon)
                     $synchashWeak.Target.DownloadIcon_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
                   }
-                  [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_DownloadMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Download and add to Media Library',$synchashWeak.Target.DownloadIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)          
+                  [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_DownloadMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Download and add to Media Library',$synchashWeak.Target.DownloadIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                   $synchashWeak.Target.WebView2_DownloadMediaCommand.add_CustomItemSelected({
                       $LinkUri = $synchash.WebView2_ContextMenuLink
                       $linktext = $synchash.WebView2_ContextMenuText
-                      try{  
+                      try{
                         $Options = [System.Collections.Generic.List[PSCustomObject]]::new()
                         $OptionPath = [PSCustomObject]@{
                           'Name' = 'FolderPath'
@@ -4020,7 +4053,7 @@ if(player){
                           'Value' = $false
                           'Output' = ''
                         }
-                        [void]$Options.add($OptionSponserBlock) 
+                        [void]$Options.add($OptionSponserBlock)
                         $Result = Show-CustomWindow -thisApp $thisApp -WindowTitle 'Download Media' -HeaderText 'Download Media Options' -Message "Select the following options below to confirm download of media: $($LinkUri)" -Type Options -Options $Options -WaitforOutput -TopMost
                         $Destination = $Result[0].Output
                         $AudioOnly = $Result[1].Output
@@ -4031,21 +4064,14 @@ if(player){
                         }else{
                           Write-EZLogs "[WebBrowser] The provided URL or path is not valid or was not provided! -- Link: $LinkUri - Directory: $result" -showtime -warning -logtype Youtube
                         }
-                        <#                          $result = Open-FolderDialog -Title 'Select the directory path where media will be downloaded to'
-                            if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and [System.IO.Directory]::Exists($result)){
-                            Write-EZLogs "[WebBrowser] >>>> Downloading $($linktext) to $result" -showtime
-                            Invoke-DownloadMedia -Download_URL $LinkUri -Title_name $linktext -Download_Path $result -synchash $synchash -thisapp $thisApp -Show_notification
-                            }else{
-                            Write-EZLogs "[WebBrowser] The provided URL or path is not valid or was not provided! -- Link: $LinkUri - Directory: $result" -showtime -warning -logtype Youtube
-                        } #>               
                       }catch{
                         Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
-                      }                                   
+                      }
                   })
                 }
-                $menulist.Insert(2, $synchashWeak.Target.WebView2_DownloadMediaCommand)                   
-                #Add to Youtube library 
-                if($thisApp.Config.Import_Youtube_Media){                  
+                $menulist.Insert(2, $synchashWeak.Target.WebView2_DownloadMediaCommand)
+                #Add to Youtube library
+                if($thisApp.Config.Import_Youtube_Media){
                   $YoutubeIcon = "$($thisApp.Config.Current_folder)\Resources\Youtube\Material-Youtube_Auth.png"
                   if([System.IO.File]::Exists($YoutubeIcon) -and !$synchashWeak.Target.YoutubeIcon_StreamImage){
                     $image_bytes = [System.IO.File]::ReadAllBytes($YoutubeIcon)
@@ -4072,51 +4098,51 @@ if(player){
                     $encoder.Save($stream_image)
                   }
                   if(!$synchashWeak.Target.WebView2_AddMediaCommand){
-                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_AddMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Youtube Media Library',$synchashWeak.Target.YoutubeIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)          
+                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_AddMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Youtube Media Library',$synchashWeak.Target.YoutubeIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                     $synchashWeak.Target.WebView2_AddMediaCommand.add_CustomItemSelected({
                         $LinkUri = $synchash.WebView2_ContextMenuLink
-                        $linktext = $synchash.WebView2_ContextMenuText   
-                        try{  
+                        $linktext = $synchash.WebView2_ContextMenuText
+                        try{
                           if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri)){
                             if($thisApp.Config.PlayLink_OnDrop){
                               Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -StartPlayback
                             }
                             Write-EZLogs "[WebBrowser] >>>> Adding Youtube video $LinkUri - $($linktext)" -showtime -color cyan -logtype Youtube
-                            Import-Youtube -Youtube_URL $LinkUri -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.config.Media_Profile_Directory  -thisApp $thisApp   
+                            Import-Youtube -Youtube_URL $LinkUri -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.config.Media_Profile_Directory  -thisApp $thisApp
                           }else{
                             Write-EZLogs "[WebBrowser] The provided URL is not valid or was not provided! -- $LinkUri" -showtime -warning -logtype Youtube
-                          }                
+                          }
                         }catch{
                           Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
-                        }                                   
+                        }
                     })
                   }
-                  $menulist.Insert(2, $synchashWeak.Target.WebView2_AddMediaCommand) 
+                  $menulist.Insert(2, $synchashWeak.Target.WebView2_AddMediaCommand)
 
-                  #Play Media               
+                  #Play Media
                   if(!$synchashWeak.Target.WebView2_PlayMediaCommand){
-                    $Samson_Icon = "$($thisApp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico"               
+                    $Samson_Icon = "$($thisApp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico"
                     if([System.IO.File]::Exists($Samson_Icon) -and !$synchashWeak.Target.Samson_Icon_StreamImage){
                       $image_bytes = [System.IO.File]::ReadAllBytes($Samson_Icon)
-                      $synchashWeak.Target.Samson_Icon_StreamImage = [System.IO.MemoryStream]::new($image_bytes) 
-                    } 
-                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_PlayMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem("Play with $($thisApp.Config.App_name)",$synchashWeak.Target.Samson_Icon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)          
+                      $synchashWeak.Target.Samson_Icon_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
+                    }
+                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_PlayMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem("Play with $($thisApp.Config.App_name)",$synchashWeak.Target.Samson_Icon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                     $synchashWeak.Target.WebView2_PlayMediaCommand.add_CustomItemSelected({
                         $LinkUri = $synchash.WebView2_ContextMenuLink
-                        $linktext = $synchash.WebView2_ContextMenuText    
-                        try{  
+                        $linktext = $synchash.WebView2_ContextMenuText
+                        try{
                           if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri)){
                             if($LinkUri -match '&t='){
                               $LinkUri = ($($LinkUri) -split('&t='))[0].trim()
-                            }          
-                            Write-EZLogs "[WebBrowser] >>>> Playing Youtube link $LinkUri" -showtime -color cyan 
+                            }
+                            Write-EZLogs "[WebBrowser] >>>> Playing Youtube link $LinkUri" -showtime -color cyan
                             Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -PlayOnly -StartPlayback
                           }else{
                             Write-EZLogs "[WebBrowser] The provided URL is not valid or was not provided! -- $LinkUri" -showtime -warning -logtype Youtube
-                          }                
+                          }
                         }catch{
                           Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
-                        }                                   
+                        }
                     })
                   }
                   $menulist.Insert(0, $synchashWeak.Target.WebView2_PlayMediaCommand)
@@ -4128,53 +4154,52 @@ if(player){
                       $image_bytes = [System.IO.File]::ReadAllBytes($QueueIcon)
                       $synchashWeak.Target.AddToQueue_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
                     }
-                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_AddMediaQueueCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Play Queue',$synchashWeak.Target.AddToQueue_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)          
+                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_AddMediaQueueCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Play Queue',$synchashWeak.Target.AddToQueue_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                     $synchashWeak.Target.WebView2_AddMediaQueueCommand.add_CustomItemSelected({
                         $LinkUri = $synchash.WebView2_ContextMenuLink
-                        $linktext = $synchash.WebView2_ContextMenuText    
-                        try{  
+                        $linktext = $synchash.WebView2_ContextMenuText
+                        try{
                           if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri)){
-                            Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -AddtoQueue                           
+                            Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -AddtoQueue
                           }else{
                             Write-EZLogs "[WebBrowser] The provided URL is not valid or was not provided! -- $LinkUri" -showtime -warning -logtype Youtube
-                          }                
+                          }
                         }catch{
                           Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
-                        }                                   
+                        }
                     })
                   }
-                  $menulist.Insert(1, $synchashWeak.Target.WebView2_AddMediaQueueCommand) 
+                  $menulist.Insert(1, $synchashWeak.Target.WebView2_AddMediaQueueCommand)
 
-                  #Add to playlists                 
+                  #Add to playlists
                   if(!$synchashWeak.Target.WebView2_AddPlaylistSubCommand){
                     $QueueIcon = "$($thisApp.Config.Current_folder)\Resources\Images\Material-PlaylistPlus.png"
                     if([System.IO.File]::Exists($QueueIcon) -and !$synchashWeak.Target.QueueIcon_StreamImage){
                       $image_bytes = [System.IO.File]::ReadAllBytes($QueueIcon)
                       $synchashWeak.Target.QueueIcon_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
-                    } 
-                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_AddPlaylistSubCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Playlist',$synchashWeak.Target.QueueIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Submenu)   
+                    }
+                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_AddPlaylistSubCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Playlist',$synchashWeak.Target.QueueIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Submenu)
                   }else{
                     $synchashWeak.Target.WebView2_AddPlaylistSubCommand.Children.Clear()
-                  }                  
+                  }
                   if($synchashWeak.Target.all_playlists.count -gt 0){
                     foreach ($Playlist in $synchashWeak.Target.all_playlists.where({-not [string]::IsNullOrEmpty($_.name) -and $_.Playlist_tracks.values.url -notcontains $e.ContextMenuTarget.LinkUri}))
                     {
                       $Playlist_name = $Playlist.name
                       $Playlist_ID = $Playlist.Playlist_ID
                       $ID_Cleaned = ($Playlist_ID -replace '\s', '').GetHashCode()
-                      #$Playlist_tracks = $Playlist.Playlist_tracks.values
                       if(!$synchashWeak.Target."WebView2_Playlist_$ID_Cleaned"){
                         [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target."WebView2_Playlist_$ID_Cleaned" = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem($Playlist_name,$null,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
-                        $synchashWeak.Target."WebView2_Playlist_$ID_Cleaned".add_CustomItemSelected($Synchash.WebView2_Playlist_SelectedCommand)  
+                        $synchashWeak.Target."WebView2_Playlist_$ID_Cleaned".add_CustomItemSelected($Synchash.WebView2_Playlist_SelectedCommand)
                       }
                       $Null = $synchashWeak.Target.WebView2_AddPlaylistSubCommand.Children.Add($synchashWeak.Target."WebView2_Playlist_$ID_Cleaned")
                     }
                     if(!$synchashWeak.Target.WebView2_Add_New_Playlist){
                       [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_Add_New_Playlist = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to new playlist...',$synchashWeak.Target.QueueIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
-                      $synchashWeak.Target.WebView2_Add_New_Playlist.add_CustomItemSelected($Synchash.WebView2_Add_New_Playlist_SelectedCommand)  
+                      $synchashWeak.Target.WebView2_Add_New_Playlist.add_CustomItemSelected($Synchash.WebView2_Add_New_Playlist_SelectedCommand)
                     }
-                    $Null = $synchashWeak.Target.WebView2_AddPlaylistSubCommand.Children.Add($synchashWeak.Target.WebView2_Add_New_Playlist) 
-                  }                                    
+                    $Null = $synchashWeak.Target.WebView2_AddPlaylistSubCommand.Children.Add($synchashWeak.Target.WebView2_Add_New_Playlist)
+                  }
                   $menulist.Insert(2, $synchashWeak.Target.WebView2_AddPlaylistSubCommand)
                 }
               }elseif($e.ContextMenuTarget.LinkUri -match $TwitchRegex){
@@ -4185,35 +4210,35 @@ if(player){
                   $synchashWeak.Target.WebView2_ContextMenuText = $e.contextMenuTarget.LinkText
                   $synchashWeak.Target.WebView2_ContextMenuChannel = $Channel
 
-                  #Add to Twitch library 
-                  if($thisApp.Config.Import_Twitch_Media){                  
+                  #Add to Twitch library
+                  if($thisApp.Config.Import_Twitch_Media){
                     $LibraryIcon = "$($thisApp.Config.Current_folder)\Resources\Images\Library.png"
                     if(!$synchashWeak.Target.Libraryicon_StreamImage -and [system.io.file]::Exists($LibraryIcon)){
                       $image_bytes = [System.IO.File]::ReadAllBytes($LibraryIcon)
                       $synchashWeak.Target.Libraryicon_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
                     }
                     if(!$synchashWeak.Target.WebView2_AddTwitchMediaCommand){
-                      [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_AddTwitchMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Twitch Media Library',$synchashWeak.Target.Libraryicon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)          
+                      [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_AddTwitchMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Twitch Media Library',$synchashWeak.Target.Libraryicon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                       $synchashWeak.Target.WebView2_AddTwitchMediaCommand.add_CustomItemSelected({
                           $LinkUri = $synchash.WebView2_ContextMenuLink
                           $linktext = $synchash.WebView2_ContextMenuText
-                          $Channel = $synchash.WebView2_ContextMenuChannel 
-                          try{  
+                          $Channel = $synchash.WebView2_ContextMenuChannel
+                          try{
                             if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and $Channel){
                               Write-EZLogs "[WebBrowser] >>>> Adding Twitch Channel: $Channel - Link: $LinkUri - Linktext: $($linktext) -- to Twitch Media Library" -showtime
                               Import-Twitch -Twitch_URL $LinkUri -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace
                             }else{
                               Write-EZLogs "[WebBrowser] The provided URL is not valid or was not provided! -- Link: $LinkUri -- Channel: $Channel" -showtime -warning
-                            }                
+                            }
                           }catch{
                             Write-EZLogs '[WebBrowser] An exception occurred in AddTwitchMediaCommand' -showtime -catcherror $_
-                          }                                   
+                          }
                       })
                     }
-                    $menulist.Insert(0, $synchashWeak.Target.WebView2_AddTwitchMediaCommand) 
+                    $menulist.Insert(0, $synchashWeak.Target.WebView2_AddTwitchMediaCommand)
 
                     #Twitch Actions
-                    $Followed = $false                
+                    $Followed = $false
                     if(!$synchashWeak.Target.WebView2_TwitchActionSubCommand){
                       $TwitchIcon = "$($thisApp.Config.Current_folder)\Resources\Twitch\Material-Twitch.png"
                       if(!$synchashWeak.Target.TwitchIcon_StreamImage -and [System.IO.File]::Exists($TwitchIcon)){
@@ -4240,7 +4265,7 @@ if(player){
                         $synchashWeak.Target.TwitchIcon_StreamImage = [System.IO.MemoryStream]::new()
                         $encoder.Save($synchashWeak.Target.TwitchIcon_StreamImage)
                       }
-                      [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_TwitchActionSubCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Twitch Actions',$synchashWeak.Target.TwitchIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Submenu)   
+                      [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_TwitchActionSubCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Twitch Actions',$synchashWeak.Target.TwitchIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Submenu)
                     }else{
                       $synchashWeak.Target.WebView2_TwitchActionSubCommand.Children.Clear()
                     }
@@ -4260,54 +4285,54 @@ if(player){
                       }
                     }
                     if($Followed){
-                      $Unfollow_Icon = "$($thisApp.Config.Current_folder)\Resources\Images\UserUnfollowLine.png"               
+                      $Unfollow_Icon = "$($thisApp.Config.Current_folder)\Resources\Images\UserUnfollowLine.png"
                       if([System.IO.File]::Exists($Unfollow_Icon) -and !$synchashWeak.Target.Unfollow_StreamImage){
                         $image_bytes = [System.IO.File]::ReadAllBytes($Unfollow_Icon)
-                        $synchashWeak.Target.Unfollow_StreamImage = [System.IO.MemoryStream]::new($image_bytes) 
+                        $synchashWeak.Target.Unfollow_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
                       }
                       if(!$synchashWeak.Target.TwitchRemoveFollowCommand){
-                        [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.TwitchRemoveFollowCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem("Unfollow Channel",$synchashWeak.Target.Unfollow_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)          
+                        [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.TwitchRemoveFollowCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem("Unfollow Channel",$synchashWeak.Target.Unfollow_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                         $synchashWeak.Target.TwitchRemoveFollowCommand.add_CustomItemSelected({
                             $LinkUri = $synchash.WebView2_ContextMenuLink
-                            $linktext = $synchash.WebView2_ContextMenuText    
+                            $linktext = $synchash.WebView2_ContextMenuText
                             $Channel = $synchash.WebView2_ContextMenuChannel
-                            try{  
-                              if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and $channel){        
+                            try{
+                              if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and $channel){
                                 Write-EZLogs "[WebBrowser_NOTFINISHED] >>>> Unfollowing Twitch channel: $channel - link $LinkUri" -showtime
                                 #Add-TwitchPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -PlayOnly -Channel $Channel
                               }else{
                                 Write-EZLogs "[WebBrowser_NOTFINISHED] The provided URL is not valid or was not provided! -- $LinkUri -- channel: $Channel" -showtime -warning -logtype Webview2
-                              }                
+                              }
                             }catch{
                               Write-EZLogs '[WebBrowser] An exception occurred in TwitchRemoveFollowCommand' -showtime -catcherror $_
-                            }   
+                            }
                         })
-                      } 
+                      }
                       [void]$synchashWeak.Target.WebView2_TwitchActionSubCommand.Children.Add($synchashWeak.Target.TwitchRemoveFollowCommand)
                     }else{
-                      $follow_Icon = "$($thisApp.Config.Current_folder)\Resources\Images\UserfollowLine.png"               
+                      $follow_Icon = "$($thisApp.Config.Current_folder)\Resources\Images\UserfollowLine.png"
                       if([System.IO.File]::Exists($follow_Icon) -and !$synchashWeak.Target.follow_StreamImage){
                         $image_bytes = [System.IO.File]::ReadAllBytes($follow_Icon)
-                        $synchashWeak.Target.follow_StreamImage = [System.IO.MemoryStream]::new($image_bytes) 
+                        $synchashWeak.Target.follow_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
                       }
                       if(!$synchashWeak.Target.TwitchAddFollowCommand){
-                        [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.TwitchAddFollowCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem("Follow Channel",$synchashWeak.Target.follow_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)          
+                        [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.TwitchAddFollowCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem("Follow Channel (NOT WORKING)",$synchashWeak.Target.follow_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                         $synchashWeak.Target.TwitchAddFollowCommand.add_CustomItemSelected({
                             $LinkUri = $synchash.WebView2_ContextMenuLink
-                            $linktext = $synchash.WebView2_ContextMenuText    
+                            $linktext = $synchash.WebView2_ContextMenuText
                             $Channel = $synchash.WebView2_ContextMenuChannel
-                            try{  
-                              if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and $channel){        
+                            try{
+                              if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and $channel){
                                 Write-EZLogs "[WebBrowser_NOTFINISHED] >>>> Adding new follow for Twitch channel: $channel - link $LinkUri" -showtime
                                 #Add-TwitchPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -PlayOnly -Channel $Channel
                               }else{
                                 Write-EZLogs "[WebBrowser_NOTFINISHED] The provided URL is not valid or was not provided! -- $LinkUri -- channel: $Channel" -showtime -warning
-                              }                
+                              }
                             }catch{
                               Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
-                            }   
+                            }
                         })
-                      } 
+                      }
                       [void]$synchashWeak.Target.WebView2_TwitchActionSubCommand.Children.Add($synchashWeak.Target.TwitchAddFollowCommand)
                     }
                     if($TwitchMedia){
@@ -4322,10 +4347,10 @@ if(player){
                         $Header = "Enable Live Notifications"
                         $isChecked = $false
                         $Bell_Icon = "$($thisApp.Config.Current_folder)\Resources\Images\BellCheck.png"
-                      }                                        
+                      }
                       if([System.IO.File]::Exists($Bell_Icon)){
                         $image_bytes = [System.IO.File]::ReadAllBytes($Bell_Icon)
-                        $synchashWeak.Target.Bell_StreamImage = [System.IO.MemoryStream]::new($image_bytes) 
+                        $synchashWeak.Target.Bell_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
                       }
                       if(!$synchashWeak.Target.TwitchLiveAlertCommand){
                         $synchashWeak.Target.TwitchLiveAlertCommand = {
@@ -4333,30 +4358,31 @@ if(player){
                           $linktext = $synchash.WebView2_ContextMenuText
                           $Channel = $synchash.WebView2_ContextMenuChannel
                           $isChecked = [bool]($this.Label -eq "Disable Live Notifications")
-                          try{  
-                            if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and $channel -and $isChecked){        
+                          try{
+                            #TODO: Finish or remove
+                            if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and $channel -and $isChecked){
                               Write-EZLogs "[WebBrowser_NOTFINISHED] >>>> Disabling Live Alert for Twitch channel: $channel - link $LinkUri" -showtime
                               #Add-TwitchPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -PlayOnly -Channel $Channel
                             }elseif(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and $channel){
                               Write-EZLogs "[WebBrowser_NOTFINISHED] >>>> Enabling Live Alert for Twitch channel: $channel - link $LinkUri" -showtime
                             }else{
                               Write-EZLogs "[WebBrowser_NOTFINISHED] The provided URL is not valid or was not provided! -- $LinkUri -- channel: $Channel" -showtime -warning
-                            }                
+                            }
                           }catch{
                             Write-EZLogs '[WebBrowser] An exception occurred in TwitchLiveAlertCommand' -showtime -catcherror $_
-                          }  
+                          }
                         }
                       }
 
                       if($isChecked){
                         if(!$synchashWeak.Target.TwitchAlertDisableCommand){
-                          [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.TwitchAlertDisableCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem($Header,$synchashWeak.Target.Bell_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)                        
+                          [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.TwitchAlertDisableCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem($Header,$synchashWeak.Target.Bell_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                           $synchashWeak.Target.TwitchAlertDisableCommand.add_CustomItemSelected($synchashWeak.Target.TwitchLiveAlertCommand)
-                        } 
+                        }
                         [void]$synchashWeak.Target.WebView2_TwitchActionSubCommand.Children.Add($synchashWeak.Target.TwitchAlertDisableCommand)
                       }else{
                         if(!$synchashWeak.Target.TwitchAlertEnableCommand){
-                          [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.TwitchAlertEnableCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem($Header,$synchashWeak.Target.Bell_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)                        
+                          [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.TwitchAlertEnableCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem($Header,$synchashWeak.Target.Bell_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                           $synchashWeak.Target.TwitchAlertEnableCommand.add_CustomItemSelected($synchashWeak.Target.TwitchLiveAlertCommand)
                         }
                         [void]$synchashWeak.Target.WebView2_TwitchActionSubCommand.Children.Add($synchashWeak.Target.TwitchAlertEnableCommand)
@@ -4364,28 +4390,28 @@ if(player){
                     }
                     $menulist.Insert(1, $synchashWeak.Target.WebView2_TwitchActionSubCommand)
                   }
-                  #Play Media               
+                  #Play Media
                   if(!$synchashWeak.Target.TwitchWebView2_PlayMediaCommand){
-                    $Samson_Icon = "$($thisApp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico"               
+                    $Samson_Icon = "$($thisApp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico"
                     if([System.IO.File]::Exists($Samson_Icon) -and !$synchashWeak.Target.Samson_Icon_StreamImage){
                       $image_bytes = [System.IO.File]::ReadAllBytes($Samson_Icon)
-                      $synchashWeak.Target.Samson_Icon_StreamImage = [System.IO.MemoryStream]::new($image_bytes) 
-                    } 
-                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.TwitchWebView2_PlayMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem("Play with $($thisApp.Config.App_name)",$synchashWeak.Target.Samson_Icon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)          
+                      $synchashWeak.Target.Samson_Icon_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
+                    }
+                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.TwitchWebView2_PlayMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem("Play with $($thisApp.Config.App_name)",$synchashWeak.Target.Samson_Icon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                     $synchashWeak.Target.TwitchWebView2_PlayMediaCommand.add_CustomItemSelected({
                         $LinkUri = $synchash.WebView2_ContextMenuLink
-                        $linktext = $synchash.WebView2_ContextMenuText    
+                        $linktext = $synchash.WebView2_ContextMenuText
                         $Channel = $synchash.WebView2_ContextMenuChannel
-                        try{  
-                          if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and $channel){        
+                        try{
+                          if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and $channel){
                             Write-EZLogs "[WebBrowser] >>>> Playing Twitch link $LinkUri -- channel: $channel" -showtime -logtype Webview2
                             Add-TwitchPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -PlayOnly -Channel $Channel
                           }else{
                             Write-EZLogs "[WebBrowser] The provided URL is not valid or was not provided! -- $LinkUri -- channel: $Channel" -showtime -warning -logtype Webview2
-                          }                
+                          }
                         }catch{
                           Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
-                        }   
+                        }
                     })
                   }
                   $menulist.Insert(0, $synchashWeak.Target.TwitchWebView2_PlayMediaCommand)
@@ -4396,36 +4422,36 @@ if(player){
                       $image_bytes = [System.IO.File]::ReadAllBytes($QueueIcon)
                       $synchashWeak.Target.AddToQueue_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
                     }
-                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.TwitchWebView2_AddMediaQueueCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Play Queue',$synchashWeak.Target.AddToQueue_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)          
+                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.TwitchWebView2_AddMediaQueueCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Play Queue',$synchashWeak.Target.AddToQueue_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                     $synchashWeak.Target.TwitchWebView2_AddMediaQueueCommand.add_CustomItemSelected({
                         $LinkUri = $synchash.WebView2_ContextMenuLink
                         $linktext = $synchash.WebView2_ContextMenuText
                         $Channel = $synchash.WebView2_ContextMenuChannel
-                        try{  
+                        try{
                           if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri) -and $Channel){
                             Write-EZLogs "[WebBrowser] Found valid Twitch URL: $LinkUri -- channel: $Channel" -showtime -logtype Webview2
-                            Add-TwitchPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -Channel $Channel -AddtoQueue   
+                            Add-TwitchPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -Channel $Channel -AddtoQueue
                           }else{
                             Write-EZLogs "[WebBrowser] The provided URL is not valid or was not provided! -- $LinkUri -- channel: $Channel" -showtime -warning -logtype Webview2
-                          }                
+                          }
                         }catch{
                           Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
-                        }                                   
+                        }
                     })
                   }
-                  $menulist.Insert(1, $synchashWeak.Target.TwitchWebView2_AddMediaQueueCommand) 
+                  $menulist.Insert(1, $synchashWeak.Target.TwitchWebView2_AddMediaQueueCommand)
 
-                  #Add to playlists                 
+                  #Add to playlists
                   if(!$synchashWeak.Target.WebView2_AddPlaylistSubCommand){
                     $QueueIcon = "$($thisApp.Config.Current_folder)\Resources\Images\Material-PlaylistPlus.png"
                     if([System.IO.File]::Exists($QueueIcon) -and !$synchashWeak.Target.QueueIcon_StreamImage){
                       $image_bytes = [System.IO.File]::ReadAllBytes($QueueIcon)
                       $synchashWeak.Target.QueueIcon_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
-                    } 
-                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_AddPlaylistSubCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Playlist',$synchashWeak.Target.QueueIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Submenu)   
+                    }
+                    [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_AddPlaylistSubCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Playlist',$synchashWeak.Target.QueueIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Submenu)
                   }else{
                     $synchashWeak.Target.WebView2_AddPlaylistSubCommand.Children.Clear()
-                  }                  
+                  }
                   if($synchashWeak.Target.all_playlists.count -gt 0){
                     foreach ($Playlist in $synchashWeak.Target.all_playlists.where({-not [string]::IsNullOrEmpty($_.name) -and $_.Playlist_tracks.values.url -notcontains $e.ContextMenuTarget.LinkUri}))
                     {
@@ -4434,16 +4460,16 @@ if(player){
                       $ID_Cleaned = ($Playlist_ID -replace '\s', '').GetHashCode()
                       if(!$synchashWeak.Target."WebView2_Playlist_$ID_Cleaned"){
                         [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target."WebView2_Playlist_$ID_Cleaned" = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem($Playlist_name,$null,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
-                        $synchashWeak.Target."WebView2_Playlist_$ID_Cleaned".add_CustomItemSelected($Synchash.WebView2_Playlist_SelectedCommand)  
+                        $synchashWeak.Target."WebView2_Playlist_$ID_Cleaned".add_CustomItemSelected($Synchash.WebView2_Playlist_SelectedCommand)
                       }
                       $Null = $synchashWeak.Target.WebView2_AddPlaylistSubCommand.Children.Add($synchashWeak.Target."WebView2_Playlist_$ID_Cleaned")
                     }
                     if(!$synchashWeak.Target.WebView2_Add_New_Playlist){
                       [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_Add_New_Playlist = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to new playlist...',$synchashWeak.Target.QueueIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
-                      $synchashWeak.Target.WebView2_Add_New_Playlist.add_CustomItemSelected($Synchash.WebView2_Add_New_Playlist_SelectedCommand)  
+                      $synchashWeak.Target.WebView2_Add_New_Playlist.add_CustomItemSelected($Synchash.WebView2_Add_New_Playlist_SelectedCommand)
                     }
-                    $Null = $synchashWeak.Target.WebView2_AddPlaylistSubCommand.Children.Add($synchashWeak.Target.WebView2_Add_New_Playlist) 
-                  }                                    
+                    $Null = $synchashWeak.Target.WebView2_AddPlaylistSubCommand.Children.Add($synchashWeak.Target.WebView2_Add_New_Playlist)
+                  }
                   $menulist.Insert(2, $synchashWeak.Target.WebView2_AddPlaylistSubCommand)
                 }
               }elseif($e.ContextMenuTarget.LinkUri -match "$SpotifyPlaylistPattern|$SpotifyAlbumPattern|$SpotifyArtistPattern|$SpotifyTrackPattern"){
@@ -4466,20 +4492,20 @@ if(player){
                   $synchashWeak.Target.WebView2_ContextMenuText = $e.contextMenuTarget.LinkText
                   $synchashWeak.Target.WebView2_ContextMenuLinkType = $LinkType
                   $synchashWeak.Target.WebView2_ContextMenuSpotifyID = $SpotifyID
-                  if($thisApp.Config.Import_Spotify_Media){                  
+                  if($thisApp.Config.Import_Spotify_Media){
                     $SpotifyIcon = "$($thisApp.Config.Current_folder)\Resources\Spotify\Material-Spotify.png"
                     if([System.IO.File]::Exists($SpotifyIcon) -and !$synchashWeak.Target.SpotifyIcon_StreamImage){
                       $image_bytes = [System.IO.File]::ReadAllBytes($SpotifyIcon)
                       $synchashWeak.Target.SpotifyIcon_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
                     }
                     if(!$synchashWeak.Target.WebView2_SpotifyAddMediaCommand){
-                      [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_SpotifyAddMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Spotify Media Library',$synchashWeak.Target.SpotifyIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)          
+                      [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_SpotifyAddMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Spotify Media Library',$synchashWeak.Target.SpotifyIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                       $synchashWeak.Target.WebView2_SpotifyAddMediaCommand.add_CustomItemSelected({
                           $LinkUri = $synchash.WebView2_ContextMenuLink
                           $linktext = $synchash.WebView2_ContextMenuText
                           $LinkType = $synchashWeak.Target.WebView2_ContextMenuLinkType
                           $SpotifyID = $synchashWeak.Target.WebView2_ContextMenuSpotifyID
-                          try{  
+                          try{
                             if(-not [string]::IsNullOrEmpty($LinkType) -and -not [string]::IsNullOrEmpty($SpotifyID) -and (Test-URL $LinkUri)){
                               $SpotifyLink = "spotify:$($LinkType):$SpotifyID"
                               if($thisApp.Config.Spotify_Playlists -notcontains $SpotifyLink){
@@ -4492,37 +4518,37 @@ if(player){
                               }
                             }else{
                               Write-EZLogs "[WebBrowser] The provided URL is not valid or was not provided! -- $LinkUri" -showtime -warning -logtype Spotify
-                            }                
+                            }
                           }catch{
                             Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
-                          }                                   
+                          }
                       })
                     }
-                    $menulist.Insert(2, $synchashWeak.Target.WebView2_SpotifyAddMediaCommand) 
+                    $menulist.Insert(2, $synchashWeak.Target.WebView2_SpotifyAddMediaCommand)
 
-                    #Play Media               
+                    #Play Media
                     if(!$synchashWeak.Target.WebView2_SpotifyPlayMediaCommand){
-                      $Samson_Icon = "$($thisApp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico"               
+                      $Samson_Icon = "$($thisApp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico"
                       if([System.IO.File]::Exists($Samson_Icon) -and !$synchashWeak.Target.Samson_Icon_StreamImage){
                         $image_bytes = [System.IO.File]::ReadAllBytes($Samson_Icon)
-                        $synchashWeak.Target.Samson_Icon_StreamImage = [System.IO.MemoryStream]::new($image_bytes) 
-                      } 
-                      [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_SpotifyPlayMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem("Play with $($thisApp.Config.App_name)",$synchashWeak.Target.Samson_Icon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)          
+                        $synchashWeak.Target.Samson_Icon_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
+                      }
+                      [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_SpotifyPlayMediaCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem("Play with $($thisApp.Config.App_name)",$synchashWeak.Target.Samson_Icon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                       $synchashWeak.Target.WebView2_SpotifyPlayMediaCommand.add_CustomItemSelected({
                           $LinkUri = $synchash.WebView2_ContextMenuLink
                           $linktext = $synchash.WebView2_ContextMenuText
                           $LinkType = $synchashWeak.Target.WebView2_ContextMenuLinkType
-                          $SpotifyID = $synchashWeak.Target.WebView2_ContextMenuSpotifyID   
-                          try{  
+                          $SpotifyID = $synchashWeak.Target.WebView2_ContextMenuSpotifyID
+                          try{
                             if(-not [string]::IsNullOrEmpty($LinkType) -and -not [string]::IsNullOrEmpty($SpotifyID) -and (Test-URL $LinkUri)){
-                              Write-EZLogs "[WebBrowser-WIP] >>>> Playing Spotify link $LinkUri" -showtime -color cyan 
+                              Write-EZLogs "[WebBrowser-WIP] >>>> Playing Spotify link $LinkUri" -showtime -color cyan
                               Add-SpotifyPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -PlayOnly -SpotifyType $LinkType
                             }else{
                               Write-EZLogs "[WebBrowser] The provided URL is not valid or was not provided! -- $LinkUri" -showtime -warning -logtype Spotify -AlertUI
-                            }                
+                            }
                           }catch{
                             Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
-                          }                                   
+                          }
                       })
                     }
                     $menulist.Insert(0, $synchashWeak.Target.WebView2_SpotifyPlayMediaCommand)
@@ -4534,37 +4560,37 @@ if(player){
                         $image_bytes = [System.IO.File]::ReadAllBytes($QueueIcon)
                         $synchashWeak.Target.AddToQueue_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
                       }
-                      [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_SpotifyAddMediaQueueCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Play Queue',$synchashWeak.Target.AddToQueue_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)          
+                      [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_SpotifyAddMediaQueueCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Play Queue',$synchashWeak.Target.AddToQueue_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
                       $synchashWeak.Target.WebView2_SpotifyAddMediaQueueCommand.add_CustomItemSelected({
                           $LinkUri = $synchash.WebView2_ContextMenuLink
                           $linktext = $synchash.WebView2_ContextMenuText
                           $LinkType = $synchashWeak.Target.WebView2_ContextMenuLinkType
-                          $SpotifyID = $synchashWeak.Target.WebView2_ContextMenuSpotifyID   
-                          try{  
+                          $SpotifyID = $synchashWeak.Target.WebView2_ContextMenuSpotifyID
+                          try{
                             if(-not [string]::IsNullOrEmpty($LinkType) -and -not [string]::IsNullOrEmpty($SpotifyID) -and (Test-URL $LinkUri)){
-                              Write-EZLogs "[WebBrowser-WIP] >>>> Adding Spotify link to Queue: $LinkUri" -showtime -color cyan 
-                              #Add-SpotifyPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -SpotifyType $LinkType -AddtoQueue     
+                              Write-EZLogs "[WebBrowser-WIP] >>>> Adding Spotify link to Queue: $LinkUri" -showtime -color cyan
+                              #Add-SpotifyPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -SpotifyType $LinkType -AddtoQueue
                             }else{
                               Write-EZLogs "[WebBrowser] The provided URL is not valid or was not provided! -- $LinkUri" -showtime -warning -logtype Spotify -AlertUI
-                            }                
+                            }
                           }catch{
                             Write-EZLogs '[WebBrowser] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
-                          }                                   
+                          }
                       })
                     }
-                    $menulist.Insert(1, $synchashWeak.Target.WebView2_SpotifyAddMediaQueueCommand) 
+                    $menulist.Insert(1, $synchashWeak.Target.WebView2_SpotifyAddMediaQueueCommand)
 
-                    #Add to playlists                 
+                    #Add to playlists
                     if(!$synchashWeak.Target.WebView2_AddPlaylistSubCommand){
                       $QueueIcon = "$($thisApp.Config.Current_folder)\Resources\Images\Material-PlaylistPlus.png"
                       if([System.IO.File]::Exists($QueueIcon) -and !$synchashWeak.Target.QueueIcon_StreamImage){
                         $image_bytes = [System.IO.File]::ReadAllBytes($QueueIcon)
                         $synchashWeak.Target.QueueIcon_StreamImage = [System.IO.MemoryStream]::new($image_bytes)
-                      } 
-                      [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_AddPlaylistSubCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Playlist',$synchashWeak.Target.QueueIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Submenu)   
+                      }
+                      [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_AddPlaylistSubCommand = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to Playlist',$synchashWeak.Target.QueueIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Submenu)
                     }else{
                       $synchashWeak.Target.WebView2_AddPlaylistSubCommand.Children.Clear()
-                    }                  
+                    }
                     if($synchashWeak.Target.all_playlists.count -gt 0){
                       foreach ($Playlist in $synchashWeak.Target.all_playlists.where({-not [string]::IsNullOrEmpty($_.name) -and $_.Playlist_tracks.values.url -notcontains $e.ContextMenuTarget.LinkUri}))
                       {
@@ -4573,24 +4599,24 @@ if(player){
                         $ID_Cleaned = ($Playlist_ID -replace '\s', '').GetHashCode()
                         if(!$synchashWeak.Target."WebView2_Playlist_$ID_Cleaned"){
                           [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target."WebView2_Playlist_$ID_Cleaned" = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem($Playlist_name,$null,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
-                          $synchashWeak.Target."WebView2_Playlist_$ID_Cleaned".add_CustomItemSelected($Synchash.WebView2_Playlist_SelectedCommand)  
+                          $synchashWeak.Target."WebView2_Playlist_$ID_Cleaned".add_CustomItemSelected($Synchash.WebView2_Playlist_SelectedCommand)
                         }
                         $Null = $synchashWeak.Target.WebView2_AddPlaylistSubCommand.Children.Add($synchashWeak.Target."WebView2_Playlist_$ID_Cleaned")
                       }
                       if(!$synchashWeak.Target.WebView2_Add_New_Playlist){
                         [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target.WebView2_Add_New_Playlist = $synchashWeak.Target.WebBrowser.CoreWebView2.Environment.CreateContextMenuItem('Add to new playlist...',$synchashWeak.Target.QueueIcon_StreamImage,[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
-                        $synchashWeak.Target.WebView2_Add_New_Playlist.add_CustomItemSelected($Synchash.WebView2_Add_New_Playlist_SelectedCommand)  
+                        $synchashWeak.Target.WebView2_Add_New_Playlist.add_CustomItemSelected($Synchash.WebView2_Add_New_Playlist_SelectedCommand)
                       }
-                      $Null = $synchashWeak.Target.WebView2_AddPlaylistSubCommand.Children.Add($synchashWeak.Target.WebView2_Add_New_Playlist) 
-                    }                                    
+                      $Null = $synchashWeak.Target.WebView2_AddPlaylistSubCommand.Children.Add($synchashWeak.Target.WebView2_Add_New_Playlist)
+                    }
                     $menulist.Insert(2, $synchashWeak.Target.WebView2_AddPlaylistSubCommand)
                   }
-                }   
+                }
               }
             }catch{
               Write-EZLogs '[WebBrowser] An exception occurred in WebBrowser ContextMenuRequested event' -showtime -catcherror $_
             }
-          }           
+          }
           $synchash.WebBrowser.CoreWebView2.add_ContextMenuRequested($synchash.WebBrowserWebView2_ContextMenuRequested_Scriptblock)
 
           $synchash.WebBrowser_CoreWebView2_ContainsFullScreenElementChanged_ScriptBlock = {
@@ -4607,8 +4633,8 @@ if(player){
                   $synchash.WebBrowserAnchorable.IsMaximized = $true
                   if($synchash.WebBrowserFloat.isLoaded){
                     $synchash.WebBrowserFloat.WindowState = 'Maximized'
-                  }               
-                  $synchash.WebBrowserGrid.Tag = $false  
+                  }
+                  $synchash.WebBrowserGrid.Tag = $false
                 }
               }elseif($synchash.WebBrowserAnchorable.isFloating -and  $synchash.WebBrowserFloat.WindowState -eq 'Maximized'){
                 $synchash.WebBrowserAnchorable.IsMaximized = $false
@@ -4636,10 +4662,10 @@ if(player){
             if($synchash.WebBrowser.CoreWebview2){
               Start-WebNavigation -uri $synchash.txtUrl.text -synchash $synchash -WebView2 $synchash.WebBrowser -thisApp $thisApp
             }else{
-              Write-EZLogs "Unable to start navigation to $($synchash.txtUrl.text) for WebBrowser, CoreWebView2 not yet initialized: $($synchash.WebBrowser)" -warning -logtype Webview2
+              Write-EZLogs "WebBrowser CoreWebView2 not yet initialized - starting for navigation to: $($synchash.txtUrl.text)" -warning -logtype Webview2
               Initialize-WebBrowser -synchash $synchash -thisApp $thisApp
               Start-WebNavigation -uri $synchash.txtUrl.text -synchash $synchash -WebView2 $synchash.WebBrowser -thisApp $thisApp
-            }           
+            }
           }catch{
             Write-EZLogs 'An exception occurred in GoToPage Click event' -showtime -catcherror $_
           }
@@ -4652,10 +4678,10 @@ if(player){
             if($synchash.WebBrowser.CoreWebview2){
               Start-WebNavigation -uri $synchash.txtUrl.text -synchash $synchash -WebView2 $synchash.WebBrowser -thisApp $thisApp
             }else{
-              Write-EZLogs "Unable to start navigation to $($synchash.txtUrl.text) for WebBrowser, CoreWebView2 not yet initialized: $($synchash.WebBrowser)" -warning -logtype Webview2
+              Write-EZLogs "WebBrowser CoreWebView2 not yet initialized - starting for navigation to: $($synchash.txtUrl.text)" -warning -logtype Webview2
               Initialize-WebBrowser -synchash $synchash -thisApp $thisApp
               Start-WebNavigation -uri $synchash.txtUrl.text -synchash $synchash -WebView2 $synchash.WebBrowser -thisApp $thisApp
-            }           
+            }
           }catch{
             Write-EZLogs 'An exception occurred in GoToYoutube Click event' -showtime -catcherror $_
           }
@@ -4668,10 +4694,10 @@ if(player){
             if($synchash.WebBrowser.CoreWebview2){
               Start-WebNavigation -uri $synchash.txtUrl.text -synchash $synchash -WebView2 $synchash.WebBrowser -thisApp $thisApp
             }else{
-              Write-EZLogs "Unable to start navigation to $($synchash.txtUrl.text) for WebBrowser, CoreWebView2 not yet initialized: $($synchash.WebBrowser)" -warning -logtype Webview2
+              Write-EZLogs "WebBrowser CoreWebView2 not yet initialized - starting for navigation to: $($synchash.txtUrl.text)" -warning -logtype Webview2
               Initialize-WebBrowser -synchash $synchash -thisApp $thisApp
               Start-WebNavigation -uri $synchash.txtUrl.text -synchash $synchash -WebView2 $synchash.WebBrowser -thisApp $thisApp
-            }           
+            }
           }catch{
             Write-EZLogs 'An exception occurred in GoToSpotify Click event' -showtime -catcherror $_
           }
@@ -4684,10 +4710,10 @@ if(player){
             if($synchash.WebBrowser.CoreWebview2){
               Start-WebNavigation -uri $synchash.txtUrl.text -synchash $synchash -WebView2 $synchash.WebBrowser -thisApp $thisApp
             }else{
-              Write-EZLogs "Unable to start navigation to $($synchash.txtUrl.text) for WebBrowser, CoreWebView2 not yet initialized: $($synchash.WebBrowser)" -warning -logtype Webview2
+              Write-EZLogs "WebBrowser CoreWebView2 not yet initialized - starting for navigation to: $($synchash.txtUrl.text)" -warning -logtype Webview2
               Initialize-WebBrowser -synchash $synchash -thisApp $thisApp
               Start-WebNavigation -uri $synchash.txtUrl.text -synchash $synchash -WebView2 $synchash.WebBrowser -thisApp $thisApp
-            }           
+            }
           }catch{
             Write-EZLogs 'An exception occurred in GoToTwitch Click event' -showtime -catcherror $_
           }
@@ -4699,10 +4725,10 @@ if(player){
           try{
             if($e.key -eq 'Return'){
               Start-WebNavigation -uri $synchash.txtUrl.text -synchash $synchash -WebView2 $synchash.WebBrowser -thisApp $thisApp
-            }  
+            }
           }catch{
             Write-EZLogs 'An exception occurred in texturl keydown event' -showtime -catcherror $_
-          }    
+          }
       })
     }
     if($synchash.BrowseBack){
@@ -4713,19 +4739,19 @@ if(player){
             }else{
               Write-EZLogs "Unable to execute GoBack() for WebBrowser, CoreWebView2 not yet initialized: $($synchash.WebBrowser)" -warning -logtype Webview2
               Initialize-WebBrowser -synchash $synchash -thisApp $thisApp
-            }          
+            }
           }catch{
             Write-EZLogs 'An exception occurred in BrowseBack Click event' -showtime -catcherror $_
           }
       })
     }
-    $synchash.WebBrowser.Add_SourceChanged({        
+    $synchash.WebBrowser.Add_SourceChanged({
         try{
           $synchash.txtUrl.text = $synchash.WebBrowser.Source
         }catch{
           Write-EZLogs 'An exception occurred in WebBrowser Source changed event' -showtime -catcherror $_
-        } 
-    }) 
+        }
+    })
     if($synchash.BrowseForward){
       $synchash.BrowseForward.Add_click({
           try{
@@ -4734,10 +4760,10 @@ if(player){
             }else{
               Write-EZLogs "Unable to execute GoForward for WebBrowser, CoreWebView2 not yet initialized: $($synchash.WebBrowser)" -warning -logtype Webview2
               Initialize-WebBrowser -synchash $synchash -thisApp $thisApp
-            }           
+            }
           }catch{
             Write-EZLogs 'An exception occurred in BrowseForward click event' -showtime -catcherror $_
-          }  
+          }
       })
     }
     if($synchash.BrowseRefresh){
@@ -4748,11 +4774,11 @@ if(player){
             }else{
               Write-EZLogs "Unable to execute reload for WebBrowser, CoreWebView2 not yet initialized: $($synchash.WebBrowser)" -warning -logtype Webview2
               Initialize-WebBrowser -synchash $synchash -thisApp $thisApp
-            }       
+            }
           }catch{
             Write-EZLogs 'An exception occurred in BrowseRefresh click event' -showtime -catcherror $_
-          } 
-      })  
+          }
+      })
     }
 
     $synchash.WebBrowser_WebMessageReceived_ScriptBlock = {
@@ -4774,18 +4800,18 @@ if(player){
                 }
               }
               if($result.value.video_id -and !$result.value.isPlayable){
-                Write-EZLogs 'Youtube webplayer returned media as not playable!' -showtime -warning -logtype Youtube -LogLevel 2             
+                Write-EZLogs 'Youtube webplayer returned media as not playable!' -showtime -warning -logtype Youtube -LogLevel 2
                 return
               }
-            } 
+            }
             if($result.key -eq 'time'){
               Write-EZLogs ">>>> Youtube video current time: $($result.value)" -dev_mode
               if($thisApp.Config.Enable_Sponsorblock -and $thisApp.Config.Sponsorblock_ActionType -eq 'skip' -and -not [string]::IsNullOrEmpty($thisApp.SponsorBlock.videoId) -and -not [string]::IsNullOrEmpty($synchash.Youtube_webplayer_current_Media.video_id) -and $synchash.Youtube_webplayer_current_Media.video_id -in $thisApp.SponsorBlock.videoId){
-                try{  
+                try{
                   Write-EZLogs ">>>> Checking Sponsorblock segments that match current time $($result.value)" -dev_mode
-                  #$Start = $Segment.segment[0]      
-                  #$Starttime = [timespan]::FromSeconds($Segment.segment[0]) 
-                  $currentime = [timespan]::FromSeconds($result.value)   
+                  #$Start = $Segment.segment[0]
+                  #$Starttime = [timespan]::FromSeconds($Segment.segment[0])
+                  $currentime = [timespan]::FromSeconds($result.value)
                   $Segment = $thisApp.SponsorBlock | Where-Object {[timespan]::FromSeconds($_.segment[0]) -eq $currentime -or ($currentime -gt [timespan]::FromSeconds($_.segment[0]) -and $currentime -lt [timespan]::FromSeconds($_.segment[0]).add('0:0:0:0.4'))}
                   if($Segment){
                     Write-EZLogs ">>>> Sponsorblock skipping segment for youtubeid $($thisApp.SponsorBlock.videoId) - Start: $($Segment.segment[0]) -- End: $($Segment.segment[1])" -warning
@@ -4804,16 +4830,16 @@ try {
   };
   window.chrome.webview.postMessage(ErrorObject);
 }
-"@         
+"@
                     $synchash.YoutubeWebView2.ExecuteScriptAsync(
-                      $YoutubeWebView2_SeekScript      
+                      $YoutubeWebView2_SeekScript
                     )
                   }
                 }catch{
                   Write-EZLogs "An exception occurred skipping video segments from sponsorblock: $($thisApp.SponsorBlock | Out-String)" -catcherror $_
                 }
               }
-            }                    
+            }
           }
           if($result.key -eq 'volume' -and !$synchash.Spotify_WebPlayer_State.playbackstate -and !$synchash.Spotify_WebPlayer_State.current_track.id){
             if($result.value -ne $synchash.Volume_Slider.value -and ($synchash.WebBrowser_Youtube_URL -match 'youtube\.com' -or $synchash.WebBrowser_Youtube_URL -match 'youtu\.be') -and !$synchash.Volume_Slider.isMouseOver -and (!$synchash.vlc.IsPlaying -or $([string]$synchash.vlc.media.Mrl).StartsWith('dshow://'))){
@@ -4822,7 +4848,7 @@ try {
               if(-not [string]::IsNullOrEmpty($volume)){
                 $thisApp.Config.Media_Volume = $volume
               }elseif(-not [string]::IsNullOrEmpty($synchash.Volume_Slider.value)){
-                $thisApp.Config.Media_Volume = $synchash.Volume_Slider.value        
+                $thisApp.Config.Media_Volume = $synchash.Volume_Slider.value
               }else{
                 $thisApp.Config.Media_Volume = 100
               }
@@ -4851,26 +4877,11 @@ try {
           }
           if($result.key -eq 'videojsplayer'){
             Write-EZLogs ">>>> Received webbrowser event for videojsplayer - source $($result.value | Out-String)" -warning
-          }          
-          if($result.key -eq 'fullscreenbutton'){
-            #TODO: Do something with fullscreen button event?
-            #write-ezlogs "Webbrowser message received fullscreenbutton  : $($result.value)" -showtime -warning -LogLevel 2
-            <#            if($synchash.WebBrowserAnchorable -and !$synchash.WebBrowserAnchorable.isFloating){
-                write-ezlogs "WebBrowser Not floating, floating then fullscreen"
-                $synchash.WebBrowserAnchorable.IsMaximized = $true
-                $synchash.WebBrowserAnchorable.float()
-                }elseif($synchash.WebBrowserAnchorable.isFloating -and $synchash.WebBrowserFloat.WindowState -eq 'Maximized'){
-                write-ezlogs "WebBrowser Floating, maximized, setting to normal"
-                $synchash.WebBrowserFloat.WindowState -eq 'Normal'
-                }elseif($synchash.WebBrowserAnchorable.isFloating -and $synchash.WebBrowserFloat.WindowState -ne 'Maximized'){
-                write-ezlogs "WebBrowser Floating, maximized, setting to normal"
-                $synchash.WebBrowserFloat.WindowState -eq 'Maximized'
-            }#> 
-          }                                              
-        }   
+          }
+        }
       }catch{
         Write-EZLogs 'An exception occurred in WebBrowser WebMessageReceived event' -showtime -catcherror $_
-      } 
+      }
     }
     $synchash.WebBrowser.add_WebMessageReceived($synchash.WebBrowser_WebMessageReceived_ScriptBlock)
   }catch{
@@ -4883,11 +4894,11 @@ try {
     }
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize-WebBrowser Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Initialize-ChatView Function
 #----------------------------------------------
 Function Initialize-ChatView
@@ -4896,18 +4907,18 @@ Function Initialize-ChatView
   param (
     $synchash,
     $thisApp,
-    [string]$chat_url
-  ) 
+    [string]$chat_url,
+    [switch]$Verboselog
+  )
   try{
     #chat_webview2
-    Write-EZLogs '>>>> Adding initializing new Chat Webview2 instance' -showtime -logtype Webview2
+    Write-EZLogs '>>>> Iinitializing new Chat Webview2 instance' -showtime -logtype Webview2
     $synchash.chat_WebView2 = [Microsoft.Web.WebView2.Wpf.WebView2]::new()
     $synchash.chat_WebView2.Name = 'chat_WebView2'
-    $synchash.chat_WebView2.MaxWidth = $synchash.chat_WebView2.MaxWidth
-    $synchash.chat_WebView2.Visibility = 'hidden' 
+    $synchash.chat_WebView2.Visibility = 'hidden'
     $synchash.chat_WebView2.VerticalAlignment = 'Stretch'
     if($synchash.ChatWebview2_Grid.children -notcontains $synchash.chat_WebView2){
-      Write-EZLogs '>>>> Adding Chat_Webview2 to chatwebview2_grid' -showtime -Dev_mode -logtype Webview2
+      Write-EZLogs '>>>> Adding Chat_Webview2 to chatwebview2_grid' -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
       $null = $synchash.ChatWebview2_Grid.addchild($synchash.chat_WebView2)
     }
     if($synchash.WebView2Env.IsCompleted){
@@ -4938,32 +4949,32 @@ Function Initialize-ChatView
       [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs]]{
         $event = $args[1]
         try{
-          Write-EZLogs '>>>> chat_WebView2 CoreWebView2InitializationCompleted' -showtime -logtype Webview2
+          Write-EZLogs '>>>> Chat_WebView2 CoreWebView2InitializationCompleted' -logtype Webview2
           if($event.isSuccess){
             if(!$synchash.Chat_Twitch_Emotes_Script){
               $synchash.Chat_Twitch_Emotes_Script = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Twitch\twitch-bttv.js")
             }
-            Write-EZLogs '| Executing Chat_Twitch_BTTV_Script' -showtime -logtype Webview2
+            Write-EZLogs '| Executing Chat_Twitch_BTTV_Script' -showtime -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
             $synchash.chat_WebView2.ExecuteScriptAsync(
               $synchash.Chat_Twitch_Emotes_Script
             )
-            Write-EZLogs "| Chat_WebView2.CoreWebView2.DocumentTitle: $($synchash.chat_WebView2.CoreWebView2.DocumentTitle)" -loglevel 2 -logtype Webview2 
+            Write-EZLogs "| Chat_WebView2.CoreWebView2.DocumentTitle: $($synchash.chat_WebView2.CoreWebView2.DocumentTitle)" -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
             if($thisApp.Config.Dev_mode){
-              Write-EZLogs "chat_WebView2.CoreWebView2: $($synchash.chat_WebView2.CoreWebView2 | Select-Object * | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode  
+              Write-EZLogs "chat_WebView2.CoreWebView2: $($synchash.chat_WebView2.CoreWebView2 | Select-Object * | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode
               Write-EZLogs "chat_WebView2.CoreWebView2.Environment: $($synchash.chat_WebView2.CoreWebView2.Environment | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode
-              Write-EZLogs "chat_WebView2.CoreWebView2.Settings: $($synchash.chat_WebView2.CoreWebView2.Settings | Select-Object * | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode   
-            }  
+              Write-EZLogs "chat_WebView2.CoreWebView2.Settings: $($synchash.chat_WebView2.CoreWebView2.Settings | Select-Object * | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode
+            }
           }else{
             Write-EZLogs "Chat_WebView2 Navigation Completed but without success --  WebErrorStatus: $($event.WebErrorStatus) -- HttpStatusCode: $($event.HttpStatusCode)" -showtime -warning -logtype Webview2
-          }        
+          }
         }catch{
           Write-EZLogs 'An exception occurred in chat_WebView2.Add_NavigationCompleted' -showtime -catcherror $_
         }
       }
-    ) 
-     
+    )
+
     $synchash.chat_WebView2.Add_CoreWebView2InitializationCompleted(
-      [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs]]{  
+      [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs]]{
         $event = $args[1]
         if($event.isSuccess){
           try{
@@ -4976,31 +4987,32 @@ Function Initialize-ChatView
             $Settings.IsScriptEnabled                = $true
             $Settings.IsStatusBarEnabled             = $false
             $Settings.IsWebMessageEnabled            = $true
-            $Settings.IsZoomControlEnabled           = $false  
+            $Settings.IsZoomControlEnabled           = $false
             $Settings.IsGeneralAutofillEnabled       = $false
             $Settings.IsPasswordAutosaveEnabled      = $false
             $Settings.AreBrowserAcceleratorKeysEnabled = $thisApp.Config.Dev_mode
             $Settings.IsSwipeNavigationEnabled = $false
-            $synchash.chat_WebView2.CoreWebView2.AddWebResourceRequestedFilter('*', [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext]::All)     
-            if($thisApp.Config.Chat_WebView2_Cookie){           
+            $synchash.chat_WebView2.CoreWebView2.AddWebResourceRequestedFilter('*', [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext]::All)
+            if($thisApp.Config.Chat_WebView2_Cookie){
               $twilight_user_cookie = $synchash.chat_WebView2.CoreWebView2.CookieManager.CreateCookie('twilight-user', $thisApp.Config.Chat_WebView2_Cookie, '.twitch.tv', '/')
               $twilight_user_cookie.IsSecure = $true
-              $synchash.chat_WebView2.CoreWebView2.CookieManager.AddOrUpdateCookie($twilight_user_cookie)    
-            } 
+              $synchash.chat_WebView2.CoreWebView2.CookieManager.AddOrUpdateCookie($twilight_user_cookie)
+            }
           }catch{
             Write-EZLogs 'An exception occurred in CoreWebView2InitializationCompleted Event' -showtime -catcherror $_
-          } 
+          }
           $synchash.chat_WebView2.CoreWebView2.add_WebResourceRequested({
               [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceRequestedEventArgs]$e = $args[1]
               try{
                 $Cookies = ($e.Request.Headers | Where-Object {$_.key -eq 'cookie'}).value
                 if($Cookies){
                   $Cookies = $Cookies -split ';'
-                  $twilight_user = $Cookies.Where({$_ -match 'twilight-user=(?<value>.*)'})   
+                  $twilight_user = $Cookies.Where({$_ -match 'twilight-user=(?<value>.*)'})
                   if($twilight_user){
                     $existin_twilight_user = ([regex]::matches($twilight_user,  'twilight-user=(?<value>.*)') | & { process {$_.groups[1].value}})
+                    #TODO: This needs to be saved into secret vault
                     $thisApp.Config.Chat_WebView2_Cookie = $existin_twilight_user
-                    if($thisApp.Config.Dev_mode){Write-EZLogs "Found and saving existing twilight_user $($existin_twilight_user | Out-String)" -showtime -logtype Webview2 -Dev_mode}   
+                    if($thisApp.Config.Dev_mode){Write-EZLogs "Found and saving existing 'twilight_user' Twitch login token" -showtime -logtype Webview2 -Dev_mode}
                   }
                 }
               }catch{
@@ -5009,36 +5021,28 @@ Function Initialize-ChatView
           })
           try{
             if(Test-URL $synchash.ChatView_URL){
-              Write-EZLogs ">>>> Navigating ChatView with CoreWebView2.NavigateToString: $($chat_url)" -logtype Webview2
-              $synchash.chat_WebView2.CoreWebView2.Navigate($synchash.ChatView_URL)     
+              Write-EZLogs ">>>> Navigating ChatView URL: $($synchash.ChatView_URL)" -logtype Webview2
+              $synchash.chat_WebView2.CoreWebView2.Navigate($synchash.ChatView_URL)
             }
             $synchash.chat_WebView2.CoreWebView2.MemoryUsageTargetLevel = 'Low'
           }catch{
-            Write-EZLogs "An exception occurred navigating to $($synchash.ChatView_UR)" -catcherror $_
+            Write-EZLogs "An exception occurred navigating to: $($synchash.ChatView_UR)" -catcherror $_
           }
         }else{
           Write-EZLogs "WebBrowser chat_WebView2 Initialization Completed but without success - InitializationException: $($event.InitializationException.Message) - InnerException: $($event.InitializationException.InnerException)- StackTrace: $($event.InitializationException.StackTrace)" -warning -logtype Webview2
         }
-       
+
       }
     )
-    $synchash.chat_WebView2.add_WebMessageReceived({
-        try{
-          $result = $args.WebMessageAsJson | ConvertFrom-Json
-          #write-ezlogs "chat_WebView2 message received: $($result.value | out-string)" -showtime
-        }catch{
-          Write-EZLogs 'An exception occurred in chat_Webview2 WebMessageReceived event' -showtime -catcherror $_
-        }
-    })
   }catch{
     Write-EZLogs 'An exception occurred creating chatwebview2 Enviroment' -showtime -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Initialize-ChatView Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Start-WebNavigation
 #----------------------------------------------
 Function Start-WebNavigation{
@@ -5052,12 +5056,13 @@ Function Start-WebNavigation{
     [switch]$RawUrl,
     [switch]$Start_Paused,
     $thisApp,
-    $WebView2
-  ) 
+    $WebView2,
+    [switch]$Verboselog
+  )
   try{
 
     if($uri){
-      Write-EZLogs ">>>> Navigating to URL $uri - Webview2: $($WebView2.name)" -showtime -color cyan -linesbefore 1 -logtype Webview2
+      Write-EZLogs ">>>> Navigating to URL $uri - Webview2: $($WebView2.name)" -linesbefore 1 -logtype Webview2
       if(!(Test-URL -address $uri) -and !$RawUrl){
         if($uri -notmatch 'https://'){
           $uri = "https://$($uri)"
@@ -5067,7 +5072,7 @@ Function Start-WebNavigation{
         [uri]$synchash.Spotify_WebPlayer_HTML = "$($thisApp.Config.Current_Folder)\Resources\Spotify\SpotifyWebPlayerTemplate.html"
       }
       if($uri -match 'youtube\.com' -or $uri -match 'youtu\.be' -and $WebView2.Name -ne 'WebBrowser'){
-        Write-EZLogs '| URL is of type Youtube' -logtype Webview2
+        Write-EZLogs '| URL is of type Youtube' -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
         $Youtube = Get-YoutubeURL -thisApp $thisApp -URL $uri -APILookup
         if($Start_Paused){
           $AutoPlay = 'autoplay=0'
@@ -5075,22 +5080,23 @@ Function Start-WebNavigation{
           $AutoPlay = 'autoplay=1'
         }
         if($Youtube.playlist_id){
-          if($thisApp.Config.Use_invidious){            
+          if(($thisApp.Config.Use_invidious -and (Test-ValidPath -Type URL $thisApp.Config.InvidiousURL))){
             #$uri = "https://yewtu.be/embed/videoseries?list=$($Youtube.playlist_id)`&autoplay=1"
             #$uri = "https://invidious.nerdvpn.de/embed/videoseries?list=$($Youtube.playlist_id)`&autoplay=1"
-            $uri = "https://invidious.jing.rocks/embed/videoseries?list=$($Youtube.playlist_id)`&$AutoPlay"
-            $synchash.Use_invidious_url = $uri            
+            #$uri = "https://invidious.jing.rocks/embed/videoseries?list=$($Youtube.playlist_id)`&$AutoPlay"
+            $uri = "$($thisApp.Config.InvidiousURL)/embed/videoseries?list=$($Youtube.playlist_id)`&$AutoPlay"
+            $synchash.Use_invidious_url = $uri
           }else{
             if($No_YT_Embed -or $Youtube.id){
               if($Youtube.id){
                 $uri = "https://www.youtube.com/watch?v=$($Youtube.id)&list=$($Youtube.playlist_id)`&$AutoPlay&enablejsapi=1"
               }else{
                 $uri = "https://www.youtube.com/watch/videoseries?list=$($Youtube.playlist_id)`&$AutoPlay&enablejsapi=1"
-              }              
+              }
               $synchash.Youtube_WebPlayer_retry = $null
             }else{
               $uri = "https://www.youtube.com/embed/videoseries?list=$($Youtube.playlist_id)`&$AutoPlay&enablejsapi=1"
-            } 
+            }
             if($Youtube.PlaylistIndex){
               $uri = $uri + "&index=$($Youtube.PlaylistIndex)"
             }
@@ -5104,19 +5110,20 @@ Function Start-WebNavigation{
                 $uri = "$uri" + "&start=$TimeRound"
               }elseif($uri -notmatch '\&t='){
                 $uri = "$uri" + "&t=$($youtube.TimeIndex)"
-              } 
+              }
             }
           }
         }elseif($Youtube.id){
-          if($thisApp.Config.Use_invidious -and $uri -notmatch 'tv\.youtube\.com'){
+          if(($thisApp.Config.Use_invidious -and (Test-ValidPath -Type URL $thisApp.Config.InvidiousURL)) -and $uri -notmatch 'tv\.youtube\.com'){
             #$uri = "https://yewtu.be/embed/$($Youtube.id)`&autoplay=1"
             #$uri = "https://invidious.nerdvpn.de/embed/$($Youtube.id)`&autoplay=1"
-            $uri = "https://invidious.jing.rocks/embed/$($Youtube.id)`&$AutoPlay"           
+            #$uri = "https://invidious.jing.rocks/embed/$($Youtube.id)`&$AutoPlay"
+            $uri = "$($thisApp.Config.InvidiousURL)/embed/$($Youtube.id)`&$AutoPlay"
             $synchash.Use_invidious_url = $uri
           }elseif($uri -notmatch 'tv\.youtube\.com'){
             if($No_YT_Embed){
               $uri = "https://www.youtube.com/watch/$($Youtube.id)`?$AutoPlay&enablejsapi=1"
-              $synchash.Youtube_WebPlayer_retry = $null    
+              $synchash.Youtube_WebPlayer_retry = $null
             }else{
               $uri = "https://www.youtube.com/embed/$($Youtube.id)`?&$AutoPlay&enablejsapi=1"
             }
@@ -5127,14 +5134,14 @@ Function Start-WebNavigation{
                 $uri = "$uri" + "&start=$TimeRound"
               }elseif($uri -notmatch '\&t='){
                 $uri = "$uri" + "&t=$($youtube.TimeIndex)"
-              } 
+              }
             }
           }elseif($uri -match 'tv\.youtube\.com' -and $uri -notmatch '\&autoplay='){
             $uri = "https://tv.youtube.com/watch/$($Youtube.id)`?&autoplay=1&enablejsapi=1"
           }
         }
       }elseif($uri -match 'spotify.com' -and $WebView2.Name -ne 'WebBrowser'){
-        Write-EZLogs '>>>> URL is of type Spotify'
+        Write-EZLogs '>>>> URL is of type Spotify' -LogLevel 0 -Verboselog:$Verboselog
         if($uri -match 'open.spotify.com/track/' -or $uri -match 'open.spotify.com/episode/'){
           if($uri -match 'open.spotify.com/track/'){
             $spotify_id = ($($uri) -split('open.spotify.com/track/'))[1].trim()
@@ -5142,10 +5149,10 @@ Function Start-WebNavigation{
           }elseif($uri -match 'open.spotify.com/episode/'){
             $spotify_id = ($($uri) -split('open.spotify.com/episode/'))[1].trim()
             $type = 'episode'
-          }          
-          if($thisApp.Config.Spotify_WebPlayer){          
+          }
+          if($thisApp.Config.Spotify_WebPlayer){
             try{
-              $Spotify_accesstoken = (Get-SpotifyAccessToken -ApplicationName $thisApp.Config.App_name)         
+              $Spotify_accesstoken = (Get-SpotifyAccessToken -ApplicationName $thisApp.Config.App_name)
             }catch{
               Write-EZLogs 'An exception occurred getting spotifyaccesstoken' -showtime -catcherror $_
             }
@@ -5160,7 +5167,7 @@ Function Start-WebNavigation{
                 $device = $devices.Where({$_.id -eq $synchash.Spotify_WebPlayer.Deviceid})
               }
               Write-EZLogs "| Spotify Devices ($($device))" -logtype Webview2 -loglevel 2
-              if($device.id -and $synchash.Spotify_WebPlayer){               
+              if($device.id -and $synchash.Spotify_WebPlayer){
                 $synchash.Spotify_WebPlayer.Deviceid = $device.id
               }else{
                 $synchash.Spotify_WebPlayer = @{}
@@ -5184,13 +5191,13 @@ Function Start-WebNavigation{
               $synchash.Session_Spotifytype = $null
               $synchash.Spotify_WebPlayer_HTML = $null
               $synchash.Session_SpotifyToken = $null
-            }          
-          }           
+            }
+          }
         }elseif($uri -match 'open.spotify.com/playlist/'){
           $spotify_id = ($($uri) -split('open.spotify.com/playlist/'))[1].trim()
           if($thisApp.Config.Spotify_WebPlayer){
             try{
-              $Spotify_accesstoken = (Get-SpotifyAccessToken -ApplicationName $thisApp.Config.App_name)            
+              $Spotify_accesstoken = (Get-SpotifyAccessToken -ApplicationName $thisApp.Config.App_name)
             }catch{
               Write-EZLogs 'An exception occurred getting spotifyaccesstoken' -showtime -catcherror $_
             }
@@ -5228,8 +5235,8 @@ Function Start-WebNavigation{
               $synchash.Session_Spotifytype = $null
               $synchash.Spotify_WebPlayer_HTML = $null
               $synchash.Session_SpotifyToken = $null
-            }          
-          }          
+            }
+          }
         }
         if($synchash.Spotify_WebPlayer.Deviceid){
           Write-EZLogs ">>>> Starting Spotify Playback for track (spotify:$($synchash.Spotify_WebPlayer.Spotifytype):$($synchash.Spotify_WebPlayer.SpotifyId)) -and deviceid ($($synchash.Spotify_WebPlayer.Deviceid)) - synchash.WebView2.CoreWebView2: $($synchash.WebView2.CoreWebView2)" -logtype Webview2 -loglevel 2
@@ -5243,7 +5250,7 @@ try {
    type: "PUT",
    data: '{"uris": ["spotify:$($synchash.Spotify_WebPlayer.Spotifytype):$($synchash.Session_SpotifyId)"]}',
    beforeSend: function(xhr){xhr.setRequestHeader('Authorization', 'Bearer ' + '$($synchash.Spotify_WebPlayer.SpotifyToken)' );},
-   success: function(data) { 
+   success: function(data) {
      console.log('Started Playback for spotify:$($synchash.Spotify_WebPlayer.Spotifytype):$($synchash.Session_SpotifyId) - deviceid: $($synchash.Spotify_WebPlayer.Deviceid)');
      console.log(data)
    }
@@ -5268,8 +5275,8 @@ try {
           return
         }
       }
-      if($WebView2 -ne $null -and $WebView2.CoreWebView2 -ne $null){ 
-        if($urihtml){ 
+      if($WebView2 -ne $null -and $WebView2.CoreWebView2 -ne $null){
+        if($urihtml){
           Write-EZLogs ">>>> Navigating with CoreWebView2.NavigateToString: $($urihtml)"  -logtype Webview2
           $WebView2.CoreWebView2.NavigateToString($urihtml)
         }else{
@@ -5279,32 +5286,32 @@ try {
             $synchash.Spotify_WebPlayer_URL = $uri
           }
           $WebView2.CoreWebView2.Navigate($uri)
-        }       
+        }
       }else{
         if($WebView2.name -eq 'WebBrowser'){
           $synchash.WebBrowser_url = $uri
-        }     
+        }
         if($urihtml){
           Write-EZLogs "| Adding CoreWebView2InitializationCompleted with navigate to url: $($urihtml)" -logtype Webview2
           $synchash.Youtube_WebPlayer_URL = $urihtml
           $synchash.Spotify_WebPlayer_URL = $urihtml
         }elseif($WebView2.name -eq 'YoutubeWebview2'){
-          Write-EZLogs "| Setting URL variable for Youtubewebview2 to navigate to url: $($uri)" -logtype Webview2 
+          Write-EZLogs "| Setting URL variable for Youtubewebview2 to navigate to url: $($uri)" -logtype Webview2
           $synchash.Youtube_WebPlayer_URL = $uri
         }else{
           Write-EZLogs "| Setting URL variable for webview2 to navigate to url: $($uri)" -logtype Webview2
           $synchash.Youtube_WebPlayer_URL = $uri
           $synchash.Spotify_WebPlayer_URL = $uri
-        }                      
-      } 
+        }
+      }
     }else{
       Write-EZLogs "The provided $uri was null or invalid!" -showtime -warning -logtype Webview2
     }
   }catch{
     Write-EZLogs 'An exception occurred in Start-WebNavigation' -showtime -catcherror $_
-  }  
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Start-WebNavigation
 #----------------------------------------------
 Export-ModuleMember -Function @('Initialize-WebPlayer', 'Initialize-WebBrowser', 'Initialize-ChatView', 'Initialize-YoutubeWebPlayer', 'Start-WebNavigation', 'Add-Webview2Extension','Get-Webview2Extensions','Remove-YoutubeWebPlayer','Remove-WebBrowser')

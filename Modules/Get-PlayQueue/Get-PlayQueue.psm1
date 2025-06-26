@@ -2,14 +2,14 @@
     .Name
     Get-PlayQueue
 
-    .Version 
+    .Version
     0.1.0
 
     .SYNOPSIS
     Allows managing the Play Queue for Samson Media Player
 
     .DESCRIPTION
-       
+
     .Configurable Variables
 
     .Requirements
@@ -25,7 +25,7 @@
     .NOTES
 
 #>
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-PlayQueue Function
 #----------------------------------------------
 function Update-PlayQueue
@@ -69,18 +69,18 @@ function Update-PlayQueue
         $thisApp = $thisApp,
         [switch]$VerboseLog = $VerboseLog
       )
-      try{       
+      try{
         if($Startup){
           try{
-            try{
+<#            try{
               $synchash.Queue_Pause_relaycommand = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.PauseMedia_Command -target $synchash.PlayQueue_TreeView
             }catch{
               write-ezlogs "An exception occurred updating playqueue_treeview" -showtime -catcherror $_
-            }
+            }#>
             #TODO: Finish for setting queue itemssource from another thread
             $synchash.PlayQueue_Update_Timer = [System.Windows.Threading.DispatcherTimer]::New([System.Windows.Threading.DispatcherPriority]::DataBind)
             $synchash.PlayQueue_Update_Timer.add_tick({
-                try{        
+                try{
                   if(-not [string]::IsNullOrEmpty($this.tag.Itemssource) -or $this.tag.UpdateItemssource){
                     if($syncHash.PlayQueue_TreeView){
                       if($syncHash.PlayQueue_TreeView.itemssource.IsInUse){
@@ -98,7 +98,7 @@ function Update-PlayQueue
                     if(!$syncHash.PlayQueue_TreeView){
                       write-ezlogs "No PlayQueue_TreeView UI is available" -warning
                     }
-                  }                                                       
+                  }
                   $this.Stop()
                 }catch{
                   write-ezlogs "An exception occurred in PlayQueue_Update_Timer.add_tick" -showtime -catcherror $_
@@ -107,7 +107,7 @@ function Update-PlayQueue
                   $this.tag = $Null
                   Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'PlayQueue_Progress_Ring' -Property 'IsActive' -value $false
                 }
-            }) 
+            })
             return
           }catch{
             write-ezlogs "An exception occurred in Update-PlayQueue startup" -showtime -catcherror $_
@@ -118,7 +118,7 @@ function Update-PlayQueue
             'UpdateItemssource' = $UpdateItemssource
           }
           $synchash.PlayQueue_Update_Timer.start()
-          return     
+          return
         }
         if($Remove){
           try{
@@ -131,16 +131,16 @@ function Update-PlayQueue
                   $id = $m.id
                 }
                 if($thisApp.config.Current_Playlist.values -contains $id){
-                  $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator().where({$_.value -eq $id}) | Select-Object * -ExpandProperty key 
+                  $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator().where({$_.value -eq $id}) | Select-Object * -ExpandProperty key
                   if(($index_toremove).count -gt 1){
                     write-ezlogs "| Found multiple items in Play Queue to remove matching id $($id) - $($index_toremove)" -showtime -warning -LogLevel 2
                     foreach($index in $index_toremove){
-                      [void]$thisApp.config.Current_Playlist.Remove($index) 
-                    }  
+                      [void]$thisApp.config.Current_Playlist.Remove($index)
+                    }
                   }else{
                     if($thisApp.Config.Dev_mode){write-ezlogs "| Removing $($id) from Play Queue" -showtime -LogLevel 2 -Dev_mode}
                     [void]$thisApp.config.Current_Playlist.Remove($index_toremove)
-                  } 
+                  }
                 }
                 #Temporary Queue
                 if($synchash.Temporary_Media.id -contains $id){
@@ -149,28 +149,28 @@ function Update-PlayQueue
                     write-ezlogs "| Found multiple items in Temporary Play Queue to remove matching id $($id) - $($index_toremove)" -showtime -warning -LogLevel 2
                     foreach($index in $index_toremove){
                       [void]$synchash.Temporary_Media.RemoveAt($index_toremove)
-                    }  
+                    }
                   }else{
                     if($thisApp.Config.Dev_mode){write-ezlogs "| Removing $($id) from Temporary Play Queue" -showtime -LogLevel 2 -Dev_mode}
                     [void]$synchash.Temporary_Media.RemoveAt($index_toremove)
-                  } 
+                  }
                 }
               }
             }elseif($id){
               foreach($i in $id){
                 if($thisApp.config.Current_Playlist.values -contains $i){
-                  $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator().where({$_.value -eq $i}) | Select-Object * -ExpandProperty key 
+                  $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator().where({$_.value -eq $i}) | Select-Object * -ExpandProperty key
                   if(($index_toremove).count -gt 1){
                     write-ezlogs "| Found multiple items to remove in Play Queue matching id $($i) - index_toremove: $($index_toremove)" -showtime -warning -LogLevel 2
                     foreach($index in $index_toremove){
-                      [void]$thisApp.config.Current_Playlist.Remove($index) 
-                    }  
+                      [void]$thisApp.config.Current_Playlist.Remove($index)
+                    }
                   }elseif(-not [string]::IsNullOrEmpty($index_toremove)){
                     if($thisApp.Config.Dev_mode){write-ezlogs "| Removing $($i) with index $index_toremove from Play Queue" -showtime -LogLevel 2 -Dev_mode}
                     [void]$thisApp.config.Current_Playlist.Remove($index_toremove)
                   }else{
                     write-ezlogs "| Could not find index $index_toremove to remove from queue for id - $($i)" -warning
-                  } 
+                  }
                 }
                 #Temporary Queue
                 if($synchash.Temporary_Media.id -contains $i){
@@ -179,16 +179,16 @@ function Update-PlayQueue
                     write-ezlogs "| Found multiple items in Temporary Play Queue to remove matching id $($i) - $($index_toremove)" -showtime -warning -LogLevel 2
                     foreach($index in $index_toremove){
                       [void]$synchash.Temporary_Media.RemoveAt($index_toremove)
-                    }  
+                    }
                   }else{
                     if($thisApp.Config.Dev_mode){write-ezlogs "| Removing $($i) from Temporary Play Queue" -showtime -LogLevel 2 -Dev_mode}
                     [void]$synchash.Temporary_Media.RemoveAt($index_toremove)
-                  } 
+                  }
                 }
               }
             }
             if($thisApp.config.Current_Playlist.count -gt 0){
-              write-ezlogs "| Reordering play queue"
+              write-ezlogs "| Reordering play queue" -LogLevel 0 -Verboselog:$VerboseLog
               [array]$existingitems = $thisapp.config.Current_Playlist.values
               [void]$thisApp.config.Current_Playlist.clear()
               $Count = 0
@@ -199,38 +199,35 @@ function Update-PlayQueue
             }
           }catch{
             write-ezlogs "An exception occurred removing item from play queue -- Media: $($media | out-string) -- id: $($id)" -showtime -catcherror $_
-          }                          
+          }
         }
         if($Add){
           try{
-            $Add_ToPlayQueue_Measure = [system.diagnostics.stopwatch]::StartNew() 
+            $Add_ToPlayQueue_Measure = [system.diagnostics.stopwatch]::StartNew()
             Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'PlayQueue_Progress_Ring' -Property 'IsActive' -value $true
             Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'PlayQueue_TreeView' -Property 'AllowDrop' -value $false
             Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'PlayQueue_TreeView_Library' -Property 'AllowDrop' -value $false
-            Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'VideoView_Queue' -Property 'AllowDrop' -value $false       
+            Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'VideoView_Queue' -Property 'AllowDrop' -value $false
             if($Add_First){
-              #[array]$existingitems = $Sorted.values
               [array]$existingitems = $thisapp.config.Current_Playlist.values
               [void]$thisApp.config.Current_Playlist.clear()
               $index = 0
-              write-ezlogs "[Update-PlayQueue] | Adding '$($Add_First)' to first position in the Play Queue - existingitems: $($existingitems.count)" -showtime
+              write-ezlogs "[Update-PlayQueue] | Adding '$($Add_First)' to first position in the Play Queue - existingitems: $($existingitems.count)" -LogLevel 0 -Verboselog:$VerboseLog
               [void]$thisApp.config.Current_Playlist.add($index,$Add_First)
               foreach($id in $existingitems){
                 if($id -ne $Add_First){
                   $getbyindex = $thisapp.config.Current_Playlist.count
                   if($getbyindex -gt 0){
                     $getbyindex--
-                    #$index = $Sorted.GetKey($getbyindex)
                     $index = $getbyindex
                     $index++
                   }else{
                     $index = 0
-                  } 
+                  }
                   [void]$thisApp.config.Current_Playlist.add($index,$id)
                 }
-              }         
+              }
             }else{
-              #$Sorted = [System.Collections.SortedList]::new($thisapp.config.Current_Playlist)
               [array]$existingitems = $thisapp.config.Current_Playlist.values
               [void]$thisApp.config.Current_Playlist.clear()
               $Count = 0
@@ -252,7 +249,6 @@ function Update-PlayQueue
                     if($getbyindex -gt 0){
                       $getbyindex--
                       if($thisapp.config.Current_Playlist.ContainsKey($getbyindex)){
-                        #$index = $Sorted.GetKey($getbyindex)
                         $index = $getbyindex
                         $index++
                       }else{
@@ -261,13 +257,11 @@ function Update-PlayQueue
                     }else{
                       $index = 0
                     }
-                    #$index = $thisapp.config.Current_Playlist.keys | select -last 1
-                    #$index = ($thisapp.config.Current_Playlist.keys | measure -Maximum).Maximum
                     if($thisApp.Config.Dev_mode){write-ezlogs "[Update-PlayQueue] | Adding item: $($m.title) -- ID: ($($id)) to Play Queue - index: $index" -showtime -Dev_mode}
                     [void]$thisapp.config.Current_Playlist.add($index,$id)
                   }else{
-                    write-ezlogs "[Update-PlayQueue] Queue already contains item: $($m) -- ID: ($($id))" -showtime -dev_mode
-                  } 
+                    write-ezlogs "[Update-PlayQueue] Queue already contains item: $($m) -- ID: ($($id))" -LogLevel 0 -Verboselog:$VerboseLog
+                  }
                 }catch{
                   write-ezlogs "[Update-PlayQueue] An exception occurred adding item to play queue -- -- media.title: $($m.title) -- media.url: $($m.url) -- id: $($id) - index: $index - getbyindex: $($getbyindex) - current_playlist keys: $($thisapp.config.Current_Playlist.keys)" -showtime -catcherror $_
                 }
@@ -288,9 +282,9 @@ function Update-PlayQueue
                   $index = 0
                 }
                 [void]$thisapp.config.Current_Playlist.add($index,$id)
-                if($thisApp.Config.Dev_mode){write-ezlogs "[Update-PlayQueue] | Adding item: $($m.title) by ID: ($($id)) to Play Queue - index: $index" -showtime -Dev_mode}         
+                if($thisApp.Config.Dev_mode){write-ezlogs "[Update-PlayQueue] | Adding item: $($m.title) by ID: ($($id)) to Play Queue - index: $index" -showtime -Dev_mode}
               }
-              write-ezlogs "[Update-PlayQueue] >>>> Added $($id.count) items by id to play queue - last index: $($index)" 
+              write-ezlogs "[Update-PlayQueue] >>>> Added $($id.count) items by id to play queue - last index: $($index)"
             }
             #TODO: This is terrible and hacky, real solution is to make Current_Playlist use OrderedDictionary (will need to be custom class to make it serializable)
             if($thisapp.config.Current_Playlist.values -and ($thisapp.config.Current_Playlist.Keys | select-Object -First 1) -ne 0){
@@ -300,22 +294,22 @@ function Update-PlayQueue
               $sorted.keys | & { process {
                   [void]$thisapp.config.Current_Playlist.add($_,$($sorted.Item($_)))
               }}
-            }            
+            }
             $Add_ToPlayQueue_Measure.stop()
             write-ezlogs "Update-PlayQueue -Add Measure" -Perf -PerfTimer $Add_ToPlayQueue_Measure
-            $Add_ToPlayQueue_Measure = $Null                           
+            $Add_ToPlayQueue_Measure = $Null
           }catch{
             write-ezlogs "[Update-PlayQueue] An exception occurred adding item to play queue -- media.title: $($media.title) -- media.url: $($media.url) -- id: $($id) - index: $index" -showtime -catcherror $_
           }finally{
             if($synchash.PlayQueue_Progress_Ring){
               Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'PlayQueue_Progress_Ring' -Property 'IsActive' -value $false
-            }   
-          }                         
+            }
+          }
         }
-        if($UpdateHistory){ 
-          #Update History Playlist  
-          if(!$thisApp.config.History_Playlist){
-            $thisApp.Config.psobject.properties.add([System.Management.Automation.PSNoteProperty]::new('History_Playlist',([SerializableDictionary[int,string]]::new())))
+        if($UpdateHistory){
+          #Update History Playlist
+          if($thisApp.config.History_Playlist -isnot [SerializableDictionary[int,string]]){
+            $thisApp.Config.History_Playlist = [SerializableDictionary[int,string]]::new()
           }
           $historymeasure = ($thisApp.config.History_Playlist.keys | Measure-Object -Maximum -Minimum)
           foreach($i in $id){
@@ -331,16 +325,14 @@ function Update-PlayQueue
                 [void]$thisApp.config.History_Playlist.clear()
               }elseif($historymeasure.count -eq 10){
                 $historyindex_toremove = $historymeasure.Minimum
-                #$historyindex_toremove = $thisapp.config.History_Playlist.GetEnumerator() | Select-Object -First 1
                 write-ezlogs "[Update-PlayQueue] | History playlist at maximum, dropping oldest index: $($historyindex_toremove)" -LogLevel 2
                 [void]$thisapp.config.History_Playlist.Remove($historyindex_toremove)
               }
               $historyindex = $historymeasure.Maximum
               $historyindex++
-              write-ezlogs "[Update-PlayQueue] | Adding $($i) to Play history" -showtime
+              write-ezlogs "[Update-PlayQueue] | Adding $($i) to Play history" -LogLevel 0 -Verboselog:$VerboseLog
               [void]$thisApp.config.History_Playlist.add($historyindex,$i)
               $MediatoUpdate = Get-MediaProfile -synchash $synchash -thisApp $thisApp -Media_ID $i
-              #[Media]$MediatoUpdate = Get-MediaProfile -synchash $synchash -thisApp $thisApp -Media_ID $i
               if($MediatoUpdate -is [Media]){
                 $UpdateTimesPlayed = [int]($MediatoUpdate.TimesPlayed) + 1
                 $LastPlayed = [DateTime]::now
@@ -352,7 +344,7 @@ function Update-PlayQueue
           }
           if($synchash.jumplist){
             try{
-              write-ezlogs "[Update-PlayQueue] | Refreshing Jumplist history" -showtime
+              write-ezlogs "[Update-PlayQueue] | Refreshing Jumplist history" -LogLevel 0 -Verboselog:$VerboseLog
               Add-JumpList -thisApp $thisApp -synchash $synchash -Use_Runspace
             }catch{
               write-ezlogs "An exception occurred refreshing Jumplist history" -catcherror $_
@@ -363,8 +355,8 @@ function Update-PlayQueue
           write-ezlogs ">>>> Saving confile file to path: $($thisapp.Config.Config_Path)"
           Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
         }
-        if($RefreshQueue){  
-          write-ezlogs "| Refreshing play queue" 
+        if($RefreshQueue){
+          write-ezlogs "| Refreshing play queue" -LogLevel 0 -Verboselog:$VerboseLog
           Get-PlayQueue -verboselog:$false -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -use_Runspace
         }else{
           Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'PlayQueue_Progress_Ring' -Property 'IsActive' -value $false
@@ -383,16 +375,16 @@ function Update-PlayQueue
     }else{
       Invoke-Command -ScriptBlock $Update_PlayQueue_ScriptBlock
       $Update_PlayQueue_ScriptBlock = $null
-    }  
+    }
   }catch{
     write-ezlogs "An exception occurred in Update-PlayQueue" -showtime -catcherror $_
-  } 
+  }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-PlayQueue Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-PlayQueue Function
 #----------------------------------------------
 function Get-PlayQueue
@@ -426,7 +418,7 @@ function Get-PlayQueue
     Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'PlayQueue_Progress_Ring' -Property 'IsActive' -value $true
     Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'PlayQueue_TreeView' -Property 'AllowDrop' -value $false
     Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'PlayQueue_TreeView_Library' -Property 'AllowDrop' -value $false
-    Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'VideoView_Queue' -Property 'AllowDrop' -value $false 
+    Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'VideoView_Queue' -Property 'AllowDrop' -value $false
     if(!$synchashWeak.Target.Get_PlayQueue_ScriptBlock){
       $synchashWeak.Target.Get_PlayQueue_ScriptBlock = {
         param (
@@ -470,13 +462,12 @@ function Get-PlayQueue
               }
             }else{
               $WaitTimeout = 0
-              write-ezlogs "[Get-PlayQueue] Get-Playlists is running, waiting briefly until it finishes..." -warning
-              while(([bool]($synchashWeak.Target.all_playlists -isnot [System.Collections.ObjectModel.ObservableCollection[playlist]])) -and $WaitTimeout -lt 100){
+              write-ezlogs "[Get-PlayQueue] Get-Playlists is running, waiting briefly until it finishes..." -warning -LogLevel 0 -Verboselog:$VerboseLog
+              while(([bool]($synchashWeak.Target.all_playlists -isnot [System.Windows.Data.CollectionView] -and $synchashWeak.Target.All_Playlists -isnot [System.Collections.ObjectModel.ObservableCollection[playlist]])) -and $WaitTimeout -lt 100){
                 $WaitTimeout++
-                #$existing_Runspace = Stop-Runspace -thisApp $thisApp -runspace_name 'Get_Playlists_RUNSPACE' -check -ErrorAction SilentlyContinue
                 [System.Threading.Thread]::Sleep(100)
               }
-              write-ezlogs ">>>> Continuing execution of Get-PlayQueue - waittimeout: $WaitTimeout"
+              write-ezlogs ">>>> Continuing execution of Get-PlayQueue - waittimeout: $WaitTimeout" -LogLevel 0 -Verboselog:$VerboseLog
             }
           }
           $queued_items_toremove = [System.Collections.Generic.List[object]]::new()
@@ -560,13 +551,13 @@ function Get-PlayQueue
                         }
                         $track_name = $track.title
                         $Title = "$($artist) - $($track_name)"
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Spotify Track Title: $($Title) " -showtime}
+                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Spotify Track Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog}
                         $icon_path = $SpotifyIcon
                       }elseif($Track.url -match 'twitch\.tv'){
                         $Title = "$($Track.Title)"
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Twitch Track Title: $($Title) " -showtime}
+                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Twitch Track Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog}
                         if($Track.profile_image_url){
-                          if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Media Image found: $($Track.profile_image_url)" -showtime}       
+                          if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Media Image found: $($Track.profile_image_url)" -LogLevel 0 -Verboselog:$VerboseLog}
                           if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
                             if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime}
                             [void][System.IO.Directory]::CreateDirectory($thisApp.config.image_Cache_path)
@@ -577,23 +568,23 @@ function Get-PlayQueue
                           $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),"$($encodeduri).png")
                           if([System.IO.File]::Exists($image_Cache_path)){
                             $cached_image = $image_Cache_path
-                          }elseif($Track.profile_image_url){         
-                            if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Destination path for cached image: $image_Cache_path" -showtime}
+                          }elseif($Track.profile_image_url){
+                            if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Destination path for cached image: $image_Cache_path" -LogLevel 0 -Verboselog:$VerboseLog}
                             $retry = $false
                             if(!([System.IO.File]::Exists($image_Cache_path))){
                               try{
                                 if([System.IO.File]::Exists($Track.profile_image_url)){
-                                  if($thisApp.Config.Dev_mode){write-ezlogs "[Get-PlayQueue] | Cached Image not found, copying image $($Track.profile_image_url) to cache path $image_Cache_path"  -showtime -Dev_mode -logtype Twitch}
+                                  if($thisApp.Config.Dev_mode){write-ezlogs "[Get-PlayQueue] | Cached Image not found, copying image $($Track.profile_image_url) to cache path $image_Cache_path" -Dev_mode -logtype Twitch}
                                   [void][System.IO.File]::Copy($Track.profile_image_url,$image_Cache_path,$true)
                                 }elseif((Test-URL $Track.profile_image_url)){
                                   $uri = [system.uri]::new($Track.profile_image_url)
-                                  write-ezlogs "[Get-PlayQueue] | Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -showtime -LogLevel 3 -logtype Twitch
+                                  write-ezlogs "[Get-PlayQueue] | Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -LogLevel 0 -Verboselog:$VerboseLog -logtype Twitch
                                   try{
                                     $webclient = [System.Net.WebClient]::new()
                                     [void]$webclient.DownloadFile($uri,$image_Cache_path)
                                     $retry = $false
                                   }catch{
-                                    write-ezlogs "[Get-PlayQueue] An exception occurred downloading image $uri to path $image_Cache_path" -showtime -catcherror $_
+                                    write-ezlogs "[Get-PlayQueue] An exception occurred downloading image $uri to path $image_Cache_path" -catcherror $_
                                     $retry = $true
                                   }finally{
                                     if($webclient){
@@ -603,18 +594,18 @@ function Get-PlayQueue
                                   }
                                   if($retry -and $Track.Artist){
                                     try{
-                                      write-ezlogs "[Get-PlayQueue] >>>> Checking Twitch API for possible updated profile_image_url for streamer: $($Track.Artist)" -showtime -warning -LogLevel 2 -logtype Twitch
+                                      write-ezlogs "[Get-PlayQueue] >>>> Checking Twitch API for possible updated profile_image_url for streamer: $($Track.Artist)" -warning -LogLevel 2 -logtype Twitch
                                       $TwitchData = Get-TwitchAPI -StreamName $Track.Artist -thisApp $thisApp
                                     }catch{
-                                      write-ezlogs "[Get-PlayQueue] An exception occurred executing Get-TwitchAPI for steamname $($Track.Artist)" -showtime -catcherror $_
+                                      write-ezlogs "[Get-PlayQueue] An exception occurred executing Get-TwitchAPI for steamname $($Track.Artist)" -catcherror $_
                                     }
                                     if((Test-URL $TwitchData.profile_image_url)){
                                       try{
-                                        write-ezlogs "[Get-PlayQueue] | Trying again with newly retrieved profile_image url $($TwitchData.profile_image_url)" -showtime -LogLevel 2 -logtype Twitch
+                                        write-ezlogs "[Get-PlayQueue] | Trying again with newly retrieved profile_image url $($TwitchData.profile_image_url)" -LogLevel 2 -logtype Twitch
                                         $webclient = [System.Net.WebClient]::new()
                                         [void]$webclient.DownloadFile($TwitchData.profile_image_url,$image_Cache_path)
                                       }catch{
-                                        write-ezlogs "[Get-PlayQueue] An exception occurred downloading image $($TwitchData.profile_image_url) to path $image_Cache_path" -showtime -catcherror $_
+                                        write-ezlogs "[Get-PlayQueue] An exception occurred downloading image $($TwitchData.profile_image_url) to path $image_Cache_path" -catcherror $_
                                       }finally{
                                         if($webclient){
                                           $webclient.Dispose()
@@ -633,13 +624,13 @@ function Get-PlayQueue
                                   $image.CacheOption = "OnLoad"
                                   $image.DecodePixelWidth = 20
                                   $image.StreamSource = $stream_image
-                                  $image.EndInit()   
+                                  $image.EndInit()
                                   $stream_image.Close()
                                   $stream_image.Dispose()
                                   $stream_image = $null
                                   $cached_image = $image
                                   $image.Freeze()
-                                  if($thisApp.Config.Dev_mode){write-ezlogs "[Get-PlayQueue] Saving decoded media image to path $image_Cache_path" -showtime -Dev_mode -logtype Twitch}
+                                  if($thisApp.Config.Dev_mode){write-ezlogs "[Get-PlayQueue] Saving decoded media image to path $image_Cache_path" -Dev_mode -logtype Twitch}
                                   $encoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new()
                                   $encoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($cached_image))
                                   $save_stream = [System.IO.FileStream]::new("$image_Cache_path",'Create')
@@ -648,16 +639,16 @@ function Get-PlayQueue
                                   $save_stream = $Null
                                   $encoder = $Null
                                 }else{
-                                  write-ezlogs "[Get-PlayQueue] Unable to download or find valid image to cache to $image_Cache_path" -showtime -warning -LogLevel 3 -logtype Twitch
+                                  write-ezlogs "[Get-PlayQueue] Unable to download or find valid image to cache to $image_Cache_path" -warning -LogLevel 3 -logtype Twitch
                                 }
                               }catch{
                                 $cached_image = $Null
-                                write-ezlogs "[Get-PlayQueue] An exception occurred attempting to download $uri to path $image_Cache_path for $($Track | out-string)" -showtime -catcherror $_
+                                write-ezlogs "[Get-PlayQueue] An exception occurred attempting to download $uri to path $image_Cache_path for $($Track | out-string)" -catcherror $_
                               }
                             }
                           }else{
-                            write-ezlogs "[Get-PlayQueue] Cannot Download image $image to cache path $image_Cache_path - URL is invalid" -enablelogs -showtime -warning
-                            $cached_image = $Null        
+                            write-ezlogs "[Get-PlayQueue] Cannot Download image $image to cache path $image_Cache_path - URL is invalid" -warning
+                            $cached_image = $Null
                           }
                         }
                         if($cached_image){
@@ -667,11 +658,11 @@ function Get-PlayQueue
                         }
                       }elseif($track.url -match 'soundcloud\.com'){
                         $Title = "$($Track.Title)"
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found SoundCloud Track Title: $($Title) " -showtime -LogLevel 3 -logtype Youtube}
+                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found SoundCloud Track Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog -logtype Youtube}
                         $icon_path = $SoundcloudIcon
                       }elseif($Track.type -match 'Youtube' -or $track.source -eq 'Youtube' -or $track.url -match 'youtube\.com' -or $track.url -match 'youtu\.be'){
                         $Title = "$($Track.Title)"
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Youtube Track Title: $($Title) " -showtime -logtype Youtube -loglevel 3}
+                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Youtube Track Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog -logtype Youtube}
                         if($track.url -match 'tv\.youtube'){
                           $icon_path = $YoutubeTVIcon
                         }else{
@@ -682,25 +673,25 @@ function Get-PlayQueue
                         $icon_path = $TorIcon
                       }elseif($Track.Artist -and $Track.Title){
                         $Title = "$($Track.Artist) - $($Track.Title)"
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Track Artist and Title: $($Title) " -showtime }
+                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Track Artist and Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog }
                         $icon_path = $HardDiskIcon
                       }elseif($Track.Title){
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Track Title: $($Track.Title) " -showtime }
+                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Track Title: $($Track.Title) " -LogLevel 0 -Verboselog:$VerboseLog }
                         $Title = "$($Track.Title)"
                         $icon_path = $HardDiskIcon
                       }elseif($Track.Name){
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Track Name: $($Track.Name) " -showtime }
+                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Track Name: $($Track.Name) " -LogLevel 0 -Verboselog:$VerboseLog }
                         if(!$Track.Artist -and [System.IO.Directory]::Exists($Track.directory)){
                           try{
                             $artist = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($Track.directory))).trim()
                           }catch{
-                            write-ezlogs "[Get-PlayQueue] An exception occurred getting file name without extension for $($Track.directory)" -showtime -catcherror $_
+                            write-ezlogs "[Get-PlayQueue] An exception occurred getting file name without extension for $($Track.directory)" -catcherror $_
                             $artist = ''
                           }
-                          if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Using Directory name for artist: $($artist) " -showtime }
+                          if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Using Directory name for artist: $($artist) " -LogLevel 0 -Verboselog:$VerboseLog }
                         }elseif($Track.Artist){
                           $artist = $Track.Artist
-                          if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Track Name artist: $($artist) " -showtime }
+                          if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Track Name artist: $($artist) " -LogLevel 0 -Verboselog:$VerboseLog }
                         }
                         if(-not [string]::IsNullOrEmpty($artist)){
                           $Title = "$($artist) - $($Track.Name)"
@@ -710,7 +701,7 @@ function Get-PlayQueue
                         $icon_path = $HardDiskIcon
                       }else{
                         $title = $null
-                        write-ezlogs "[Get-PlayQueue] Can't find type or title for track: $($track) - Key: $($_) - id: $($item)" -showtime -warning
+                        write-ezlogs "[Get-PlayQueue] Can't find type or title for track: $($track) - Key: $($_) - id: $($item)" -warning
                       }
                       if(-not [string]::IsNullOrEmpty($track.Display_Name)){
                         $Display_Name = $track.Display_Name
@@ -754,7 +745,6 @@ function Get-PlayQueue
                         }
                         if(-not [string]::IsNullOrEmpty($Track.live_status)){
                           $status = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase(($Track.live_status).tolower())
-                          #$status = (Get-Culture).textinfo.totitlecase(($Track.live_status).tolower())
                           if(-not [string]::IsNullOrEmpty($Track.viewer_count)){
                             [int]$viewer_count = $Track.viewer_count
                           }
@@ -781,7 +771,7 @@ function Get-PlayQueue
                           'PlayIconRepeat' = '1x'
                           'PlayIconRecordRepeat' = '1x'
                           'NumberVisibility' = 'Visible'
-                          'PauseCommand' = $synchashWeak.Target.Queue_Pause_relaycommand
+                          #'PauseCommand' = $synchashWeak.Target.Queue_Pause_relaycommand
                           'PlayIconEnabled' = $false
                           'BorderThickness' = '0'
                           'Margin' = '2,2'
@@ -799,18 +789,17 @@ function Get-PlayQueue
                           'Status_FontSize' = [Double]$Status_FontSize
                         }
                         if(-not $all.contains($Current_Playlist_ChildItem)){
-                          #write-ezlogs "[Get-Playlists] | Adding $($title) with ID $($track.id) - $($Current_Playlist_ChildItem.header.id) to Play Queue" -showtime
                           [void]$all.add($Current_Playlist_ChildItem)
                         }else{
-                          write-ezlogs "[Get-PlayQueue] Duplicate item $($item) = (Title: $title) already exists in the play queue (key: $($_)) - removing from queue" -showtime -warning
+                          write-ezlogs "[Get-PlayQueue] Duplicate item $($item) = (Title: $title) already exists in the play queue (key: $($_)) - removing from queue" -warning
                           [void]$queued_items_toremove.add($_)
                         }
                       }else{
-                        write-ezlogs "[Get-PlayQueue] Unable to add track to play queue due to missing title or ID! Removing for queue list - Title: $($Title) - ID: $($track.id) - Key: $($_) - item: $($item)" -showtime -warning
+                        write-ezlogs "[Get-PlayQueue] Unable to add track to play queue due to missing title or ID! Removing for queue list - Title: $($Title) - ID: $($track.id) - Key: $($_) - item: $($item)" -warning
                         [void]$queued_items_toremove.add($_)
                       }
                     }
-                  }                  
+                  }
                 }catch{
                   write-ezlogs "[Get-PlayQueue] An exception occurred processing play queue item $($item) - Key: $($_)" -catcherror $_
                 }
@@ -826,12 +815,10 @@ function Get-PlayQueue
             }
             if($queued_items_toremove.count -gt 0){
               try{
-                #lock-object -InputObject $thisApp.config.Current_Playlist.SyncRoot -ScriptBlock {
                 $queued_items_toremove | & { process {
                     [void]$thisApp.config.Current_Playlist.Remove($_)
                     write-ezlogs "Removing invalid or duplicate item index from queue $($_)" -warning
                 }}
-                #}
                 Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
               }catch{
                 write-ezlogs "An exception occurred removing invalid or duplicate items from the queue: $($queued_items_toremove)" -catcherror $_
@@ -851,7 +838,7 @@ function Get-PlayQueue
           }
           if($synchashWeak.Target.PlayQueue_TreeView_Library){
             Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'PlayQueue_TreeView_Library' -Property 'AllowDrop' -value $true
-          }          
+          }
           if($synchashWeak.Target.VideoView_Queue){
             Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'VideoView_Queue' -Property 'AllowDrop' -value $true
           }
@@ -873,7 +860,7 @@ function Get-PlayQueue
     write-ezlogs "An exception occurred processing current_playlist" -showtime -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-PlayQueue Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Get-PlayQueue','Update-PlayQueue')

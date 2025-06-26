@@ -705,8 +705,8 @@
 															<DataTemplate>
 																<Border BorderBrush="LightGreen" Height="25" BorderThickness="{Binding Path=BorderThickness,FallbackValue=0}" SnapsToDevicePixels="false">
 																	<VirtualizingStackPanel IsVirtualizing="True" Orientation="Horizontal">
-																		<Button IsEnabled="{Binding Path=PlayIconEnabled,FallbackValue=false}" Height="25" Name="PlayIconButton" Command="{Binding Path=PauseCommand}" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}" RenderTransformOrigin="0.5,0.5">
-																			<Grid SnapsToDevicePixels="false" Margin="0,0,0,0">
+																		<!-- <Button IsEnabled="{Binding Path=PlayIconEnabled,FallbackValue=false}" Height="25" Name="PlayIconButton" Command="{Binding Path=PauseCommand}" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}" RenderTransformOrigin="0.5,0.5"> -->
+																			<Grid SnapsToDevicePixels="false" Margin="5,5,5,5">
 																				<TextBlock Text="{Binding Path=Number}" HorizontalAlignment="Center" FontSize="{Binding Path=NumberFontSize,FallbackValue=12}" Visibility="{Binding Path=NumberVisibility,FallbackValue=Visible}" RenderTransformOrigin="0.5,0.5"/>
 																				<iconPacks:PackIconMaterial Kind="{Binding Path=PlayIconRecord}" Foreground="Transparent" HorizontalAlignment="Left" Visibility="{Binding Path=PlayIconRecordVisibility,FallbackValue=Hidden}" Margin="0,0,0,0" BorderThickness="0" RenderTransformOrigin="0.5,0.5">
 																					<iconPacks:PackIconMaterial.RenderTransform>
@@ -743,7 +743,7 @@
 																					</iconPacks:PackIconFontAwesome.Triggers>																				
 																				</iconPacks:PackIconFontAwesome>
 																			</Grid>
-																		</Button>
+																		<!-- </Button> -->
 																		<Image CacheMode="BitmapCache" Source="{Binding Path=Image}" Height="18" Width="18" Stretch="Uniform" />
 																		<WpfExtensions:OutlinedTextBlock Text="{Binding Path=Display_Name}"
 																				   Stroke="Black"
@@ -959,7 +959,7 @@
 					</VirtualizingStackPanel>						
 				</Grid>
 			</Border>
-			<WpfExtensions:FormattedSlider Minimum="0" Name="MediaPlayer_Slider" Value="{Binding Value}" Uid="{CURRENT_FOLDER}\Resources\Skins\MainProgressSlider_Back.png" AutoToolTipPlacement="BottomRight" TickPlacement="Both" TickFrequency="1" IsSnapToTickEnabled="True" Foreground="{DynamicResource MahApps.Brushes.AccentBase}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="53,10,10,20" Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Width="{Binding ElementName=DisplayPanel_Text_StackPanel, Path=ActualWidth}" Style="{StaticResource Horizontal_Slider1}" AutoToolTipFormat="{}{0} Seconds" Cursor="Hand" ForceCursor="True" AutoToolTipasTimeSpan="true" IsMoveToPointEnabled="true"/>
+			<WpfExtensions:FormattedSlider IsEnabled="false" Minimum="0" Name="MediaPlayer_Slider" Value="{Binding Value}" Uid="{CURRENT_FOLDER}\Resources\Skins\MainProgressSlider_Back.png" AutoToolTipPlacement="BottomRight" TickPlacement="Both" TickFrequency="1" IsSnapToTickEnabled="True" Foreground="{DynamicResource MahApps.Brushes.AccentBase}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="53,10,10,20" Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Width="{Binding ElementName=DisplayPanel_Text_StackPanel, Path=ActualWidth}" Style="{StaticResource Horizontal_Slider1}" AutoToolTipFormat="{}{0} Seconds" Cursor="Hand" ForceCursor="True" AutoToolTipasTimeSpan="true" IsMoveToPointEnabled="true"/>
 		</Grid>
 		<dock:DockingManager
 			AllowMixedOrientation="True"
@@ -1342,8 +1342,8 @@
 																								<DataTemplate>
 																									<Border BorderBrush="LightGreen" Height="25" BorderThickness="{Binding Path=BorderThickness,FallbackValue=0}" SnapsToDevicePixels="false">
 																										<VirtualizingStackPanel IsVirtualizing="True" Orientation="Horizontal">
-																											<Button IsEnabled="{Binding Path=PlayIconEnabled}" Height="25" Name="PlayIconButton" Command="{Binding Path=PauseCommand}" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}" RenderTransformOrigin="0.5,0.5">
-																												<Grid SnapsToDevicePixels="false" Margin="0,0,0,0">
+																											<!-- <Button IsEnabled="{Binding Path=PlayIconEnabled}" Height="25" Name="PlayIconButton" Command="{Binding Path=PauseCommand}" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}" RenderTransformOrigin="0.5,0.5"> -->
+																												<Grid SnapsToDevicePixels="false" Margin="5,5,5,5">
 																													<TextBlock Text="{Binding Path=Number}" HorizontalAlignment="Center" FontSize="{Binding Path=NumberFontSize}" Visibility="{Binding Path=NumberVisibility}" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" RenderTransformOrigin="0.5,0.5"/>
 																													<iconPacks:PackIconMaterial Kind="{Binding Path=PlayIconRecord}" Foreground="Transparent" HorizontalAlignment="Left" Visibility="{Binding Path=PlayIconRecordVisibility}" Margin="0,0,0,0" BorderThickness="0" RenderTransformOrigin="0.5,0.5">
 																														<iconPacks:PackIconMaterial.RenderTransform>
@@ -1380,7 +1380,7 @@
 																														</iconPacks:PackIconFontAwesome.Triggers>																													
 																													</iconPacks:PackIconFontAwesome>
 																												</Grid>
-																											</Button>
+																											<!-- </Button> -->
 																											<Image Source="{Binding Path=Image}" Height="18" Width="18" Stretch="Uniform" >
 																												<Image.CacheMode>
 																													<BitmapCache EnableClearType="False" 
@@ -2000,8 +2000,8 @@
 																		<DataTemplate>
 																			<Border BorderBrush="LightGreen" Height="25" BorderThickness="{Binding Path=BorderThickness}" SnapsToDevicePixels="false">
 																				<VirtualizingStackPanel IsVirtualizing="True" Orientation="Horizontal">
-																					<Button IsEnabled="{Binding Path=PlayIconEnabled}" Height="25" Name="PlayIconButton_Library" Command="{Binding Path=PauseCommand}" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}" RenderTransformOrigin="0.5,0.5">
-																						<Grid SnapsToDevicePixels="false" Margin="0,0,0,0">
+																					<!-- <Button IsEnabled="{Binding Path=PlayIconEnabled}" Height="25" Name="PlayIconButton_Library" Command="{Binding Path=PauseCommand}" Background="Transparent" BorderThickness="0" Style="{StaticResource VideoViewButtonStyle}" RenderTransformOrigin="0.5,0.5"> -->
+																						<Grid SnapsToDevicePixels="false" Margin="5,5,5,5" >
 																							<TextBlock Text="{Binding Path=Number}" HorizontalAlignment="Center" FontSize="{Binding Path=NumberFontSize}" Visibility="{Binding Path=NumberVisibility}" RenderTransformOrigin="0.5,0.5"/>
 																							<iconPacks:PackIconMaterial Kind="{Binding Path=PlayIconRecord}" Foreground="Transparent" HorizontalAlignment="Left" Visibility="{Binding Path=PlayIconRecordVisibility}" Margin="0,0,0,0" BorderThickness="0" RenderTransformOrigin="0.5,0.5">
 																								<iconPacks:PackIconMaterial.RenderTransform>
@@ -2038,7 +2038,7 @@
 																								</iconPacks:PackIconFontAwesome.Triggers>
 																							</iconPacks:PackIconFontAwesome>
 																						</Grid>
-																					</Button>
+																					<!-- </Button> -->
 																					<Image Source="{Binding Path=Image}" Height="18" Width="18" Stretch="Uniform" />
 																					<TextBlock Text="{Binding Path=Display_Name}" FontSize="{Binding Path=FontSize}" FontWeight="{Binding Path=FontWeight}" ToolTip="{Binding Path=ToolTip}" Margin="5,3,0,0"/>
 																					<TextBlock Text="{Binding Path=Status}" FontStyle="{Binding Path=FontStyle}" Foreground="{Binding Path=FontColor}" FontWeight="{Binding Path=FontWeight}" FontSize="{Binding Path=FontSize}" Margin="5,3,0,0"/>
@@ -3225,7 +3225,7 @@
 								</Canvas>
 							</Grid>
 							<Label Name="MiniPlayer_Media_Length_Label" Content="00:00:00" Foreground="#FF7FE3FE" FontSize="13" FontWeight="Bold" RenderTransformOrigin="0.5, 0.5" TextOptions.TextFormattingMode="Display" TextOptions.TextHintingMode="Fixed" TextOptions.TextRenderingMode="Auto" Panel.ZIndex="2" VerticalAlignment="Center" DockPanel.Dock="Top" Grid.Row="1" Grid.Column="1" Margin="15,0,0,5" HorizontalAlignment="Left"/>
-							<Grid Panel.ZIndex="2" Grid.Row="1" Grid.Column="1" Width="235" Margin="60,0,0,5">
+							<Grid Panel.ZIndex="3" Grid.Row="1" Grid.Column="1" Width="235" Margin="60,0,0,5">
 								<Image Name="MiniProgressSlider_Background" Panel.ZIndex="1" Width="235" Height="7" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
 								<Slider Minimum="0" Maximum="100" Name="Mini_Progress_Slider" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" Width="235" Style="{StaticResource MiniProgress_Horizontal_Slider}" AutoToolTipPlacement="BottomRight" TickPlacement="Both" TickFrequency="1" Panel.ZIndex="2" IsSnapToTickEnabled="True" Height="7" Cursor="Hand" ForceCursor="True"/>
 							</Grid>

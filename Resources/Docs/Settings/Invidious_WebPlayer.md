@@ -4,6 +4,10 @@
 
 %{color:#FFFFD265} ❗% Requires enabling **'Use Web Player'** Youtube option
 
+%{color:#FFFFD265} ❗% A valid Invidious instance URL must be provided. A list of trusted public instances can be found at: [Invidious.io](https://docs.invidious.io/instances/)
+
+ - URL must be provided in the format: `https://domain.com`
+
 %{color:#FFFFD265} ❗% If a Youtube video fails to play with the normal Youtube Web Player, the app will automatically retry playing the video with Invidious even if this option is turned off
 
 %{color:#FFFFD265} ❗% Using the Invidious Web Player has similiar restrictions as the normal Youtube Web Player such as:

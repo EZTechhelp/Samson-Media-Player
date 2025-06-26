@@ -2,14 +2,14 @@
     .Name
     Add-Playlist
 
-    .Version 
+    .Version
     0.1.0
 
     .SYNOPSIS
     Creates and adds tracks to playlists
 
     .DESCRIPTION
-       
+
     .Configurable Variables
 
     .Requirements
@@ -26,7 +26,7 @@
 
 #>
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Add-Playlist Function
 #----------------------------------------------
 function Add-Playlist
@@ -64,7 +64,8 @@ function Add-Playlist
       $Playlist = $Playlist,
       $ClearPlaylist = $ClearPlaylist,
       $Position = $Position,
-      $PositionTargetMedia = $PositionTargetMedia
+      $PositionTargetMedia = $PositionTargetMedia,
+      $Verboselog = $VerboseLog
     )
     write-ezlogs "#### Adding/Updating Playlist $Playlist ####" -linesbefore 1 -loglevel 2
     $illegalfile = "[™$([Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars()))]"
@@ -73,12 +74,9 @@ function Add-Playlist
         write-ezlogs " | Cleaning Playlist name due to illegal characters" -warning
         $Playlist = ([Regex]::Replace($Playlist, $illegalfile, '')).trim()
       }
-      $Playlist_Path_Name = "$($Playlist)-CustomPlaylist.xml"    
+      $Playlist_Path_Name = "$($Playlist)-CustomPlaylist.xml"
       $Playlist_Directory_Path = [System.IO.Path]::Combine($Playlist_Profile_Directory,'Custom-Playlists')
       $Playlist_File_Path = [System.IO.Path]::Combine($Playlist_Directory_Path,$Playlist_Path_Name)
-      <#      if(![System.IO.Directory]::Exists($Playlist_Directory_Path)){
-          [void][System.IO.Directory]::CreateDirectory($Playlist_Directory_Path)
-      }#>
     }
     if($synchash.all_playlists.name){
       $index = $synchash.all_playlists.name.indexof($Playlist)
@@ -88,7 +86,7 @@ function Add-Playlist
         $Playlist_to_Update = $synchash.all_playlists.GetItemAt($index)
       }else{
         $Playlist_to_Update = $synchash.all_playlists[$index]
-      } 
+      }
       write-ezlogs " | Updating existing playlist Profile for: $($Playlist_to_Update.name)" -showtime
     }else{
       write-ezlogs " | Playlist Profile not found...building new profile" -showtime -loglevel 2
@@ -108,13 +106,13 @@ function Add-Playlist
       $Playlist_to_Update.name = $Playlist
       $Playlist_to_Update.Playlist_Date_Added = [Datetime]::now.ToString()
       $Playlist_to_Update.type = 'CustomPlaylist'
-    }  
+    }
     if(-not [string]::IsNullOrEmpty($Playlist_to_Update.Playlist_ID) -and $Playlist){
       if($Position -and $Playlist_to_Update.Playlist_Tracks.values.id -contains $media.id -and $Playlist_to_Update.Playlist_Tracks.values.id -contains $PositionTargetMedia.id){
         #TODO: Hacky to ensure index and keys are in same order
         [array]$existingitems = $Playlist_to_Update.Playlist_Tracks.values
         $Count = 0
-        [void]$Playlist_to_Update.Playlist_Tracks.clear()      
+        [void]$Playlist_to_Update.Playlist_Tracks.clear()
         $existingitems | & { process {
             [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
             $Count++
@@ -129,11 +127,11 @@ function Add-Playlist
               if($TargetIndex -eq 0){
                 $DropIndex = 0
               }else{
-                $DropIndex = $TargetIndex - 1
+                $DropIndex = $TargetIndex# - 1
               }
             }
             'DropBelow' {
-              $DropIndex = $TargetIndex + 1
+              $DropIndex = $TargetIndex# + 1
             }
             'DropHere' {
               $DropIndex = $TargetIndex
@@ -143,7 +141,7 @@ function Add-Playlist
         }
         #Reorder
         try{
-          if($Position -eq 'DropAbove'){
+          if($Position -in 'DropAbove','DropBelow'){
             [array]$existingitems = $Playlist_to_Update.Playlist_Tracks.values
             $Count = 0
             [void]$Playlist_to_Update.Playlist_Tracks.clear()
@@ -153,12 +151,12 @@ function Add-Playlist
                   [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$media)
                   $Count++
                   if($_.id -notin $Playlist_to_Update.Playlist_Tracks.values.id){
-                    write-ezlogs "| Inserting media: $($_.title) -- at position: $($Count)"
+                    write-ezlogs "| Inserting media: $($_.title) -- at position: $($Count)" -LogLevel 4 -Verboselog:$Verboselog
                     [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
                     $Count++
                   }
                 }elseif($_.id -ne $media.id -and $_.id -notin $Playlist_to_Update.Playlist_Tracks.values.id){
-                  write-ezlogs "| Inserting media: $($_.title) -- at position: $($Count)"
+                  write-ezlogs "| Inserting media: $($_.title) -- at position: $($Count)" -LogLevel 4 -Verboselog:$Verboselog
                   [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
                   $Count++
                 }
@@ -211,7 +209,7 @@ function Add-Playlist
                   [void]$Playlist_to_Update.PlayList_tracks.add($index,$track)
                   $index = ($Playlist_to_Update.PlayList_tracks.keys | Measure-Object -Maximum).Maximum
                   $index++
-                }  
+                }
               }elseif($id){
                 write-ezlogs " | Media with ID $($id) has already been added to playlist $($Playlist)" -showtime -warning
               }else{
@@ -219,7 +217,7 @@ function Add-Playlist
               }
             }catch{
               write-ezlogs "An exception occurred adding media: $($item) -- to playlist: $($Playlist_to_Update.Name)" -CatchError $_
-            }                        
+            }
           }
         }
       }
@@ -246,15 +244,13 @@ function Add-Playlist
     }
   }
   if($use_Runspace){
-    #$Variable_list = (Get-Variable -Scope Local) | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
     Start-Runspace -scriptblock $Add_Playlist_ScriptBlock -StartRunspaceJobHandler -Variable_list $PSBoundParameters -runspace_name 'Add_Playlist_RUNSPACE' -thisApp $thisApp -synchash $synchash -RestrictedRunspace -function_list write-ezlogs,Convertto-Media,Export-SerializedXML,Update-MainWindow,Get-MediaProfile,Get-Playlists
-    #$Variable_list = $Null
   }else{
     Invoke-Command -ScriptBlock $Add_Playlist_ScriptBlock
     $Add_Playlist_ScriptBlock = $Null
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Add-Playlist Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Add-Playlist')

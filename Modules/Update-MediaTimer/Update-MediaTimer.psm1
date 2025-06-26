@@ -182,22 +182,22 @@ function Update-MediaTimer{
           }          
           if(-not [string]::IsNullOrEmpty($synchashWeak.Target.MediaPlayer_TotalDuration) -and $synchashWeak.Target.MediaPlayer_TotalDuration -ne "0:0:0"){
             if(!$synchashWeak.Target.MediaPlayer_Slider.isEnabled){
-              write-ezlogs "| Enabling MediaPlayer_slider" -showtime
+              write-ezlogs "| Enabling MediaPlayer_slider" -LogLevel 0 -Verboselog:$Verboselog
               $synchashWeak.Target.MediaPlayer_Slider.isEnabled = $true
             }
           }elseif($synchashWeak.Target.MediaPlayer_Slider.isEnabled){
-            write-ezlogs "| Disabling MediaPlayer_slider" -showtime -color cyan
+            write-ezlogs "| Disabling MediaPlayer_slider" -LogLevel 0 -Verboselog:$Verboselog
             $synchashWeak.Target.MediaPlayer_Slider.isEnabled = $false
           }  
           if($synchashWeak.Target.MediaPlayer_TotalDuration -and $synchashWeak.Target.MediaPlayer_Slider.Maximum -ne $synchashWeak.Target.MediaPlayer_TotalDuration){
-            write-ezlogs "| Setting MediaPlayer_Slider max to $($synchashWeak.Target.MediaPlayer_TotalDuration)" -showtime
+            write-ezlogs "| Setting MediaPlayer_Slider max to $($synchashWeak.Target.MediaPlayer_TotalDuration)" -LogLevel 0 -Verboselog:$Verboselog
             $synchashWeak.Target.MediaPlayer_Slider.Maximum = $synchashWeak.Target.MediaPlayer_TotalDuration
-          } 
+          }
+          if($thisApp.Config.Remember_Playback_Progress -and 'Current_Progress_Secs' -in $synchashWeak.Target.Current_playing_media.psobject.properties.name){
+            $synchashWeak.Target.Current_playing_media.Current_Progress_Secs = $synchashWeak.Target.VLC.Time
+            $thisApp.Config.Current_Playing_Media = $synchashWeak.Target.Current_playing_media
+          }
           if($synchashWeak.Target.MediaPlayer_Slider.isEnabled){
-            if($thisApp.Config.Remember_Playback_Progress -and 'Current_Progress_Secs' -in $synchashWeak.Target.Current_playing_media.psobject.properties.name){
-              $synchashWeak.Target.Current_playing_media.Current_Progress_Secs = $synchashWeak.Target.VLC.Time
-              $thisApp.Config.Current_Playing_Media = $synchashWeak.Target.Current_playing_media
-            }
             if(!$synchashWeak.Target.MediaPlayer_Slider.IsMouseOver -and !$synchashWeak.Target.VideoView_Progress_Slider.IsMouseOver -and !$synchashWeak.Target.Mini_Progress_Slider.IsMouseOver){
               $synchashWeak.Target.MediaPlayer_Slider.Value = $([timespan]::FromMilliseconds($synchashWeak.Target.VLC.Time)).TotalSeconds
               if($synchashWeak.Target.Main_TaskbarItemInfo.ProgressState -ne 'Normal'){
@@ -210,9 +210,9 @@ function Update-MediaTimer{
               if($synchashWeak.Target.VideoView_Progress_Slider){
                 $synchashWeak.Target.VideoView_Progress_Slider.ToolTip = $synchashWeak.Target.MediaPlayer_Slider.ToolTip
               }
-              if($synchashWeak.Target.Mini_Progress_Slider){
+<#              if($synchashWeak.Target.Mini_Progress_Slider){
                 $synchashWeak.Target.Mini_Progress_Slider.ToolTip = $synchashWeak.Target.MediaPlayer_Slider.ToolTip
-              }
+              }#>
             }      
           }
           <#          if($synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.IsEnabled -and $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus -ne 'Playing'){
@@ -429,29 +429,27 @@ function Update-MediaTimer{
           $current_Length = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"               
           if(!$synchashWeak.Target.MediaPlayer_Slider.IsMouseOver -and !$synchashWeak.Target.VideoView_Progress_Slider.IsMouseOver -and !$synchashWeak.Target.Mini_Progress_Slider.IsMouseOver){            
             $synchashWeak.Target.MediaPlayer_Slider.Value = $([timespan]::FromMilliseconds($progress)).TotalSeconds   
-            write-ezlogs ">>>> Current Progress_ms: $progress" -Dev_mode        
+            if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Current Progress_ms: $progress" -Dev_mode:$thisApp.Config.Dev_mode}
             if($synchashWeak.Target.Main_TaskbarItemInfo.ProgressState -ne 'Normal'){
               $synchashWeak.Target.Main_TaskbarItemInfo.ProgressState = 'Normal'
-            }
-            if($thisApp.Config.Remember_Playback_Progress -and 'Current_Progress_Secs' -in $synchashWeak.Target.Current_playing_media.psobject.properties.name){
-              $synchashWeak.Target.Current_playing_media.Current_Progress_Secs = $progress
-              $thisApp.Config.Current_Playing_Media = $synchashWeak.Target.Current_playing_media
             }
           }else{
             #$synchashWeak.Target.MediaPlayer_Slider.ToolTip = $synchashWeak.Target.Media_Length_Label.content
             $synchashWeak.Target.MediaPlayer_Slider.ToolTip = $current_Length + ' / ' +  "$($total_time)"
             $synchashWeak.Target.VideoView_Progress_Slider.ToolTip = $synchashWeak.Target.MediaPlayer_Slider.ToolTip
-            $synchashWeak.Target.Mini_Progress_Slider.ToolTip = $synchashWeak.Target.MediaPlayer_Slider.ToolTip
-          }     
- 
+            #$synchashWeak.Target.Mini_Progress_Slider.ToolTip = $synchashWeak.Target.MediaPlayer_Slider.ToolTip
+          }            
+          if($thisApp.Config.Remember_Playback_Progress -and 'Current_Progress_Secs' -in $synchashWeak.Target.Current_playing_media.psobject.properties.name){
+            $synchashWeak.Target.Current_playing_media.Current_Progress_Secs = $progress
+            $thisApp.Config.Current_Playing_Media = $synchashWeak.Target.Current_playing_media
+          }
           #$synchashWeak.Target.Media_Length_Label.text = $current_Length + ' / ' +  "$($total_time)"
           if($synchashWeak.Target.VideoView_Current_Length_TextBox){
             $synchashWeak.Target.VideoView_Current_Length_TextBox.text = $current_Length
           }
           if($synchashWeak.Target.VideoView_Total_Length_TextBox -and $synchashWeak.Target.VideoView_Total_Length_TextBox.text -ne $total_time){
             $synchashWeak.Target.VideoView_Total_Length_TextBox.text = $total_time
-          }  
-
+          }
           if($synchashWeak.Target.Media_Current_Length_TextBox){
             $synchashWeak.Target.Media_Current_Length_TextBox.DataContext = $current_Length
           }
@@ -461,10 +459,10 @@ function Update-MediaTimer{
           if($synchashWeak.Target.MiniPlayer_Media_Length_Label){
             $synchashWeak.Target.MiniPlayer_Media_Length_Label.Content = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
           }    
-          if($synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.IsEnabled -and $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus -ne 'Playing'){
-            #$synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus = 'Playing'
-            #$synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
-          }   
+<#          if($synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.IsEnabled -and $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus -ne 'Playing'){
+            $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus = 'Playing'
+            $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
+          }#>   
           if(!$synchashWeak.Target.PlayButton_ToggleButton.isChecked){
             $synchashWeak.Target.PlayButton_ToggleButton.isChecked = $true
           }  

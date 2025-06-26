@@ -126,9 +126,7 @@ function Start-MediaTransportControls{
     }  
   }
   if($use_Runspace){
-    #$Variable_list = Get-Variable -Scope Local | & { process {if (($_.Name -in $PSBoundParameters.keys -or $_.Name -in 'thisApp','synchash','jobs')){$_}}}
     Start-Runspace $MediaTransportControls_ScriptBlock -arguments $PSBoundParameters -StartRunspaceJobHandler -synchash $synchash -logfile $thisApp.Config.Log_file -runspace_name "MediaTransportControls" -thisApp $thisapp -RestrictedRunspace -function_list 'write-ezlogs' -cancel_runspace
-    #$Variable_list = $null
   }else{
     Invoke-Command -ScriptBlock $MediaTransportControls_ScriptBlock -ArgumentList $synchash,$thisApp,$use_Runspace
   }
@@ -161,15 +159,10 @@ function Update-MediaTransportControls{
       [switch]$Verboselog
     )
     try{
-      <#      if($use_Runspace){
-          Import-module "$($thisApp.Config.Current_Folder)\Modules\Register-WinRTEvent\Register-WinRTEvent.psm1" -NoClobber -DisableNameChecking -Scope Local
-          Import-Module "$($thisApp.Config.Current_Folder)\Modules\EZT-AudioManager\EZT-AudioManager.psm1" -NoClobber -DisableNameChecking
-      }#>
       if($synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled -and $Media.title){
         if($Verboselog){write-ezlogs "[Update-MediaTransportControls] Setting Media properties for SystemMediaTransportcontrols $($synchash.systemmediaplayer.SystemMediaTransportControls)" -showtime}          
         if($synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Type -ne 'Music'){
           $synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Type = 'Music'
-          #$synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
         }          
         if($synchash.streamlink.title -or $Media.Stream_title){
           if($Media.Stream_title){
@@ -210,8 +203,7 @@ function Update-MediaTransportControls{
           write-ezlogs "An exception occurred executing New-StorageFile for background image" -showtime -catcherror $_
         }
         if($file){
-          #$synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
-          write-ezlogs "[Update-MediaTransportControls] >>>> Setting Media thumbnail image for SystemMediaTransportcontrols: $($file.path)" -showtime
+          write-ezlogs "[Update-MediaTransportControls] >>>> Setting Media thumbnail image for SystemMediaTransportcontrols: $($file.path)" -LogLevel 0 -Verboselog:$Verboselog
           $synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Thumbnail = [Windows.Storage.Streams.RandomAccessStreamReference]::CreateFromFile($file)
           $synchash.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
         }      

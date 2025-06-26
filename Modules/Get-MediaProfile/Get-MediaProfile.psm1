@@ -2,14 +2,14 @@
     .Name
     Get-MediaProfile
 
-    .Version 
+    .Version
     0.1.0
 
     .SYNOPSIS
     Provides lookup of media profiles by ID from libraries, playlists and other collections
 
     .DESCRIPTION
-       
+
     .Configurable Variables
 
     .Requirements
@@ -26,7 +26,7 @@
 
 #>
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-MediaProfile Function
 #----------------------------------------------
 function Get-MediaProfile
@@ -60,7 +60,7 @@ function Get-MediaProfile
     if($Verboselog){
       $Get_MediaProfile_Measure = [system.diagnostics.stopwatch]::StartNew()
     }
-    $AllTwitch_Profile_File_Path = [System.IO.Path]::Combine($thisapp.Config.Media_Profile_Directory,'All-Twitch_MediaProfile','All-Twitch_Media-Profile.xml') 
+    $AllTwitch_Profile_File_Path = [System.IO.Path]::Combine($thisapp.Config.Media_Profile_Directory,'All-Twitch_MediaProfile','All-Twitch_Media-Profile.xml')
     $AllSpotify_Profile_File_Path = [System.IO.Path]::Combine($thisapp.Config.Media_Profile_Directory,'All-Spotify_MediaProfile','All-Spotify_Media-Profile.xml')
     $AllLocal_Profile_File_Path = [System.IO.Path]::Combine($thisapp.Config.Media_Profile_Directory,'All-MediaProfile','All-Media-Profile.xml')
     $AllYoutube_Profile_File_Path = [System.IO.Path]::Combine($thisapp.Config.Media_Profile_Directory,'All-Youtube_MediaProfile','All-Youtube_Media-Profile.xml')
@@ -81,14 +81,29 @@ function Get-MediaProfile
     }
     $Ids | & { process {
         try{
+          #Is it in a custom playlist
+          if(!$track -and $synchash.all_playlists.Playlist_tracks.values.$Property){
+            try{
+              $track = lock-object -InputObject $synchash.all_playlists_ListLock -ScriptBlock {
+                if($synchash.all_playlists.Playlist_tracks){
+                  $index = $synchash.all_playlists.Playlist_tracks.values.$Property.IndexOf($_)
+                  if($index -ne -1){
+                    $synchash.all_playlists.Playlist_tracks.values[$index]
+                  }
+                }
+              }
+            }catch{
+              write-ezlogs "[Get-MediaProfile] An exception occurred attempting to lookup ID $($_) in all_playlists.Playlist_tracks" -CatchError $_
+            }
+          }
           #Is it local media
           if($synchash.All_local_Media.count -gt 0){
             try{
               $index = $synchash.All_local_Media.$Property.IndexOf($_)
             }catch{
               $index = -1
-            }          
-            if($index -ne -1){                 
+            }
+            if($index -ne -1){
               $Track = $synchash.All_local_Media[$index]
             }
             if($track.count -gt 1){
@@ -104,25 +119,25 @@ function Get-MediaProfile
                 $track = $All_local_Media.where({($_.url -replace '\\\\','\') -eq ($localurl -replace '\\\\','\')})
               }catch{
                 write-ezlogs "[Get-MediaProfile] An exception occurred creating new Generic.List from All_local_Media" -catcherror $_
-              } 
+              }
             }
           }
-          #Is it Spotify            
+          #Is it Spotify
           if(!$Track -and $synchash.All_Spotify_Media.count -gt 0){
             try{
               $index = $synchash.All_Spotify_Media.$Property.IndexOf($_)
             }catch{
               $index = -1
-            }         
-            if($index -ne -1){                 
+            }
+            if($index -ne -1){
               $Track = $synchash.All_Spotify_Media[$index]
-            }   
+            }
             if($track.count -gt 1){
               write-ezlogs "[Get-MediaProfile] Found duplicate track $($track.id) in All Spotify Media -- removing" -warning
               $remove = $track | Select-Object -last 1
               $null = $synchash.All_Spotify_Media.Remove($remove)
               Export-SerializedXML -InputObject $synchash.All_Spotify_Media -Path $AllSpotify_Profile_File_Path
-            }    
+            }
           }
           #Is it Twitch
           if(!$Track){
@@ -134,8 +149,8 @@ function Get-MediaProfile
                   $index = $all_Twitch_profile.$Property.IndexOf($_)
                 }catch{
                   $index = -1
-                }             
-                if($index -ne -1){                 
+                }
+                if($index -ne -1){
                   $Track = $all_Twitch_profile[$index]
                 }
               }
@@ -147,8 +162,8 @@ function Get-MediaProfile
                 }
               }catch{
                 $index = -1
-              }            
-              if($index -ne -1){                 
+              }
+              if($index -ne -1){
                 $Track = $synchash.All_Twitch_Media[$index]
               }
             }
@@ -161,7 +176,7 @@ function Get-MediaProfile
           }
           #Is it Youtube
           if(!$Track){
-            if($synchash.All_Youtube_Media.count -eq 0){                 
+            if($synchash.All_Youtube_Media.count -eq 0){
               if([System.IO.File]::Exists($AllYoutube_Profile_File_Path)){
                 $all_youtube_profile = Import-SerializedXML -Path $AllYoutube_Profile_File_Path
                 write-ezlogs "[Get-MediaProfile] >>>> Unable to find Youtube media, importing All youtube Media Profile at $AllYoutube_Profile_File_Path"
@@ -170,8 +185,8 @@ function Get-MediaProfile
                     $index = $all_youtube_profile.$Property.IndexOf($_)
                   }catch{
                     $index = -1
-                  }                
-                  if($index -ne -1){                 
+                  }
+                  if($index -ne -1){
                     $Track = $all_youtube_profile[$index]
                   }
                 }
@@ -181,8 +196,8 @@ function Get-MediaProfile
                 $index = $synchash.All_Youtube_Media.$Property.IndexOf($_)
               }catch{
                 $index = -1
-              }           
-              if($index -ne -1){                 
+              }
+              if($index -ne -1){
                 $Track = $synchash.All_Youtube_Media[$index]
               }
             }
@@ -191,21 +206,6 @@ function Get-MediaProfile
               $remove = $track | Select-Object -last 1
               $null = $synchash.All_Youtube_Media.Remove($remove)
               Export-SerializedXML -InputObject $synchash.All_Youtube_Media -path $AllYoutube_Profile_File_Path
-            }
-          } 
-          #Is it in a custom playlist
-          if(!$track -and $synchash.all_playlists.Playlist_tracks.values.$Property){
-            try{ 
-              $track = lock-object -InputObject $synchash.all_playlists_ListLock -ScriptBlock {
-                if($synchash.all_playlists.Playlist_tracks){
-                  $index = $synchash.all_playlists.Playlist_tracks.values.$Property.IndexOf($_)
-                  if($index -ne -1){                 
-                    $synchash.all_playlists.Playlist_tracks.values[$index]
-                  }  
-                }
-              }
-            }catch{
-              write-ezlogs "[Get-MediaProfile] An exception occurred attempting to lookup ID $($_) in all_playlists.Playlist_tracks" -CatchError $_
             }
           }
           #Is it Temporary media
@@ -228,18 +228,18 @@ function Get-MediaProfile
               if($index -ne -1){
                 $synchash.All_Tor_Results.item($index)
               }
-            }         
+            }
           }
-          #Is it Current Playing Media 
+          #Is it Current Playing Media
           if(!$track -and $synchash.Current_playing_media.$Property -and $synchash.Current_playing_media.$Property -eq $_){
             $track = $synchash.Current_playing_media
-            write-ezlogs "[Get-MediaProfile] Queue item: $($_) is Current_playing_media: $($track.title)" -warning
+            write-ezlogs "[Get-MediaProfile] Queue item: $($_) is Current_playing_media: $($track.title)" -warning -LogLevel 0 -Verboselog:$Verboselog
           }
           if($track){
             return $track
           }elseif($Verboselog){
-            write-ezlogs "Unable to find track for ID: $_" -warning 
-          }     
+            write-ezlogs "Unable to find track for ID: $_" -warning
+          }
         }catch{
           write-ezlogs "[Get-MediaProfile] An exception occurred in Get-MediaProfile for ID: $($_)" -catcherror $_
         }
@@ -247,7 +247,7 @@ function Get-MediaProfile
     if($Get_MediaProfile_Measure){
       $Null = $Get_MediaProfile_Measure.Stop()
       write-ezlogs "Get-MediaProfile Measure" -Perf -PerfTimer $Get_MediaProfile_Measure
-      $Get_MediaProfile_Measure = $Null 
+      $Get_MediaProfile_Measure = $Null
     }
   }
   if($use_Runspace){
@@ -259,11 +259,11 @@ function Get-MediaProfile
     $Get_MediaProfile_ScriptBlock = $Null
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-MediaProfile Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-ProfileManager Function
 #----------------------------------------------
 function Get-ProfileManager{
@@ -281,7 +281,7 @@ function Get-ProfileManager{
     if(!$synchash.ProfileManager_Queue){
       $synchash.ProfileManager_Queue = [System.Collections.Concurrent.ConcurrentQueue`1[object]]::New()
     }
-    $ProfileManager_ScriptBlock = {  
+    $ProfileManager_ScriptBlock = {
       param (
         $thisApp = $thisApp,
         $synchash = $synchash,
@@ -337,7 +337,7 @@ function Get-ProfileManager{
         write-ezlogs "[Get-ProfileManager] ProfileManager has ended!" -warning
       }catch{
         write-ezlogs "[Get-ProfileManager] An exception occurred in ProfileManager_ScriptBlock" -catcherror $_
-      }  
+      }
     }
     Start-Runspace $ProfileManager_ScriptBlock -Variable_list $PSBoundParameters -StartRunspaceJobHandler -synchash $synchash -runspace_name "ProfileManager_Runspace" -thisApp $thisapp -CheckforExisting -RestrictedRunspace -function_list 'write-ezlogs' -PSProviders 'Function','Registry','Environment','FileSystem','Variable'
     if($StartupWait){
@@ -360,7 +360,7 @@ function Get-ProfileManager{
     $thisApp.ProfileManagerEnabled = $false
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-ProfileManager Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Get-MediaProfile','Get-ProfileManager')

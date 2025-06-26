@@ -2,14 +2,14 @@
     .Name
     Get-Twitch
 
-    .Version 
+    .Version
     0.3.0
 
     .SYNOPSIS
-    Retrieves data from Twitch API for stream/broadcast status and performs processing for Twitch profiles 
+    Retrieves data from Twitch API for stream/broadcast status and performs processing for Twitch profiles
 
     .DESCRIPTION
-       
+
     .Configurable Variables
 
     .Requirements
@@ -26,7 +26,7 @@
 
 #>
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-TwitchApplication Function
 #----------------------------------------------
 function Get-TwitchApplication {
@@ -42,7 +42,7 @@ function Get-TwitchApplication {
   try{
     $secretstore = Get-SecretVault -Name $Name -ErrorAction SilentlyContinue
   }catch{
-    write-ezlogs "[Get-TwitchApplication] An exception occurred getting SecretStore $name" -showtime -catcherror $_
+    write-ezlogs "[Get-TwitchApplication] An exception occurred getting SecretStore $name"  -catcherror $_
     return
   }
   if($secretstore){
@@ -50,32 +50,32 @@ function Get-TwitchApplication {
       try{
         $APIXML = "$($thisApp.config.Current_Folder)\Resources\API\Twitch-API-Config.xml"
         if([System.IO.File]::Exists($APIXML) -and !$thisApp.TwitchAPI){
-          write-ezlogs "[Get-TwitchApplication] >>>> Importing API Config file $APIXML" -showtime -logtype Twitch -Dev_mode
+          write-ezlogs "[Get-TwitchApplication] >>>> Importing API Config file $APIXML"  -logtype Twitch -Dev_mode
           $thisApp.TwitchAPI = Import-SerializedXML -Path $APIXML -isAPI
         }
       }catch{
         write-ezlogs "An exception occurred getting clientid or clientsecret from API Config file: $APIXML" -catcherror $_
       }
-    }  
+    }
     try{
       $access_token = Get-secret -name Twitchaccess_token -Vault $Name -ErrorAction SilentlyContinue
     }catch{
-      write-ezlogs "[Get-TwitchApplication] An exception occurred getting Secret Twitchaccess_token" -showtime -catcherror $_
+      write-ezlogs "[Get-TwitchApplication] An exception occurred getting Secret Twitchaccess_token"  -catcherror $_
     }finally{
       if(!$access_token){
         try{
-          write-ezlogs "[Get-TwitchApplication] Unable to get Twitchaccess_token from vault $Name - trying again in case of transient issue" -showtime -warning -logtype Twitch
+          write-ezlogs "[Get-TwitchApplication] Unable to get Twitchaccess_token from vault $Name - trying again in case of transient issue"  -warning -logtype Twitch
           [System.Threading.Thread]::Sleep(500)
           $access_token = Get-secret -name Twitchaccess_token -Vault $Name -ErrorAction SilentlyContinue
         }catch{
-          write-ezlogs "[Get-TwitchApplication] An exception occurred on the second attempt getting Secret Twitchaccess_token" -showtime -catcherror $_
+          write-ezlogs "[Get-TwitchApplication] An exception occurred on the second attempt getting Secret Twitchaccess_token"  -catcherror $_
         }
       }
-    }       
+    }
     if($access_token -and $thisApp.TwitchAPI.ClientSecret){
       try{
         $expires = Get-secret -name Twitchexpires -Vault $Name -ErrorAction SilentlyContinue
-        $scope = Get-secret -name Twitchscope -Vault $Name -ErrorAction SilentlyContinue   
+        $scope = Get-secret -name Twitchscope -Vault $Name -ErrorAction SilentlyContinue
         $refresh_token = Get-secret -name Twitchrefresh_token -Vault $Name -ErrorAction SilentlyContinue
         $token_type = Get-secret -name Twitchtoken_type -Vault $Name -ErrorAction SilentlyContinue
         $Token = [PSCustomObject]::new(@{
@@ -84,41 +84,39 @@ function Get-TwitchApplication {
             'refresh_token' = $refresh_token
             'token_type' = $token_type
             'access_token' = $access_token
-        })            
+        })
       }catch{
-        write-ezlogs "[Get-TwitchApplication] An exception occurred getting Secrets for Access_Token" -showtime -catcherror $_
-      }        
+        write-ezlogs "[Get-TwitchApplication] An exception occurred getting Secrets for Access_Token"  -catcherror $_
+      }
     }else{
-      write-ezlogs "[Get-TwitchApplication] Unable to find Twitch Access Token from Secret Vault $name - Clientid: $($thisApp.TwitchAPI.ClientID)!" -showtime -warning -logtype Twitch
-      #write-ezlogs "[Get-TwitchApplication] Secret Store Config: $($Secret_store_config | out-string)" -showtime -logtype Twitch
+      write-ezlogs "[Get-TwitchApplication] Unable to find Twitch Access Token from Secret Vault $name - Clientid: $($thisApp.TwitchAPI.ClientID)!"  -warning -logtype Twitch
       $APIXML = "$($thisApp.config.Current_Folder)\Resources\API\Twitch-API-Config.xml"
       if([System.IO.File]::Exists($APIXML)){
-        write-ezlogs "[Get-TwitchApplication] >>>> Importing API Config file $APIXML" -showtime -logtype Twitch -Dev_mode
+        write-ezlogs "[Get-TwitchApplication] >>>> Importing API Config file $APIXML"  -logtype Twitch -Dev_mode
         $thisApp.TwitchAPI = Import-SerializedXML -Path $APIXML -isAPI
       }
-    }               
+    }
   }else{
-    Write-ezlogs "[Get-TwitchApplication] No SecretStore found called $Name" -warning -showtime -logtype Twitch
+    Write-ezlogs "[Get-TwitchApplication] No SecretStore found called $Name" -warning  -logtype Twitch
     $APIXML = "$($thisApp.config.Current_Folder)\Resources\API\Twitch-API-Config.xml"
     if([System.IO.File]::Exists($APIXML)){
-      write-ezlogs "[Get-TwitchApplication] >>>> Importing API Config file $APIXML" -showtime -logtype Twitch -Dev_mode
+      write-ezlogs "[Get-TwitchApplication] >>>> Importing API Config file $APIXML"  -logtype Twitch -Dev_mode
       $thisApp.TwitchAPI = Import-SerializedXML -Path $APIXML -isAPI
     }
     if($thisApp.TwitchAPI.ClientSecret -and $thisApp.TwitchAPI.ClientID){
-      write-ezlogs "[Get-TwitchApplication] >>>> Setting new SecretStoreConfiguration with password set to $Name (Scope: CurrentUser)" -showtime -logtype Twitch
+      write-ezlogs "[Get-TwitchApplication] >>>> Setting new SecretStoreConfiguration with password set to $Name (Scope: CurrentUser)"  -logtype Twitch
       Set-SecretStoreConfiguration -Scope CurrentUser -Authentication None -Interaction None -Confirm:$false -password:$($Name | ConvertTo-SecureString -AsPlainText -Force) -ErrorAction SilentlyContinue
     }else{
-      write-ezlogs "[Get-TwitchApplication] API config not found, unable to set secretstoreconfiguration!" -showtime -warning -logtype Twitch
+      write-ezlogs "[Get-TwitchApplication] API config not found, unable to set secretstoreconfiguration!"  -warning -logtype Twitch
       return
     }
-    write-ezlogs "[Get-TwitchApplication] >>>> Registering new SecretVault: $name" -showtime -logtype Twitch
+    write-ezlogs "[Get-TwitchApplication] >>>> Registering new SecretVault: $name"  -logtype Twitch
     try{
       $secretstore = Register-SecretVault -Name $Name -ModuleName "$($thisApp.Config.Current_Folder)\Modules\Microsoft.PowerShell.SecretStore" -DefaultVault -Description "Created by $($thisApp.Config.App_Name) - $($thisApp.Config.App_Version)" -PassThru
     }catch{
       write-ezlogs "An exception occurred registering new secretvault with name $Name" -catcherror $_
     }
-    #Register-SecretVault -Name $Name -ModuleName Microsoft.PowerShell.SecretStore -DefaultVault -ErrorAction SilentlyContinue
-  }  
+  }
   $Auth = [PSCustomObject]::new(@{
       'RedirectUri' = $thisApp.TwitchAPI.Redirect_URLs
       'Name' = $Name
@@ -126,14 +124,14 @@ function Get-TwitchApplication {
       'ClientSecret' = $thisApp.TwitchAPI.ClientSecret
       'Token' = $Token
   })
-  $secretstore = $Null     
+  $secretstore = $Null
   $PSCmdlet.WriteObject($auth)
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-TwitchApplication Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Set-TwitchApplication Function
 #----------------------------------------------
 function Set-TwitchApplication {
@@ -158,19 +156,19 @@ function Set-TwitchApplication {
   )
 
   $Application = Get-TwitchApplication -Name $thisApp.Config.App_Name
-  
+
   # Try to save application to file.
   try {
     # Update Application
     if($Application.Name){
-      write-ezlogs ">>>> Saving Twitch Secrets for application $($Application.Name)" -showtime -logtype Twitch -LogLevel 2
+      write-ezlogs ">>>> Saving Twitch Secrets for application $($Application.Name)"  -logtype Twitch -LogLevel 2
       $secretstore = Get-SecretVault -Name $Name -ErrorAction SilentlyContinue
-      if($secretstore){  
+      if($secretstore){
         $Application = Get-TwitchApplication -Name $thisApp.Config.App_Name
         if([string]::IsNullOrEmpty($Application.ClientId) -or [string]::IsNullOrEmpty($Application.ClientSecret)){
           $APIXML = "$($thisApp.config.Current_Folder)\Resources\API\Twitch-API-Config.xml"
           if([System.IO.File]::Exists($APIXML)){
-            write-ezlogs "[Set-TwitchApplication] >>>> Importing API Config file $APIXML" -showtime -logtype Twitch -Dev_mode
+            write-ezlogs "[Set-TwitchApplication] >>>> Importing API Config file $APIXML"  -logtype Twitch -Dev_mode
             $Twitch_API = Import-SerializedXML -Path $APIXML -isAPI
             $clientID = $Twitch_API.ClientID
             $clientsecret = $Twitch_API.ClientSecret
@@ -179,51 +177,51 @@ function Set-TwitchApplication {
           $clientID = $Application.ClientId
           $clientsecret = $Application.ClientSecret
         }
-        if ($clientID) { 
-          write-ezlogs "[Set-TwitchApplication] | TwitchClientId: $($clientID)" -showtime -logtype Twitch -Dev_mode
+        if ($clientID) {
+          write-ezlogs "[Set-TwitchApplication] | TwitchClientId: $($clientID)"  -logtype Twitch -Dev_mode
           Set-Secret -Name TwitchClientId -Secret "$($clientID)" -Vault $Name
         }
-        if ($clientsecret) {   
-          write-ezlogs "[Set-TwitchApplication] | TwitchClientSecret: $($clientsecret)" -showtime -logtype Twitch -Dev_mode
+        if ($clientsecret) {
+          write-ezlogs "[Set-TwitchApplication] | TwitchClientSecret: $($clientsecret)"  -logtype Twitch -Dev_mode
           Set-Secret -Name TwitchClientSecret -Secret "$($clientsecret)" -Vault $Name
         }
-        if ($RedirectUri) { 
-          write-ezlogs "[Set-TwitchApplication] | TwitchRedirectUri: $($RedirectUri)" -showtime -logtype Twitch -LogLevel 2
+        if ($RedirectUri) {
+          write-ezlogs "[Set-TwitchApplication] | TwitchRedirectUri: $($RedirectUri)"  -logtype Twitch -LogLevel 2
           Set-Secret -Name TwitchRedirectUri -Secret "$($RedirectUri)" -Vault $Name
         }
         if ($Token.expires) {
-          write-ezlogs "[Set-TwitchApplication] | Twitchexpires: $($Token.expires)" -showtime -logtype Twitch -LogLevel 2
+          write-ezlogs "[Set-TwitchApplication] | Twitchexpires: $($Token.expires)"  -logtype Twitch -LogLevel 2
           Set-Secret -Name Twitchexpires -Secret "$($Token.expires)" -Vault $Name
         }
         if ($Token.access_token) {
-          write-ezlogs "[Set-TwitchApplication] | Twitchaccess_token: $($Token.access_token)" -showtime -logtype Twitch -Dev_mode
+          write-ezlogs "[Set-TwitchApplication] | Twitchaccess_token: $($Token.access_token)"  -logtype Twitch -Dev_mode
           Set-Secret -Name Twitchaccess_token -Secret "$($Token.access_token)" -Vault $Name
         }
         if ($Token.scope) {
-          write-ezlogs "[Set-TwitchApplication] | Twitchscope: $($Token.scope)" -showtime -logtype Twitch -LogLevel 2
+          write-ezlogs "[Set-TwitchApplication] | Twitchscope: $($Token.scope)"  -logtype Twitch -LogLevel 2
           Set-Secret -Name Twitchscope -Secret "$($Token.scope)" -Vault $Name
         }
         if ($Token.refresh_token) {
-          write-ezlogs "[Set-TwitchApplication] | Twitchrefresh_token: $($Token.refresh_token)" -showtime -logtype Twitch -Dev_mode
+          write-ezlogs "[Set-TwitchApplication] | Twitchrefresh_token: $($Token.refresh_token)"  -logtype Twitch -Dev_mode
           Set-Secret -Name Twitchrefresh_token -Secret "$($Token.refresh_token)" -Vault $Name
-        }        
+        }
         if ($Token.token_type) {
-          write-ezlogs "[Set-TwitchApplication] | Twitchtoken_type: $($Token.token_type)" -showtime -logtype Twitch -LogLevel 2
+          write-ezlogs "[Set-TwitchApplication] | Twitchtoken_type: $($Token.token_type)"  -logtype Twitch -LogLevel 2
           Set-Secret -Name Twitchtoken_type -Secret "$($Token.token_type)" -Vault $Name
-        }                                   
+        }
       }
     }else{
-      Write-ezlogs "Unable to find existing Twitch Application $name - Use New-TwitchApplication to create a new one" -showtime -warning -logtype Twitch -LogLevel 2
+      Write-ezlogs "Unable to find existing Twitch Application $name - Use New-TwitchApplication to create a new one"  -warning -logtype Twitch -LogLevel 2
     }
   }catch {
-    write-ezlogs "Failed updating SecretStore $Name : $($PSItem[0].ToString())" -showtime -catcherror $_
+    write-ezlogs "Failed updating SecretStore $Name : $($PSItem[0].ToString())"  -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Set-TwitchApplication Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-TwitchAccessToken Function
 #----------------------------------------------
 function Get-TwitchAccessToken {
@@ -248,26 +246,26 @@ function Get-TwitchAccessToken {
   try{
     $Application = Get-TwitchApplication -Name $ApplicationName
   }catch{
-    write-ezlogs "An exception occurred getting Twitch Application $Application" -showtime -catcherror $_
+    write-ezlogs "An exception occurred getting Twitch Application $Application"  -catcherror $_
   }
 
   # If Token is available
   if (-not [string]::IsNullOrEmpty($Application.Token.access_token) -and -not [string]::IsNullOrEmpty($Application.Token.Expires)) {
     # Check that Access Token is not expired
-    try{       
+    try{
       $Expires = [DateTime]::ParseExact($Application.Token.Expires, 'u', $null)
-      $Expire_status = ([DateTime]::Now) -le $Expires.AddSeconds(-10)     
+      $Expire_status = ([DateTime]::Now) -le $Expires.AddSeconds(-10)
     }catch{
-      write-ezlogs "An exception occurred parsing token expiration from application $($application | out-string)" -showtime -catcherror $_
+      write-ezlogs "An exception occurred parsing token expiration from application $($application | out-string)"  -catcherror $_
     }
-    
+
     if ($Expire_status -and !$ForceTokenRefresh) {
       # Access Token is still valid, then use it
-      if($Verboselog){write-ezlogs "Twitch Access Token is still valid: $($Expires)" -showtime -logtype Twitch -VerboseDebug:$Verboselog}
+      if($Verboselog){write-ezlogs "Twitch Access Token is still valid: $($Expires)"  -logtype Twitch -VerboseDebug:$Verboselog}
       return $Application.Token.access_token
     } else {
       # Access Token is expired, need to be refreshed
-      write-ezlogs "Refreshing Twitch Access Token -- ForceTokenRefresh: $($ForceTokenRefresh) -- Expires: $($Expires)" -showtime -warning -logtype Twitch -LogLevel 2
+      write-ezlogs "Refreshing Twitch Access Token -- ForceTokenRefresh: $($ForceTokenRefresh) -- Expires: $($Expires)"  -warning -logtype Twitch -LogLevel 2
       # ------------------------------ Token Refreshed retrieval ------------------------------
       # STEP 1 : Prepare
       $Uri = 'https://id.twitch.tv/oauth2/token'
@@ -281,13 +279,13 @@ function Get-TwitchAccessToken {
 
       # STEP 2 : Make request to the Twitch Accounts service
       try {
-        Write-ezlogs "Sending request to refresh access token: $($Uri) | Body $($Body)" -showtime -logtype Twitch -LogLevel 2
+        Write-ezlogs "Sending request to refresh access token: $($Uri) | Body $($Body)"  -logtype Twitch -LogLevel 2
         $CurrentTime = Get-Date
         $Response = Invoke-RestMethod -Uri $Uri -Method $Method -Body $Body -UseBasicParsing
       }catch {
         # Don't throw error if Refresh token is revoked or authentication failed
         if ($_.Exception.Response.StatusCode -ne 400 -and $_.Exception.Response.StatusCode -ne 401) {
-          write-ezlogs "Error occured during request of refreshed access token : $([int]$_.Exception.Response.StatusCode) - $($PSItem[0].ToString())" -showtime -catcherror $_
+          write-ezlogs "Error occured during request of refreshed access token : $([int]$_.Exception.Response.StatusCode) - $($PSItem[0].ToString())"  -catcherror $_
         }
       }
 
@@ -302,28 +300,28 @@ function Get-TwitchAccessToken {
           refresh_token = if ($ResponseContent.refresh_token) { $ResponseContent.refresh_token } else { $Application.Token.refresh_token }
         }
         Set-TwitchApplication -Name $ApplicationName -Token $Token -RedirectUri $Application.RedirectUri
-        Write-ezlogs '[Get-TwitchAccessToken] Successfully saved Twitch Refreshed Token' -showtime -logtype Twitch -LogLevel 2 -Success
+        Write-ezlogs '[Get-TwitchAccessToken] Successfully saved Twitch Refreshed Token'  -logtype Twitch -LogLevel 2 -Success
         return $Token.access_token
       }
     }
   }else{
     if($noAuthCapture){
-      write-ezlogs "Unable to get Twitch access token" -showtime -warning -logtype Twitch -LogLevel 2
+      write-ezlogs "Unable to get Twitch access token"  -warning -logtype Twitch -LogLevel 2
       return
     }else{
-      write-ezlogs "Unable to get Twitch access token - Starting Twitch Authentication capture process - Application Token returned: $($Application.Token | out-string)" -showtime -warning -logtype Twitch -LogLevel 2
-    } 
+      write-ezlogs "Unable to get Twitch access token - Starting Twitch Authentication capture process - Application Token returned: $($Application.Token | out-string)"  -warning -logtype Twitch -LogLevel 2
+    }
   }
 
-  # Starting this point, neither valid access token were found nor successful refresh were done
-  # So we start Authorization Code Flow from zero
+  # Neither a valid access token was found nor a successful refresh
+  # Start Authorization Code Flow from zero
 
   # ------------------------------ Authorization Code retrieval ------------------------------
   # STEP 1 : Prepare
   try{
     Add-Type -AssemblyName System.Web
     $EncodedRedirectUri = [System.Web.HTTPUtility]::UrlEncode($Application.RedirectUri)
-    $State = (New-Guid).ToString()
+    $State = [System.Guid]::NewGuid().Guid
     $Uri = 'https://id.twitch.tv/oauth2/authorize'
     $Uri += "?client_id=$($Application.ClientId)"
     $Uri += '&response_type=code'
@@ -332,77 +330,66 @@ function Get-TwitchAccessToken {
     $Uri += "&scope=channel%3Amanage%3Apolls+channel%3Aread%3Apolls+user%3aread%3afollows+user%3aread%3aemail"
 
     # Create an Http Server
-    $Listener = [System.Net.HttpListener]::new() 
+    $Listener = [System.Net.HttpListener]::new()
     if($Application.RedirectUri){
       $Prefix = $Application.RedirectUri.Substring(0, $Application.RedirectUri.LastIndexOf('/') + 1) # keep uri until the last '/' included
       [void]$Listener.Prefixes.Add($Prefix)
     }
     $Listener.Start()
     if ($Listener.IsListening) {
-      Write-ezlogs '>>>> HTTP Server is ready to receive Authorization Code' -showtime -logtype Twitch -LogLevel 2
+      Write-ezlogs '>>>> HTTP Server is ready to receive Authorization Code' -logtype Twitch -LogLevel 2
       $HttpServerReady = $true
     }
     else {
-      Write-ezlogs 'HTTP Server is not ready. Fall back to manual method' -showtime -warning -logtype Twitch -LogLevel 2
+      Write-ezlogs 'HTTP Server is not ready. Fall back to manual method' -warning -logtype Twitch -LogLevel 2
       $HttpServerReady = $false
-    } 
+    }
   }catch{
-    write-ezlogs "An exception occurred Prepare the Twitch Authentication capture process" -showtime -catcherror $_
-  }  
+    write-ezlogs "An exception occurred Prepare the Twitch Authentication capture process" -catcherror $_
+  }
 
   # STEP 2 : Open browser to get Authorization
-  if ($IsMacOS) {
-    Write-Verbose 'Open Mac OS browser'
-    open $URI
+  Write-ezlogs "[Get-TwitchAccessToken] >>>> Opening Show-Weblogin for capture of Twitch login with URL $URI" -logtype Twitch
+  if($thisApp){
+    try{
+      if($hashsetup.Window.isVisible){
+        $hashsetup.Window.hide()
+      }
+      $MahDialog_hash = Show-WebLogin -SplashTitle "Twitch Account Login" -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Twitch_WebAuth.md"   -SplashLogo "$($thisApp.Config.Current_Folder)\Resources\Twitch\Material-Twitch.png" -WebView2_URL $URI -thisScript $thisScript -thisApp $thisApp -verboselog -Listener $Listener -First_Run $First_Run  -MahDialog_hash $MahDialog_hash
+    }catch{
+      write-ezlogs "[Get-TwitchAccessToken] An exception occurred in Show-Weblogin" -catcherror $_
+    }
+  }else{
+    write-ezlogs "[Get-TwitchAccessToken] thisApp settings synchashtable not available!! Cant start Show-WebLogin" -warning -logtype Twitch -LogLevel 2
+    $Listener.Stop()
+    $Listener.dispose()
+    return
   }
-  elseif ($IsLinux) {
-    Write-Verbose 'Open Linux browser'
-    Write-Verbose 'You should have a freedesktop.org-compliant desktop'
-    Start-Process xdg-open $URI
-  }
-  else {
-    # So we are on Windows
-    Write-ezlogs "[Get-TwitchAccessToken] >>>> Opening Show-Weblogin for capture of Twitch login with URL $URI" -showtime -logtype Twitch -LogLevel 2
-    if($thisApp){
-      try{
-        if($hashsetup.Window.isVisible){
-          $hashsetup.Window.hide()
-        }     
-        $MahDialog_hash = Show-WebLogin -SplashTitle "Twitch Account Login" -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Twitch_WebAuth.md"   -SplashLogo "$($thisApp.Config.Current_Folder)\Resources\Twitch\Material-Twitch.png" -WebView2_URL $URI -thisScript $thisScript -thisApp $thisApp -verboselog -Listener $Listener -First_Run $First_Run  -MahDialog_hash $MahDialog_hash     
-      }catch{
-        write-ezlogs "[Get-TwitchAccessToken] An exception occurred in Show-Weblogin" -showtime -catcherror $_
-      }     
-    }else{
-      write-ezlogs "[Get-TwitchAccessToken] thisApp settings synchashtable not available!! Cant start Show-WebLogin" -showtime -warning -logtype Twitch -LogLevel 2
-      $Listener.Stop()
-      $Listener.dispose()
-      return       
-    }        
-  }
+
   # STEP 3 : Get response
   if ($httpServerReady) {
-    Write-ezlogs '[Get-TwitchAccessToken] >>>> Waiting 5 min for authorization acceptance' -showtime -logtype Twitch -LogLevel 2
+    Write-ezlogs '[Get-TwitchAccessToken] >>>> Waiting 5 min for authorization acceptance' -logtype Twitch -LogLevel 2
     $Task = $null
     $StartTime = Get-Date
-    while ($Listener.IsListening -and (([DateTime]::Now) - $StartTime) -lt '0.00:05:00' ) {   
+    while ($Listener.IsListening -and (([DateTime]::Now) - $StartTime) -lt '0.00:05:00' ) {
       try{
         if ($null -eq $Task) {
           $task = $Listener.GetContextAsync()
-        }   
+        }
         if ($Task.IsCompleted) {
           $Context = $task.Result
           $Task = $null
           $Response = $context.Request.Url
-          $ContextResponse = $context.Response  
+          $ContextResponse = $context.Response
           [string]$html = '<script>close()</script><h2><font color="#FFA970FF">Thanks! You can close this window now.</font> </h2>'
           $htmlBuffer = [System.Text.Encoding]::UTF8.GetBytes($html) # convert html to bytes
           $ContextResponse.ContentLength64 = $htmlBuffer.Length
           $ContextResponse.OutputStream.Write($htmlBuffer, 0, $htmlBuffer.Length)
-          $ContextResponse.OutputStream.Close()  
+          $ContextResponse.OutputStream.Close()
           break
         }
       }catch{
-        write-ezlogs "[Get-TwitchAccessToken] An exception occurred in Twitch HTTP listener" -showtime -catcherror $_
+        write-ezlogs "[Get-TwitchAccessToken] An exception occurred in Twitch HTTP listener" -catcherror $_
       }
     }
     $Listener.Stop()
@@ -415,31 +402,31 @@ function Get-TwitchAccessToken {
   # STEP 4 : Check and Parse response
   # check Response
   if ($Response.OriginalString -eq '') {
-    write-ezlogs "[Get-TwitchAccessToken] Response of Authorization Code retrieval can't be empty - Response: $Response"  -showtime -warning -logtype Twitch -LogLevel 2
+    write-ezlogs "[Get-TwitchAccessToken] Response of Authorization Code retrieval can't be empty - Response: $Response"  -warning -logtype Twitch -LogLevel 2
   }
 
   # parse query
   try {
     $ResponseQuery = [System.Web.HttpUtility]::ParseQueryString($Response.Query)
   } catch {
-    write-ezlogs "[Get-TwitchAccessToken] Error occured in ParseQueryString of query: $($Response.Query)" -showtime -CatchError $_
+    write-ezlogs "[Get-TwitchAccessToken] Error occured in ParseQueryString of query: $($Response.Query)" -CatchError $_
   }
 
   # check state
   if ($ResponseQuery['state'] -ne $State) {
-    write-ezlogs "[Get-TwitchAccessToken] State returned during Authorization Code retrieval ($($ResponseQuery['state'])) does not match state passed ($State)" -showtime -warning -logtype Twitch -LogLevel 2
+    write-ezlogs "[Get-TwitchAccessToken] State returned during Authorization Code retrieval ($($ResponseQuery['state'])) does not match state passed ($State)" -warning -logtype Twitch -LogLevel 2
   }
 
   # check if an error has been returned
   if ($ResponseQuery['error']) {
-    write-ezlogs "[Get-TwitchAccessToken] [ERROR] Error occured during Authorization Code retrieval : $($ResponseQuery['error'])" -showtime -logtype Twitch -LogLevel 2
+    write-ezlogs "[Get-TwitchAccessToken] [ERROR] Error occured during Authorization Code retrieval : $($ResponseQuery['error'])" -logtype Twitch -LogLevel 2
   }
-    
+
   # all checks are passed, we should have the code
   if ($ResponseQuery['code']) {
     $AuthorizationCode = $ResponseQuery['code']
   } else {
-    write-ezlogs "[Get-TwitchAccessToken] Authorization Code not returned during Authorization Code retrieval" -showtime -warning -logtype Twitch -LogLevel 2
+    write-ezlogs "[Get-TwitchAccessToken] Authorization Code not returned during Authorization Code retrieval" -warning -logtype Twitch -LogLevel 2
   }
 
   # Authorization Code is in $AuthorizationCode
@@ -457,28 +444,28 @@ function Get-TwitchAccessToken {
 
   # STEP 2 : Make request to the Twitch Accounts service
   try {
-    Write-ezlogs "[Get-TwitchAccessToken] >>>> Sending request to get access token with AuthorizationCode: $($AuthorizationCode)." -showtime -logtype Twitch -LogLevel 2
+    Write-ezlogs "[Get-TwitchAccessToken] >>>> Sending request to get access token with AuthorizationCode: $($AuthorizationCode)." -logtype Twitch -LogLevel 2
     $CurrentTime = Get-Date
     $Response = Invoke-RestMethod -Uri $Uri -Method $Method -Body $Body -UseBasicParsing
   } catch {
-    write-ezlogs "[Get-TwitchAccessToken] Error occured during request of access token : $($PSItem[0].ToString())" -showtime -CatchError $_
+    write-ezlogs "[Get-TwitchAccessToken] Error occured during request of access token : $($PSItem[0].ToString())" -CatchError $_
     if($MahDialog_hash.Window){
       $MahDialog_hash.window.Dispatcher.Invoke("Normal",[action]{ $MahDialog_hash.window.close() })
     }
     return $false
   }
-    
+
   try {
     # STEP 3 : Parse and save response
     $ResponseContent = $Response #| ConvertFrom-Json
-    write-ezlogs "[Get-TwitchAccessToken] Parsed response scope: $($ResponseContent.scope) -- expires_in: $($ResponseContent.expires_in)" -showtime -logtype Twitch -LogLevel 2
+    write-ezlogs "[Get-TwitchAccessToken] Parsed response scope: $($ResponseContent.scope) -- expires_in: $($ResponseContent.expires_in)" -logtype Twitch -LogLevel 2
     $Token = @{
       access_token  = $ResponseContent.access_token
       token_type    = $ResponseContent.token_type
       scope         = $ResponseContent.scope
       expires       = $CurrentTime.AddSeconds($ResponseContent.expires_in).ToString('u')
       refresh_token = $ResponseContent.refresh_token
-    } 
+    }
     Set-TwitchApplication -Name $ApplicationName -Token $Token -RedirectUri $Application.redirectUri
     if($MahDialog_hash.Window){
       $MahDialog_hash.window.Dispatcher.Invoke("Normal",[action]{ $MahDialog_hash.window.close() })
@@ -486,15 +473,15 @@ function Get-TwitchAccessToken {
     return $Token.access_token
   }
   catch {
-    write-ezlogs "[Get-TwitchAccessToken] Error occured in while parsing and saving the response" -showtime -CatchError $_
+    write-ezlogs "[Get-TwitchAccessToken] Error occured in while parsing and saving the response" -CatchError $_
   }
 }
 
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-TwitchAccessToken Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-TwitchFollows Function
 #----------------------------------------------
 function Get-TwitchFollows{
@@ -524,8 +511,8 @@ function Get-TwitchFollows{
       }
       $TwitchClientId = $application.ClientId
       if(!$TwitchClientId){
-        $TwitchClientId = Get-secret -name TwitchClientId  -Vault $Name -ErrorAction SilentlyContinue 
-      } 
+        $TwitchClientId = Get-secret -name TwitchClientId  -Vault $Name -ErrorAction SilentlyContinue
+      }
       if($token_expires -as [datetime]){
         $expire_check = [datetime]$token_expires -le (Get-date)
       }else{
@@ -562,7 +549,7 @@ function Get-TwitchFollows{
                 write-ezlogs "[Get-TwitchFollows] An exception occurred getting Twitch secrets after unlocking SecretVault $Name" -catcherror $_
               }
             }
-          }          
+          }
           $user_Uri = "https://api.twitch.tv/helix/users"
         }elseif($StreamName){
           $TwitchUserId =  $StreamName
@@ -575,7 +562,7 @@ function Get-TwitchFollows{
             $headers = [System.Net.WebHeaderCollection]::new()
             $headers.add('client-id',$TwitchClientId)
             $headers.add('Authorization',"Bearer $Twitchaccess_token")
-            $req.Headers = $headers              
+            $req.Headers = $headers
             $response = $req.GetResponse()
             $strm=$response.GetResponseStream()
             $sr=[System.IO.Streamreader]::new($strm)
@@ -584,7 +571,7 @@ function Get-TwitchFollows{
             $headers.Clear()
             $response.Dispose()
             $strm.Dispose()
-            $sr.Dispose()  
+            $sr.Dispose()
             $TwitchUserId = $user_data.data.id
           }catch{
             write-ezlogs "[Get-TwitchFollows] An exception occurred getting Twitch info from url: $user_Uri" -catcherror $_
@@ -597,16 +584,16 @@ function Get-TwitchFollows{
             }
             if($sr){
               $sr.Dispose()
-            }   
-            $req = $Null  
+            }
+            $req = $Null
           }
 
           if($user_data.data.id){
-            write-ezlogs "[Get-TwitchFollows] >>>> Saving Twitch User data (Username: $($user_data.data.login)) to secret vault" -showtime -logtype Twitch -LogLevel 2
+            write-ezlogs "[Get-TwitchFollows] >>>> Saving Twitch User data (Username: $($user_data.data.login)) to secret vault" -logtype Twitch -LogLevel 2
             try{
               Set-Secret -Name TwitchUserId -Secret $user_data.data.id -Vault $Name
               Set-Secret -Name TwitchUsername -Secret $user_data.data.login -Vault $Name
-              Set-Secret -Name Twitchprofile_image_url -Secret $user_data.data.profile_image_url -Vault $Name 
+              Set-Secret -Name Twitchprofile_image_url -Secret $user_data.data.profile_image_url -Vault $Name
             }catch{
               write-ezlogs "[Get-TwitchFollows] An exception occurred saving Twitch secrets" -catcherror $_
               if($_.Exception -match 'A valid password is required to access the Microsoft.PowerShell.SecretStore vault'){
@@ -615,27 +602,26 @@ function Get-TwitchFollows{
                   Unlock-SecretVault -VaultName $Name -password:$($Name | ConvertTo-SecureString -AsPlainText -Force) -ErrorAction SilentlyContinue
                   Set-Secret -Name TwitchUserId -Secret $user_data.data.id -Vault $Name
                   Set-Secret -Name TwitchUsername -Secret $user_data.data.login -Vault $Name
-                  Set-Secret -Name Twitchprofile_image_url -Secret $user_data.data.profile_image_url -Vault $Name 
+                  Set-Secret -Name Twitchprofile_image_url -Secret $user_data.data.profile_image_url -Vault $Name
                 }catch{
                   write-ezlogs "[Get-TwitchFollows] An exception occurred saving Twitch secrets after unlocking SecretVault $Name" -catcherror $_
                 }
               }
-            }         
+            }
           }else{
-            write-ezlogs "[Get-TwitchFollows] Unable to get user data from Twitch API - cannot continue (https://api.twitch.tv/helix/users)" -showtime -warning -logtype Twitch -LogLevel 2
+            write-ezlogs "[Get-TwitchFollows] Unable to get user data from Twitch API - cannot continue (https://api.twitch.tv/helix/users)" -warning -logtype Twitch -LogLevel 2
           }
-        } 
+        }
         if($TwitchUserId){
           $Uri = "https://api.twitch.tv/helix/channels/followed?user_id=$($TwitchUserId)&first=100"
-          #$Uri = "https://api.twitch.tv/helix/users/follows?from_id=$($TwitchUserId)&first=100"
-          $result = @{pagination= @{cursor = 1}}   
-          While ($result.pagination.cursor){       
+          $result = @{pagination= @{cursor = 1}}
+          While ($result.pagination.cursor){
             $req=[System.Net.HTTPWebRequest]::Create($Uri)
             $req.Method='GET'
             $headers = [System.Net.WebHeaderCollection]::new()
             $headers.add('client-id',$TwitchClientId)
             $headers.add('Authorization',"Bearer $Twitchaccess_token")
-            $req.Headers = $headers              
+            $req.Headers = $headers
             $response = $req.GetResponse()
             $strm=$response.GetResponseStream()
             $sr=[System.IO.Streamreader]::new($strm)
@@ -644,40 +630,38 @@ function Get-TwitchFollows{
             $headers.Clear()
             $response.Dispose()
             $strm.Dispose()
-            $sr.Dispose()  
+            $sr.Dispose()
             if($result.pagination.cursor){
               $Uri = "https://api.twitch.tv/helix/channels/followed?user_id=$($TwitchUserId)&first=100&after=$($result.pagination.cursor)"
-              #$Uri = "https://api.twitch.tv/helix/users/follows?from_id=$($TwitchUserId)&first=100&after=$($result.pagination.cursor)"
             }else{
               $Uri = "https://api.twitch.tv/helix/channels/followed?user_id=$($TwitchUserId)&first=100"
-              #$Uri = "https://api.twitch.tv/helix/users/follows?from_id=$($TwitchUserId)&first=100"
             }
             if($result.data){
               foreach($item in $result.data){
-                if($follow_data -notcontains $item){        
+                if($follow_data -notcontains $item){
                   [void]$follow_data.add($item)
                 }
-              } 
+              }
             }
           }
         }
-        $PSCmdlet.WriteObject($follow_data)     
+        $PSCmdlet.WriteObject($follow_data)
       }catch{
-        write-ezlogs "[Get-TwitchFollows] An exception occurred with HTTPWebRequest to: $($Uri)" -showtime -catcherror $_
-      }  
+        write-ezlogs "[Get-TwitchFollows] An exception occurred with HTTPWebRequest to: $($Uri)" -catcherror $_
+      }
     }else{
-      write-ezlogs "[Get-TwitchFollows] Unable to get access token to Authenticate with Twitch, cannot continue" -showtime -warning -logtype Twitch
-      write-ezlogs "[Get-TwitchFollows] (Vault: $Name) - (TwitchClientId: $TwitchClientId) - (Twitchaccess_token: $Twitchaccess_token) - (Application: $($Application | out-string))" -showtime -warning -logtype Twitch -LogLevel 2
-    }  
+      write-ezlogs "[Get-TwitchFollows] Unable to get access token to Authenticate with Twitch, cannot continue" -warning -logtype Twitch
+      write-ezlogs "[Get-TwitchFollows] (Vault: $Name) - (TwitchClientId: $TwitchClientId) - (Twitchaccess_token: $Twitchaccess_token) - (Application: $($Application | out-string))" -warning -logtype Twitch -LogLevel 2
+    }
   }catch{
-    write-ezlogs "[Get-TwitchFollows] An exception occurred in Get-TwitchFollows" -showtime -catcherror $_
+    write-ezlogs "[Get-TwitchFollows] An exception occurred in Get-TwitchFollows" -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-TwitchFollows Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-TwitchVideos Function
 #----------------------------------------------
 function Get-TwitchVideos{
@@ -711,8 +695,8 @@ function Get-TwitchVideos{
       }
       $TwitchClientId = $application.ClientId
       if(!$TwitchClientId){
-        $TwitchClientId = Get-secret -name TwitchClientId  -Vault $Name -ErrorAction SilentlyContinue 
-      } 
+        $TwitchClientId = Get-secret -name TwitchClientId  -Vault $Name -ErrorAction SilentlyContinue
+      }
       if($token_expires -as [datetime]){
         $expire_check = [datetime]$token_expires -le (Get-date)
       }else{
@@ -742,16 +726,16 @@ function Get-TwitchVideos{
             $headers = [System.Net.WebHeaderCollection]::new()
             $headers.add('client-id',$TwitchClientId)
             $headers.add('Authorization',"Bearer $Twitchaccess_token")
-            $req.Headers = $headers              
+            $req.Headers = $headers
             $response = $req.GetResponse()
             $strm=$response.GetResponseStream();
             $sr=[System.IO.Streamreader]::new($strm)
             $output=$sr.ReadToEnd()
-            $Video_Json = $output | ConvertFrom-Json -ErrorAction SilentlyContinue                 
+            $Video_Json = $output | ConvertFrom-Json -ErrorAction SilentlyContinue
             $headers.Clear()
             $response.Dispose()
             $strm.Dispose()
-            $sr.Dispose()  
+            $sr.Dispose()
             $Video_data = $Video_Json.data
           }catch{
             write-ezlogs "[Get-TwitchFollows] An exception occurred getting Twitch info from url: $VideoUrl" -catcherror $_
@@ -764,9 +748,9 @@ function Get-TwitchVideos{
             }
             if($sr){
               $sr.Dispose()
-            }   
-            $req = $Null  
-          }        
+            }
+            $req = $Null
+          }
         }else{
           if($StreamName){
             $user_Uri = "https://api.twitch.tv/helix/users?login=$StreamName"
@@ -778,7 +762,7 @@ function Get-TwitchVideos{
               $headers = [System.Net.WebHeaderCollection]::new()
               $headers.add('client-id',$TwitchClientId)
               $headers.add('Authorization',"Bearer $Twitchaccess_token")
-              $req.Headers = $headers              
+              $req.Headers = $headers
               $response = $req.GetResponse()
               $strm=$response.GetResponseStream()
               $sr=[System.IO.Streamreader]::new($strm)
@@ -787,7 +771,7 @@ function Get-TwitchVideos{
               $headers.Clear()
               $response.Dispose()
               $strm.Dispose()
-              $sr.Dispose()  
+              $sr.Dispose()
               $TwitchUserId = $user_data.data.id
             }catch{
               write-ezlogs "[Get-TwitchFollows] An exception occurred getting Twitch info from url: $user_Uri" -catcherror $_
@@ -800,29 +784,29 @@ function Get-TwitchVideos{
               }
               if($sr){
                 $sr.Dispose()
-              }   
-              $req = $Null  
+              }
+              $req = $Null
             }
-          } 
+          }
           if($TwitchUserId){
             $Uri =  "https://api.twitch.tv/helix/videos?user_id=$($TwitchUserId)&first=100"
-            $result = @{pagination= @{cursor = 1}}   
-            While ($result.pagination.cursor){       
+            $result = @{pagination= @{cursor = 1}}
+            While ($result.pagination.cursor){
               $req=[System.Net.HTTPWebRequest]::Create($Uri)
               $req.Method='GET'
               $headers = [System.Net.WebHeaderCollection]::new()
               $headers.add('client-id',$TwitchClientId)
               $headers.add('Authorization',"Bearer $Twitchaccess_token")
-              $req.Headers = $headers              
+              $req.Headers = $headers
               $response = $req.GetResponse()
               $strm=$response.GetResponseStream()
               $sr=[System.IO.Streamreader]::new($strm)
               $output=$sr.ReadToEnd()
-              $result = $output | ConvertFrom-Json -ErrorAction SilentlyContinue                
+              $result = $output | ConvertFrom-Json -ErrorAction SilentlyContinue
               $headers.Clear()
               $response.Dispose()
               $strm.Dispose()
-              $sr.Dispose()  
+              $sr.Dispose()
               if($result.pagination.cursor){
                 $Uri = "https://api.twitch.tv/helix/videos?user_id=$($TwitchUserId)&first=100&after=$($result.pagination.cursor)"
               }else{
@@ -830,31 +814,31 @@ function Get-TwitchVideos{
               }
               if($result.data){
                 foreach($item in $result.data){
-                  if($Video_data -notcontains $item){        
+                  if($Video_data -notcontains $item){
                     [void]$Video_data.add($item)
                   }
-                } 
+                }
               }
             }
           }
         }
-        $PSCmdlet.WriteObject($Video_data)       
+        $PSCmdlet.WriteObject($Video_data)
       }catch{
-        write-ezlogs "An exception occurred with HTTPWebRequest to: $($Uri)" -showtime -catcherror $_
-      }  
+        write-ezlogs "An exception occurred with HTTPWebRequest to: $($Uri)" -catcherror $_
+      }
     }else{
-      write-ezlogs "Unable to get access token to Authenticate with Twitch, cannot continue" -showtime -warning -logtype Twitch
-      write-ezlogs "(Vault: $Name) - (TwitchClientId: $TwitchClientId) - (Twitchaccess_token: $Twitchaccess_token) - (Application: $($Application | out-string))" -showtime -warning -logtype Twitch -LogLevel 2
-    }  
+      write-ezlogs "Unable to get access token to Authenticate with Twitch, cannot continue" -warning -logtype Twitch
+      write-ezlogs "(Vault: $Name) - (TwitchClientId: $TwitchClientId) - (Twitchaccess_token: $Twitchaccess_token) - (Application: $($Application | out-string))" -warning -logtype Twitch -LogLevel 2
+    }
   }catch{
-    write-ezlogs "[Get-TwitchFollows] An exception occurred in Get-TwitchVideos" -showtime -catcherror $_
+    write-ezlogs "[Get-TwitchFollows] An exception occurred in Get-TwitchVideos" -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-TwitchVideos Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-TwitchAPI Function
 #----------------------------------------------
 function Get-TwitchAPI {
@@ -909,21 +893,19 @@ function Get-TwitchAPI {
       }
     }catch{
       write-ezlogs "[Get-TwitchAPI] An exception occurred getting or refreshing Twitch access tokens" -CatchError $_ -showtime
-    } 
+    }
     if($StreamName -and $Twitchaccess_token -and $TwitchClientId){
       try{
         #Get twitch streamers
-        #"https://api.twitch.tv/helix/users?login=Pepp"
-        #'https://api.twitch.tv/helix/users/follows?to_id=<user ID>'
         $headers = @{
           "client-id"     = $TwitchClientId
           "Authorization" = "Bearer $Twitchaccess_token"
-        } 
-        $user_data = [System.Collections.Generic.List[Object]]::new()     
+        }
+        $user_data = [System.Collections.Generic.List[Object]]::new()
         $streamer_data_output = [System.Collections.Generic.List[Object]]::new()
         if(@($StreamName).count -gt 1){
           $group = 100
-          $i = 0       
+          $i = 0
           do {
             $names = ($StreamName[$i..(($i += $group) - 1)]).replace(" ",[string]::Empty)
             $uri = 'https://api.twitch.tv/helix/users?login=' + "$($names -join "&login=")"
@@ -934,7 +916,7 @@ function Get-TwitchAPI {
               $headers = [System.Net.WebHeaderCollection]::new()
               $headers.add('client-id',$TwitchClientId)
               $headers.add('Authorization',"Bearer $Twitchaccess_token")
-              $req.Headers = $headers              
+              $req.Headers = $headers
               $response = $req.GetResponse()
               $strm=$response.GetResponseStream()
               $sr=[System.IO.Streamreader]::new($strm)
@@ -946,7 +928,7 @@ function Get-TwitchAPI {
               $strm.Dispose()
               $sr.Dispose()
             }catch{
-              write-ezlogs "[Get-TwitchAPI] An exception occured when getting user_data with uri: $uri" -showtime -catcherror $_ -callpath $((Get-PSCallStack)[0].FunctionName)
+              write-ezlogs "[Get-TwitchAPI] An exception occured when getting user_data with uri: $uri" -catcherror $_ -callpath $((Get-PSCallStack)[0].FunctionName)
             }finally{
               if($response -is [System.IDisposable]){
                 $response.Dispose()
@@ -958,25 +940,25 @@ function Get-TwitchAPI {
                 $sr.Dispose()
               }
             }
-            try{   
+            try{
               $req=[System.Net.HTTPWebRequest]::Create($streamer_uri)
               $req.Method='GET'
               $headers = [System.Net.WebHeaderCollection]::new()
               $headers.add('client-id',$TwitchClientId)
               $headers.add('Authorization',"Bearer $Twitchaccess_token")
-              $req.Headers = $headers              
+              $req.Headers = $headers
               $response = $req.GetResponse()
               $strm=$response.GetResponseStream()
               $sr=[System.IO.Streamreader]::new($strm)
               $output=$sr.ReadToEnd()
               $stream_data = $output | ConvertFrom-Json
-              [void]$streamer_data_output.add($stream_data)   
+              [void]$streamer_data_output.add($stream_data)
               $headers.Clear()
               $response.Dispose()
               $strm.Dispose()
-              $sr.Dispose()                             
+              $sr.Dispose()
             }catch{
-              write-ezlogs "[Get-TwitchAPI] An exception occurred in getting stream data with streamer_uri: $streamer_uri" -showtime -catcherror $_
+              write-ezlogs "[Get-TwitchAPI] An exception occurred in getting stream data with streamer_uri: $streamer_uri" -catcherror $_
             }finally{
               if($response -is [System.IDisposable]){
                 $response.Dispose()
@@ -1002,7 +984,7 @@ function Get-TwitchAPI {
             $headers = [System.Net.WebHeaderCollection]::new()
             $headers.add('client-id',$TwitchClientId)
             $headers.add('Authorization',"Bearer $Twitchaccess_token")
-            $req.Headers = $headers              
+            $req.Headers = $headers
             $response = $req.GetResponse()
             $strm=$response.GetResponseStream()
             $sr=[System.IO.Streamreader]::new($strm)
@@ -1011,7 +993,7 @@ function Get-TwitchAPI {
             [void]$user_data.add($data)
             $headers.Clear()
           }catch{
-            write-ezlogs "[Get-TwitchAPI] An exception occured with HTTPWebRequest to: $uri" -showtime -catcherror $_
+            write-ezlogs "[Get-TwitchAPI] An exception occured with HTTPWebRequest to: $uri" -catcherror $_
           }finally{
             if($response -is [System.IDisposable]){
               $response.Dispose()
@@ -1023,7 +1005,7 @@ function Get-TwitchAPI {
               $sr.Dispose()
             }
           }
-          try{ 
+          try{
             $req=[System.Net.HTTPWebRequest]::Create($streamer_uri)
             $req.Method='GET'
             $headers = [System.Net.WebHeaderCollection]::new()
@@ -1035,10 +1017,10 @@ function Get-TwitchAPI {
             $sr=[System.IO.Streamreader]::new($strm)
             $output=$sr.ReadToEnd()
             $stream_data = $output | ConvertFrom-Json
-            [void]$streamer_data_output.add($stream_data)     
-            $headers.Clear()             
+            [void]$streamer_data_output.add($stream_data)
+            $headers.Clear()
           }catch{
-            write-ezlogs "[Get-TwitchAPI] An exception occurred with HTTPWebRequest to: $streamer_uri" -showtime -catcherror $_
+            write-ezlogs "[Get-TwitchAPI] An exception occurred with HTTPWebRequest to: $streamer_uri" -catcherror $_
           }finally{
             if($response -is [System.IDisposable]){
               $response.Dispose()
@@ -1048,28 +1030,28 @@ function Get-TwitchAPI {
             }
             if($sr -is [System.IDisposable]){
               $sr.Dispose()
-            } 
+            }
           }
-        }    
+        }
         $TwitchData_output = [System.Collections.Generic.List[Object]]::new()
-        if($user_data.data){    
-          foreach($streamer in $user_data.data){       
+        if($user_data.data){
+          foreach($streamer in $user_data.data){
             $profile_image_url = $Null
             $offline_image_url = $Null
-            $description = $null      
+            $description = $null
             $id = $null
             $streams_data = $null
             if($streamer.id){
               $id = $streamer.id
             }else{
               $id = $streamer.data.id
-            } 
-            try{     
+            }
+            try{
               if($streamer_data_output.data.user_id){
                 $streams_data = $streamer_data_output.data | & { process {if ($_.user_id -eq $streamer.id){$_}}}
               }
             }catch{
-              write-ezlogs "[Get-TwitchAPI] An exception occurred finding streamer data with id $($streamer.id)" -showtime -catcherror $_
+              write-ezlogs "[Get-TwitchAPI] An exception occurred finding streamer data with id $($streamer.id)" -catcherror $_
             }
             if($id -and $TwitchData_output.user_id -notcontains $id){
               if($streamer.type){
@@ -1104,7 +1086,7 @@ function Get-TwitchAPI {
               }else{
                 $user_name = $Null
               }
-              if($Verboselog){write-ezlogs "[Get-TwitchAPI] >>>> Found Stream $($streamer.display_name)`n | $($id)`n | Type $($type)`n | Title $($streams_data.title)`n | Description $description" -showtime -logtype Twitch -VerboseDebug:$Verboselog}       
+              if($Verboselog){write-ezlogs "[Get-TwitchAPI] >>>> Found Stream $($streamer.display_name)`n | $($id)`n | Type $($type)`n | Title $($streams_data.title)`n | Description $description" -logtype Twitch -VerboseDebug:$Verboselog}
               $TwitchData = [PSCustomObject]::new(@{
                   'Title' = $streams_data.title
                   'User_id' = $id
@@ -1122,16 +1104,16 @@ function Get-TwitchAPI {
               })
               [void]$TwitchData_output.add($TwitchData)
             }
-          }  
+          }
         }else{
-          write-ezlogs "[Get-TwitchAPI] Unable to get data for stream ($StreamName)" -showtime -enablelogs -warning -logtype Twitch -LogLevel 2
+          write-ezlogs "[Get-TwitchAPI] Unable to get data for stream ($StreamName)" -enablelogs -warning -logtype Twitch -LogLevel 2
         }
         $PSCmdlet.WriteObject($TwitchData_output)
       }catch{
-        write-ezlogs "[Get-TwitchAPI] An exception occurred getting Twitch info for stream $StreamName" -CatchError $_ -showtime -enablelogs
-      }   
+        write-ezlogs "[Get-TwitchAPI] An exception occurred getting Twitch info for stream $StreamName" -CatchError $_ -enablelogs
+      }
     }else{
-      write-ezlogs "[Get-TwitchAPI] Unable to Authenticate with Twitch, cannot continue - Streamname: $StreamName - Twitch ClientID: $TwitchClientId - TwitchAccess TOken: $Twitchaccess_token" -showtime -warning -logtype Twitch -LogLevel 2
+      write-ezlogs "[Get-TwitchAPI] Unable to Authenticate with Twitch, cannot continue - Streamname: $StreamName - Twitch ClientID: $TwitchClientId - TwitchAccess TOken: $Twitchaccess_token" -warning -logtype Twitch -LogLevel 2
       return
     }
   }else{
@@ -1139,11 +1121,11 @@ function Get-TwitchAPI {
     return
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-TwitchAPI Function
 #----------------------------------------------
- 
-#---------------------------------------------- 
+
+#----------------------------------------------
 #region Update-TwitchStatus Function
 #----------------------------------------------
 function Update-TwitchStatus
@@ -1188,13 +1170,13 @@ function Update-TwitchStatus
       $AllTwitch_Media_Profile_File_Path = [System.IO.Path]::Combine($thisApp.config.Media_Profile_Directory,"All-Twitch_MediaProfile","All-Twitch_Media-Profile.xml")
       if($Refresh_Follows){
         try{
-          write-ezlogs "[Get-TwitchStatus] >>>> Refreshing all Twitch follows" -logtype Twitch
+          write-ezlogs "[Get-TwitchStatus] >>>> Refreshing all Twitch follows" -logtype Twitch -LogLevel 0 -Verboselog:$Verboselog
           try{
             $newtwitchchannels = 0
             $Twitch_playlists = Get-TwitchFollows -GetMyFollows -thisApp $thisApp
           }catch{
-            write-ezlogs "[Get-TwitchStatus] An exception occurred retrieving Twitch Follows with Get-TwitchFollows" -showtime -catcherror $_
-          } 
+            write-ezlogs "[Get-TwitchStatus] An exception occurred retrieving Twitch Follows with Get-TwitchFollows" -catcherror $_
+          }
           if($Twitch_playlists){
             Import-Module "$($thisApp.Config.Current_Folder)\Modules\Show-SettingsWindow\Show-SettingsWindow.psm1" -NoClobber -DisableNameChecking -Scope Local
             foreach($playlist in $Twitch_playlists){
@@ -1207,7 +1189,7 @@ function Update-TwitchStatus
                     $followed = $followed.ToShortDateString()
                   }
                 }catch{
-                  write-ezlogs "[Get-TwitchStatus] An exception occurred parsing followed_at ($($playlist.followed_at)) for Twitch channel $($playlistName)" -showtime -catcherror $_
+                  write-ezlogs "[Get-TwitchStatus] An exception occurred parsing followed_at ($($playlist.followed_at)) for Twitch channel $($playlistName)" -catcherror $_
                 }
               }
               if($playlist.to_id){
@@ -1218,24 +1200,26 @@ function Update-TwitchStatus
               if(($hashSetup.TwitchPlaylists_items -and $hashsetup.TwitchPlaylists_items.path -notcontains $playlisturl) -or $thisApp.Config.Twitch_Playlists.path -notcontains $playlisturl){
                 $newtwitchchannels++
                 Update-TwitchPlaylists -thisApp $thisApp -hashsetup $hashsetup -Path $playlisturl -Name $playlistName -id $Twitchid -Followed $Followed -type 'TwitchChannel' -VerboseLog:$thisApp.Config.Verbose_logging -add_to_Twitch_Playlists #-use_runspace
-              }              
+              }
             }
             if($hashsetup.window.IsInitialized -and $hashsetup.TwitchPlaylists_Grid -and $newtwitchchannels -gt 0){
               Update-TwitchPlaylists -thisApp $thisApp -hashsetup $hashsetup -VerboseLog:$thisApp.Config.Verbose_logging -SetItemsSource
-            }  
-            write-ezlogs "[Get-TwitchStatus] | Found $newtwitchchannels new followed Twitch Channels" -showtime -logtype Twitch
+            }
+            if($newtwitchchannels -gt 0){
+              write-ezlogs "[Get-TwitchStatus] | Found $newtwitchchannels new followed Twitch Channels" -logtype Twitch
+            }
             if($synchash.TwitchTable -and $newtwitchchannels -gt 0){
-              write-ezlogs "[Get-TwitchStatus] | Updating Twitch Media Library" -showtime -logtype Twitch
+              write-ezlogs "[Get-TwitchStatus] | Updating Twitch Media Library" -logtype Twitch
               Import-Module "$($thisApp.Config.Current_Folder)\Modules\Import-Twitch\Import-Twitch.psm1" -NoClobber -DisableNameChecking -Scope Local
-              Import-Twitch -Twitch_playlists $thisapp.Config.Twitch_Playlists -verboselog:$thisapp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisapp.config.Media_Profile_Directory -thisApp $thisapp -use_runspace -refresh 
+              Import-Twitch -Twitch_playlists $thisapp.Config.Twitch_Playlists -verboselog:$thisapp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisapp.config.Media_Profile_Directory -thisApp $thisapp -use_runspace -refresh
             }
           }elseif(!$hashsetup -and $Verboselog){
-            write-ezlogs "[Get-TwitchStatus] Get-TwitchStatus cannot refresh follows under Twitch settings as settings hashsetup is not initialized" -showtime -warning -logtype Twitch -VerboseDebug:$Verboselog
+            write-ezlogs "[Get-TwitchStatus] Get-TwitchStatus cannot refresh follows under Twitch settings as settings hashsetup is not initialized" -warning -logtype Twitch -VerboseDebug:$Verboselog
           }elseif(!$Twitch_playlists){
-            write-ezlogs "[Get-TwitchStatus] Unable to import Followed channels from Twitch - no channels returned" -showtime -warning -logtype Twitch
-          }         
+            write-ezlogs "[Get-TwitchStatus] Unable to import Followed channels from Twitch - no channels returned" -warning -logtype Twitch
+          }
         }catch{
-          write-ezlogs "[Get-TwitchStatus] An exception occurred in Get-TwitchStatus -refresh_Follows" -showtime -catcherror $_
+          write-ezlogs "[Get-TwitchStatus] An exception occurred in Get-TwitchStatus -refresh_Follows" -catcherror $_
         }
       }
       try{
@@ -1244,30 +1228,30 @@ function Update-TwitchStatus
             if($syncHash.All_Twitch_Media.count -gt 0){
               $Available_Twitch_Media = $syncHash.All_Twitch_Media
             }elseif([System.IO.File]::Exists($AllTwitch_Media_Profile_File_Path)){
-              if($Verboselog){write-ezlogs "[Get-TwitchStatus] | Importing Twitch Media Profile: $AllTwitch_Media_Profile_File_Path" -logtype Twitch -showtime -VerboseDebug:$Verboselog}
+              if($Verboselog){write-ezlogs "[Get-TwitchStatus] | Importing Twitch Media Profile: $AllTwitch_Media_Profile_File_Path" -logtype Twitch -VerboseDebug:$Verboselog}
               $Available_Twitch_Media = Import-SerializedXML -Path $AllTwitch_Media_Profile_File_Path
             }elseif($synchash.all_playlists.playlist_tracks){
               $Available_Twitch_Media = $synchash.all_playlists.playlist_tracks.values | & { process {if ($_.url -match 'twitch.tv'){$_}}}
-            }   
+            }
           }elseif($media){
             $Available_Twitch_Media = $media
           }
-          if($Verboselog){write-ezlogs "[Get-TwitchStatus] >>>> Checking status for $($Available_Twitch_media.count) Twitch streams" -showtime -color cyan -logtype Twitch -VerboseDebug:$Verboselog}
+          if($Verboselog){write-ezlogs "[Get-TwitchStatus] >>>> Checking status for $($Available_Twitch_media.count) Twitch streams" -color cyan -logtype Twitch -VerboseDebug:$Verboselog}
           try{
             if($Available_Twitch_Media.Channel_Name){
               $TwitchData = Get-TwitchAPI -StreamName $Available_Twitch_Media.Channel_Name -thisApp $thisApp
             }elseif($Available_Twitch_Media.url){
-              write-ezlogs "[Get-TwitchStatus] >>>> Getting Twitch Stream names" -showtime -logtype Twitch -LogLevel 2
+              write-ezlogs "[Get-TwitchStatus] >>>> Getting Twitch Stream names" -logtype Twitch -LogLevel 2
               $twitch_Streams = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase((($Available_Twitch_Media.url | Where-Object {$_}) | split-path -leaf).tolower()) -split ' '
-              write-ezlogs "[Get-TwitchStatus] | Stream names: $twitch_Streams" -showtime -logtype Twitch -LogLevel 2
+              write-ezlogs "[Get-TwitchStatus] | Stream names: $twitch_Streams" -logtype Twitch -LogLevel 2
               $TwitchData = Get-TwitchAPI -StreamName $twitch_Streams -thisApp $thisApp
-              write-ezlogs "[Get-TwitchStatus] | Received data: $TwitchData" -showtime -logtype Twitch -LogLevel 2
+              write-ezlogs "[Get-TwitchStatus] | Received data: $TwitchData" -logtype Twitch -LogLevel 2
             }
           }catch{
-            write-ezlogs "[Get-TwitchStatus] An exception occurred executing Get-TwitchAPI" -showtime -catcherror $_
-          }            
+            write-ezlogs "[Get-TwitchStatus] An exception occurred executing Get-TwitchAPI" -catcherror $_
+          }
           if(!($TwitchData)){
-            write-ezlogs "[Get-TwitchStatus] Unable to get TwitchData, cannot continue. Check logs for more details!" -showtime -warning -logtype Twitch -LogLevel 2
+            write-ezlogs "[Get-TwitchStatus] Unable to get TwitchData, cannot continue. Check logs for more details!" -warning -logtype Twitch -LogLevel 2
             return
           }
           if($synchash.all_playlists.count -gt 0){
@@ -1293,16 +1277,16 @@ function Update-TwitchStatus
                   $twitch_channel = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase($TwitchAPI.user_login)
                 }else{
                   $twitch_channel = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase($twitchmedia.Channel_Name)
-                }                 
-                if($Verboselog){write-ezlogs "[Get-TwitchStatus] >>>> Checking status of Twitch stream $twitch_channel -- $($twitchmedia.url) - Currently playing $($synchash.streamlink.User_Name) - TwitchAPI: $($TwitchAPI | out-string)" -showtime -color cyan -logtype Twitch -Dev_mode}  
-                if($all_Playlists.Playlist_tracks.values.url){                                 
+                }
+                if($Verboselog){write-ezlogs "[Get-TwitchStatus] >>>> Checking status of Twitch stream $twitch_channel -- $($twitchmedia.url) - Currently playing $($synchash.streamlink.User_Name) - TwitchAPI: $($TwitchAPI | out-string)" -color cyan -logtype Twitch -Dev_mode}
+                if($all_Playlists.Playlist_tracks.values.url){
                   $Playlist_index = $all_Playlists.Playlist_tracks.values.url.IndexOf($twitchmedia.url)
                   if($Playlist_index -ne -1){
                     $playlist_track = $all_Playlists.Playlist_tracks.values[$Playlist_index]
                   }
                 }
                 if($synchash.Current_playing_media.User_id -and $twitchApi.User_id -and $synchash.Current_playing_media.User_id -eq $twitchApi.User_id){
-                  write-ezlogs "[Get-TwitchStatus] | Updating currently playing Twitch stream $twitch_channel -- View Count: $($TwitchAPI.viewer_count)" -showtime -color cyan -logtype Twitch -LogLevel 2
+                  write-ezlogs "[Get-TwitchStatus] | Updating currently playing Twitch stream $twitch_channel -- View Count: $($TwitchAPI.viewer_count)" -color cyan -logtype Twitch -LogLevel 2
                   $synchash.streamlink = $TwitchAPI
                 }
                 if($thisapp.config.Twitch_Playlists.id){
@@ -1327,24 +1311,24 @@ function Update-TwitchStatus
                 }
                 if($Config_Twitch){
                   $Config_Twitch.Enable_LiveAlert = $Enable_LiveAlert
-                }                                  
+                }
                 if($playlist_track -and $playlist_track.Enable_LiveAlert -ne $Enable_LiveAlert){
                   $playlist_track.Enable_LiveAlert = $Enable_LiveAlert
                 }
                 if($TwitchAPI.started_at){
                   [TimeSpan]$TimeSpan = [DateTime]::Now - ([DateTime]::Parse($TwitchAPI.started_at).ToLocalTime())
-                  write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel started at: '$($TwitchAPI.started_at)' -- Timespan: $TimeSpan" -showtime -logtype Twitch -LogLevel 2 -Dev_mode
+                  write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel started at: '$($TwitchAPI.started_at)' -- Timespan: $TimeSpan" -logtype Twitch -LogLevel 2 -Dev_mode
                   $TimeLive = " -- Time Live: $($TimeSpan.Hours):$($TimeSpan.Minutes):$($TimeSpan.Seconds)"
                 }
                 if(!$TwitchAPI.type){
                   $twitch_status = 'Offline'
                   $thumbnail = ''
-                  if($Verboselog){write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel`: OFFLINE" -showtime -logtype Twitch -VerboseDebug:$Verboselog}
+                  if($Verboselog){write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel`: OFFLINE" -logtype Twitch -VerboseDebug:$Verboselog}
                   if("$($twitchmedia.Live_Status)" -ne 'Offline' -or $twitchmedia.Status_Msg -ne '' -or ($playlist_track -and ($playlist_track.Live_Status -ne 'Offline' -or $playlist_track.Status_msg -ne ''))){
                     if($twitchmedia.Live_Status -ne 'Offline'){
                       $changes++
-                      write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed status from '$($twitchmedia.Live_Status)' to 'Offline'" -showtime -logtype Twitch -LogLevel 2
-                    }          
+                      write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed status from '$($twitchmedia.Live_Status)' to 'Offline'" -logtype Twitch -LogLevel 2
+                    }
                   }
                 }elseif($TwitchAPI.type){
                   $twitch_status = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase($TwitchAPI.type)
@@ -1354,31 +1338,31 @@ function Update-TwitchStatus
                     $thumbnail = ''
                   }
                   if("$twitch_status" -ne "$($twitchmedia.Live_Status)"){
-                    write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed status from '$($twitchmedia.Live_Status)' to '$($twitch_status)'" -showtime -logtype Twitch -LogLevel 2
+                    write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed status from '$($twitchmedia.Live_Status)' to '$($twitch_status)'" -logtype Twitch -LogLevel 2
                     $UpdateAlert = $true
                     $changes++
                   }elseif($playlist_track -and "$twitch_status" -ne "$($playlist_track.Live_Status)"){
-                    write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed status from '$($playlist_track.Live_Status)' to '$($twitch_status)'" -showtime -logtype Twitch -LogLevel 2
+                    write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed status from '$($playlist_track.Live_Status)' to '$($twitch_status)'" -logtype Twitch -LogLevel 2
                     $UpdateAlert = $true
                     $changes++
                   }elseif($playlist_track -and "$($TwitchAPI.game_name)" -ne "$($playlist_track.Status_msg)"){
-                    write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed game/category from '$($playlist_track.Status_msg)' to '$($TwitchAPI.game_name)'" -showtime -logtype Twitch -LogLevel 2
+                    write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed game/category from '$($playlist_track.Status_msg)' to '$($TwitchAPI.game_name)'" -logtype Twitch -LogLevel 2
                     $changes++
                   }elseif("$($TwitchAPI.game_name)" -ne "$($twitchmedia.Status_msg)"){
-                    write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed game/category from '$($twitchmedia.Status_msg)' to '$($TwitchAPI.game_name)'" -showtime -logtype Twitch -LogLevel 2
+                    write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed game/category from '$($twitchmedia.Status_msg)' to '$($TwitchAPI.game_name)'" -logtype Twitch -LogLevel 2
                     $changes++
                   }elseif($playlist_track -and "$($TwitchAPI.title)" -ne "$($playlist_track.Stream_title)"){
-                    write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed title from '$($playlist_track.Stream_title)' to '$($TwitchAPI.title)'" -showtime -logtype Twitch -LogLevel 2
+                    write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed title from '$($playlist_track.Stream_title)' to '$($TwitchAPI.title)'" -logtype Twitch -LogLevel 2
                     $changes++
                   }elseif("$($TwitchAPI.title)" -ne "$($twitchmedia.Stream_title)"){
-                    write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed title from '$($twitchmedia.Stream_title)' to '$($TwitchAPI.title)'" -showtime -logtype Twitch -LogLevel 2
+                    write-ezlogs "[Get-TwitchStatus] | Twitch Channel $twitch_channel has changed title from '$($twitchmedia.Stream_title)' to '$($TwitchAPI.title)'" -logtype Twitch -LogLevel 2
                     $changes++
                   }
                   if($UpdateAlert -and $thisApp.Config.Enable_Twitch_Notifications -and ($twitchmedia.Enable_LiveAlert -or $playlist_track.Enable_LiveAlert -or $Config_Twitch.Enable_LiveAlert)){
                     try{
                       $Message = "Twitch Channel '$twitch_channel' is now $twitch_status!`nPlaying: $($TwitchAPI.game_name)$TimeLive"
                       if($TwitchAPI.profile_image_url){
-                        $applogo = $TwitchAPI.profile_image_url                           
+                        $applogo = $TwitchAPI.profile_image_url
                       }elseif($twitchmedia.profile_image_url){
                         $applogo = $($twitchmedia.profile_image_url | Select-Object -First 1)
                       }else{
@@ -1389,7 +1373,7 @@ function Update-TwitchStatus
                       }else{
                         $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
                         $thisapp.config.Installed_AppID = $appid
-                      }                         
+                      }
                       if($TwitchAPI.offline_image_url){
                         $heroimage = $TwitchAPI.offline_image_url
                       }elseif($twitchmedia.offline_image_url){
@@ -1402,12 +1386,12 @@ function Update-TwitchStatus
                       }elseif($playlist_track){
                         $synchash.Start_media = $playlist_track
                       }
-                      $ActivatedAction = {  
+                      $ActivatedAction = {
                         try{
-                          write-ezlogs "[Toast-Activation] >>>> Starting playback for Twitch Stream: $twitch_channel - $($synchash.Start_media.Artist)"
-                          if($synchash.Start_media.User_id -and $synchash.Start_media.User_id -ne $synchash.Start_media.User_id){                                                     
+                          if($synchash.Start_media.User_id -and $synchash.Start_media.User_id -ne $synchash.Current_Playing_Media.User_id){
+                            write-ezlogs "[Toast-Activation] >>>> Starting playback for Twitch Stream: $($synchash.Start_media.Artist)"
                             $synchash.start_media_timer.start()
-                          } 
+                          }
                         }catch{
                           write-ezlogs "An exception occurred in Toast Notification Balloon_click_Command" -CatchError $_
                         }
@@ -1421,7 +1405,7 @@ function Update-TwitchStatus
                       }
                       Update-MainWindow -synchash $synchash -thisApp $thisApp -Toast $Toast
                     }catch{
-                      write-ezlogs "[Get-TwitchStatus] An exception occurred attempting to generate the notification balloon - appid: $($appid) - applogo: $($applogo) - message: $($Message)" -showtime -catcherror $_
+                      write-ezlogs "[Get-TwitchStatus] An exception occurred attempting to generate the notification balloon - appid: $($appid) - applogo: $($applogo) - message: $($Message)" -catcherror $_
                     }
                   }
                 }
@@ -1429,8 +1413,8 @@ function Update-TwitchStatus
                   $fontstyle = 'Italic'
                   $fontcolor = 'Gray'
                   $FontWeight = 'Normal'
-                  $FontSize = [Double]'12'   
-                  $ToolTip = $TwitchAPI.description 
+                  $FontSize = [Double]'12'
+                  $ToolTip = $TwitchAPI.description
                   $ViewerCount = 0
                   $Status_Msg = ''
                   $StreamTitle = ''
@@ -1445,7 +1429,7 @@ function Update-TwitchStatus
                   $StreamTitle = "$($TwitchAPI.title)"
                 }else{
                   $fontstyle = 'Normal'
-                  $fontcolor = 'White' 
+                  $fontcolor = 'White'
                   $FontWeight = 'Normal'
                   $FontSize = [Double]'12'
                   $ToolTip = $TwitchAPI.description
@@ -1460,10 +1444,10 @@ function Update-TwitchStatus
                   }else{
                     $Status_fontcolor = 'White'
                     $Status_fontstyle = 'Normal'
-                  }                            
+                  }
                 }else{
                   $Status_fontstyle = 'Normal'
-                  $Status_fontcolor = 'White' 
+                  $Status_fontcolor = 'White'
                 }
                 $twitchmedia.Live_Status = $twitch_status
                 $twitchmedia.Status_msg = $Status_Msg
@@ -1493,13 +1477,13 @@ function Update-TwitchStatus
                   $synchash.Twitch_status_changes = $changes
                 }
               }catch{
-                write-ezlogs "[Get-TwitchStatus] An exception occurred in checktwitch_scriptblock loop" -showtime -catcherror $_
+                write-ezlogs "[Get-TwitchStatus] An exception occurred in checktwitch_scriptblock loop" -catcherror $_
               }
           }}
           if($synchash.Twitch_status_changes -or $Force){
             try{
-              write-ezlogs "[Get-TwitchStatus] >>>> Updated ($($synchash.Twitch_status_changes)) Twitch streams with changes -- Force: ($Force)" -showtime -logtype Twitch -LogLevel 2
-              if($Verboselog){write-ezlogs "[Get-TwitchStatus] >>>> Exporting to profile path: $AllTwitch_Media_Profile_File_Path" -showtime -logtype Twitch -VerboseDebug:$Verboselog}
+              write-ezlogs "[Get-TwitchStatus] >>>> Updated ($($synchash.Twitch_status_changes)) Twitch streams with changes -- Force: ($Force)" -logtype Twitch -LogLevel 2
+              if($Verboselog){write-ezlogs "[Get-TwitchStatus] >>>> Exporting to profile path: $AllTwitch_Media_Profile_File_Path" -logtype Twitch -VerboseDebug:$Verboselog}
               if($CheckAll){
                 Export-SerializedXML -InputObject $Available_Twitch_Media -Path $AllTwitch_Media_Profile_File_Path
               }else{
@@ -1509,20 +1493,20 @@ function Update-TwitchStatus
               if($synchash.update_Queue_timer -and !$synchash.update_Queue_timer.isEnabled){
                 $synchash.update_Queue_timer.Tag = 'UpdateQueue'
                 $synchash.update_Queue_timer.start()
-              }               
+              }
             }catch{
-              write-ezlogs "[Get-TwitchStatus] An exception occurred exporting to profile path: $AllTwitch_Media_Profile_File_Path" -showtime -catcherror $_
+              write-ezlogs "[Get-TwitchStatus] An exception occurred exporting to profile path: $AllTwitch_Media_Profile_File_Path" -catcherror $_
             }
           }else{
-            write-ezlogs "[Get-TwitchStatus] No changes were found for any Twitch Streams" -showtime -logtype Twitch -LogLevel 2
+            write-ezlogs "[Get-TwitchStatus] No changes were found for any Twitch Streams" -logtype Twitch -LogLevel 0 -Verboselog:$Verboselog
           }
-          $synchash.Twitch_status_changes = $Null                                               
+          $synchash.Twitch_status_changes = $Null
         }else{
-          write-ezlogs "[Get-TwitchStatus] No Twitch Media Profile found at $AllTwitch_Media_Profile_File_Path" -showtime -warning -logtype Twitch -LogLevel 2
-        } 
+          write-ezlogs "[Get-TwitchStatus] No Twitch Media Profile found at $AllTwitch_Media_Profile_File_Path" -warning -logtype Twitch -LogLevel 2
+        }
       }catch{
-        write-ezlogs "[Get-TwitchStatus] An exception occurred in checktwitch_scriptblock" -showtime -catcherror $_
-      } 
+        write-ezlogs "[Get-TwitchStatus] An exception occurred in checktwitch_scriptblock" -catcherror $_
+      }
     }else{
       if($synchash.MiniPlayer_Viewer.isVisible){
         try{
@@ -1531,7 +1515,7 @@ function Update-TwitchStatus
           if($thisApp.Config.Installed_AppID){
             $appid = $thisApp.Config.Installed_AppID
           }else{
-            $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID 
+            $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
             $thisApp.Config.Installed_AppID = $appid
           }
           $Guid = [System.Guid]::NewGuid()
@@ -1548,8 +1532,8 @@ function Update-TwitchStatus
           }
           Update-MainWindow -synchash $synchash -thisApp $thisApp -Toast $Toast
         }catch{
-          write-ezlogs "An exception occurred attempting to generate the notification balloon - appid: $($appid)" -showtime -catcherror $_
-        }     
+          write-ezlogs "An exception occurred attempting to generate the notification balloon - appid: $($appid)" -catcherror $_
+        }
       }else{
         $AlertUI = $true
       }
@@ -1559,11 +1543,11 @@ function Update-TwitchStatus
     write-ezlogs "An exception occurred in Update-TwitchStatus" -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-TwitchStatus Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-TwitchStatus Function
 #----------------------------------------------
 function Get-TwitchStatus
@@ -1588,8 +1572,8 @@ function Get-TwitchStatus
   )
   try{
     if($CheckAll -or $media){
-      if($Verboselog){write-ezlogs ">>>> Getting Status of all known Twitch Streams" -showtime -logtype Twitch -VerboseDebug:$Verboselog}
-      try{      
+      if($Verboselog){write-ezlogs ">>>> Getting Status of all known Twitch Streams" -logtype Twitch -VerboseDebug:$Verboselog}
+      try{
         if($synchash.All_Twitch_Media.count -gt 0 -or $media){
           if(!$synchash.checktwitch_scriptblock){
             $synchash.checktwitch_scriptblock = {
@@ -1612,7 +1596,7 @@ function Get-TwitchStatus
                 [switch]$Force
               )
               try{
-                $checktwitch_stopwatch = [system.diagnostics.stopwatch]::StartNew() 
+                $checktwitch_stopwatch = [system.diagnostics.stopwatch]::StartNew()
                 Update-TwitchStatus @PSBoundParameters
               }catch{
                 write-ezlogs "An exception occurred in checktwitch_scriptblock" -catcherror $_
@@ -1630,15 +1614,15 @@ function Get-TwitchStatus
             }
           }
           if($Use_runspace){
-            Start-Runspace -scriptblock $synchash.checktwitch_scriptblock -arguments $PSBoundParameters -StartRunspaceJobHandler -synchash $synchash -logfile $thisApp.Config.Log_file -runspace_name "checktwitch_runspace" -thisApp $thisApp -CheckforExisting -function_list 'Write-Ezlogs','Update-MainWindow','Update-TwitchStatus','Test-ValidPath' -RestrictedRunspace -Command_list 'Set-StrictMode','Get-Module' 
+            Start-Runspace -scriptblock $synchash.checktwitch_scriptblock -arguments $PSBoundParameters -StartRunspaceJobHandler -synchash $synchash -logfile $thisApp.Config.Log_file -runspace_name "checktwitch_runspace" -thisApp $thisApp -CheckforExisting -function_list 'Write-Ezlogs','Update-MainWindow','Update-TwitchStatus','Test-ValidPath' -RestrictedRunspace -Command_list 'Set-StrictMode','Get-Module'
           }else{
             Invoke-Command -ScriptBlock $synchash.checktwitch_scriptblock
           }
         }else{
-          write-ezlogs "[Get-TwitchStatus] Unable to find any valid twitch media!" -showtime -warning -logtype Twitch -LogLevel 2
+          write-ezlogs "[Get-TwitchStatus] Unable to find any valid twitch media!" -warning -logtype Twitch -LogLevel 2
         }
       }catch{
-        write-ezlogs "[Get-TwitchStatus] An exception occurred getting status of Twitch streams!" -showtime -catcherror $_
+        write-ezlogs "[Get-TwitchStatus] An exception occurred getting status of Twitch streams!" -catcherror $_
         Update-Notifications -Level 'ERROR' -Message "An exception occurred getting status of Twitch streams!" -VerboseLog -Message_color "Red" -thisApp $thisApp -synchash $synchash -Open_Flyout
       }
     }else{
@@ -1646,14 +1630,14 @@ function Get-TwitchStatus
       return
     }
   }catch{
-    write-ezlogs "An exception occurred in Get-TwitchStatus -- params: $($PSBoundParameters | out-string)" -showtime -catcherror $_
+    write-ezlogs "An exception occurred in Get-TwitchStatus -- params: $($PSBoundParameters | out-string)" -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-TwitchStatus Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Start-TwitchMonitor Function
 #----------------------------------------------
 function Start-TwitchMonitor
@@ -1665,7 +1649,7 @@ function Start-TwitchMonitor
     $synchash,
     [switch]$Startup,
     [switch]$Verboselog = $thisApp.Config.Verbose_logging
-  ) 
+  )
   try{
     write-ezlogs "#### Starting Twitch Monitor ####" -color yellow -linesbefore 1 -logtype Twitch -LogLevel 2
     if($synchash.TwitchMonitor_timer.isEnabled){
@@ -1676,7 +1660,7 @@ function Start-TwitchMonitor
       $interval = [TimeSpan]::FromHours((Convert-TimespanToInt -Timespan $Interval))
     }
     $Sleep_Value = [TimeSpan]::Parse($Interval)
-    write-ezlogs "| Interval: $sleep_value" -showtime -logtype Twitch -LogLevel 2
+    write-ezlogs "| Interval: $sleep_value" -logtype Twitch -LogLevel 2
     if($thisApp.config.Twitch_Update -and $Sleep_Value -ne $null){
       if(!$synchash.TwitchMonitor_timer){
         $synchash.TwitchMonitor_timer = [System.Windows.Threading.DispatcherTimer]::new()
@@ -1686,18 +1670,17 @@ function Start-TwitchMonitor
             try{
               if($thisApp.config.Twitch_Update -and $thisApp.config.Twitch_Update_Interval -ne $null){
                 $checkupdate_timer = [system.diagnostics.stopwatch]::StartNew()
-                Write-ezlogs "[Start-TwitchMonitor] >>>> Refreshing status for all Twitch Streams" -showtime -logtype Twitch -LogLevel 2 -linesbefore 1
+                Write-ezlogs "[Start-TwitchMonitor] >>>> Refreshing status for all Twitch Streams" -logtype Twitch
                 Get-TwitchStatus -thisApp $thisApp -synchash $Synchash -verboselog:$thisApp.Config.Verbose_logging -checkall -Refresh_Follows -Use_runspace #:$false
                 $checkupdate_timer.stop()
-                Write-ezlogs "[Start-TwitchMonitor] Ran for: $($checkupdate_timer.Elapsed.TotalSeconds) seconds" -showtime -logtype Twitch -LogLevel 2
                 $checkupdate_timer = $Null
               }else{
-                write-ezlogs "[Start-TwitchMonitor] Twitch Status Monitor has ended - Twitch_Update: $($thisApp.config.Twitch_Update) - Twitch_Update_Interval: $($thisApp.config.Twitch_Update_Interval)" -showtime -warning -logtype Twitch -LogLevel 2
+                write-ezlogs "[Start-TwitchMonitor] Twitch Status Monitor has ended - Twitch_Update: $($thisApp.config.Twitch_Update) - Twitch_Update_Interval: $($thisApp.config.Twitch_Update_Interval)" -warning -logtype Twitch -LogLevel 2
                 $sender.Stop()
               }
             }catch{
               $sender.Stop()
-              write-ezlogs "An exception occurred in TwitchMonitor_timer_ScriptBlock -- TwitchMonitor has been stopped" -catcherror $_      
+              write-ezlogs "An exception occurred in TwitchMonitor_timer_ScriptBlock -- TwitchMonitor has been stopped" -catcherror $_
             }
           }
         }
@@ -1708,17 +1691,17 @@ function Start-TwitchMonitor
       $synchash.TwitchMonitor_timer.start()
       Get-TwitchStatus -thisApp $thisApp -synchash $Synchash -verboselog:$thisApp.Config.Verbose_logging -checkall -Refresh_Follows -Use_runspace #:$false
     }else{
-      write-ezlogs "[Start-TwitchMonitor] No interval value was provided or Twitch_Update config value is not enabled, cannot continue" -showtime -warning -logtype Twitch -LogLevel 2
+      write-ezlogs "[Start-TwitchMonitor] No interval value was provided or Twitch_Update config value is not enabled, cannot continue" -warning -logtype Twitch -LogLevel 2
     }
   }catch{
     write-ezlogs "An exception occured in Start-TwitchMonitor" -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Start-TwitchMonitor Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Get-Twitch Function
 #----------------------------------------------
 function Get-Twitch
@@ -1740,11 +1723,7 @@ function Get-Twitch
     $Twitch_URLs,
     [switch]$Verboselog = $thisApp.Config.Dev_Mode
   )
-  $GetTwitch_stopwatch = [system.diagnostics.stopwatch]::StartNew() 
-  #$illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
-  #$pattern = "[™$illegal]"
-  #$pattern2 = "[:$illegal]"
-  #Twitch Profile Path
+  $GetTwitch_stopwatch = [system.diagnostics.stopwatch]::StartNew()
   if($thisApp.TwitchMonitorEnabled){
     write-ezlogs ">>>> Disabling Twitch Monitor" -logtype Twitch
     $thisApp.TwitchMonitorEnabled = $false
@@ -1753,9 +1732,9 @@ function Get-Twitch
   if (!([System.IO.Directory]::Exists($AllTwitch_Media_Profile_Directory_Path))){
     [void][System.IO.Directory]::CreateDirectory($AllTwitch_Media_Profile_Directory_Path)
   }
-  $AllTwitch_Media_Profile_File_Path = [System.IO.Path]::Combine($AllTwitch_Media_Profile_Directory_Path,"All-Twitch_Media-Profile.xml")  
-  if($Import_Profile -and ([System.IO.File]::Exists($AllTwitch_Media_Profile_File_Path))){ 
-    if($Verboselog){write-ezlogs "[Get-Twitch] | Importing Twitch Media Profile: $AllTwitch_Media_Profile_File_Path" -showtime -enablelogs -logtype Twitch -VerboseDebug:$Verboselog}
+  $AllTwitch_Media_Profile_File_Path = [System.IO.Path]::Combine($AllTwitch_Media_Profile_Directory_Path,"All-Twitch_Media-Profile.xml")
+  if($Import_Profile -and ([System.IO.File]::Exists($AllTwitch_Media_Profile_File_Path))){
+    if($Verboselog){write-ezlogs "[Get-Twitch] | Importing Twitch Media Profile: $AllTwitch_Media_Profile_File_Path" -enablelogs -logtype Twitch -VerboseDebug:$Verboselog}
     try{
       $synchash.All_Twitch_Media = Import-SerializedXML -Path $AllTwitch_Media_Profile_File_Path
     }catch{
@@ -1767,32 +1746,31 @@ function Get-Twitch
         write-ezlogs "####################### Get-Twitch Finished" -PerfTimer $GetTwitch_stopwatch -Perf -logtype Twitch -GetMemoryUsage -forceCollection
         $GetTwitch_stopwatch = $Null
       }
-      return   
-    }    
+      return
+    }
   }else{
-    write-ezlogs "[Get-Twitch] | Twitch Media Profile to import not found at $AllTwitch_Media_Profile_Directory_Path....Attempting to build new profile" -showtime -logtype Twitch
+    write-ezlogs "[Get-Twitch] | Twitch Media Profile to import not found at $AllTwitch_Media_Profile_Directory_Path....Attempting to build new profile" -logtype Twitch
     $synchash.All_Twitch_Media = [System.Collections.Generic.List[Media]]::new()
-  }   
+  }
   if($Twitch_URL){
     $twitch_urls = $Twitch_URL
-    if(!$synchash.ContainsKey('All_Twitch_Media') -and ([System.IO.File]::Exists($AllTwitch_Media_Profile_File_Path))){ 
-      write-ezlogs "[Get-Twitch] | Importing Twitch Media Profile: $AllTwitch_Media_Profile_Directory_Path" -showtime -enablelogs -logtype Twitch -LogLevel 2
+    if(!$synchash.ContainsKey('All_Twitch_Media') -and ([System.IO.File]::Exists($AllTwitch_Media_Profile_File_Path))){
+      write-ezlogs "[Get-Twitch] | Importing Twitch Media Profile: $AllTwitch_Media_Profile_Directory_Path" -enablelogs -logtype Twitch -LogLevel 2
       $synchash.All_Twitch_Media = Import-SerializedXML -Path $AllTwitch_Media_Profile_File_Path
     }
-  } 
+  }
   if(!$refresh -and $synchash.All_Twitch_Media.url){
-    $twitch_urls = $twitch_urls | Where-Object {($_.path -and $synchash.All_Twitch_Media.url -notcontains $_.path) -or ($_.path -and $thisApp.Config.Twitch_Playlists.path -notcontains $_.path) -or ((Test-URL $_) -and $thisApp.Config.Twitch_Playlists.path -notcontains $_) -or ((Test-URL $_) -and $synchash.All_Twitch_Media.url -notcontains $_)}    
+    $twitch_urls = $twitch_urls | Where-Object {($_.path -and $synchash.All_Twitch_Media.url -notcontains $_.path) -or ($_.path -and $thisApp.Config.Twitch_Playlists.path -notcontains $_.path) -or ((Test-URL $_) -and $thisApp.Config.Twitch_Playlists.path -notcontains $_) -or ((Test-URL $_) -and $synchash.All_Twitch_Media.url -notcontains $_)}
   }
   if($twitch_urls.Name){
     $twitch_Streams = $(($twitch_urls.Name | Where-Object {$_}))
   }elseif((Test-URL $twitch_urls)){
     $twitch_Streams = $((Get-Culture).textinfo.totitlecase((($twitch_urls | Where-Object {$_}) | split-path -leaf).tolower()).trim())
   }
-  write-ezlogs "[Get-Twitch] | Number of Twitch urls to process $(@($twitch_Streams).count)" -showtime -logtype Twitch -LogLevel 2
+  write-ezlogs "[Get-Twitch] | Number of Twitch urls to process $(@($twitch_Streams).count)" -logtype Twitch -LogLevel 2
   $TwitchData = Get-TwitchAPI -StreamName $twitch_Streams -thisApp $thisApp
   $total_channels = @($Twitch_URLs).count
   $synchash.processed_Twitch_Channels = 0
-  #$synchash.Temp_TwitchPlaylist_to_Save = [System.Collections.Generic.List[Object]]::new()
   if($synchash.all_playlists -and $synchash.all_playlists -isnot [System.Collections.Generic.List[Playlist]]){
     $synchash.Temp_all_Playlists = $synchash.all_playlists | ConvertTo-Playlists -List
   }elseif($synchash.all_playlists){
@@ -1800,11 +1778,11 @@ function Get-Twitch
   }
   foreach($channel in $Twitch_URLs){
     try{
-      $id = $Null  
+      $id = $Null
       $twitch_channel = $Null
       $followed = $Null
-      $channel_url = $null  
-      if($channel.path -match 'twitch\.tv' -or $channel -match 'twitch\.tv'){ 
+      $channel_url = $null
+      if($channel.path -match 'twitch\.tv' -or $channel -match 'twitch\.tv'){
         if($channel.Name){
           $twitch_channel = $channel.Name
         }elseif(Test-URL $channel){
@@ -1837,22 +1815,20 @@ function Get-Twitch
             }
             if($followed){
               $followed = $followed.ToShortDateString()
-            }         
+            }
           }catch{
-            write-ezlogs "[Get-Twitch] An exception occurred parsing followed date: $($channel.Followed)" -showtime -catcherror $_
-          }    
+            write-ezlogs "[Get-Twitch] An exception occurred parsing followed date: $($channel.Followed)" -catcherror $_
+          }
         }else{
           $followed = $Null
         }
         if($synchash.ContainsKey('All_Twitch_Media')){
-          #lock-object -InputObject $synchash.All_Twitch_Media.SyncRoot -ScriptBlock {
           if(!$synchash.All_Twitch_Media.id){
             $mediaCheck = $id
           }else{
             $mediaCheck = ($synchash.All_Twitch_Media.id.IndexOf($id) -eq -1)
           }
-          #}   
-        }    
+        }
         if($mediaCheck){
           if($thisApp.Config.Twitch_Playlists.Path -notcontains $channel_url){
             if($channel.Number){
@@ -1871,10 +1847,10 @@ function Get-Twitch
               Followed=$followed
               ID = $id
             }
-            write-ezlogs "[Get-Twitch] | Adding url to Twitch Channel to thisApp.Config.Twitch_Playlists : $twitch_channel" -showtime -logtype Twitch -LogLevel 2
+            write-ezlogs "[Get-Twitch] | Adding url to Twitch Channel to thisApp.Config.Twitch_Playlists : $twitch_channel" -logtype Twitch -LogLevel 2
             [void]$thisApp.Config.Twitch_Playlists.add($itemssource)
           }
-          if(!$TwitchAPI.type){          
+          if(!$TwitchAPI.type){
             $title = "Twitch: $($twitch_channel)"
             $Live_Status = 'Offline'
             $Status_msg = ''
@@ -1898,7 +1874,7 @@ function Get-Twitch
             $Status_msg = ''
             $Stream_title = ''
             [int]$viewer_count = 0
-          }           
+          }
           if($TwitchAPI.thumbnail_url){
             $thumbnail = "$($TwitchAPI.thumbnail_url -replace '{width}x{height}','500x500')"
           }else{
@@ -1910,37 +1886,37 @@ function Get-Twitch
             $description = $TwitchAPI.description
           }else{
             $profile_image_url = $Null
-            $offline_image_url = $Null  
-            $description = $Null   
-          } 
+            $offline_image_url = $Null
+            $description = $Null
+          }
           if($profile_image_url){
-            if($Verboselog){write-ezlogs "[Get-Twitch] Profile_Image_url: $($profile_image_url)" -showtime -logtype Twitch -VerboseDebug:$Verboselog}     
+            if($Verboselog){write-ezlogs "[Get-Twitch] Profile_Image_url: $($profile_image_url)" -logtype Twitch -VerboseDebug:$Verboselog}
             if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
-              if($Verboselog){write-ezlogs "[Get-Twitch] Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime -logtype Twitch -VerboseDebug:$Verboselog}
+              if($Verboselog){write-ezlogs "[Get-Twitch] Creating image cache directory: $($thisApp.config.image_Cache_path)" -logtype Twitch -VerboseDebug:$Verboselog}
               [void][System.IO.Directory]::CreateDirectory($thisApp.config.image_Cache_path)
-            }     
+            }
             $encodeduri = $Null
             $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$([System.Uri]::new($profile_image_url).Segments | select-Object -last 1)-Twitch")
             $encodeduri = [System.Convert]::ToBase64String($encodedBytes)
             $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),"$($encodeduri).png")
             if([System.IO.File]::Exists($image_Cache_path)){
               $cached_image = $image_Cache_path
-            }else{    
-              $retry = $false     
-              if($Verboselog){write-ezlogs "[Get-Twitch] | Destination path for cached image: $image_Cache_path" -showtime -logtype Twitch -VerboseDebug:$Verboselog}
+            }else{
+              $retry = $false
+              if($Verboselog){write-ezlogs "[Get-Twitch] | Destination path for cached image: $image_Cache_path" -logtype Twitch -VerboseDebug:$Verboselog}
               try{
                 if([System.IO.File]::Exists($profile_image_url)){
-                  if($Verboselog){write-ezlogs "[Get-Twitch] | Cached Image not found, copying image $($profile_image_url) to cache path $image_Cache_path"  -showtime -logtype Twitch -VerboseDebug:$Verboselog}
+                  if($Verboselog){write-ezlogs "[Get-Twitch] | Cached Image not found, copying image $($profile_image_url) to cache path $image_Cache_path"  -logtype Twitch -VerboseDebug:$Verboselog}
                   [void][system.io.file]::Copy($profile_image_url, $image_Cache_path,$true)
                 }elseif((Test-URL $profile_image_url)){
                   $uri = [system.uri]::new($profile_image_url)
-                  if($Verboselog){write-ezlogs "[Get-Twitch] | Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -showtime -logtype Twitch -VerboseDebug:$Verboselog}
+                  if($Verboselog){write-ezlogs "[Get-Twitch] | Cached Image not downloaded, Downloading image $uri to cache path $image_Cache_path" -logtype Twitch -VerboseDebug:$Verboselog}
                   try{
                     $webclient = [System.Net.WebClient]::new()
                     [void]$webclient.DownloadFile($uri,$image_Cache_path)
                     $retry = $false
                   }catch{
-                    write-ezlogs "[Get-Twitch] An exception occurred downloading image $uri to path $image_Cache_path" -showtime -catcherror $_
+                    write-ezlogs "[Get-Twitch] An exception occurred downloading image $uri to path $image_Cache_path" -catcherror $_
                     $retry = $true
                   }finally{
                     if($webclient){
@@ -1950,18 +1926,18 @@ function Get-Twitch
                   }
                   if($retry -and $twitch_channel){
                     try{
-                      write-ezlogs "[Get-Twitch] Checking Twitch API for possible updated profile_image_url for streamer: $($twitch_channel)" -showtime -warning -LogLevel 2 -logtype Twitch
+                      write-ezlogs "[Get-Twitch] Checking Twitch API for possible updated profile_image_url for streamer: $($twitch_channel)" -warning -LogLevel 2 -logtype Twitch
                       $TwitchData = Get-TwitchAPI -StreamName $twitch_channel -thisApp $thisApp
                     }catch{
-                      write-ezlogs "[Get-Twitch] An exception occurred executing Get-TwitchAPI for steamname $twitch_channel" -showtime -catcherror $_
+                      write-ezlogs "[Get-Twitch] An exception occurred executing Get-TwitchAPI for steamname $twitch_channel" -catcherror $_
                     }
                     if((Test-URL $TwitchData.profile_image_url)){
                       try{
-                        write-ezlogs "[Get-Twitch] | Trying again with newly retrieved profile_image url $($TwitchData.profile_image_url)" -showtime -LogLevel 2 -logtype Twitch
+                        write-ezlogs "[Get-Twitch] | Trying again with newly retrieved profile_image url $($TwitchData.profile_image_url)" -LogLevel 2 -logtype Twitch
                         $webclient = [System.Net.WebClient]::new()
                         [void]$webclient.DownloadFile($TwitchData.profile_image_url,$image_Cache_path)
                       }catch{
-                        write-ezlogs "[Get-Twitch] An exception occurred downloading image $($TwitchData.profile_image_url) to path $image_Cache_path" -showtime -catcherror $_
+                        write-ezlogs "[Get-Twitch] An exception occurred downloading image $($TwitchData.profile_image_url) to path $image_Cache_path" -catcherror $_
                       }finally{
                         if($webclient){
                           $webclient.Dispose()
@@ -1971,18 +1947,18 @@ function Get-Twitch
                       $profile_image_url = $TwitchData.profile_image_url
                     }
                   }
-                }                          
+                }
               }catch{
                 $cached_image = $Null
-                write-ezlogs "[Get-Twitch] An exception occurred attempting to download $uri to path $image_Cache_path for Twitch channel: $($twitch_channel)" -showtime -catcherror $_
-              }           
-            }           
-          }   
+                write-ezlogs "[Get-Twitch] An exception occurred attempting to download $uri to path $image_Cache_path for Twitch channel: $($twitch_channel)" -catcherror $_
+              }
+            }
+          }
           if(-not [string]::IsNullOrEmpty($thisApp.Config.TwitchMedia_Display_Syntax)){
             $DisplayName = $thisApp.Config.TwitchMedia_Display_Syntax -replace '%channel%',$twitch_channel -replace '%title%',$title -replace '%type%','TwitchChannel' -replace '%live_status%',$Live_Status -replace '%stream_title%',$Stream_title
           }else{
             $DisplayName = $Null
-          } 
+          }
           $twitch_item = [Media]@{
             'Id' = $id
             'User_id' = $TwitchAPI.user_id
@@ -2010,7 +1986,7 @@ function Get-Twitch
             'Duration' = ''
             'Display_Name' = $DisplayName
           }
-          if($Verboselog){write-ezlogs "[Get-Twitch] | Adding Twitch stream channel: $twitch_channel - Status: $Live_Status" -showtime -logtype Twitch -VerboseDebug:$Verboselog}
+          if($Verboselog){write-ezlogs "[Get-Twitch] | Adding Twitch stream channel: $twitch_channel - Status: $Live_Status" -logtype Twitch -VerboseDebug:$Verboselog}
           lock-object -InputObject $synchash.All_Twitch_Media.SyncRoot -ScriptBlock {
             [void]$synchash.All_Twitch_Media.Add($twitch_item)
           }
@@ -2021,7 +1997,7 @@ function Get-Twitch
                   $synchash.Temp_TwitchPlaylist_to_Save = $false
                   $track_index = $Null
                   $track = $null
-                  try{           
+                  try{
                     $urls = [System.Collections.Generic.list[object]]$playlist.PlayList_tracks.values.url
                     if($urls){
                       $track_index = $urls.indexof($twitch_item.url)
@@ -2047,47 +2023,47 @@ function Get-Twitch
                   }finally{
                     $track = $Null
                   }
-              }}                     
-            } 
+              }}
+            }
           }catch{
-            write-ezlogs "An exception occurred updating custom playlists for Twitch items" -showtime -catcherror $_
-          }           
+            write-ezlogs "An exception occurred updating custom playlists for Twitch items" -catcherror $_
+          }
           try{
             $Controls_to_Update = [System.Collections.Generic.List[Object]]::new(3)
             $newRow = [PSCustomObject]::new(@{
                 'Control' = 'TwitchMedia_Progress_Label'
                 'Property' = 'Text'
                 'Value' = "Imported ($($synchash.processed_Twitch_Channels) of $($total_channels)) Twitch Channels"
-            })              
-            [void]$Controls_to_Update.Add($newRow) 
+            })
+            [void]$Controls_to_Update.Add($newRow)
             $newRow = [PSCustomObject]::new(@{
                 'Control' = 'TwitchMedia_Progress2_Label'
                 'Property' = 'Text'
                 'Value' = "Current Channel: $twitch_channel"
-            })             
+            })
             [void]$Controls_to_Update.Add($newRow)
             $newRow = [PSCustomObject]::new(@{
                 'Control' = 'TwitchMedia_Progress2_Label'
                 'Property' = 'Visibility'
                 'Value' = "Visible"
-            })             
+            })
             [void]$Controls_to_Update.Add($newRow)
             Update-MainWindow -synchash $synchash -thisApp $thisApp -controls $Controls_to_Update
           }catch{
-            write-ezlogs "An exception occurred updating TwitchMedia_Progress_Ring" -showtime -catcherror $_
-          }   
+            write-ezlogs "An exception occurred updating TwitchMedia_Progress_Ring" -catcherror $_
+          }
         }
       }
     }catch{
-      write-ezlogs "[Get-Twitch] An exception occurred processing twitch url $($channel)" -showtime -catcherror $_
+      write-ezlogs "[Get-Twitch] An exception occurred processing twitch url $($channel)" -catcherror $_
     }
   }
   if($export_profile -and $synchash.All_Twitch_Media.count -gt 1 -and $AllTwitch_Media_Profile_File_Path){
-    write-ezlogs "[Get-Twitch] >>>> Saving Available Twitch Media profile to $AllTwitch_Media_Profile_File_Path" -showtime -logtype Twitch
+    write-ezlogs "[Get-Twitch] >>>> Saving Available Twitch Media profile to $AllTwitch_Media_Profile_File_Path" -logtype Twitch
     Export-SerializedXML -InputObject $synchash.All_Twitch_Media -path $AllTwitch_Media_Profile_File_Path
-  } 
-  write-ezlogs "[Get-Twitch] | Number of Twitch Channels found: $($synchash.All_Twitch_Media.Count)" -showtime -logtype Twitch
-  if($UpdatePlaylists -and $synchash.Temp_TwitchPlaylist_to_Save){ 
+  }
+  write-ezlogs "[Get-Twitch] | Number of Twitch Channels found: $($synchash.All_Twitch_Media.Count)" -logtype Twitch
+  if($UpdatePlaylists -and $synchash.Temp_TwitchPlaylist_to_Save){
     if($synchash.Temp_all_Playlists){
       Export-SerializedXML -InputObject $synchash.Temp_all_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
       [void]$synchash.Temp_all_Playlists.clear()
@@ -2102,10 +2078,10 @@ function Get-Twitch
     $GetTwitch_stopwatch.stop()
     write-ezlogs "####################### Get-Twitch Finished" -PerfTimer $GetTwitch_stopwatch -Perf -logtype Twitch -GetMemoryUsage -forceCollection
     $GetTwitch_stopwatch = $Null
-  }  
-  return  
+  }
+  return
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Get-Twitch Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Get-TwitchAPI','Get-TwitchStatus','Start-TwitchMonitor','Get-TwitchApplication','Set-TwitchApplication','Get-TwitchAccessToken','Get-TwitchFollows','Get-Twitch','Get-TwitchVideos','Update-TwitchStatus')

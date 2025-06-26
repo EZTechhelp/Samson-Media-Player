@@ -5,7 +5,7 @@
   },
   "projects": {
     "C:\\Users\\DopaDodge\\OneDrive - EZTechhelp Company\\Development\\Repositories\\EZT-MediaPlayer-Samson\\src\\Launcher\\Samson.csproj": {
-      "version": "1.0.2",
+      "version": "1.0.3",
       "restore": {
         "projectUniqueName": "C:\\Users\\DopaDodge\\OneDrive - EZTechhelp Company\\Development\\Repositories\\EZT-MediaPlayer-Samson\\src\\Launcher\\Samson.csproj",
         "projectName": "Samson",
@@ -48,7 +48,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.200"
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net7.0-windows7.0": {
@@ -105,7 +105,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.204\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301\\RuntimeIdentifierGraph.json"
         }
       },
       "runtimes": {

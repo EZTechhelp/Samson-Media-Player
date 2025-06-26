@@ -57,34 +57,25 @@ For a code line count and language breakdown, see [Latest Code Count](/CODECOUNT
 
 ### Spotify <a name="Spotify"></a> <img src="/Resources/Spotify/Material-Spotify.ico" Height="25" Width="25" align="Left" Alt="Ability to import and play Spotify playlists and tracks from valid Spotify Account"/>
 
-<img src="/Images/Spotify.png" Alt="Ability to import and play Spotify playlists and tracks from valid Spotify Account. Playback with Web-Player and audio monitor enabled pictured."/>
-
-- Play Spotify playlists and tracks from a valid Spotify Account
 - Premium and free accounts supported (Free accounts require Spotify Windows client)
-- Auto-sync Spotify playlists and playlist tracks to the apps media library
-- Record Spotify media to local disk. Currently saves as FLAC, further customization options planned. (Basic/WIP)
-- Supports EQ and audio filters (requires enabling EQ support for Web Players)
+- Auto-sync playlists and tracks to the media library
+- Record Spotify media to local disk
+- Supports EQ and audio filters
 
 ### Youtube <a name="Youtube"></a> <img src="/Resources/Youtube/Material-Youtube.png" Height="25" Width="25" align="Left" Alt="Ability to import and play YouTube playlists and videos"/>
 
-<img src="/Images/Youtube.png" Alt="Ability to import and play YouTube playlists and videos. Web-Player with comments enabled pictured"/>
-
-- Import and play YouTube playlists and videos from a valid YouTube account
-- Auto-sync YouTube playlists and playlist videos to the apps media library
-- Select preferred quality options, download YouTube videos to local disk (via YT-DLP) and more
-- Alternate YouTube Web Player option using Invidious
-- Supports playing YoutubeTV channels (currently channels must be added manually)
-- Supports Youtube comments and live YouTube streams with chat integration (with built-in support for [BetterTTV](https://github.com/night/betterttv))
+- Auto-sync playlists and videos to the media library
+- Preferred playback quality options, AD blocking, download videos to local disk (via YT-DLP) and more
+- Alternate Web Player option using Invidious
+- Supports YoutubeTV channels (currently channels must be added manually)
+- Supports comments and live streams with chat integration (with built-in support for [BetterTTV](https://github.com/night/betterttv))
 - Built-in support for [SponsorBlock](https://github.com/ajayyy/SponsorBlock), with configurable options to skip or mute sponsored segments
-- Supports EQ and audio filters when using Web Player
+- Supports EQ and audio filters
 
 ### Twitch <a name="Twitch"></a> <img src="/Resources/Twitch/Material-Twitch.png" Height="25" Width="25" align="Left" Alt="Ability to import and play Twitch live streams with chat integration"/>
 
-<img src="/Images/Twitch.png" Alt="Supports Twitch live streams with chat integration"/>
-
 - Play Twitch live streams with native chat integration
-- Import all followed/subscribed channels with valid Twitch account
-- Auto-update/refresh followed streams and their status
+- Auto-sync followed/subscribed channels
 - Display notifications for configured channels when they go live
 - Multiple Twitch AD blocking solutions supported, including [TTVLOL](https://github.com/TTV-LOL/extensions) and [luminous](https://github.com/AlyoshaVasilieva/luminous-ttv)
   - Can provide custom list of proxy servers that support TTVLOL and luminous
@@ -93,22 +84,21 @@ For a code line count and language breakdown, see [Latest Code Count](/CODECOUNT
   
 ### Local Media <a name="Local_Media"></a> <img src="/Resources/VLC/Material-Vlc.png" Height="25" Width="25" align="Left" Alt="Supports Twitch live streams with chat integration"/>
 
-- Add directory paths to scan and import all supported media into the apps media library
+- Scan and import supported media from local, network or external storage
 - Supports most media file types or URLs that VLC player proper supports
-- Supports UNC/Network Mapped drives, external storage..etc
 - Scan media file IDTags (via [TagLib](https://github.com/mono/taglib-sharp)) to populate library with metadata
   - Configurable scanning modes for 'Fast' import or 'Slow' to assist scanning storage devices that have slow read/write speeds (such as older external USB drives)
   - Option to skip import/scan of duplicates
-- Real-time file monitoring of provided directories. Automatically add, remove or update media files as they are changed in the file system when app is running
+- Real-time file system monitoring. Automatically add, remove or update media files as they are changed in the file system when app is running
 
 ### Media Library/Playlists/Queue <a name="Media_Library_Playlists_Queue"></a>
 <img src="/Images/Media_Library.png" Alt="Media library with dock-able/tabbed UI supporting advanced filtering and multi-level grouping"/>
 
-- Media library data-grids in a dock-able/tabbed UI (powered by AvalonDock) supporting advanced filtering, search and multi-level grouping
+- Media library data-grids in a dock-able/tabbed UI (powered by AvalonDock and Syncfusion) supporting advanced filtering, search and multi-level grouping
 - Create custom playlists, combining media from any supported platform
 - Playlists can be exported or imported for sharing or backup
-- Add media via Drag-n-Drop of media files or URL links directly into app or for moving from library to playlists
-  - Drag-n-drop also supported when moving items between playlists or re-ordering within existing
+- Drag-n-Drop of media files or URL links directly into app or for moving from library to playlists
+  - Also supported when moving items between playlists or re-ordering within existing
 - Start playback directly from playlists, library or add to the playback queue
 - Supports auto-play, playback history tracking, shuffle, repeat and other playback options
 

@@ -56,13 +56,12 @@ function Start-InterProcessPipes{
         $thisApp.Config.Installed_AppID = $PipeName
       }
       if($PipeName){
-        write-ezlogs "#### Starting new InterProcessPipes with name: $($PipeName)"
         $media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)avi|(?i)wmv|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mov|(?i)h264|(?i)mpeg|(?i)mpg4|(?i)movie|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))')
         $thisApp.InterProcessPipes = $true
         while ($thisApp.InterProcessPipes)
         {        
           try{
-            write-ezlogs ">>>> Starting new InterProcessPipes instance"
+            write-ezlogs ">>>> Starting new InterProcessPipes instance with name: $($PipeName)"
             $PipeSecurity = [System.IO.Pipes.PipeSecurity]::new()
             $PipSID = [System.Security.Principal.SecurityIdentifier]::new([System.Security.Principal.WellKnownSidType]::WorldSid,$null)
             $PipAccessRule = [System.IO.Pipes.PipeAccessRule]::new($PipSID, [System.IO.Pipes.PipeAccessRights]::ReadWrite, [System.Security.AccessControl.AccessControlType]::Allow)
@@ -123,7 +122,6 @@ function Start-InterProcessPipes{
                 continue
               }
             }else{
-              write-ezlogs "InterProcessPipes has been canceled" -warning
               return
             }
           }catch{

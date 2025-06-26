@@ -83,7 +83,7 @@ function Get-YoutubeComments
             if($Get_comments_Measure){
               $Get_comments_Measure.stop()
             }
-            if($comments){
+            if($comments -and $Comments -ne 'Not Found'){
               write-ezlogs "| Found $($comments.count) Youtube comments"
               $Comments | sort-object -property @{e={$_.snippet.topLevelComment.snippet.likeCount}} -Descending | & { process { 
                   $parentNOde = [Syncfusion.UI.Xaml.TreeView.Engine.TreeViewNode]::new() 
