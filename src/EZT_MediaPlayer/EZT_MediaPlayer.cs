@@ -2287,6 +2287,9 @@ public class Media : INotifyPropertyChanged
     public string Playlist { get; set; }
     public string playlist_id { get; set; }
     public string playlist_item_id { get; set; }
+    public string PlaylistOwner { get; set; }
+    public string PlaylistOwnerID { get; set; }
+    public bool PlaylistisPublic { get; set; }
     public string Playlist_url { get; set; }
     public string Channel_Name { get; set; }
     public string Channel_ID { get; set; }

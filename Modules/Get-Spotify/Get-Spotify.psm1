@@ -38,7 +38,7 @@ function Get-Spotify
     $log,
     $synchash,
     $all_installed_apps,
-    [switch]$Refresh_Global_Profile,
+    [switch]$FullRefresh,
     [switch]$Startup,
     [switch]$update_global,
     [switch]$Export_Profile,
@@ -64,6 +64,10 @@ function Get-Spotify
     $synchash.All_Spotify_Media = Import-SerializedXML -Path $AllSpotify_Media_Profile_File_Path
     if($GetSpotify_stopwatch){
       $GetSpotify_stopwatch.stop()
+    }
+    if([bool]($thisApp.Config.Spotify_Playlists -match ' ')){
+      write-ezlogs "Cleaning invalid entries from Spotify Playlists array" -Warning -logtype Spotify
+      $thisApp.Config.Spotify_Playlists = $thisApp.Config.Spotify_Playlists -split ' '
     }
     write-ezlogs "####################### Get-Spotify Finished" -PerfTimer $GetSpotify_stopwatch -Perf -logtype Spotify -GetMemoryUsage #-forceCollection
     return
@@ -252,6 +256,7 @@ function Get-Spotify
     $total_playlists = $thisApp.Config.Spotify_Playlists.count
     $synchash.processed_Spotify_tracks = [System.Collections.Generic.List[string]]::new()
     $synchash.processed_Spotify_playlists = 0
+    $synchash.processed_Spotify_duplicates = 0
     #Get Playlists
     $thisApp.Config.Spotify_Playlists | Invoke-Parallel -NoProgress -ThrottleLimit 64 {
       try{
@@ -287,7 +292,7 @@ function Get-Spotify
         if($playlist_id -match '\?si\='){
           $playlist_id = ($($playlist_id) -split('\?si\='))[0].trim()
         }
-        if([System.IO.File]::Exists("$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists\$($playlist_id).xml")){
+        if(!$FullRefresh -and [System.IO.File]::Exists("$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists\$($playlist_id).xml")){
           try{
             $playlist_profile = [Management.Automation.PSSerializer]::Deserialize([System.IO.File]::ReadAllText("$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists\$($playlist_id).xml"))
             $playlist_profile_path = "$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists\$($playlist_id).xml"
@@ -310,28 +315,31 @@ function Get-Spotify
             $source_type = $playlist_Info.type
             $url = $playlist_Info.uri
             $images = $playlist_Info.images
-            write-ezlogs ">>>> Found Spotify Playlist $Playlist_name" -showtime -logtype Spotify 
+            $PlaylistOwner = $playlist_Info.owner.display_name
+            $PlaylistOwnerID = $playlist_Info.owner.id
+            $PlaylistisPublic = $playlist_Info.public
+            write-ezlogs ">>>> Found Spotify Playlist: $Playlist_name" -showtime -logtype Spotify -LogLevel 0 -Verboselog:$Verboselog
           }elseif($source_type -eq 'Track'){
             $Spotifytrack = Get-Track -Id $playlist_id -ApplicationName $thisApp.Config.App_Name
             $source_type = $Spotifytrack.type
             $Playlist_name = "$($Spotifytrack.artists.name)"
             $url = $Spotifytrack.uri
             $images = $Spotifytrack.album.images
-            write-ezlogs ">>>> Found Spotify Track $Playlist_name" -showtime -logtype Spotify 
+            write-ezlogs ">>>> Found Spotify Track: $Playlist_name" -showtime -logtype Spotify -LogLevel 0 -Verboselog:$Verboselog
           }elseif($source_type -eq 'Show'){
             $playlist_Info = Get-Show -Id $playlist_id -ApplicationName $thisApp.Config.App_Name
             $Playlist_name = $playlist_Info.Name
             $source_type = $playlist_Info.type
             $url = $playlist_Info.uri
             $images = $playlist_Info.images
-            write-ezlogs ">>>> Found Spotify Show $Playlist_name" -showtime -logtype Spotify 
+            write-ezlogs ">>>> Found Spotify Show: $Playlist_name" -showtime -logtype Spotify -LogLevel 0 -Verboselog:$Verboselog
           }elseif($source_type -eq 'Episode'){
             $Spotifytrack = Get-Episode -Id $playlist_id -ApplicationName $thisApp.Config.App_Name
             $source_type = $Spotifytrack.type
             $Playlist_name = "$($Spotifytrack.show.name)"
             $url = $Spotifytrack.uri
             $images = $Spotifytrack.album.images
-            write-ezlogs ">>>> Found Spotify Track $Playlist_name" -showtime -logtype Spotify 
+            write-ezlogs ">>>> Found Spotify Episode: $Playlist_name" -showtime -logtype Spotify -LogLevel 0 -Verboselog:$Verboselog
           } 
         }
         $href = $_
@@ -429,6 +437,9 @@ function Get-Spotify
                   'type' = $type
                   'Playlist_url' = $url
                   'playlist_id' = $playlist_id
+                  'PlaylistOwner' = $PlaylistOwner
+                  'PlaylistOwnerID' = $PlaylistOwnerID
+                  'PlaylistisPublic' = $PlaylistisPublic
                   #'playlist_profile_path' = $playlist_profile_path
                   #'Profile_Path' = ''
                   'Profile_Date_Added' = [Datetime]::Now.ToString()
@@ -438,10 +449,10 @@ function Get-Spotify
                 lock-object -InputObject $synchash.All_Spotify_Media.SyncRoot -ScriptBlock {
                   if($synchash.processed_Spotify_tracks -notcontains $encodedid){
                     [void]$synchash.processed_Spotify_tracks.add($encodedid)
-                    #$synchash.All_Spotify_Media[$encodedid] = $newRow
                     [void]$synchash.All_Spotify_Media.add($newRow)
                   }else{
-                    write-ezlogs "Duplicate Spotify Track found $($Track.Name) - ID $($Track.id) - Encodedid $($encodedid) - Playlist $($Playlist_name)" -showtime -warning -logtype Spotify
+                    $synchash.processed_Spotify_duplicates++
+                    write-ezlogs "Duplicate Spotify Track found -- Name: $($Track.Name) - ID: $($Track.id) - Encodedid: $($encodedid) - Playlist: $($Playlist_name)" -warning -logtype Spotify -LogLevel 0 -Verboselog:$Verboselog
                   }
                 }
               }catch{
@@ -483,7 +494,7 @@ function Get-Spotify
           }catch{
             write-ezlogs "An exception occurred updating SpotifyMedia_Progress_Ring" -showtime -catcherror $_
           }
-          write-ezlogs ">>>> Processed ($($synchash.processed_Spotify_playlists) of $($total_playlists)) Spotify Playlists - Playlist Name: $Playlist_name" -showtime -logtype Spotify -LogLevel 2                                                 
+          write-ezlogs ">>>> Processed ($($synchash.processed_Spotify_playlists) of $($total_playlists)) Spotify Playlists - Last Playlist Name: $Playlist_name - Duplicate Tracks Skipped: $($synchash.processed_Spotify_duplicates)" -showtime -logtype Spotify -LogLevel 2                            
         }else{
           write-ezlogs "Couldnt get details of Spotify playlist: Name: ($Playlist_name) - id: $($playlist_id) - url: $($url)" -showtime -enablelogs -warning -logtype Spotify
         }
@@ -512,6 +523,8 @@ function Get-Spotify
       $synchash.processed_Spotify_tracks = $null
       [void]$synchash.Remove('processed_Spotify_tracks')
     }
+    $synchash.processed_Spotify_duplicates = $null
+    $synchash.Remove('processed_Spotify_duplicates')
     if($export_profile -and $AllSpotify_Media_Profile_File_Path -and $synchash.All_Spotify_Media){
       Export-SerializedXML -InputObject $synchash.All_Spotify_Media -Path $AllSpotify_Media_Profile_File_Path  
     }
@@ -519,8 +532,7 @@ function Get-Spotify
     if($GetSpotify_stopwatch){
       $GetSpotify_stopwatch.stop()
       write-ezlogs "###### Get-Spotify Finished" -PerfTimer $GetSpotify_stopwatch -Perf -logtype Spotify -GetMemoryUsage
-    }      
-    #Remove-Variable Available_Spotify_Media  
+    }
   }else{
     write-ezlogs "Unable to get Spotify media, Spotify credentials are either missing or invalid! Go to Settings - Spotify to provide credentials or disable Spotify integration" -showtime -warning -logtype Spotify -AlertUI
     return
@@ -824,11 +836,16 @@ function Get-SpotifyStatus
     try{      
       if($thisApp.Config.Import_Spotify_Media){       
         $checkSpotify_scriptblock = {   
-          Param(
+          Param (
+            [switch]$Use_runspace,
             $thisApp = $thisApp,
             $synchash = $synchash,
-            [string]$log = $log
-          ) 
+            $log = $log,
+            [switch]$Startup = $Startup,
+            [switch]$Export_Profile = $Export_Profile,
+            [string]$Media_Profile_Directory = $Media_Profile_Directory,
+            [switch]$Verboselog = $Verboselog
+          )
           try{
             $illegal =[Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars())
             $pattern = "[™$illegal]"
@@ -889,7 +906,7 @@ function Get-SpotifyStatus
                   if(!$SpotifyPlaylists_itemsArray.Number){ 
                     $Number = 1
                   }else{
-                    $Number = $SpotifyPlaylists_itemsArray.Number | select -last 1
+                    $Number = $SpotifyPlaylists_itemsArray.Number | Select-Object -last 1
                     $Number++
                   }
                   $itemssource = [PSCustomObject]::new(@{
@@ -924,14 +941,14 @@ function Get-SpotifyStatus
               foreach($custom_playlist_Profile in $synchash.all_playlists){
                 try{
                   if(($custom_playlist_Profile.gettype()).name -eq 'ArrayList'){
-                    $custom_playlist_Profile = $custom_playlist_Profile | select *
+                    $custom_playlist_Profile = $custom_playlist_Profile | Select-Object *
                   }
                   $Changes = 0
                   foreach($list in $custom_playlist_Profile.PlayList_tracks.values | Where-Object {$_.Playlist_URL -match 'spotify\:'}){
-                    $customplaylist_Name = $Null                
-                    if($list.Playlist_URL){
-                      #$customplaylist_Name = $SpotifyPlaylists_itemsArray | where {$_.path -eq $list.Playlist_URL}
-                      $customplaylist_Name = $SpotifyPlaylists_itemsArray | & { process {if ($_.path -eq $list.Playlist_URL -or $_.id -eq $list.Playlist_ID){$_}}}
+                    $customplaylist_Name = $Null
+                    $Playlist_URL = $list.Playlist_URL -split ' ' | Select-Object -First 1
+                    if($Playlist_URL){
+                      $customplaylist_Name = $SpotifyPlaylists_itemsArray | & { process {if ($_.path -eq $Playlist_URL -or $_.id -eq $list.Playlist_ID){$_}}}
                       if($customplaylist_Name.name -and $customplaylist_Name.name -ne $list.Playlist){
                         write-ezlogs "| Updating Spotify playlist table name from: $($list.Playlist) - to: $($customplaylist_Name.name) - ID: $($list.playlist_id)" -showtime -logtype Spotify
                         $list.Playlist = $customplaylist_Name.Name
@@ -949,7 +966,8 @@ function Get-SpotifyStatus
                         $list.Playlist_url = $customplaylist_Name.Path 
                         $Changes++  
                       }
-                      if($SpotifyPlaylists_itemsArray.path -notcontains $list.Playlist_URL){
+                      if($SpotifyPlaylists_itemsArray.path -notcontains $Playlist_URL){
+                        write-ezlogs "| Adding new playlist url: $($Playlist_URL) - name: $($list.Playlist)" -Warning -logtype Spotify -LogLevel 0 -Verboselog:$Verboselog
                         if(!$SpotifyPlaylists_itemsArray.Number){ 
                           $Number = 1
                         }else{
@@ -963,7 +981,7 @@ function Get-SpotifyStatus
                             Number=$Number    
                             ID = $list.Playlist_ID
                             Name=$list.Playlist
-                            Path=$list.Playlist_URL
+                            Path=$Playlist_URL
                             Type='SpotifyPlaylist'
                             Playlist_Info = $Custom_playlist.Playlist_Info
                         })

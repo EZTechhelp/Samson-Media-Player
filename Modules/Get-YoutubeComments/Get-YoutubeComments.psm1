@@ -133,13 +133,13 @@ function Get-YoutubeComments
                         }else{
                           $RelativeTime = $Null
                         }
-<#                        $cached_image = $_.authorProfileImageUrl
-                        if($cached_image){
-                          $profileImage = $cached_image
-                        }elseif($synchash.YoutubeMedia_PackIcon){
-                          $profileImage = $synchash.YoutubeMedia_PackIcon
-                        }else{
-                          $profileImage = $Null
+                        <#                        $cached_image = $_.authorProfileImageUrl
+                            if($cached_image){
+                            $profileImage = $cached_image
+                            }elseif($synchash.YoutubeMedia_PackIcon){
+                            $profileImage = $synchash.YoutubeMedia_PackIcon
+                            }else{
+                            $profileImage = $Null
                         }#>
                         $childNOde = [Syncfusion.UI.Xaml.TreeView.Engine.TreeViewNode]::new()
                         $childNOde.Content = [PSCustomObject]@{
@@ -226,6 +226,7 @@ function Update-YoutubeComments {
     [switch]$Add,
     [switch]$Sort,
     [switch]$RefreshView,
+    [switch]$BringIntoView,
     [switch]$use_Runspace,
     [switch]$verboselog,
     [switch]$Startup
@@ -345,27 +346,45 @@ function Update-YoutubeComments {
             if($synchash.Comments_UpdateQueue){
               $Process = $synchash.Comments_UpdateQueue.TryDequeue([ref]$object)
             }
-            if($Process -and $object.ProcessObject -and (-not [string]::IsNullOrEmpty($object.Itemssource) -and $object.UpdateItemssource)){
+            if($Process -and $object.ProcessObject -and $((-not [string]::IsNullOrEmpty($object.Itemssource) -and $object.UpdateItemssource) -or $object.BringIntoView)){
               if($syncHash.Comments_TreeView){
-                if($object.Itemssource.Content.authorProfileImage){
-                  $image = [System.Windows.Media.Imaging.BitmapImage]::new()
-                  #$image.Add_DownloadCompleted($synchash.ImageDownload_Completed_Event)
-                  if($thisApp.Config.Dev_mode){$image.Add_DownloadFailed($synchash.ImageDownload_Failed_Event)}
-                  $image.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-                  $image.DecodePixelWidth = 25
-                  $image.BeginInit()
-                  $image.UriSource = $object.Itemssource.Content.authorProfileImage
-                  $cached_image = [System.Windows.Media.Imaging.BitmapImage]$image
-                  $object.Itemssource.Content.authorProfileImage = $cached_image
-                  $image.EndInit()
+                if(-not [string]::IsNullOrEmpty($object.Itemssource) -and $object.UpdateItemssource){
+                  if($object.Itemssource.Content.authorProfileImage){
+                    $image = [System.Windows.Media.Imaging.BitmapImage]::new()
+                    #$image.Add_DownloadCompleted($synchash.ImageDownload_Completed_Event)
+                    if($thisApp.Config.Dev_mode){$image.Add_DownloadFailed($synchash.ImageDownload_Failed_Event)}
+                    $image.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+                    $image.DecodePixelWidth = 25
+                    $image.BeginInit()
+                    $image.UriSource = $object.Itemssource.Content.authorProfileImage
+                    $cached_image = [System.Windows.Media.Imaging.BitmapImage]$image
+                    $object.Itemssource.Content.authorProfileImage = $cached_image
+                    $image.EndInit()
+                  }
+                  $syncHash.Comments_TreeView.nodes.add($object.Itemssource)
                 }
-                $syncHash.Comments_TreeView.nodes.add($object.Itemssource)
                 $image = $Null
                 try{
                   $Total = "$($synchash.Comments_TreeView.Nodes.count) Comments"         
                   if($synchash.Comments_Total -and $synchash.Comments_Total.Text -ne $Total){
                     $synchash.Comments_Total.Visibility = 'Visible'
                     $synchash.Comments_Total.Text = $Total
+                  }
+                  if($object.BringIntoView -and !$syncHash.Comments_TreeView.IsMouseOver){
+                    $currentVideoTime = $($([timespan]::FromMilliseconds($synchash.VLC.Time)).TotalSeconds)
+                    $Node = $syncHash.Comments_TreeView.Nodes | Where-Object {$_.Content.TimestampSecs -le $currentVideoTime} | Select-Object -Last 1
+                    if($object.Itemssource){
+                      $syncHash.Comments_TreeView.BringIntoView($object.Itemssource,$true,$true,[Syncfusion.UI.Xaml.TreeView.ScrollToPosition]::MakeVisible)
+                    }elseif($Node){
+                      $syncHash.Comments_TreeView.BringIntoView($Node,$true,$true,[Syncfusion.UI.Xaml.TreeView.ScrollToPosition]::MakeVisible)
+                    }                  
+                  }
+                  if($object.RefreshView){
+                    $refreshView = $synchash.Comments_TreeView.GetType().GetMethod("RefreshView", [System.Reflection.BindingFlags]::Instance -bor [System.Reflection.BindingFlags]::NonPublic)
+                    if($refreshView){
+                      write-ezlogs "| Invoking RefreshView for Comments_TreeView" -Dev_mode
+                      $refreshView.Invoke($syncHash.Comments_TreeView,$Null)
+                    }  
                   }                                   
                 }catch{
                   write-ezlogs "An exception occurred updating Comments_Total" -catcherror $_
@@ -403,13 +422,14 @@ function Update-YoutubeComments {
       }
       $synchash.Comments_Update_Timer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
       $synchash.Comments_Update_Timer.add_tick($synchash.Comments_Update_Timer_Tick)
-    }elseif($itemssource -or $UpdateItemssource -or $RefreshView){
+    }elseif($itemssource -or $UpdateItemssource -or $RefreshView -or $BringIntoView){
       if($synchash.Comments_UpdateQueue){
         [void]$synchash.Comments_UpdateQueue.Enqueue([PSCustomObject]::new(@{
               'Itemssource' = $itemssource
               'ProcessObject' = $true
               'Sort' = $Sort
               'RefreshView' = $RefreshView
+              'BringIntoView' = $BringIntoView
               'UpdateItemssource' = $UpdateItemssource
         })) 
       }

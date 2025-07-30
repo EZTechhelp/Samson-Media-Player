@@ -42,6 +42,8 @@ function Add-YoutubePlayback
     [string]$LinkUri,
     [string]$linktext,
     [switch]$Startup,
+    [string]$PlaylistPosition,
+    $PlaylistPositionTargetMedia,
     [switch]$Verboselog
   )
   if(!$youtube_id -and $LinkUri){
@@ -150,7 +152,7 @@ function Add-YoutubePlayback
       }
       Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -media @($media) -Use_RunSpace -RefreshQueue
     }elseif($AddtoPlaylist -and $media){
-      Add-Playlist -Media $media -Playlist $AddtoPlaylist -thisApp $thisapp -synchash $synchash -verboselog:$thisapp.Config.Verbose_logging -Use_RunSpace -Update_UI
+      Add-Playlist -Media $media -Playlist $AddtoPlaylist -thisApp $thisapp -synchash $synchash -verboselog:$thisapp.Config.Verbose_logging -Use_RunSpace -Update_UI -position $PlaylistPosition -PositionTargetMedia $PlaylistPositionTargetMedia
     }
     if($media -and $StartPlayback){
       $synchash.Temporary_Playback_Media = $media

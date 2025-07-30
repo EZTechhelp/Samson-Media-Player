@@ -39,6 +39,379 @@ function Close-ProfileEditor (){
 #endregion Close-ProfileEditor Function
 #----------------------------------------------
 
+#---------------------------------------------- 
+#region Update-Details Function
+#----------------------------------------------      
+function Update-Details{    
+  param (
+    $profile,
+    $hashedit = $hashedit,
+    $textFields,
+    $ValidFields,
+    $type,
+    $VerboseLog = $VerboseLog
+  ) 
+  try{
+    $properties = ($profile | Select-Object *).psobject.properties     
+    foreach($property in $properties){
+      if((!$hashedit."Media_$($property.name)_Label")){
+        $grid = [System.Windows.Controls.Grid]::new()
+        $column1 = [System.Windows.Controls.ColumnDefinition]::new()
+        $column2 = [System.Windows.Controls.ColumnDefinition]::new()
+        $column1.Width = "145"
+        $grid.ColumnDefinitions.add($column1)
+        $grid.ColumnDefinitions.add($column2)                  
+        if($textFields -contains $property.TypeNameOfValue){
+          if($VerboseLog){write-ezlogs ">>>> Creating text property ($($property.name)) with value $($property.value)" -showtime -VerboseDebug:$VerboseLog}
+          $hashedit."Media_$($property.name)_Label" = [System.Windows.Controls.Label]::new()
+          $hashedit."Media_$($property.name)_Label".Name = "Media_$($property.name)_Label"
+          $hashedit."Media_$($property.name)_Label".Margin="5,0,0,5"
+          #$hashedit."Media_$($property.name)_Label".BorderBrush="Red"
+          $hashedit."Media_$($property.name)_Label".Foreground="#FFC6CFD0"
+          $hashedit."Media_$($property.name)_Label".BorderThickness="0,0,0,0"
+          $hashedit."Media_$($property.name)_Label".HorizontalAlignment="Left"
+          $hashedit."Media_$($property.name)_Label".Content = $((Get-Culture).textinfo.totitlecase($($Property.Name).tolower()))
+          $hashedit."Media_$($property.name)_Label".SetValue([System.Windows.Controls.Grid]::ColumnProperty,0)
+          $null = $grid.AddChild($hashedit."Media_$($property.name)_Label") 
+          if($Property.Name -match 'bitrate'){
+            $value = "$($property.value) Kbps"
+          }elseif($Property.Name -match 'SampleRate'){
+            $value = "$($property.value) Hz"
+          }elseif($Property.Name -match 'FileSize' -or $Property.Name -match 'Size'){
+            $value = "$($property.value) MB"
+          }else{
+            $value = $($property.value)
+          }
+          if($type -eq 'Local' -and $Property.Name -eq 'Url' -and [system.io.file]::Exists($($property.value))){
+            $hashedit.Media_FileName_textbox.isEnabled = $true
+            $hashedit.FileName_Button.isEnabled = $true
+            $hashedit.Media_FileName_textbox.text = $([System.IO.Path]::GetFileName($property.value))              
+            $hashedit.Media_FileName_textbox.tag = $property.value
+          }
+          if($(Test-ValidPath $property.value)){
+            #Clickable link
+            try{
+              if($VerboseLog){write-ezlogs ">>>> Creating clickable link property ($($property.name)) with value $($property.value) - Value Type: $($($property.value).gettype()) - Test-URL $(Test-URL $property.value)" -showtime -VerboseDebug:$VerboseLog}
+              $hashedit."Media_$($property.name)_textbox" = [System.Windows.Controls.TextBlock]::new()
+              $hashedit."Media_$($property.name)_textbox".Margin="8,0,0,5"
+              $link_hyperlink = [System.Windows.Documents.Hyperlink]::new()
+              $link_hyperlink.Foreground = "LightGreen"
+              $link_hyperlink.ToolTip = $property.value
+              $Null = $link_hyperlink.Inlines.add("$($property.value)")
+              $null = $hashedit."Media_$($property.name)_textbox".addChild($link_hyperlink)
+              $uri = [system.uri]::new($property.value)                 
+              $link_hyperlink.NavigateUri = $uri
+              $Null = $link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
+              $Null = $link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)                                                     
+            }catch{
+              write-ezlogs "An exception occurred creating clickable link for property ($($property.name)) with value $($property.value)" -showtime -catcherror $_
+            }
+          }else{
+            $hashedit."Media_$($property.name)_textbox" = [System.Windows.Controls.Textbox]::new()                            
+            $hashedit."Media_$($property.name)_textbox".BorderThickness="0,0,0,0"
+            $hashedit."Media_$($property.name)_textbox".Margin="3,0,0,5"
+            $hashedit."Media_$($property.name)_textbox".isReadOnly = $true                     
+            $hashedit."Media_$($property.name)_textbox".text = $value 
+          }
+          if($hashedit."Media_$($property.name)_textbox"){
+            $hashedit."Media_$($property.name)_textbox".TextWrapping = "Wrap" 
+            $hashedit."Media_$($property.name)_textbox".Foreground="#FFC6CFD0"
+            $hashedit."Media_$($property.name)_textbox".Background="Transparent"
+            $hashedit."Media_$($property.name)_textbox".HorizontalAlignment="Left" 
+            $hashedit."Media_$($property.name)_textbox".MinWidth="50"            
+            $hashedit."Media_$($property.name)_textbox".Name = "Media_$($property.name)_textbox"           
+            $hashedit."Media_$($property.name)_textbox".SetValue([System.Windows.Controls.Grid]::ColumnProperty,1)
+            $null = $grid.AddChild($hashedit."Media_$($property.name)_textbox") 
+          }
+        }   
+        if($property.TypeNameOfValue -eq 'System.Boolean'){
+          if($VerboseLog){write-ezlogs ">>>> Creating Boolean property ($($property.name)) with value $($property.value)" -showtime -VerboseDebug:$VerboseLog}
+          $hashedit."Media_$($property.name)_Label" = [System.Windows.Controls.Label]::new()
+          $hashedit."Media_$($property.name)_Label".Name = "Media_$($property.name)_Label"
+          $hashedit."Media_$($property.name)_Label".Margin="5,0,0,5"
+          #$hashedit."Media_$($property.name)_Label".BorderBrush="Red"
+          $hashedit."Media_$($property.name)_Label".BorderThickness="0,0,0,0"
+          $hashedit."Media_$($property.name)_Label".HorizontalAlignment="Left"
+          $hashedit."Media_$($property.name)_Label".Content = $((Get-Culture).textinfo.totitlecase($($Property.Name).tolower()))
+          $hashedit."Media_$($property.name)_Label".SetValue([System.Windows.Controls.Grid]::ColumnProperty,0)
+          $null = $grid.AddChild($hashedit."Media_$($property.name)_Label") 
+          $hashedit."Media_$($property.name)_CheckBox" = [System.Windows.Controls.CheckBox]::new()
+          $hashedit."Media_$($property.name)_CheckBox".Name = "Media_$($property.name)_CheckBox"
+          $hashedit."Media_$($property.name)_CheckBox".Margin="7,0,0,5"
+          $hashedit."Media_$($property.name)_CheckBox".IsEnabled = $false
+          $hashedit."Media_$($property.name)_CheckBox".isChecked = $($property.value)
+          $hashedit."Media_$($property.name)_CheckBox".HorizontalAlignment="Left"
+          $hashedit."Media_$($property.name)_CheckBox".Background="Transparent"
+          $hashedit."Media_$($property.name)_CheckBox".SetValue([System.Windows.Controls.Grid]::ColumnProperty,1)
+          $null = $grid.AddChild($hashedit."Media_$($property.name)_CheckBox") 
+        }                            
+        if($hashedit.Details_StackPanel.Children -notcontains $grid){
+          $null = $hashedit.Details_StackPanel.addChild($grid)
+        }
+      }elseif($hashedit."Media_$($property.name)_Label" -and $hashedit."Media_$($property.name)_textbox"){
+        if($VerboseLog){write-ezlogs ">>>> Setting existing property ($($property.name)) to value $($property.value)" -showtime -VerboseDebug:$VerboseLog}
+        if($property.Name -match 'bitrate'){
+          $value = "$($property.value) Kbps"
+        }elseif($property.Name -match 'SampleRate'){
+          $value = "$($property.value) Hz"
+        }elseif($property.Name -match 'FileSize' -or $property.Name -match 'Size'){
+          $value = "$($property.value) MB"
+        }else{
+          $value = $($property.value)
+        }
+        if($(Test-ValidPath $property.value)){
+          #Clickable link
+          $uri = [system.uri]::new($property.value)
+          $link_hyperlink = [System.Windows.Documents.Hyperlink]::new()
+          $link_hyperlink.NavigateUri = $uri
+          $link_hyperlink.ToolTip = $property.value
+          $link_hyperlink.Foreground = "LightGreen"
+          $Null = $link_hyperlink.Inlines.add($property.value)
+          $Null = $link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
+          $Null = $link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
+          $null = $hashedit."Media_$($property.name)_textbox".Text = ''
+          $null = $hashedit."Media_$($property.name)_textbox".addChild($link_hyperlink)
+        }elseif($hashedit."Media_$($property.name)_textbox".gettype().name -eq 'RichTextBox'){              
+          $hashedit."Media_$($property.name)_textbox".document.blocks.clear()
+          $Paragraph = [System.Windows.Documents.Paragraph]::new()
+          $RichTextRange = [System.Windows.Documents.Run]::new()       
+          $RichTextRange.AddText($property.value)
+          $Paragraph.Inlines.add($RichTextRange)
+          $null = $hashedit."Media_$($property.name)_textbox".Document.Blocks.Add($Paragraph)            
+        }else{
+          $hashedit."Media_$($property.name)_textbox".text = $($property.value)
+        }
+      }
+    }
+    $obj_properties = (($properties | Where-Object {$_.TypeNameofValue -eq 'System.Object' -or $_.TypeNameofValue -eq 'Deserialized.System.Object[]' -or $_.TypeNameofValue -eq 'Deserialized.System.Management.Automation.PSCustomObject' -or $_.TypeNameOfValue -eq 'Deserialized.System.Object'}))
+
+    #$sub_properties = (($properties | where {$_.TypeNameofValue -eq 'System.Object' -or $_.TypeNameofValue -eq 'Deserialized.System.Object[]' -or $_.TypeNameofValue -eq 'Deserialized.System.Management.Automation.PSCustomObject'}).value | select *).psobject.properties | where {$_.isSettable}
+    if($obj_properties){    
+      foreach($property in $obj_properties){
+        $sub_properties = ($property.value | Select-Object *).psobject.properties
+        if($VerboseLog){write-ezlogs ">>>> Creating new object sub-properties for ($($property.name)) -- sub-properties for ($($sub_properties.Name))" -showtime -VerboseDebug:$VerboseLog}
+        foreach($sub_property in $sub_properties){             
+          $sub_property_name = "$($property.name)_$($sub_property.name)"
+          if($VerboseLog){write-ezlogs "| Sub_Property Name: $sub_property_name" -showtime -VerboseDebug:$VerboseLog}
+          if(!$hashedit."Media_$($sub_property_name)_Label"){
+            if($VerboseLog){write-ezlogs "| Creating new field: $sub_property_name" -showtime -VerboseDebug:$VerboseLog}
+            $grid = [System.Windows.Controls.Grid]::new()
+            $column1 = [System.Windows.Controls.ColumnDefinition]::new()
+            $column2 = [System.Windows.Controls.ColumnDefinition]::new()
+            $column1.Width = "145"
+            $grid.ColumnDefinitions.add($column1)
+            $grid.ColumnDefinitions.add($column2) 
+            if($textFields -contains $sub_property.TypeNameOfValue){
+              if($VerboseLog){write-ezlogs "| Creating new sub-property ($($sub_property_name)) with value $($sub_property.value)" -showtime -VerboseDebug:$VerboseLog}
+              $row = [System.Windows.Controls.RowDefinition]::new()
+              $grid.rowDefinitions.add($row)
+              $rownumber = ($grid.rowDefinitions.Count - 1)
+              $hashedit."Media_$($sub_property_name)_Label" = [System.Windows.Controls.Label]::new()
+              $hashedit."Media_$($sub_property_name)_Label".Name = "Media_$($sub_property_name)_Label"
+              $hashedit."Media_$($sub_property_name)_Label".Margin="5,0,0,5"
+              #$hashedit."Media_$($property.name)_Label".BorderBrush="Red"
+              $hashedit."Media_$($sub_property_name)_Label".BorderThickness="0,0,0,0"
+              $hashedit."Media_$($sub_property_name)_Label".Foreground="#FFC6CFD0"                 
+              $hashedit."Media_$($sub_property_name)_Label".HorizontalAlignment="Left"
+              $hashedit."Media_$($sub_property_name)_Label".Content = "$($((Get-Culture).textinfo.totitlecase($($Property.Name).tolower()))).$($((Get-Culture).textinfo.totitlecase($($sub_property.Name).tolower())))"
+              $hashedit."Media_$($sub_property_name)_Label".SetValue([System.Windows.Controls.Grid]::RowProperty,$rownumber)
+              $hashedit."Media_$($sub_property_name)_Label".SetValue([System.Windows.Controls.Grid]::ColumnProperty,0)
+              $null = $grid.AddChild($hashedit."Media_$($sub_property_name)_Label")
+              if($sub_property.Name -match 'bitrate'){
+                $value = "$($sub_property.value) Kbps"
+              }elseif($sub_property.Name -match 'SampleRate'){
+                $value = "$($sub_property.value) Hz"
+              }elseif($sub_property.Name -match 'FileSize' -or $sub_property.Name -match 'Size'){
+                $value = "$($sub_property.value) MB"
+              }else{
+                $value = $($sub_property.value)
+              }
+              if($(Test-ValidPath $sub_property.value)){
+                #Clickable link
+                try{
+                  $hashedit."Media_$($sub_property_name)_textbox" = [System.Windows.Controls.TextBlock]::new()
+                  $hashedit."Media_$($sub_property_name)_textbox".Margin="8,0,0,5"
+                  $link_hyperlink = [System.Windows.Documents.Hyperlink]::new()
+                  $link_hyperlink.ToolTip = $sub_property.value
+                  $link_hyperlink.Foreground = "LightGreen"
+                  $Null = $link_hyperlink.Inlines.add("$($sub_property.value)")
+                  $null = $hashedit."Media_$($sub_property_name)_textbox".addChild($link_hyperlink)
+                  $uri = [system.uri]::new($sub_property.value)                    
+                  $link_hyperlink.NavigateUri = $uri
+                  $Null = $link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
+                  $Null = $link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)                                           
+                }catch{
+                  write-ezlogs "An exception occurred creating clickable link for property ($($sub_property_name)) with value $($sub_property.value)" -showtime -catcherror $_
+                }
+              }else{
+                $hashedit."Media_$($sub_property_name)_textbox" = [System.Windows.Controls.Textbox]::new()
+                $hashedit."Media_$($sub_property_name)_textbox".BorderThickness="0,0,0,0"    
+                $hashedit."Media_$($sub_property_name)_textbox".Margin="3,0,0,5" 
+                $hashedit."Media_$($sub_property_name)_textbox".isReadOnly = $true       
+                $hashedit."Media_$($sub_property_name)_textbox".text = $value 
+              }
+              if($hashedit."Media_$($sub_property_name)_textbox"){
+                $hashedit."Media_$($sub_property_name)_textbox".MinWidth="50"
+                $hashedit."Media_$($sub_property_name)_textbox".Foreground="#FFC6CFD0"
+                $hashedit."Media_$($sub_property_name)_textbox".TextWrapping = "Wrap"           
+                $hashedit."Media_$($sub_property_name)_textbox".HorizontalAlignment="Left"
+                $hashedit."Media_$($sub_property_name)_textbox".Background="Transparent"          
+                $hashedit."Media_$($sub_property_name)_textbox".Name = "Media_$($sub_property_name)_textbox"
+                $hashedit."Media_$($sub_property_name)_textbox".SetValue([System.Windows.Controls.Grid]::RowProperty,$rownumber)
+                $hashedit."Media_$($sub_property_name)_textbox".SetValue([System.Windows.Controls.Grid]::ColumnProperty,1)
+                $null = $grid.AddChild($hashedit."Media_$($sub_property_name)_textbox") 
+              }
+            }
+            if($sub_property.TypeNameOfValue -eq 'System.Boolean'){
+              if($VerboseLog){write-ezlogs ">>>> Creating Boolean property ($($sub_property.name)) with value $($sub_property.value)" -showtime -VerboseDebug:$VerboseLog}
+              $hashedit."Media_$($sub_property_name)_Label" = [System.Windows.Controls.Label]::new()
+              $hashedit."Media_$($sub_property_name)_Label".Name = "Media_$($sub_property_name)_Label"
+              $hashedit."Media_$($sub_property_name)_Label".Margin="5,0,0,5"
+              #$hashedit."Media_$($property.name)_Label".BorderBrush="Red"
+              $hashedit."Media_$($sub_property_name)_Label".BorderThickness="0,0,0,0"
+              $hashedit."Media_$($sub_property_name)_Label".HorizontalAlignment="Left"
+              $hashedit."Media_$($sub_property_name)_Label".Content = $((Get-Culture).textinfo.totitlecase($($sub_property.Name).tolower()))
+              $hashedit."Media_$($sub_property_name)_Label".SetValue([System.Windows.Controls.Grid]::ColumnProperty,0)
+              $null = $grid.AddChild($hashedit."Media_$($sub_property_name)_Label") 
+              $hashedit."Media_$($sub_property_name)_CheckBox" = [System.Windows.Controls.CheckBox]::new()
+              $hashedit."Media_$($sub_property_name)_CheckBox".Name = "Media_$($sub_property_name)_CheckBox"
+              $hashedit."Media_$($sub_property_name)_CheckBox".Margin="7,0,0,5"
+              $hashedit."Media_$($sub_property_name)_CheckBox".IsEnabled = $false
+              $hashedit."Media_$($sub_property_name)_CheckBox".isChecked = $($sub_property.value)
+              $hashedit."Media_$($sub_property_name)_CheckBox".HorizontalAlignment="Left"
+              $hashedit."Media_$($sub_property_name)_CheckBox".Background="Transparent"
+              $hashedit."Media_$($sub_property_name)_CheckBox".SetValue([System.Windows.Controls.Grid]::ColumnProperty,1)
+              $null = $grid.AddChild($hashedit."Media_$($sub_property_name)_CheckBox") 
+            }
+            if($sub_property.TypeNameOfValue -eq 'System.Object' -or $sub_property.TypeNameOfValue -eq 'Deserialized.System.Object[]' -or $sub_property.TypeNameOfValue -eq 'Deserialized.System.Management.Automation.PSCustomObject' -or $sub_property.TypeNameOfValue -eq 'Deserialized.System.Object'){
+              if($VerboseLog){write-ezlogs ">>>> Creating object sublvl2-property ($($sub_property.name)) with value $($sub_property.value)" -showtime -VerboseDebug:$VerboseLog}
+              $sublvl2_properties = (($sub_property).value | Select-Object *).psobject.properties
+              foreach($sublvl2_property in $sublvl2_properties){                            
+                $sublvl2_property_name = "$($sub_property.name)_$($sublvl2_property.name)"
+                if(!$hashedit."Media_$($sublvl2_property_name)_Label"){
+                  $grid = [System.Windows.Controls.Grid]::new()
+                  $column1 = [System.Windows.Controls.ColumnDefinition]::new()
+                  $column2 = [System.Windows.Controls.ColumnDefinition]::new()
+                  $column1.Width = "145"
+                  $grid.ColumnDefinitions.add($column1)
+                  $grid.ColumnDefinitions.add($column2) 
+                  if($textFields -contains $sublvl2_property.TypeNameOfValue){
+                    if($VerboseLog){write-ezlogs "| Creating new sublvl2-property ($($sublvl2_property_name)) with value $($sublvl2_property.value)" -showtime -VerboseDebug:$VerboseLog}
+                    $row = [System.Windows.Controls.RowDefinition]::new()
+                    $grid.rowDefinitions.add($row)
+                    $rownumber = ($grid.rowDefinitions.Count - 1)
+                    $hashedit."Media_$($sublvl2_property_name)_Label" = [System.Windows.Controls.Label]::new()
+                    $hashedit."Media_$($sublvl2_property_name)_Label".Name = "Media_$($sublvl2_property_name)_Label"
+                    $hashedit."Media_$($sublvl2_property_name)_Label".Margin="5,0,0,5"
+                    $hashedit."Media_$($sublvl2_property_name)_Label".BorderThickness="0,0,0,0"
+                    $hashedit."Media_$($sublvl2_property_name)_Label".Foreground="#FFC6CFD0"                 
+                    $hashedit."Media_$($sublvl2_property_name)_Label".HorizontalAlignment="Left"
+                    $hashedit."Media_$($sublvl2_property_name)_Label".Content = "$($((Get-Culture).textinfo.totitlecase($($sub_Property.Name).tolower()))).$($((Get-Culture).textinfo.totitlecase($($sublvl2_property.Name).tolower())))"
+                    $hashedit."Media_$($sublvl2_property_name)_Label".SetValue([System.Windows.Controls.Grid]::RowProperty,$rownumber)
+                    $hashedit."Media_$($sublvl2_property_name)_Label".SetValue([System.Windows.Controls.Grid]::ColumnProperty,0)
+                    $null = $grid.AddChild($hashedit."Media_$($sublvl2_property_name)_Label")
+                    if($sublvl2_property.Name -match 'bitrate'){
+                      $value = "$($sublvl2_property.value) Kbps"
+                    }elseif($sublvl2_property.Name -match 'SampleRate'){
+                      $value = "$($sublvl2_property.value) Hz"
+                    }elseif($sublvl2_property.Name -match 'FileSize' -or $sublvl2_property.Name -match 'Size'){
+                      $value = "$($sublvl2_property.value) MB"
+                    }else{
+                      $value = $($sublvl2_property.value)
+                    }
+                    if($(Test-ValidPath $sublvl2_property.value)){
+                      #Clickable link
+                      $uri = [system.uri]::new($sublvl2_property.value)
+                      $link_hyperlink = [System.Windows.Documents.Hyperlink]::new()
+                      $link_hyperlink.NavigateUri = $uri
+                      $link_hyperlink.ToolTip = $sublvl2_property.value
+                      $link_hyperlink.Foreground = "LightGreen"
+                      $Null = $link_hyperlink.Inlines.add($sublvl2_property.value)
+                      $Null = $link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
+                      $Null = $link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
+                      $hashedit."Media_$($sublvl2_property_name)_textbox" = [System.Windows.Controls.TextBlock]::new()
+                      $hashedit."Media_$($sublvl2_property_name)_textbox".Margin="8,0,0,5"
+                      $null = $hashedit."Media_$($sublvl2_property_name)_textbox".addChild($link_hyperlink)
+                    }else{
+                      $hashedit."Media_$($sublvl2_property_name)_textbox" = [System.Windows.Controls.Textbox]::new()
+                      $hashedit."Media_$($sublvl2_property_name)_textbox".BorderThickness="0,0,0,0"    
+                      $hashedit."Media_$($sublvl2_property_name)_textbox".Margin="3,0,0,5" 
+                      $hashedit."Media_$($sublvl2_property_name)_textbox".isReadOnly = $true       
+                      $hashedit."Media_$($sublvl2_property_name)_textbox".text = $value 
+                    }
+                    $hashedit."Media_$($sublvl2_property_name)_textbox".MinWidth="50"
+                    $hashedit."Media_$($sublvl2_property_name)_textbox".Foreground="#FFC6CFD0"
+                    $hashedit."Media_$($sublvl2_property_name)_textbox".TextWrapping = "Wrap"           
+                    $hashedit."Media_$($sublvl2_property_name)_textbox".HorizontalAlignment="Left"
+                    $hashedit."Media_$($sublvl2_property_name)_textbox".Background="Transparent"          
+                    $hashedit."Media_$($sublvl2_property_name)_textbox".Name = "Media_$($sublvl2_property_name)_textbox"
+                    $hashedit."Media_$($sublvl2_property_name)_textbox".SetValue([System.Windows.Controls.Grid]::RowProperty,$rownumber)
+                    $hashedit."Media_$($sublvl2_property_name)_textbox".SetValue([System.Windows.Controls.Grid]::ColumnProperty,1)
+                    $null = $grid.AddChild($hashedit."Media_$($sublvl2_property_name)_textbox") 
+                  }
+
+                }
+              }
+            }                
+            if($hashedit.Details_StackPanel.Children -notcontains $grid){
+              $null = $hashedit.Details_StackPanel.addChild($grid)
+            }
+          }elseif($hashedit."Media_$($sub_property_name)_Label" -and $hashedit."Media_$($sub_property_name)_textbox"){
+            if($VerboseLog){write-ezlogs ">>>> Updating existing sub-property ($($sub_property_name)) from value $($hashedit."Media_$($sub_property_name)_textbox".text) to value $($sub_property.value)" -showtime -VerboseDebug:$VerboseLog}
+            if($sub_property.Name -match 'bitrate'){
+              $value = "$($sub_property.value) Kbps"
+            }elseif($sub_property.Name -match 'SampleRate'){
+              $value = "$($sub_property.value) Hz"
+            }elseif($sub_property.Name -match 'FileSize' -or $sub_property.Name -match 'Size'){
+              $value = "$($sub_property.value) MB"
+            }else{
+              $value = $($sub_property.value)
+            }
+            if([system.io.file]::Exists($($sub_property.value)) -or [System.IO.Directory]::Exists($($sub_property.value)) -or (Test-URL $($sub_property.value))){
+              #Clickable link
+              $uri = [system.uri]::new($sub_property.value)
+              $link_hyperlink = [System.Windows.Documents.Hyperlink]::new()
+              $link_hyperlink.NavigateUri = $uri
+              $link_hyperlink.ToolTip = $sub_property.value
+              $link_hyperlink.Foreground = "LightGreen"
+              $Null = $link_hyperlink.Inlines.add($sub_property.value)
+              $Null = $link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
+              $Null = $link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
+              $null = $hashedit."Media_$($sub_property_name)_textbox".Text = ''
+              $null = $hashedit."Media_$($sub_property_name)_textbox".addChild($link_hyperlink)
+            }else{              
+              $hashedit."Media_$($sub_property_name)_textbox".text = $value
+            }
+          }                      
+        } 
+      }
+    }
+    #Year
+    if(-not [string]::IsNullOrEmpty($profile.release_date)){
+      $hashedit.Media_Year_textbox.text = $profile.release_date        
+    }elseif(-not [string]::IsNullOrEmpty($profile.SongInfo.Year)){
+      $hashedit.Media_Year_textbox.text = $profile.SongInfo.Year 
+    }     
+    #TrackNumber
+    if(-not [string]::IsNullOrEmpty($profile.SongInfo.TrackNumber) -and $profile.SongInfo.TrackNumber -ne 'true' -and $profile.SongInfo.TrackNumber -ne 'false'){
+      $hashedit.Media_Track_textbox.text = $profile.SongInfo.TrackNumber         
+    }elseif([string]::IsNullOrEmpty($hashedit.Media_Track_textbox.text) -and -not [string]::IsNullOrEmpty($profile.Track_Number)){
+      $hashedit.Media_Track_textbox.text = $profile.Track_Number 
+    }elseif([string]::IsNullOrEmpty($hashedit.Media_Track_textbox.text) -and -not [string]::IsNullOrEmpty($profile.TrackNumber)){
+      $hashedit.Media_Track_textbox.text = $profile.TrackNumber 
+    }
+    #disc_number
+    if([string]::IsNullOrEmpty($hashedit.Media_Disc_textbox.text) -and -not [string]::IsNullOrEmpty($profile.disc_number) -and $profile.disc_number -ne 'true' -and $profile.disc_number -ne 'false'){
+      $hashedit.Media_Disc_textbox.text = $profile.disc_number          
+    } 
+  }
+  catch{
+    write-ezlogs "An exception occurred in update-Details" -showtime -catcherror $_
+  }
+}     
+#---------------------------------------------- 
+#endregion Update-Details Function
+#----------------------------------------------
 
 #---------------------------------------------- 
 #region Show-ProfileEditor Function
@@ -653,379 +1026,7 @@ function Show-ProfileEditor{
       return      
     }
 
-    #---------------------------------------------- 
-    #region Update-Details Function
-    #----------------------------------------------      
-    function Update-Details{    
-      param (
-        $profile,
-        $hashedit = $hashedit,
-        $textFields,
-        $ValidFields,
-        $type,
-        $VerboseLog = $VerboseLog
-      ) 
-      try{
-        $properties = ($profile | Select-Object *).psobject.properties     
-        foreach($property in $properties){
-          if((!$hashedit."Media_$($property.name)_Label")){
-            $grid = [System.Windows.Controls.Grid]::new()
-            $column1 = [System.Windows.Controls.ColumnDefinition]::new()
-            $column2 = [System.Windows.Controls.ColumnDefinition]::new()
-            $column1.Width = "145"
-            $grid.ColumnDefinitions.add($column1)
-            $grid.ColumnDefinitions.add($column2)                  
-            if($textFields -contains $property.TypeNameOfValue){
-              if($VerboseLog){write-ezlogs ">>>> Creating text property ($($property.name)) with value $($property.value)" -showtime -VerboseDebug:$VerboseLog}
-              $hashedit."Media_$($property.name)_Label" = [System.Windows.Controls.Label]::new()
-              $hashedit."Media_$($property.name)_Label".Name = "Media_$($property.name)_Label"
-              $hashedit."Media_$($property.name)_Label".Margin="5,0,0,5"
-              #$hashedit."Media_$($property.name)_Label".BorderBrush="Red"
-              $hashedit."Media_$($property.name)_Label".Foreground="#FFC6CFD0"
-              $hashedit."Media_$($property.name)_Label".BorderThickness="0,0,0,0"
-              $hashedit."Media_$($property.name)_Label".HorizontalAlignment="Left"
-              $hashedit."Media_$($property.name)_Label".Content = $((Get-Culture).textinfo.totitlecase($($Property.Name).tolower()))
-              $hashedit."Media_$($property.name)_Label".SetValue([System.Windows.Controls.Grid]::ColumnProperty,0)
-              $null = $grid.AddChild($hashedit."Media_$($property.name)_Label") 
-              if($Property.Name -match 'bitrate'){
-                $value = "$($property.value) Kbps"
-              }elseif($Property.Name -match 'SampleRate'){
-                $value = "$($property.value) Hz"
-              }elseif($Property.Name -match 'FileSize' -or $Property.Name -match 'Size'){
-                $value = "$($property.value) MB"
-              }else{
-                $value = $($property.value)
-              }
-              if($type -eq 'Local' -and $Property.Name -eq 'Url' -and [system.io.file]::Exists($($property.value))){
-                $hashedit.Media_FileName_textbox.isEnabled = $true
-                $hashedit.FileName_Button.isEnabled = $true
-                $hashedit.Media_FileName_textbox.text = $([System.IO.Path]::GetFileName($property.value))              
-                $hashedit.Media_FileName_textbox.tag = $property.value
-              }
-              if($(Test-ValidPath $property.value)){
-                #Clickable link
-                try{
-                  if($VerboseLog){write-ezlogs ">>>> Creating clickable link property ($($property.name)) with value $($property.value) - Value Type: $($($property.value).gettype()) - Test-URL $(Test-URL $property.value)" -showtime -VerboseDebug:$VerboseLog}
-                  $hashedit."Media_$($property.name)_textbox" = [System.Windows.Controls.TextBlock]::new()
-                  $hashedit."Media_$($property.name)_textbox".Margin="8,0,0,5"
-                  $link_hyperlink = [System.Windows.Documents.Hyperlink]::new()
-                  $link_hyperlink.Foreground = "LightGreen"
-                  $link_hyperlink.ToolTip = $property.value
-                  $Null = $link_hyperlink.Inlines.add("$($property.value)")
-                  $null = $hashedit."Media_$($property.name)_textbox".addChild($link_hyperlink)
-                  $uri = [system.uri]::new($property.value)                 
-                  $link_hyperlink.NavigateUri = $uri
-                  $Null = $link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
-                  $Null = $link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)                                                     
-                }catch{
-                  write-ezlogs "An exception occurred creating clickable link for property ($($property.name)) with value $($property.value)" -showtime -catcherror $_
-                }
-              }else{
-                $hashedit."Media_$($property.name)_textbox" = [System.Windows.Controls.Textbox]::new()                            
-                $hashedit."Media_$($property.name)_textbox".BorderThickness="0,0,0,0"
-                $hashedit."Media_$($property.name)_textbox".Margin="3,0,0,5"
-                $hashedit."Media_$($property.name)_textbox".isReadOnly = $true                     
-                $hashedit."Media_$($property.name)_textbox".text = $value 
-              }
-              if($hashedit."Media_$($property.name)_textbox"){
-                $hashedit."Media_$($property.name)_textbox".TextWrapping = "Wrap" 
-                $hashedit."Media_$($property.name)_textbox".Foreground="#FFC6CFD0"
-                $hashedit."Media_$($property.name)_textbox".Background="Transparent"
-                $hashedit."Media_$($property.name)_textbox".HorizontalAlignment="Left" 
-                $hashedit."Media_$($property.name)_textbox".MinWidth="50"            
-                $hashedit."Media_$($property.name)_textbox".Name = "Media_$($property.name)_textbox"           
-                $hashedit."Media_$($property.name)_textbox".SetValue([System.Windows.Controls.Grid]::ColumnProperty,1)
-                $null = $grid.AddChild($hashedit."Media_$($property.name)_textbox") 
-              }
-            }   
-            if($property.TypeNameOfValue -eq 'System.Boolean'){
-              if($VerboseLog){write-ezlogs ">>>> Creating Boolean property ($($property.name)) with value $($property.value)" -showtime -VerboseDebug:$VerboseLog}
-              $hashedit."Media_$($property.name)_Label" = [System.Windows.Controls.Label]::new()
-              $hashedit."Media_$($property.name)_Label".Name = "Media_$($property.name)_Label"
-              $hashedit."Media_$($property.name)_Label".Margin="5,0,0,5"
-              #$hashedit."Media_$($property.name)_Label".BorderBrush="Red"
-              $hashedit."Media_$($property.name)_Label".BorderThickness="0,0,0,0"
-              $hashedit."Media_$($property.name)_Label".HorizontalAlignment="Left"
-              $hashedit."Media_$($property.name)_Label".Content = $((Get-Culture).textinfo.totitlecase($($Property.Name).tolower()))
-              $hashedit."Media_$($property.name)_Label".SetValue([System.Windows.Controls.Grid]::ColumnProperty,0)
-              $null = $grid.AddChild($hashedit."Media_$($property.name)_Label") 
-              $hashedit."Media_$($property.name)_CheckBox" = [System.Windows.Controls.CheckBox]::new()
-              $hashedit."Media_$($property.name)_CheckBox".Name = "Media_$($property.name)_CheckBox"
-              $hashedit."Media_$($property.name)_CheckBox".Margin="7,0,0,5"
-              $hashedit."Media_$($property.name)_CheckBox".IsEnabled = $false
-              $hashedit."Media_$($property.name)_CheckBox".isChecked = $($property.value)
-              $hashedit."Media_$($property.name)_CheckBox".HorizontalAlignment="Left"
-              $hashedit."Media_$($property.name)_CheckBox".Background="Transparent"
-              $hashedit."Media_$($property.name)_CheckBox".SetValue([System.Windows.Controls.Grid]::ColumnProperty,1)
-              $null = $grid.AddChild($hashedit."Media_$($property.name)_CheckBox") 
-            }                            
-            if($hashedit.Details_StackPanel.Children -notcontains $grid){
-              $null = $hashedit.Details_StackPanel.addChild($grid)
-            }
-          }elseif($hashedit."Media_$($property.name)_Label" -and $hashedit."Media_$($property.name)_textbox"){
-            if($VerboseLog){write-ezlogs ">>>> Setting existing property ($($property.name)) to value $($property.value)" -showtime -VerboseDebug:$VerboseLog}
-            if($property.Name -match 'bitrate'){
-              $value = "$($property.value) Kbps"
-            }elseif($property.Name -match 'SampleRate'){
-              $value = "$($property.value) Hz"
-            }elseif($property.Name -match 'FileSize' -or $property.Name -match 'Size'){
-              $value = "$($property.value) MB"
-            }else{
-              $value = $($property.value)
-            }
-            if($(Test-ValidPath $property.value)){
-              #Clickable link
-              $uri = [system.uri]::new($property.value)
-              $link_hyperlink = [System.Windows.Documents.Hyperlink]::new()
-              $link_hyperlink.NavigateUri = $uri
-              $link_hyperlink.ToolTip = $property.value
-              $link_hyperlink.Foreground = "LightGreen"
-              $Null = $link_hyperlink.Inlines.add($property.value)
-              $Null = $link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
-              $Null = $link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
-              $null = $hashedit."Media_$($property.name)_textbox".Text = ''
-              $null = $hashedit."Media_$($property.name)_textbox".addChild($link_hyperlink)
-            }elseif($hashedit."Media_$($property.name)_textbox".gettype().name -eq 'RichTextBox'){              
-              $hashedit."Media_$($property.name)_textbox".document.blocks.clear()
-              $Paragraph = [System.Windows.Documents.Paragraph]::new()
-              $RichTextRange = [System.Windows.Documents.Run]::new()       
-              $RichTextRange.AddText($property.value)
-              $Paragraph.Inlines.add($RichTextRange)
-              $null = $hashedit."Media_$($property.name)_textbox".Document.Blocks.Add($Paragraph)            
-            }else{
-              $hashedit."Media_$($property.name)_textbox".text = $($property.value)
-            }
-          }
-        }
-        $obj_properties = (($properties | Where-Object {$_.TypeNameofValue -eq 'System.Object' -or $_.TypeNameofValue -eq 'Deserialized.System.Object[]' -or $_.TypeNameofValue -eq 'Deserialized.System.Management.Automation.PSCustomObject' -or $_.TypeNameOfValue -eq 'Deserialized.System.Object'}))
-
-        #$sub_properties = (($properties | where {$_.TypeNameofValue -eq 'System.Object' -or $_.TypeNameofValue -eq 'Deserialized.System.Object[]' -or $_.TypeNameofValue -eq 'Deserialized.System.Management.Automation.PSCustomObject'}).value | select *).psobject.properties | where {$_.isSettable}
-        if($obj_properties){    
-          foreach($property in $obj_properties){
-            $sub_properties = ($property.value | Select-Object *).psobject.properties
-            if($VerboseLog){write-ezlogs ">>>> Creating new object sub-properties for ($($property.name)) -- sub-properties for ($($sub_properties.Name))" -showtime -VerboseDebug:$VerboseLog}
-            foreach($sub_property in $sub_properties){             
-              $sub_property_name = "$($property.name)_$($sub_property.name)"
-              if($VerboseLog){write-ezlogs "| Sub_Property Name: $sub_property_name" -showtime -VerboseDebug:$VerboseLog}
-              if(!$hashedit."Media_$($sub_property_name)_Label"){
-                if($VerboseLog){write-ezlogs "| Creating new field: $sub_property_name" -showtime -VerboseDebug:$VerboseLog}
-                $grid = [System.Windows.Controls.Grid]::new()
-                $column1 = [System.Windows.Controls.ColumnDefinition]::new()
-                $column2 = [System.Windows.Controls.ColumnDefinition]::new()
-                $column1.Width = "145"
-                $grid.ColumnDefinitions.add($column1)
-                $grid.ColumnDefinitions.add($column2) 
-                if($textFields -contains $sub_property.TypeNameOfValue){
-                  if($VerboseLog){write-ezlogs "| Creating new sub-property ($($sub_property_name)) with value $($sub_property.value)" -showtime -VerboseDebug:$VerboseLog}
-                  $row = [System.Windows.Controls.RowDefinition]::new()
-                  $grid.rowDefinitions.add($row)
-                  $rownumber = ($grid.rowDefinitions.Count - 1)
-                  $hashedit."Media_$($sub_property_name)_Label" = [System.Windows.Controls.Label]::new()
-                  $hashedit."Media_$($sub_property_name)_Label".Name = "Media_$($sub_property_name)_Label"
-                  $hashedit."Media_$($sub_property_name)_Label".Margin="5,0,0,5"
-                  #$hashedit."Media_$($property.name)_Label".BorderBrush="Red"
-                  $hashedit."Media_$($sub_property_name)_Label".BorderThickness="0,0,0,0"
-                  $hashedit."Media_$($sub_property_name)_Label".Foreground="#FFC6CFD0"                 
-                  $hashedit."Media_$($sub_property_name)_Label".HorizontalAlignment="Left"
-                  $hashedit."Media_$($sub_property_name)_Label".Content = "$($((Get-Culture).textinfo.totitlecase($($Property.Name).tolower()))).$($((Get-Culture).textinfo.totitlecase($($sub_property.Name).tolower())))"
-                  $hashedit."Media_$($sub_property_name)_Label".SetValue([System.Windows.Controls.Grid]::RowProperty,$rownumber)
-                  $hashedit."Media_$($sub_property_name)_Label".SetValue([System.Windows.Controls.Grid]::ColumnProperty,0)
-                  $null = $grid.AddChild($hashedit."Media_$($sub_property_name)_Label")
-                  if($sub_property.Name -match 'bitrate'){
-                    $value = "$($sub_property.value) Kbps"
-                  }elseif($sub_property.Name -match 'SampleRate'){
-                    $value = "$($sub_property.value) Hz"
-                  }elseif($sub_property.Name -match 'FileSize' -or $sub_property.Name -match 'Size'){
-                    $value = "$($sub_property.value) MB"
-                  }else{
-                    $value = $($sub_property.value)
-                  }
-                  if($(Test-ValidPath $sub_property.value)){
-                    #Clickable link
-                    try{
-                      $hashedit."Media_$($sub_property_name)_textbox" = [System.Windows.Controls.TextBlock]::new()
-                      $hashedit."Media_$($sub_property_name)_textbox".Margin="8,0,0,5"
-                      $link_hyperlink = [System.Windows.Documents.Hyperlink]::new()
-                      $link_hyperlink.ToolTip = $sub_property.value
-                      $link_hyperlink.Foreground = "LightGreen"
-                      $Null = $link_hyperlink.Inlines.add("$($sub_property.value)")
-                      $null = $hashedit."Media_$($sub_property_name)_textbox".addChild($link_hyperlink)
-                      $uri = [system.uri]::new($sub_property.value)                    
-                      $link_hyperlink.NavigateUri = $uri
-                      $Null = $link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
-                      $Null = $link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)                                           
-                    }catch{
-                      write-ezlogs "An exception occurred creating clickable link for property ($($sub_property_name)) with value $($sub_property.value)" -showtime -catcherror $_
-                    }
-                  }else{
-                    $hashedit."Media_$($sub_property_name)_textbox" = [System.Windows.Controls.Textbox]::new()
-                    $hashedit."Media_$($sub_property_name)_textbox".BorderThickness="0,0,0,0"    
-                    $hashedit."Media_$($sub_property_name)_textbox".Margin="3,0,0,5" 
-                    $hashedit."Media_$($sub_property_name)_textbox".isReadOnly = $true       
-                    $hashedit."Media_$($sub_property_name)_textbox".text = $value 
-                  }
-                  if($hashedit."Media_$($sub_property_name)_textbox"){
-                    $hashedit."Media_$($sub_property_name)_textbox".MinWidth="50"
-                    $hashedit."Media_$($sub_property_name)_textbox".Foreground="#FFC6CFD0"
-                    $hashedit."Media_$($sub_property_name)_textbox".TextWrapping = "Wrap"           
-                    $hashedit."Media_$($sub_property_name)_textbox".HorizontalAlignment="Left"
-                    $hashedit."Media_$($sub_property_name)_textbox".Background="Transparent"          
-                    $hashedit."Media_$($sub_property_name)_textbox".Name = "Media_$($sub_property_name)_textbox"
-                    $hashedit."Media_$($sub_property_name)_textbox".SetValue([System.Windows.Controls.Grid]::RowProperty,$rownumber)
-                    $hashedit."Media_$($sub_property_name)_textbox".SetValue([System.Windows.Controls.Grid]::ColumnProperty,1)
-                    $null = $grid.AddChild($hashedit."Media_$($sub_property_name)_textbox") 
-                  }
-                }
-                if($sub_property.TypeNameOfValue -eq 'System.Boolean'){
-                  if($VerboseLog){write-ezlogs ">>>> Creating Boolean property ($($sub_property.name)) with value $($sub_property.value)" -showtime -VerboseDebug:$VerboseLog}
-                  $hashedit."Media_$($sub_property_name)_Label" = [System.Windows.Controls.Label]::new()
-                  $hashedit."Media_$($sub_property_name)_Label".Name = "Media_$($sub_property_name)_Label"
-                  $hashedit."Media_$($sub_property_name)_Label".Margin="5,0,0,5"
-                  #$hashedit."Media_$($property.name)_Label".BorderBrush="Red"
-                  $hashedit."Media_$($sub_property_name)_Label".BorderThickness="0,0,0,0"
-                  $hashedit."Media_$($sub_property_name)_Label".HorizontalAlignment="Left"
-                  $hashedit."Media_$($sub_property_name)_Label".Content = $((Get-Culture).textinfo.totitlecase($($sub_property.Name).tolower()))
-                  $hashedit."Media_$($sub_property_name)_Label".SetValue([System.Windows.Controls.Grid]::ColumnProperty,0)
-                  $null = $grid.AddChild($hashedit."Media_$($sub_property_name)_Label") 
-                  $hashedit."Media_$($sub_property_name)_CheckBox" = [System.Windows.Controls.CheckBox]::new()
-                  $hashedit."Media_$($sub_property_name)_CheckBox".Name = "Media_$($sub_property_name)_CheckBox"
-                  $hashedit."Media_$($sub_property_name)_CheckBox".Margin="7,0,0,5"
-                  $hashedit."Media_$($sub_property_name)_CheckBox".IsEnabled = $false
-                  $hashedit."Media_$($sub_property_name)_CheckBox".isChecked = $($sub_property.value)
-                  $hashedit."Media_$($sub_property_name)_CheckBox".HorizontalAlignment="Left"
-                  $hashedit."Media_$($sub_property_name)_CheckBox".Background="Transparent"
-                  $hashedit."Media_$($sub_property_name)_CheckBox".SetValue([System.Windows.Controls.Grid]::ColumnProperty,1)
-                  $null = $grid.AddChild($hashedit."Media_$($sub_property_name)_CheckBox") 
-                }
-                if($sub_property.TypeNameOfValue -eq 'System.Object' -or $sub_property.TypeNameOfValue -eq 'Deserialized.System.Object[]' -or $sub_property.TypeNameOfValue -eq 'Deserialized.System.Management.Automation.PSCustomObject' -or $sub_property.TypeNameOfValue -eq 'Deserialized.System.Object'){
-                  if($VerboseLog){write-ezlogs ">>>> Creating object sublvl2-property ($($sub_property.name)) with value $($sub_property.value)" -showtime -VerboseDebug:$VerboseLog}
-                  $sublvl2_properties = (($sub_property).value | Select-Object *).psobject.properties
-                  foreach($sublvl2_property in $sublvl2_properties){                            
-                    $sublvl2_property_name = "$($sub_property.name)_$($sublvl2_property.name)"
-                    if(!$hashedit."Media_$($sublvl2_property_name)_Label"){
-                      $grid = [System.Windows.Controls.Grid]::new()
-                      $column1 = [System.Windows.Controls.ColumnDefinition]::new()
-                      $column2 = [System.Windows.Controls.ColumnDefinition]::new()
-                      $column1.Width = "145"
-                      $grid.ColumnDefinitions.add($column1)
-                      $grid.ColumnDefinitions.add($column2) 
-                      if($textFields -contains $sublvl2_property.TypeNameOfValue){
-                        if($VerboseLog){write-ezlogs "| Creating new sublvl2-property ($($sublvl2_property_name)) with value $($sublvl2_property.value)" -showtime -VerboseDebug:$VerboseLog}
-                        $row = [System.Windows.Controls.RowDefinition]::new()
-                        $grid.rowDefinitions.add($row)
-                        $rownumber = ($grid.rowDefinitions.Count - 1)
-                        $hashedit."Media_$($sublvl2_property_name)_Label" = [System.Windows.Controls.Label]::new()
-                        $hashedit."Media_$($sublvl2_property_name)_Label".Name = "Media_$($sublvl2_property_name)_Label"
-                        $hashedit."Media_$($sublvl2_property_name)_Label".Margin="5,0,0,5"
-                        $hashedit."Media_$($sublvl2_property_name)_Label".BorderThickness="0,0,0,0"
-                        $hashedit."Media_$($sublvl2_property_name)_Label".Foreground="#FFC6CFD0"                 
-                        $hashedit."Media_$($sublvl2_property_name)_Label".HorizontalAlignment="Left"
-                        $hashedit."Media_$($sublvl2_property_name)_Label".Content = "$($((Get-Culture).textinfo.totitlecase($($sub_Property.Name).tolower()))).$($((Get-Culture).textinfo.totitlecase($($sublvl2_property.Name).tolower())))"
-                        $hashedit."Media_$($sublvl2_property_name)_Label".SetValue([System.Windows.Controls.Grid]::RowProperty,$rownumber)
-                        $hashedit."Media_$($sublvl2_property_name)_Label".SetValue([System.Windows.Controls.Grid]::ColumnProperty,0)
-                        $null = $grid.AddChild($hashedit."Media_$($sublvl2_property_name)_Label")
-                        if($sublvl2_property.Name -match 'bitrate'){
-                          $value = "$($sublvl2_property.value) Kbps"
-                        }elseif($sublvl2_property.Name -match 'SampleRate'){
-                          $value = "$($sublvl2_property.value) Hz"
-                        }elseif($sublvl2_property.Name -match 'FileSize' -or $sublvl2_property.Name -match 'Size'){
-                          $value = "$($sublvl2_property.value) MB"
-                        }else{
-                          $value = $($sublvl2_property.value)
-                        }
-                        if($(Test-ValidPath $sublvl2_property.value)){
-                          #Clickable link
-                          $uri = [system.uri]::new($sublvl2_property.value)
-                          $link_hyperlink = [System.Windows.Documents.Hyperlink]::new()
-                          $link_hyperlink.NavigateUri = $uri
-                          $link_hyperlink.ToolTip = $sublvl2_property.value
-                          $link_hyperlink.Foreground = "LightGreen"
-                          $Null = $link_hyperlink.Inlines.add($sublvl2_property.value)
-                          $Null = $link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
-                          $Null = $link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
-                          $hashedit."Media_$($sublvl2_property_name)_textbox" = [System.Windows.Controls.TextBlock]::new()
-                          $hashedit."Media_$($sublvl2_property_name)_textbox".Margin="8,0,0,5"
-                          $null = $hashedit."Media_$($sublvl2_property_name)_textbox".addChild($link_hyperlink)
-                        }else{
-                          $hashedit."Media_$($sublvl2_property_name)_textbox" = [System.Windows.Controls.Textbox]::new()
-                          $hashedit."Media_$($sublvl2_property_name)_textbox".BorderThickness="0,0,0,0"    
-                          $hashedit."Media_$($sublvl2_property_name)_textbox".Margin="3,0,0,5" 
-                          $hashedit."Media_$($sublvl2_property_name)_textbox".isReadOnly = $true       
-                          $hashedit."Media_$($sublvl2_property_name)_textbox".text = $value 
-                        }
-                        $hashedit."Media_$($sublvl2_property_name)_textbox".MinWidth="50"
-                        $hashedit."Media_$($sublvl2_property_name)_textbox".Foreground="#FFC6CFD0"
-                        $hashedit."Media_$($sublvl2_property_name)_textbox".TextWrapping = "Wrap"           
-                        $hashedit."Media_$($sublvl2_property_name)_textbox".HorizontalAlignment="Left"
-                        $hashedit."Media_$($sublvl2_property_name)_textbox".Background="Transparent"          
-                        $hashedit."Media_$($sublvl2_property_name)_textbox".Name = "Media_$($sublvl2_property_name)_textbox"
-                        $hashedit."Media_$($sublvl2_property_name)_textbox".SetValue([System.Windows.Controls.Grid]::RowProperty,$rownumber)
-                        $hashedit."Media_$($sublvl2_property_name)_textbox".SetValue([System.Windows.Controls.Grid]::ColumnProperty,1)
-                        $null = $grid.AddChild($hashedit."Media_$($sublvl2_property_name)_textbox") 
-                      }
-
-                    }
-                  }
-                }                
-                if($hashedit.Details_StackPanel.Children -notcontains $grid){
-                  $null = $hashedit.Details_StackPanel.addChild($grid)
-                }
-              }elseif($hashedit."Media_$($sub_property_name)_Label" -and $hashedit."Media_$($sub_property_name)_textbox"){
-                if($VerboseLog){write-ezlogs ">>>> Updating existing sub-property ($($sub_property_name)) from value $($hashedit."Media_$($sub_property_name)_textbox".text) to value $($sub_property.value)" -showtime -VerboseDebug:$VerboseLog}
-                if($sub_property.Name -match 'bitrate'){
-                  $value = "$($sub_property.value) Kbps"
-                }elseif($sub_property.Name -match 'SampleRate'){
-                  $value = "$($sub_property.value) Hz"
-                }elseif($sub_property.Name -match 'FileSize' -or $sub_property.Name -match 'Size'){
-                  $value = "$($sub_property.value) MB"
-                }else{
-                  $value = $($sub_property.value)
-                }
-                if([system.io.file]::Exists($($sub_property.value)) -or [System.IO.Directory]::Exists($($sub_property.value)) -or (Test-URL $($sub_property.value))){
-                  #Clickable link
-                  $uri = [system.uri]::new($sub_property.value)
-                  $link_hyperlink = [System.Windows.Documents.Hyperlink]::new()
-                  $link_hyperlink.NavigateUri = $uri
-                  $link_hyperlink.ToolTip = $sub_property.value
-                  $link_hyperlink.Foreground = "LightGreen"
-                  $Null = $link_hyperlink.Inlines.add($sub_property.value)
-                  $Null = $link_hyperlink.RemoveHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
-                  $Null = $link_hyperlink.AddHandler([System.Windows.Documents.Hyperlink]::ClickEvent,$hashedit.Hyperlink_RequestNavigate)
-                  $null = $hashedit."Media_$($sub_property_name)_textbox".Text = ''
-                  $null = $hashedit."Media_$($sub_property_name)_textbox".addChild($link_hyperlink)
-                }else{              
-                  $hashedit."Media_$($sub_property_name)_textbox".text = $value
-                }
-              }                      
-            } 
-          }
-        }
-        #Year
-        if(-not [string]::IsNullOrEmpty($profile.release_date)){
-          $hashedit.Media_Year_textbox.text = $profile.release_date        
-        }elseif(-not [string]::IsNullOrEmpty($profile.SongInfo.Year)){
-          $hashedit.Media_Year_textbox.text = $profile.SongInfo.Year 
-        }     
-        #TrackNumber
-        if(-not [string]::IsNullOrEmpty($profile.SongInfo.TrackNumber) -and $profile.SongInfo.TrackNumber -ne 'true' -and $profile.SongInfo.TrackNumber -ne 'false'){
-          $hashedit.Media_Track_textbox.text = $profile.SongInfo.TrackNumber         
-        }elseif([string]::IsNullOrEmpty($hashedit.Media_Track_textbox.text) -and -not [string]::IsNullOrEmpty($profile.Track_Number)){
-          $hashedit.Media_Track_textbox.text = $profile.Track_Number 
-        }elseif([string]::IsNullOrEmpty($hashedit.Media_Track_textbox.text) -and -not [string]::IsNullOrEmpty($profile.TrackNumber)){
-          $hashedit.Media_Track_textbox.text = $profile.TrackNumber 
-        }
-        #disc_number
-        if([string]::IsNullOrEmpty($hashedit.Media_Disc_textbox.text) -and -not [string]::IsNullOrEmpty($profile.disc_number) -and $profile.disc_number -ne 'true' -and $profile.disc_number -ne 'false'){
-          $hashedit.Media_Disc_textbox.text = $profile.disc_number          
-        } 
-      }
-      catch{
-        write-ezlogs "An exception occurred in update-Details" -showtime -catcherror $_
-      }
-    }     
-    #---------------------------------------------- 
-    #endregion Update-Details Function
-    #----------------------------------------------
+ 
 
     $ValidFields = @(
       'Number'
@@ -1858,25 +1859,28 @@ function Show-ProfileEditor{
           $hashedit.Profile_Editor_Progress_Ring.isActive = $true
           $hashedit.Editor_TabControl.isEnabled = $false
           if($type -eq 'Local'){
-            #$All_LocalMedia_Profile_File_Path = [System.IO.Path]::Combine($thisApp.config.Media_Profile_Directory,"All-MediaProfile","All-Media-Profile.xml")
-            if($synchash.MediaTable.ItemsSource.SourceCollection -and $syncHash.MediaTable.ItemsSource.SourceCollection.count -gt 0){
+            if($synchash.All_local_Media.count -gt 0){
+              $LibraryMediaProfile = $synchash.All_local_Media.where({$_.id -eq $profile.id})
+            }elseif($synchash.MediaTable.ItemsSource.SourceCollection -and $syncHash.MediaTable.ItemsSource.SourceCollection.count -gt 0){
               $LibraryMediaProfile = ($syncHash.MediaTable.ItemsSource.SourceCollection.where({$_.id -eq $profile.id})) 
             }
           }elseif($type -eq 'Spotify'){
             if($synchash.All_Spotify_Media.count -gt 0){
-              #$LibraryMediaProfile = $synchash.All_Spotify_Media[$profile.id]
               $LibraryMediaProfile = $synchash.All_Spotify_Media.where({$_.id -eq $profile.id})
             }elseif($synchash.SpotifyTable.ItemsSource.SourceCollection -and $syncHash.SpotifyTable.ItemsSource.SourceCollection.count -gt 0){
               $LibraryMediaProfile = ($syncHash.SpotifyTable.ItemsSource.SourceCollection.where({$_.id -eq $profile.id})) 
             }                      
           }elseif($type -eq 'Youtube'){
-            #$AllYoutube_Media_Profile_File_Path = [System.IO.Path]::Combine($thisApp.config.Media_Profile_Directory,"All-Youtube_MediaProfile","All-Youtube_Media-Profile.xml") 
-            if($synchash.YoutubeTable.ItemsSource.SourceCollection -and $syncHash.YoutubeTable.ItemsSource.SourceCollection.count -gt 0){
+            if($synchash.All_Youtube_Media.count -gt 0){
+              $LibraryMediaProfile = $synchash.All_Youtube_Media.where({$_.id -eq $profile.id})
+            }elseif($synchash.YoutubeTable.ItemsSource.SourceCollection -and $syncHash.YoutubeTable.ItemsSource.SourceCollection.count -gt 0){
               $LibraryMediaProfile = ($syncHash.YoutubeTable.ItemsSource.SourceCollection.where({$_.id -eq $profile.id}))  
             }       
           }elseif($type -eq 'Twitch'){
             $AllTwitch_Media_Profile_File_Path = [System.IO.Path]::Combine($thisApp.config.Media_Profile_Directory,"All-Twitch_MediaProfile","All-Twitch_Media-Profile.xml") 
-            if($syncHash.TwitchTable.ItemsSource.SourceCollection.count -gt 0){
+            if($synchash.All_Twitch_Media.count -gt 0){
+              $LibraryMediaProfile = $synchash.All_Twitch_Media.where({$_.id -eq $profile.id})
+            }elseif($syncHash.TwitchTable.ItemsSource.SourceCollection.count -gt 0){
               $LibraryMediaProfile = ($syncHash.TwitchTable.ItemsSource.SourceCollection.where({$_.id -eq $profile.id})) 
             }                 
           } 
@@ -1887,7 +1891,11 @@ function Show-ProfileEditor{
             write-ezlogs "Unable to find media to edit in library profiles, media may be orphaned!" -showtime -Warning
             $LibraryMediaProfile = $media_to_edit
           }   
-                                
+          if($synchash.all_Playlists.Playlist_tracks.values.url){
+            $playlist_track =  Get-IndexesOf -Array $synchash.all_Playlists.Playlist_tracks.values.url -Value $profile.url | & { process {
+                $synchash.all_Playlists.Playlist_tracks.values[$_]
+            }}
+          }       
           #Title        
           if(-not [string]::IsNullOrEmpty($hashedit.Media_title_textbox.text)){
             $TitleValue = ($hashedit.Media_title_textbox.text).trim()
@@ -1898,105 +1906,93 @@ function Show-ProfileEditor{
             $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
             $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashedit.Window,"Missing Required Field!","The title field cannot be blank, please update and try again",$okandCancel,$Button_Settings)
             return
-          }
-          if($type -eq 'Local'){
-            <#            if($profile.SongInfo){
-                Add-Member -InputObject $profile.SongInfo -Name "title" -Value $TitleValue -MemberType NoteProperty -Force
-            }#>
-            <#            if($Media_to_edit.SongInfo.title){
-                Add-Member -InputObject $Media_to_edit.SongInfo -Name "title" -Value $TitleValue -MemberType NoteProperty -Force
-            }#>
           }         
           if($profile.id){
-            $profile.title = $TitleValue
-            #Add-Member -InputObject $profile -Name "name" -Value $TitleValue -MemberType NoteProperty -Force
+            $profile.title = "$TitleValue"
           }                                      
           if($Media_to_edit.id){
-            $Media_to_edit.title = $TitleValue
-            #Add-Member -InputObject $Media_to_edit -Name "name" -Value $TitleValue -MemberType NoteProperty -Force
+            $Media_to_edit.title = "$TitleValue"
           } 
           if($LibraryMediaProfile.id){
             foreach($media in $LibraryMediaProfile){
-              $media.title = $TitleValue
-              #$media.name = $TitleValue        
+              $media.title = "$TitleValue"      
             }
-          }                       
+          }
+          if($playlist_track.id){
+            foreach($media in $playlist_track){
+              $media.title = "$TitleValue"
+            }
+          }                     
           #Artist        
           if(-not [string]::IsNullOrEmpty($hashedit.Media_Artist_textbox.text)){
             $ArtistValue = ($hashedit.Media_Artist_textbox.text).trim()
           }else{
             $ArtistValue = $Null
-          }
-          if($type -eq 'Local'){
-            <#            if($profile.SongInfo){
-                Add-Member -InputObject $profile.SongInfo -Name "Artist" -Value $ArtistValue -MemberType NoteProperty -Force
-                }
-                if($Media_to_edit.SongInfo){
-                Add-Member -InputObject $Media_to_edit.SongInfo -Name "Artist" -Value $ArtistValue -MemberType NoteProperty -Force
-            }#>  
           }   
           if($profile.Artist){
-            $profile.Artist = $ArtistValue
+            $profile.Artist = "$ArtistValue"
           }               
           if($Media_to_edit.id){
-            $Media_to_edit.Artist = $ArtistValue
+            $Media_to_edit.Artist = "$ArtistValue"
+          }
+          if($Media_to_edit.Display_name){
+            $Media_to_edit.Display_name = $null
+          }
+          if($profile.Display_name){
+            $profile.Display_name = $null
           }
           if($LibraryMediaProfile.id){
             foreach($media in $LibraryMediaProfile){
-              $media.Artist = $ArtistValue    
+              $media.Artist = "$ArtistValue"
+              if($media.display_Name){
+                $media.display_Name = $Null
+              }
             }
             write-ezlogs "Updating librarymediaprofile artist $($ArtistValue)" -showtime
           }
-          if($type -eq 'Spotify'){
-            if($profile.artists){
-              Add-Member -InputObject $profile.artists -Name "Name" -Value $ArtistValue -MemberType NoteProperty -Force
+          if($playlist_track.id){
+            foreach($media in $playlist_track){
+              $media.Artist = "$ArtistValue"
+              if($media.display_Name){
+                $media.display_Name = $Null
+              }
             }
-            if($Media_to_edit.artists){
-              Add-Member -InputObject $Media_to_edit.artists -Name "Name" -Value $ArtistValue -MemberType NoteProperty -Force
-            }
-          } 
+          }
+
           if($type -eq 'Twitch'){
             if($profile){
-              Add-Member -InputObject $profile -Name "Channel_Name" -Value $ArtistValue -MemberType NoteProperty -Force 
+              $Profile.Channel_Name = "$ArtistValue"
             }               
             if($Media_to_edit){
-              Add-Member -InputObject $Media_to_edit -Name "Channel_Name" -Value $ArtistValue -MemberType NoteProperty -Force 
+              $Media_to_edit.Channel_Name = "$ArtistValue"
             }
-          }                                           
-         
+          }                                                   
           #Album        
           if(-not [string]::IsNullOrEmpty($hashedit.Media_Album_textbox.text)){
             $AlbumValue = ($hashedit.Media_Album_textbox.text).trim()
           }else{
             $AlbumValue = $null
-          } 
-          if($type -eq 'Local'){
-            <#            if($profile.SongInfo){
-                Add-Member -InputObject $profile.SongInfo -Name "Album" -Value $AlbumValue -MemberType NoteProperty -Force
-                }
-                if($Media_to_edit.SongInfo){
-                Add-Member -InputObject $Media_to_edit.SongInfo -Name "Album" -Value $AlbumValue -MemberType NoteProperty -Force
-            } #>                      
           }
-          if($type -eq 'Spotify'){
-            if($profile.Album_Info){
-              Add-Member -InputObject $profile.Album_Info -Name "Name" -Value $AlbumValue -MemberType NoteProperty -Force
-            }
-            if($Media_to_edit.Album_Info){
-              Add-Member -InputObject $Media_to_edit.Album_Info -Name "Name" -Value $AlbumValue -MemberType NoteProperty -Force
-            }
-          }
-          if($profile.id){
-            $profile.Album = $AlbumValue
+          if($profile.id -and $profile.Album -ne $AlbumValue){
+            $profile.Album = "$AlbumValue"
           }         
-          if($Media_to_edit.id){
-            $Media_to_edit.Album = $AlbumValue
+          if($Media_to_edit.id -and $Media_to_edit.Album -ne $AlbumValue){
+            $Media_to_edit.Album = "$AlbumValue"
           } 
           if($LibraryMediaProfile.id){
             foreach($media in $LibraryMediaProfile){
-              $media.Album = $AlbumValue    
+              if($media.Album -ne $AlbumValue){
+                $media.Album = "$AlbumValue"
+              }
             }
-          }                                         
+          } 
+          if($playlist_track.id){
+            foreach($media in $playlist_track){
+              if($media.Album -ne $AlbumValue){
+                $media.Album = "$AlbumValue"
+              }
+            }
+          }                                                  
           #Track
           if(-not [string]::IsNullOrEmpty($hashedit.Media_Track_textbox.text)){
             $TrackValue = ($hashedit.Media_Track_textbox.text).trim()
@@ -2004,125 +2000,56 @@ function Show-ProfileEditor{
             $TrackValue = $Null
           }
           if($type -eq 'Local'){
-            <#            if($profile.SongInfo){
-                Add-Member -InputObject $profile.SongInfo -Name "TrackNumber" -Value $TrackValue -MemberType NoteProperty -Force
-                }
-                if($Media_to_edit.SongInfo){
-                Add-Member -InputObject $Media_to_edit.SongInfo -Name "TrackNumber" -Value $TrackValue -MemberType NoteProperty -Force
-            }#>
             if($LibraryMediaProfile.id){
               foreach($media in $LibraryMediaProfile){
-                $media.Track = $TrackValue    
+                if($media.Track -ne $TrackValue){
+                  $media.Track = $TrackValue
+                }
               }
             }
-            <#            if($LibraryMediaProfile.SongInfo.TrackNumber){
-                foreach($media in $LibraryMediaProfile){
-                $media.SongInfo.TrackNumber = $TrackValue    
+            if($playlist_track.id){
+              foreach($media in $playlist_track){
+                if($media.Track -ne $TrackValue){
+                  $media.Track = $TrackValue
                 }
-                #$LibraryMediaProfile.SongInfo.TrackNumber = $hashedit.Media_Track_textbox.text
-                #Add-Member -InputObject $LibraryMediaProfile.SongInfo -Name "TrackNumber" -Value $hashedit.Media_Track_textbox.text -MemberType NoteProperty -Force
-            }#>
-            Add-Member -InputObject $profile -Name "Track" -Value $TrackValue -MemberType NoteProperty -Force
-            Add-Member -InputObject $Media_to_edit -Name "Track" -Value $TrackValue -MemberType NoteProperty -Force
+              }
+            }
           }
           if($type -eq 'Spotify' -or $type -eq 'Youtube'){    
-            if($profile.id){
-              Add-Member -InputObject $profile -Name "track" -Value $hashedit.Media_Track_textbox.text -MemberType NoteProperty -Force
+            if($profile.id -and $profile.track -ne $hashedit.Media_Track_textbox.text){
+              $profile.track = $hashedit.Media_Track_textbox.text
             }         
-            if($Media_to_edit.id){
-              Add-Member -InputObject $Media_to_edit -Name "track" -Value $hashedit.Media_Track_textbox.text -MemberType NoteProperty -Force
+            if($Media_to_edit.id -and $Media_to_edit.track -ne $hashedit.Media_Track_textbox.text){
+              $Media_to_edit.track = $hashedit.Media_Track_textbox.text
             } 
             if($LibraryMediaProfile.id){
               foreach($media in $LibraryMediaProfile){
-                $media.track = $hashedit.Media_Track_textbox.text  
+                if($media.track -ne $hashedit.Media_Track_textbox.text){
+                  $media.track = $hashedit.Media_Track_textbox.text  
+                }
               }
-            }                           
+            }
+            if($playlist_track.id){
+              foreach($media in $playlist_track){
+                if($media.track -ne $hashedit.Media_Track_textbox.text){
+                  $media.track = $hashedit.Media_Track_textbox.text  
+                }
+              }
+            }                                    
           }                                                     
           #Disc
-          if(-not [string]::IsNullOrEmpty($hashedit.Media_Disc_textbox.text)){
-            $discValue = ($hashedit.Media_Disc_textbox.text).trim()
-          }else{
-            $discValue = $Null
-          }  
-          if($type -eq 'Local'){
-            <#            if($profile.SongInfo){
-                Add-Member -InputObject $profile.SongInfo -Name "DiscNumber" -Value $discValue -MemberType NoteProperty -Force
-                }
-                if($Media_to_edit.SongInfo){
-                Add-Member -InputObject $Media_to_edit.SongInfo -Name "DiscNumber" -Value $discValue -MemberType NoteProperty -Force
-            }#>
-            <#            if($LibraryMediaProfile.id){
-                foreach($media in $LibraryMediaProfile){
-                Add-Member -InputObject $media -Name "Disc" -Value $discValue -MemberType NoteProperty -Force
-                }
-            }#>
-            <#            if(-not [string]::IsNullOrEmpty($LibraryMediaProfile.SongInfo.DiscNumber)){
-                foreach($media in $LibraryMediaProfile){
-                Add-Member -InputObject $media.SongInfo -Name "DiscNumber" -Value $discValue -MemberType NoteProperty -Force  
-                }
-            }#>
-            #Add-Member -InputObject $profile -Name "Disc" -Value $discValue -MemberType NoteProperty -Force
-            #Add-Member -InputObject $Media_to_edit -Name "Disc" -Value $discValue -MemberType NoteProperty -Force
-          }
-          <#          if($type -eq 'Spotify' -or $type -eq 'Youtube'){    
-              if($profile.id){
-              Add-Member -InputObject $profile -Name "Disc_number" -Value $discValue -MemberType NoteProperty -Force
-              }         
-              if($Media_to_edit.id){
-              Add-Member -InputObject $Media_to_edit -Name "Disc_number" -Value $discValue -MemberType NoteProperty -Force
-              } 
-              if($LibraryMediaProfile.id){
-              foreach($media in $LibraryMediaProfile){
-              Add-Member -InputObject $media -Name "Disc_number" -Value $discValue -MemberType NoteProperty -Force
-              }
-              }                           
-          }#>                                                     
+          <#          if(-not [string]::IsNullOrEmpty($hashedit.Media_Disc_textbox.text)){
+              $discValue = ($hashedit.Media_Disc_textbox.text).trim()
+              }else{
+              $discValue = $Null
+          } #>                                                     
                  
           #Year
-          if(-not [string]::IsNullOrEmpty($hashedit.Media_Year_textbox.text)){
-            $YearValue = ($hashedit.Media_Year_textbox.text).trim()
-          }else{
-            $YearValue = $Null
-          }
-          if($type -eq 'Local'){
-            <#            if($profile.SongInfo){
-                Add-Member -InputObject $profile.SongInfo -Name "Year" -Value $YearValue -MemberType NoteProperty -Force
-                }
-                if($Media_to_edit.SongInfo){
-                Add-Member -InputObject $Media_to_edit.SongInfo -Name "Year" -Value $YearValue -MemberType NoteProperty -Force
-            }#>
-            <#            if($LibraryMediaProfile.SongInfo){
-                foreach($media in $LibraryMediaProfile){
-                write-ezlogs "media.SongInfo.Year $($media.SongInfo.Year)" -showtime                 
-                $media.SongInfo.Year = $YearValue
-                #Add-Member -InputObject $media.SongInfo -Name "Year" -Value $hashedit.Media_Year_textbox.text -MemberType NoteProperty -Force
-                }
-            }#>                                                            
-          }
-          <#          if($type -eq 'Spotify'){
-              if($profile.release_date){
-              Add-Member -InputObject $profile -Name "release_date" -Value $YearValue -MemberType NoteProperty -Force
-              }
-              if($Media_to_edit.release_date){
-              Add-Member -InputObject $Media_to_edit -Name "release_date" -Value $YearValue -MemberType NoteProperty -Force
-              }                          
+          <#          if(-not [string]::IsNullOrEmpty($hashedit.Media_Year_textbox.text)){
+              $YearValue = ($hashedit.Media_Year_textbox.text).trim()
+              }else{
+              $YearValue = $Null
           }#>
-          #youtube doesnt have year, so create new property
-          <#          if($type -eq 'Youtube'){
-              if($profile.id){
-              Add-Member -InputObject $profile -Name "Year" -Value $YearValue -MemberType NoteProperty -Force
-              }         
-              if($Media_to_edit.id){
-              Add-Member -InputObject $Media_to_edit -Name "Year" -Value $YearValue -MemberType NoteProperty -Force
-              }
-              if($LibraryMediaProfile.id){
-              foreach($media in $LibraryMediaProfile){
-              Add-Member -InputObject $media -Name "Year" -Value $YearValue -MemberType NoteProperty -Force
-              }
-              #Add-Member -InputObject $LibraryMediaProfile -Name "Year" -Value $hashedit.Media_Year_textbox.text -MemberType NoteProperty -Force
-              }                           
-          }#>         
-       
           #Description
           $RichTextRange2 = [System.Windows.Documents.textrange]::new($hashedit.Media_Description_textbox.Document.ContentStart, $hashedit.Media_Description_textbox.Document.ContentEnd)
           if(-not [string]::IsNullOrEmpty($RichTextRange2.text)){
@@ -2141,61 +2068,97 @@ function Show-ProfileEditor{
               foreach($media in $LibraryMediaProfile){              
                 $media.Description = $DescriptionValue
               }
-            }                                                            
+            }    
+            if($playlist_track){
+              foreach($media in $playlist_track){              
+                $media.Description = $DescriptionValue
+              }
+            }                                                                    
           }
           if($type -eq 'Spotify'){
-            if($profile){
-              Add-Member -InputObject $profile -Name "Description" -Value $DescriptionValue -MemberType NoteProperty -Force
+            if($profile.description -ne $DescriptionValue){
+              $profile.description = $DescriptionValue
             }
-            if($Media_to_edit){
-              Add-Member -InputObject $Media_to_edit -Name "Description" -Value $DescriptionValue -MemberType NoteProperty -Force
-            }                          
+            if($Media_to_edit.description -ne $DescriptionValue){
+              $Media_to_edit.description = $DescriptionValue
+            }
+            if($playlist_track){
+              foreach($media in $playlist_track){              
+                $media.Description = $DescriptionValue
+              }
+            }                                      
           }
           if($type -eq 'Youtube'){
-            if($profile.id){
-              Add-Member -InputObject $profile -Name "Description" -Value $DescriptionValue -MemberType NoteProperty -Force
+            if($profile.id -and $profile.description -ne $DescriptionValue){
+              $profile.description = $DescriptionValue
             }         
-            if($Media_to_edit.id){
-              Add-Member -InputObject $Media_to_edit -Name "Description" -Value $DescriptionValue -MemberType NoteProperty -Force
+            if($Media_to_edit.id -and $Media_to_edit.description -ne $DescriptionValue){
+              $Media_to_edit.description = $DescriptionValue
             }
             if($LibraryMediaProfile.id){
               foreach($media in $LibraryMediaProfile){
-                Add-Member -InputObject $media -Name "Description" -Value $DescriptionValue -MemberType NoteProperty -Force
+                if($media.description -ne $DescriptionValue){
+                  $media.description = $DescriptionValue
+                }
               }
-            }                           
+            }  
+            if($playlist_track.id){
+              foreach($media in $playlist_track){
+                if($media.description -ne $DescriptionValue){
+                  $media.description = $DescriptionValue
+                }
+              }
+            }                                     
           }         
                    
           #FileName
           if(-not [string]::IsNullOrEmpty($hashedit.Media_FileName_textbox.text) -and $type -eq 'Local'){
             $filename = Rename-LocalMediaFile -FileTextBoxControl $hashedit.Media_FileName_textbox -profile_Path $profile_Path
             if([system.io.file]::Exists($filename)){
-              if($profile){
-                Add-Member -InputObject $profile -Name "url" -Value $filename -MemberType NoteProperty -Force
+              if($profile -and $profile.url -ne $filename){
+                $profile.url = $filename
               }
-              if($Media_to_edit){
-                Add-Member -InputObject $Media_to_edit -Name "url" -Value $filename -MemberType NoteProperty -Force
+              if($Media_to_edit -and $Media_to_edit.url -ne $filename){
+                $Media_to_edit.url = $filename
               }
               if($LibraryMediaProfile.id){
                 foreach($media in $LibraryMediaProfile){
-                  $media.url = $filename    
+                  if($media.url -ne $filename){
+                    $media.url = $filename
+                  } 
                 }
               } 
+              if($playlist_track.id){
+                foreach($media in $playlist_track){
+                  if($media.url -ne $filename){
+                    $media.url = $filename
+                  } 
+                }
+              }
             }elseif($filename){
               write-ezlogs "| FileName/URL is the same" -showtime
               if(-not [string]::IsNullOrEmpty($hashedit.Media_url_textbox.text)){
                 if($profile.url -ne $hashedit.Media_url_textbox.text){
                   write-ezlogs "| Changing profile.url from $($profile.url) to $($hashedit.Media_url_textbox.text)" -showtime
-                  Add-Member -InputObject $profile -Name "url" -Value $hashedit.Media_url_textbox.text -MemberType NoteProperty -Force
+                  $profile.url = $hashedit.Media_url_textbox.text
                 }
                 if($Media_to_edit.url -ne $hashedit.Media_url_textbox.text){
                   write-ezlogs "| Changing Media_to_edit.url from $($Media_to_edit.url) to $($hashedit.Media_url_textbox.text)" -showtime
-                  Add-Member -InputObject $Media_to_edit -Name "url" -Value $hashedit.Media_url_textbox.text -MemberType NoteProperty -Force
+                  $Media_to_edit.url = $hashedit.Media_url_textbox.text
                 }
                 if($LibraryMediaProfile.id){
                   foreach($media in $LibraryMediaProfile){
                     if($media.url -ne $hashedit.Media_url_textbox.text){
                       write-ezlogs "| Changing LibraryMediaProfile from $($media.url) to $($hashedit.Media_url_textbox.text)" -showtime
-                      Add-Member -InputObject $media -Name "url" -Value $hashedit.Media_url_textbox.text -MemberType NoteProperty -Force
+                      $media.url = $hashedit.Media_url_textbox.text
+                    }
+                  }
+                }
+                if($playlist_track.id){
+                  foreach($media in $playlist_track){
+                    if($media.url -ne $hashedit.Media_url_textbox.text){
+                      write-ezlogs "| Changing playlist_track from $($media.url) to $($hashedit.Media_url_textbox.text)" -showtime
+                      $media.url = $hashedit.Media_url_textbox.text
                     }
                   }
                 }
@@ -2240,68 +2203,44 @@ function Show-ProfileEditor{
               $old_Spotify_id = $Media_to_edit.id
             }
             if($profile){
-              Add-Member -InputObject $profile -Name "url" -Value $uri_property -MemberType NoteProperty -Force
-              #Add-Member -InputObject $profile -Name "uri" -Value $uri_property -MemberType NoteProperty -Force             
-              #Add-Member -InputObject $profile -Name "External_url" -Value $weburl_property -MemberType NoteProperty -Force             
-              if($profile.external_urls){
-                #Add-Member -InputObject $profile.external_urls -Name "spotify" -Value $weburl_property -MemberType NoteProperty -Force
+              if($profile.url -ne $uri_property){
+                $profile.url = $uri_property
               }
-              #Add-Member -InputObject $profile -Name "id" -Value $spotify_id -MemberType NoteProperty -Force
-              Add-Member -InputObject $profile -Name "Spotify_id" -Value $spotify_id -MemberType NoteProperty -Force
+              if($profile.Spotify_id -ne $spotify_id){
+                $profile.Spotify_id = $spotify_id
+              }
             }
             if($Media_to_edit){
-              Add-Member -InputObject $Media_to_edit -Name "url" -Value $uri_property -MemberType NoteProperty -Force
-              #Add-Member -InputObject $Media_to_edit -Name "uri" -Value $uri_property -MemberType NoteProperty -Force          
-              #Add-Member -InputObject $Media_to_edit -Name "External_url" -Value $weburl_property -MemberType NoteProperty -Force             
-              if($Media_to_edit.external_urls){
-                #Add-Member -InputObject $Media_to_edit.external_urls -Name "spotify" -Value $weburl_property -MemberType NoteProperty -Force
+              if($Media_to_edit.url -ne $uri_property){
+                $Media_to_edit.url = $uri_property
               }
-              #Add-Member -InputObject $Media_to_edit -Name "id" -Value $spotify_id -MemberType NoteProperty -Force
-              Add-Member -InputObject $Media_to_edit -Name "Spotify_id" -Value $spotify_id -MemberType NoteProperty -Force
+              if($Media_to_edit.Spotify_id -ne $spotify_id){
+                $Media_to_edit.Spotify_id = $spotify_id
+              }
             }
             if($LibraryMediaProfile.id){
               foreach($media in $LibraryMediaProfile){
-                $media.url = $uri_property 
-                $media.Spotify_id = $spotify_id  
-                #$media.uri = $uri_property
+                if($media.url -ne $uri_property){
+                  $media.url = $uri_property
+                }
+                if($media.Spotify_id -ne $spotify_id){
+                  $media.Spotify_id = $spotify_id
+                }
+              }
+            }
+            if($playlist_track.id){
+              foreach($media in $playlist_track){
+                if($media.url -ne $uri_property){
+                  $media.url = $uri_property
+                }
+                if($media.Spotify_id -ne $spotify_id){
+                  $media.Spotify_id = $spotify_id
+                }
               }
             }
           }
           if($type -eq 'Youtube'){
             if($urlValue -match 'youtube\.com' -or $urlValue -match 'youtu\.be'){
-              <#              if($urlValue -match '\/tv\.youtube\.com\/'){
-                  if($urlValue -match '\%3D\%3D'){
-                  $urlValue = $urlValue -replace '\%3D\%3D'
-                  }
-                  if($urlValue -match '\?vp='){
-                  $youtube_vp = ($($urlValue) -split('\?vp='))[1].trim()
-                  $youtube_id = [regex]::matches($urlValue, "tv.youtube.com\/watch\/(?<value>.*)\?vp\=")| %{$_.groups[1].value}
-                  }elseif($urlValue -match '\?v='){
-                  $youtube_id = [regex]::matches($urlValue, "tv.youtube.com\/watch\?v=(?<value>.*)")| %{$_.groups[1].value}
-                  }elseif($urlValue){
-                  $youtube_id = [regex]::matches($urlValue, "tv.youtube.com\/watch\/(?<value>.*)")| %{$_.groups[1].value}
-                  }
-                  $youtube_type = 'YoutubeTV'   
-                  }elseif($urlValue -match "v="){
-                  $youtube_id = ($($urlValue) -split('v='))[1].trim()  
-                  $youtube_type = 'Video' 
-                  write-ezlogs "| Youtube type: Video" -showtime -logtype Youtube -loglevel 3        
-                  }elseif($urlValue -match 'list='){
-                  $youtube_id = ($($urlValue) -split('list='))[1].trim()    
-                  $youtube_type = 'Playlist'                      
-                  }elseif($urlValue -match '\/channel\/'){
-                  if($urlValue -match '\/videos'){
-                  $playlist = $playlist -replace '\/videos'
-                  }
-                  $youtube_id = ($($playlist) -split('\/channel\/'))[1].trim() 
-                  $youtube_type = 'Channel'   
-                  }elseif($urlValue -match "\/watch\/"){
-                  $youtube_id = [regex]::matches($urlValue, "\/watch\/(?<value>.*)")| %{$_.groups[1].value}
-                  $youtube_type = 'Video'
-                  }elseif($urlValue -notmatch "v=" -and $urlValue -notmatch '\?' -and $urlValue -notmatch '\&'){
-                  $youtube_id = (([uri]$urlValue).segments | select -last 1) -replace '/',''
-                  $youtube_type = 'Video'
-              }#>
               $youtube = Get-YoutubeURL -thisApp $thisApp -URL $urlValue
             }
             if(!$youtube.url -or (!$youtube.id -and !$youtube.playlist_id)){
@@ -2313,7 +2252,6 @@ function Show-ProfileEditor{
               $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashedit.Window,"Invalid Youtube URL!","$message`n`nYoutube track URls must match one of the following formats:`n - https://www.youtube.com/watch?v=ormQQG2UhtQ`n - https://www.youtube.com/watch/ormQQG2UhtQ`n - https://tv.youtube.com/watch/ormQQG2UhtQ`n - https://tv.youtube.com/watch?v=ormQQG2UhtQ`n - All above but domain as youtu.be vs youtube.com",$okandCancel,$Button_Settings)
               return
             }else{
-              #[uri]$url_property = $urlValue
               $urlValue = $youtube.url
               $old_youtube_id = $Media_to_edit.id    
               if($youtube.id){
@@ -2332,6 +2270,12 @@ function Show-ProfileEditor{
             }
             if($LibraryMediaProfile.id){
               foreach($media in $LibraryMediaProfile){
+                $media.url = $urlValue
+                $media.id = $youtube_id
+              }
+            }
+            if($playlist_track.id){
+              foreach($media in $playlist_track){
                 $media.url = $urlValue
                 $media.id = $youtube_id
               }
@@ -2357,20 +2301,20 @@ function Show-ProfileEditor{
               $chat_url = "https://twitch.tv/$($twitch_channel)/chat"
             }   
             if($profile){
-              Add-Member -InputObject $profile -Name "url" -Value $urlValue -MemberType NoteProperty -Force
-              Add-Member -InputObject $profile -Name "chat_url" -Value $chat_url -MemberType NoteProperty -Force
-              Add-Member -InputObject $profile -Name "Playlist_URL" -Value $urlValue -MemberType NoteProperty -Force
-              Add-Member -InputObject $profile -Name "Channel_Name" -Value $twitch_channel -MemberType NoteProperty -Force
-              Add-Member -InputObject $profile -Name "Playlist" -Value $twitch_channel -MemberType NoteProperty -Force
-              Add-Member -InputObject $profile -Name "Name" -Value $twitch_channel -MemberType NoteProperty -Force            
+              $Profile.url = $urlValue
+              $Profile.chat_url = $chat_url
+              $Profile.Playlist_URL = $urlValue
+              $Profile.Channel_Name = $twitch_channel
+              $Profile.Playlist = $twitch_channel
+              $Profile.Name = $twitch_channel      
             }
             if($Media_to_edit){
-              Add-Member -InputObject $Media_to_edit -Name "url" -Value $urlValue -MemberType NoteProperty -Force
-              Add-Member -InputObject $Media_to_edit -Name "chat_url" -Value $chat_url -MemberType NoteProperty -Force
-              Add-Member -InputObject $Media_to_edit -Name "Playlist_URL" -Value $urlValue -MemberType NoteProperty -Force
-              Add-Member -InputObject $Media_to_edit -Name "Channel_Name" -Value $twitch_channel -MemberType NoteProperty -Force
-              Add-Member -InputObject $Media_to_edit -Name "Playlist" -Value $twitch_channel -MemberType NoteProperty -Force
-              Add-Member -InputObject $Media_to_edit -Name "Name" -Value $twitch_channel -MemberType NoteProperty -Force
+              $Media_to_edit.url = $urlValue
+              $Media_to_edit.chat_url = $chat_url
+              $Media_to_edit.Playlist_URL = $urlValue
+              $Media_to_edit.Channel_Name = $twitch_channel
+              $Media_to_edit.Playlist = $twitch_channel
+              $Media_to_edit.Name = $twitch_channel 
             }
             if($LibraryMediaProfile.id){
               foreach($media in $LibraryMediaProfile){
@@ -2382,37 +2326,41 @@ function Show-ProfileEditor{
                 $media.Name = $twitch_channel
               }
             }
-          } 
-          Add-Member -InputObject $profile -Name "Profile_Date_Modified" -Value $(Get-Date -Format 'MM-dd-yyyy hh:mm:ss:tt') -MemberType NoteProperty -Force   
-          try{
-            if(-not [string]::IsNullOrEmpty($old_Spotify_id)){
-              $Lookup_id = $old_Spotify_id
-            }elseif(-not [string]::IsNullOrEmpty($old_youtube_id)){
-              $Lookup_id = $old_youtube_id
-            }else{
-              $Lookup_id = $media_to_edit.id
+            if($playlist_track.id){
+              foreach($media in $playlist_track){
+                $media.url = $urlValue    
+                $media.chat_url = $chat_url
+                $media.Playlist_URL = $urlValue
+                $media.Channel_Name = $twitch_channel
+                $media.Playlist = $twitch_channel
+                $media.Name = $twitch_channel
+              }
             }
+          }
+          try{
+            <#            if(-not [string]::IsNullOrEmpty($old_Spotify_id)){
+                $Lookup_id = $old_Spotify_id
+                }elseif(-not [string]::IsNullOrEmpty($old_youtube_id)){
+                $Lookup_id = $old_youtube_id
+                }else{
+                $Lookup_id = $media_to_edit.id
+            }#>
             if($profile_Path){
-              write-ezlogs ">>>> Saving All Media Profile to $($profile_Path)" -loglevel 2    
+              write-ezlogs ">>>> Saving All Media Profile to $($profile_Path)" -loglevel 2
               Export-SerializedXML -InputObject $All_Media_Profile -path $profile_Path            
             }      
           }catch{
             write-ezlogs "Exception Saving profile to $($profile_Path)" -showtime -catcherror $_
-          }          
-          if($LibraryMediaProfile){
-            write-ezlogs "| Updated Library Media Profile: $($LibraryMediaProfile | out-string)" -showtime -loglevel 3
-          }else{
-            write-ezlogs "Could not find Library Media Profile to update!" -showtime -warning
           }                                                           
           try{
             Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
-            #Export-Clixml -InputObject $thisapp.config -path $thisapp.config.Config_Path -Force -Encoding UTF8
           }catch{
             write-ezlogs "An exception occurred saving settings to config file: $($thisapp.config.Config_Path)" -CatchError $_ -showtime
           }
 
           #$synchash.Import_Playlists_Cache = $false
-          Update-Playlist -media $profile -media_lookupid $Lookup_id -synchash $synchash -thisApp $thisApp -Updateall     
+          #Update-Playlist -media $profile -media_lookupid $Lookup_id -synchash $synchash -thisApp $thisApp -Updateall
+          Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -Quick_Refresh
           $synchash.update_status_timer.tag = $type             
           $synchash.update_status_timer.start()               
  
@@ -2430,10 +2378,6 @@ function Show-ProfileEditor{
           $hashedit.Save_status_textblock.foreground = "LightGreen"
           $hashedit.Save_status_transitioningControl.content = $hashedit.Save_status_textblock     
         }catch{
-          #$hashedit.Profile_Editor_Progress_Ring.isActive = $false
-          #$hashedit.Editor_TabControl.isEnabled = $true
-          #$hashedit.Save_status_textblock.text = "An exception occurred when saving the profile!`n$_"
-          #$hashedit.Save_status_textblock.foreground = "Red"
           write-ezlogs "An exception occurred when saving the profile: $($profile_Path)" -CatchError $_ -showtime
           update-EditorHelp -Header 'SAVE ERROR' -RichTextBoxControl $hashedit.EditorHelpFlyout -color Tomato -Clear
           update-EditorHelp -content "An exception occurred when saving the profile: $($profile_Path)" -RichTextBoxControl $hashedit.EditorHelpFlyout -color Tomato -Open
@@ -2444,16 +2388,21 @@ function Show-ProfileEditor{
     #----------------------------------------------    
     
     $hashedit.Window.Add_loaded({
+        Param($Sender)
         try{
-          $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($hashedit.Window)         
+          #Register window to installed application ID
+          $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($Sender)
           if($thisApp.Config.Installed_AppID){
             $appid = $thisApp.Config.Installed_AppID
           }else{
-            $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID 
-            Add-Member -InputObject $thisapp.config -Name 'Installed_AppID' -Value $appid -MemberType NoteProperty -Force
-          }     
-          $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
-          $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)
+            $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
+          }
+          if($Window_Helper.Handle -and $appid){
+            $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
+            write-ezlogs -text ">>>> Registering ProfileEditor window handle: $($Window_Helper.Handle) -- to appid: $appid" -Dev_mode
+            $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)
+            $thisApp.Config.Installed_AppID = $appid
+          }
         }catch{
           write-ezlogs "An exception occurred in hashedit.window.add_loaded" -catcherror $_ 
         }
@@ -2475,28 +2424,26 @@ function Show-ProfileEditor{
           if($hashedit.appContext){
             $hashedit.appContext.ExitThread()
             $hashedit.appContext.dispose()       
-            $hashedit.appContext = $Null     
+            $hashedit.appContext = $Null
           }
+          [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
+          [Void](Get-EventHandlers -Element $sender -RoutedEvent ([MahApps.Metro.Controls.MetroWindow]::LoadedEvent) -RemoveHandlers)
+          [Void](Get-EventHandlers -Element $sender -RoutedEvent ([MahApps.Metro.Controls.MetroWindow]::UnloadedEvent) -RemoveHandlers)
+          if($hashedit.Save_Profile_Button){
+            [void][System.Windows.Data.BindingOperations]::ClearAllBindings($hashedit.Save_Profile_Button)
+            [Void](Get-EventHandlers -Element $hashedit.Save_Profile_Button -RoutedEvent ([System.Windows.Controls.Button]::ClickEvent) -RemoveHandlers)
+          }
+          if($hashedit.Cancel_Setup_Button){
+            [void][System.Windows.Data.BindingOperations]::ClearAllBindings($hashedit.Cancel_Setup_Button)
+            [Void](Get-EventHandlers -Element $hashedit.Cancel_Setup_Button -RoutedEvent ([System.Windows.Controls.Button]::ClickEvent) -RemoveHandlers)
+          }                
           $hashedit.Window = $Null
+          $hashedit = $Null
           write-ezlogs "Profile editor unloaded" -loglevel 2 -GetMemoryUsage -forceCollection                      
         }catch{
           write-ezlogs "An exception occurred in ProfileEditor.add_Unloaded" -showtime -catcherror $_
         } 
-    })     
-    $hashedit.ProfileEditor.add_closed({     
-        param($Sender)          
-        try{  
-          $hashedit.EditorHelpFlyout = $Null 
-          $this = $Null          
-        }catch{
-          write-ezlogs "An exception occurred closing Show-ProfileEditor window" -showtime -catcherror $_
-        }
-        try{
-          #$synchash.window.Dispatcher.Invoke("Normal",[action]{ $window_active = $synchash.Window.Activate()  })         
-        }catch{
-          write-ezlogs "An exception occurred closing Show-ProfileEditor window" -showtime -catcherror $_
-        }      
-    })   
+    })  
   
     try{    
       [System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($hashedit.Window)
@@ -2518,7 +2465,7 @@ function Show-ProfileEditor{
   }
   try{    
     $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
-    $Null = Start-Runspace $hashedit_Scriptblock -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -runspace_name 'Show_ProfileEditor_Runspace' -logfile $thisApp.Config.Log_File -verboselog:$thisApp.Config.Verbose_logging -thisApp $thisApp  
+    $Null = Start-Runspace $hashedit_Scriptblock -Variable_list $Variable_list -StartRunspaceJobHandler -synchash $synchash -runspace_name 'Show_ProfileEditor_Runspace' -logfile $thisApp.Config.Log_File -verboselog:$thisApp.Config.Verbose_logging -thisApp $thisApp
     $Variable_list = $Null
   }catch{
     write-ezlogs "An exception occurred starting ProfileEditor_Runspace" -showtime -catcherror $_
@@ -2527,4 +2474,4 @@ function Show-ProfileEditor{
 #---------------------------------------------- 
 #endregion Show-ProfileEditor Function
 #----------------------------------------------
-Export-ModuleMember -Function @('Show-ProfileEditor','Close-ProfileEditor')
+Export-ModuleMember -Function @('Show-ProfileEditor','Close-ProfileEditor','Update-Details')

@@ -27,7 +27,7 @@
 		RightWindowCommandsOverlayBehavior="HiddenTitleBar"		
         ShowInTaskbar ="false" 
 		MinHeight="300"
-	    MaxWidth="500" SizeToContent="Height" ResizeMode = "NoResize"  >
+	    MaxWidth="800" SizeToContent="Height" ResizeMode = "NoResize"  >
 		<Window.Background>
             <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                 <GradientStop Color="Black" Offset="0"/>

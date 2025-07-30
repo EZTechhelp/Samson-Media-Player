@@ -3,7 +3,7 @@
     Samson
 
     .Version
-    1.0.3
+    1.0.4
 
     .Build
     PUBLIC
@@ -451,7 +451,21 @@ try{
 
   #Load helper assembly, contains primary data classes and many other helpers
   if(-not [bool]('Media' -as [Type])){
-    [void][System.Reflection.Assembly]::LoadFrom("$Current_folder\Assembly\EZT-MediaPlayer\EZT_MediaPlayer.dll")
+    if($PSVersionTable.PSVersion.Major -le 5){
+      try {
+        $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName("$Current_folder\Assembly\EZT-MediaPlayer\EZT_MediaPlayer.dll")
+        if($assemblyName.Flags -eq 'PublicKey'){
+          [void][System.Reflection.Assembly]::Load($assemblyName)
+        }else{
+          [void][System.Reflection.Assembly]::LoadFrom("$Current_folder\Assembly\EZT-MediaPlayer\EZT_MediaPlayer.dll")
+        }         
+      } catch {
+        write-ezlogs "Fallback to Loading assembly ($assemblyName) from path: $Current_folder\Assembly\EZT-MediaPlayer\EZT_MediaPlayer.dll" -Warning
+        [void][System.Reflection.Assembly]::LoadFrom("$Current_folder\Assembly\EZT-MediaPlayer\EZT_MediaPlayer.dll")
+      }
+    }else{
+      [void][System.Reflection.Assembly]::LoadFrom("$Current_folder\Assembly\EZT-MediaPlayer\EZT_MediaPlayer.dll")
+    }
   }
   #Convert old config to new format if exists
   Import-Module -Name "$Current_folder\Modules\PSSerializedXML\PSSerializedXML.psm1" -NoClobber -DisableNameChecking
@@ -870,8 +884,9 @@ try{
     $thisApp.Config.Vlc_Verbose_logging = '3'
     $thisApp.Config.Streamlink_Verbose_logging = 'debug'
   }else{
-    #TODO: Implement setting UI option for: $thisapp.config.Vlc_Verbose_logging
-    $thisApp.Config.Vlc_Verbose_logging = '1'
+    if([string]::IsNullOrEmpty($thisApp.Config.Vlc_Verbose_logging)){
+      $thisApp.Config.Vlc_Verbose_logging = '0'
+    }
     if([string]::IsNullOrEmpty($thisApp.Config.Streamlink_Verbose_logging)){
       $thisApp.Config.Streamlink_Verbose_logging = 'info'
     }
@@ -1130,7 +1145,12 @@ $Initialize_Vlc_timer_Event = {
     }elseif($Startup_Playback -and $thisApp.Config.Current_playing_media.id){
       $synchash.Now_Playing_Title_Label.DataContext = 'LOADING...'
       write-ezlogs -text ">>>> Resuming previously playing media on startup for: $($thisApp.Config.Current_playing_media.title)"
-      Start-Media -Media $thisApp.Config.Current_playing_media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -start_Paused:$thisApp.Config.Start_Paused -Startup
+      if($thisApp.Config.Current_playing_media.Source -in 'Spotify'){
+        Start-SpotifyMedia -Media $thisApp.Config.Current_playing_media -thisApp $thisApp -synchash $synchash -use_WebPlayer:$thisApp.config.Spotify_WebPlayer -Show_notifications:$thisApp.config.Show_notifications -RestrictedRunspace:$thisApp.config.Spotify_WebPlayer
+      }else{
+        write-ezlogs -text ">>>> Resuming previously playing media on startup for: $($thisApp.Config.Current_playing_media.title)"
+        Start-Media -Media $thisApp.Config.Current_playing_media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -start_Paused:$thisApp.Config.Start_Paused -Startup
+      }
     }
     $Initialize_VLC_Measure.stop()
     write-ezlogs -text 'Initialize_VLC Startup' -PerfTimer $Initialize_VLC_Measure
@@ -2376,6 +2396,46 @@ $LocalMedia_Startup_Timer_Tick = {
                 $_.isHidden = $true
               }
           }}
+          #TODO: Dynamically generate columns
+          [Media].GetProperties() | where-object {($_.PropertyType -eq [string] -or $_.PropertyType -eq [bool] -or $_.PropertyType -eq [int] -or $_.PropertyType -eq [System.Nullable`1[System.DateTime]]) -and $_.Name -notmatch 'Number|ToolTip|Margin|AllowDrop|IsExpanded|Border|Font'} | Sort-Object -Property Name | & { process {
+              if($_.Name -notin $synchash.MediaTable.Columns.MappingName){
+                if($VerboseLog){write-ezlogs ">>>> Adding column to game grid: $($_.Name)"}
+                if($_.PropertyType -eq [System.Nullable`1[System.DateTime]]){
+                  $Column = [Syncfusion.UI.Xaml.Grid.GridDateTimeColumn]::new()
+                  $DateTimeFormatInfo = [System.Globalization.DateTimeFormatInfo]::new()
+                  $DateTimeFormatInfo.ShortDatePattern = "MM/dd/yyyy hh:mm:ss"
+                  $Column.DateTimeFormat = $DateTimeFormatInfo
+                  $Column.FilterRowEditorType = "DateTime"
+                  $Column.AllowEditing = $False
+                  $Column.MinimumWidth = "115"
+                  $Column.IsReadOnly = $true
+                  $Column.AllowNullValue = $True
+                  $Column.NullText="NA"
+                }else{
+                  $Column = [Syncfusion.UI.Xaml.Grid.GridTextColumn]::new()
+                }
+                $GridFactory =[System.Windows.FrameworkElementFactory]::new([Windows.Controls.Grid])
+                $TextBlockFactory = [System.Windows.FrameworkElementFactory]::new([Windows.Controls.TextBlock])
+                $Binding = [System.Windows.Data.Binding]::new("Value")
+                [Void]$TextBlockFactory.SetBinding([Windows.Controls.TextBlock]::TextProperty,$Binding)
+                [Void]$TextBlockFactory.SetValue([Windows.Controls.TextBlock]::VerticalAlignmentProperty, [System.Windows.VerticalAlignment]::Center)
+                [Void]$TextBlockFactory.SetValue([Windows.Controls.TextBlock]::HorizontalAlignmentProperty, [System.Windows.HorizontalAlignment]::Center)
+                [Void]$GridFactory.AppendChild($TextBlockFactory)
+                $dataTemplate = [System.Windows.DataTemplate]::new()
+                $dataTemplate.VisualTree = $GridFactory
+                $Column.CellTemplate = $dataTemplate 
+                $Column.MappingName = $_.Name
+                $Column.UseBindingValue = $true
+                $Column.AllowSorting = $true
+                $Column.AllowFiltering = $true
+                $Column.SetCellBoundValue = $true
+                if($Column.MappingName -notin $thisApp.Config.LocalMedia_Library_Columns){
+                  $Column.isHidden = $true
+                }
+                [Void]$synchash.MediaTable.Columns.add($Column) 
+              }
+          }}
+
           $synchash.Mediatable.Columns.Resume()
         }
         if($synchash.Media_ContextMenu){
@@ -2535,6 +2595,7 @@ if($synchash.LocalMedia_Column_Button){
               $MenuItem = [System.Windows.Controls.MenuItem]::new()
               $MenuItem.IsCheckable = $true
               $MenuItem.Header = $Header
+              $MenuItem.StaysOpenOnClick = $true
               if($_.isHidden){
                 $MenuItem.IsChecked = $false
               }else{
@@ -2578,6 +2639,15 @@ if($synchash.LocalMedia_Column_Button){
                     $thisApp.Config.LocalMedia_Library_Columns = $ActiveColumns
                   }catch{
                     write-ezlogs -text "An exception occurred in add_Unchecked for menuitem: $($this.Header)" -CatchError $_
+                  }
+              })
+              $MenuItem.Add_Unloaded({
+                  Param($sender)
+                  try{
+                    [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
+                    [Void](Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Controls.MenuItem]::UnloadedEvent) -RemoveHandlers)
+                  }catch{
+                    write-ezlogs -text "An exception occurred in add_Unloaded for menuitem: $($this.Header)" -CatchError $_
                   }
               })
               [Void]$synchash.LocalMedia_Column_Button.items.add($MenuItem)
@@ -3134,6 +3204,46 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
                   $_.isHidden = $true
                 }
             }}
+            #TODO: Dynamically generate columns
+            [Media].GetProperties() | where-object {($_.PropertyType -eq [string] -or $_.PropertyType -eq [bool] -or $_.PropertyType -eq [int] -or $_.PropertyType -eq [System.Nullable`1[System.DateTime]]) -and $_.Name -notmatch 'Number|ToolTip|Margin|AllowDrop|IsExpanded|Border|Font'} | Sort-Object -Property Name | & { process {
+                if($_.Name -notin $synchash.SpotifyTable.Columns.MappingName){
+                  if($VerboseLog){write-ezlogs ">>>> Adding column to game grid: $($_.Name)"}
+                  if($_.PropertyType -eq [System.Nullable`1[System.DateTime]]){
+                    $Column = [Syncfusion.UI.Xaml.Grid.GridDateTimeColumn]::new()
+                    $DateTimeFormatInfo = [System.Globalization.DateTimeFormatInfo]::new()
+                    $DateTimeFormatInfo.ShortDatePattern = "MM/dd/yyyy hh:mm:ss"
+                    $Column.DateTimeFormat = $DateTimeFormatInfo
+                    $Column.FilterRowEditorType = "DateTime"
+                    $Column.AllowEditing = $False
+                    $Column.MinimumWidth = "115"
+                    $Column.IsReadOnly = $true
+                    $Column.AllowNullValue = $True
+                    $Column.NullText="NA"
+                  }else{
+                    $Column = [Syncfusion.UI.Xaml.Grid.GridTextColumn]::new()
+                  }
+                  $GridFactory =[System.Windows.FrameworkElementFactory]::new([Windows.Controls.Grid])
+                  $TextBlockFactory = [System.Windows.FrameworkElementFactory]::new([Windows.Controls.TextBlock])
+                  $Binding = [System.Windows.Data.Binding]::new("Value")
+                  [Void]$TextBlockFactory.SetBinding([Windows.Controls.TextBlock]::TextProperty,$Binding)
+                  [Void]$TextBlockFactory.SetValue([Windows.Controls.TextBlock]::VerticalAlignmentProperty, [System.Windows.VerticalAlignment]::Center)
+                  [Void]$TextBlockFactory.SetValue([Windows.Controls.TextBlock]::HorizontalAlignmentProperty, [System.Windows.HorizontalAlignment]::Center)
+                  [Void]$GridFactory.AppendChild($TextBlockFactory)
+                  $dataTemplate = [System.Windows.DataTemplate]::new()
+                  $dataTemplate.VisualTree = $GridFactory
+                  $Column.CellTemplate = $dataTemplate 
+                  $Column.MappingName = $_.Name
+                  $Column.UseBindingValue = $true
+                  $Column.AllowSorting = $true
+                  $Column.AllowFiltering = $true
+                  $Column.SetCellBoundValue = $true
+                  if($Column.MappingName -notin $thisApp.Config.SpotifyMedia_Library_Columns){
+                    $Column.isHidden = $true
+                  }
+                  [Void]$synchash.SpotifyTable.Columns.add($Column) 
+                }
+            }}
+
           }else{
             [Void]$synchash.SpotifyTable.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
             [Void]$synchash.SpotifyTable.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
@@ -3149,6 +3259,7 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
                         $MenuItem = [System.Windows.Controls.MenuItem]::new()
                         $MenuItem.IsCheckable = $true
                         $MenuItem.Header = $Header
+                        $MenuItem.StaysOpenOnClick = $true
                         if($_.isHidden){
                           $MenuItem.IsChecked = $false
                         }else{
@@ -3192,6 +3303,15 @@ $synchash.SpotifyMedia_TableStartup_timer.add_Tick({
                               $thisApp.Config.SpotifyMedia_Library_Columns = $ActiveColumns
                             }catch{
                               write-ezlogs -text "An exception occurred in add_Unchecked for menuitem: $($this.Header)" -CatchError $_
+                            }
+                        })
+                        $MenuItem.Add_Unloaded({
+                            Param($sender)
+                            try{
+                              [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
+                              [Void](Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Controls.MenuItem]::UnloadedEvent) -RemoveHandlers)
+                            }catch{
+                              write-ezlogs -text "An exception occurred in add_Unloaded for menuitem: $($this.Header)" -CatchError $_
                             }
                         })
                         [Void]$synchash.SpotifyMedia_Column_Button.items.add($MenuItem)
@@ -3520,7 +3640,7 @@ $synchash.Refresh_SpotifyMedia_timer.add_Tick({
             }
           }
           $synchash.SpotifyTable.Itemssource = $null
-          Import-Spotify -Media_directories $thisApp.config.Media_Directories -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -startup:$false -thisApp $thisApp
+          Import-Spotify -Media_directories $thisApp.config.Media_Directories -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -startup:$false -thisApp $thisApp -FullRefresh
         }else{
           write-ezlogs -text 'User did not wish to refresh the Spotify Library' -showtime -Warning
           return
@@ -3702,6 +3822,45 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
           [Void]$synchash.YoutubeTable.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
           [Void]$synchash.YoutubeTable.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
         }
+        #TODO: Dynamically generate columns
+        [Media].GetProperties() | where-object {($_.PropertyType -eq [string] -or $_.PropertyType -eq [bool] -or $_.PropertyType -eq [int] -or $_.PropertyType -eq [System.Nullable`1[System.DateTime]]) -and $_.Name -notmatch 'Number|ToolTip|Margin|AllowDrop|IsExpanded|Border|Font'} | Sort-Object -Property Name | & { process {
+            if($_.Name -notin $synchash.YoutubeTable.Columns.MappingName){
+              if($VerboseLog){write-ezlogs ">>>> Adding column to game grid: $($_.Name)"}
+              if($_.PropertyType -eq [System.Nullable`1[System.DateTime]]){
+                $Column = [Syncfusion.UI.Xaml.Grid.GridDateTimeColumn]::new()
+                $DateTimeFormatInfo = [System.Globalization.DateTimeFormatInfo]::new()
+                $DateTimeFormatInfo.ShortDatePattern = "MM/dd/yyyy hh:mm:ss"
+                $Column.DateTimeFormat = $DateTimeFormatInfo
+                $Column.FilterRowEditorType = "DateTime"
+                $Column.AllowEditing = $False
+                $Column.MinimumWidth = "115"
+                $Column.IsReadOnly = $true
+                $Column.AllowNullValue = $True
+                $Column.NullText="NA"
+              }else{
+                $Column = [Syncfusion.UI.Xaml.Grid.GridTextColumn]::new()
+              }
+              $GridFactory =[System.Windows.FrameworkElementFactory]::new([Windows.Controls.Grid])
+              $TextBlockFactory = [System.Windows.FrameworkElementFactory]::new([Windows.Controls.TextBlock])
+              $Binding = [System.Windows.Data.Binding]::new("Value")
+              [Void]$TextBlockFactory.SetBinding([Windows.Controls.TextBlock]::TextProperty,$Binding)
+              [Void]$TextBlockFactory.SetValue([Windows.Controls.TextBlock]::VerticalAlignmentProperty, [System.Windows.VerticalAlignment]::Center)
+              [Void]$TextBlockFactory.SetValue([Windows.Controls.TextBlock]::HorizontalAlignmentProperty, [System.Windows.HorizontalAlignment]::Center)
+              [Void]$GridFactory.AppendChild($TextBlockFactory)
+              $dataTemplate = [System.Windows.DataTemplate]::new()
+              $dataTemplate.VisualTree = $GridFactory
+              $Column.CellTemplate = $dataTemplate 
+              $Column.MappingName = $_.Name
+              $Column.UseBindingValue = $true
+              $Column.AllowSorting = $true
+              $Column.AllowFiltering = $true
+              $Column.SetCellBoundValue = $true
+              if($Column.MappingName -notin $thisApp.Config.YoutubeMedia_Library_Columns){
+                $Column.isHidden = $true
+              }
+              [Void]$synchash.YoutubeTable.Columns.add($Column) 
+            }
+        }}
         if($synchash.YoutubeMedia_Column_Button){
           $synchash.YoutubeMedia_Column_Button.add_Loaded({
               try{
@@ -3712,6 +3871,7 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
                       $MenuItem = [System.Windows.Controls.MenuItem]::new()
                       $MenuItem.IsCheckable = $true
                       $MenuItem.Header = $Header
+                      $MenuItem.StaysOpenOnClick = $true
                       if($_.isHidden){
                         $MenuItem.IsChecked = $false
                       }else{
@@ -3755,6 +3915,15 @@ $synchash.YoutubeMedia_TableStartup_timer.add_Tick({
                             $thisApp.Config.YoutubeMedia_Library_Columns = $ActiveColumns
                           }catch{
                             write-ezlogs -text "An exception occurred in add_Unchecked for menuitem: $($this.Header)" -CatchError $_
+                          }
+                      })
+                      $MenuItem.Add_Unloaded({
+                          Param($sender)
+                          try{
+                            [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
+                            [Void](Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Controls.MenuItem]::UnloadedEvent) -RemoveHandlers)
+                          }catch{
+                            write-ezlogs -text "An exception occurred in add_Unloaded for menuitem: $($this.Header)" -CatchError $_
                           }
                       })
                       [Void]$synchash.YoutubeMedia_Column_Button.items.add($MenuItem)
@@ -4232,7 +4401,7 @@ $synchash.TwitchMedia_TableStartup_timer.add_Tick({
       }
       if($synchash.TwitchTable){
         if($synchash.TwitchTable.Columns.HeaderText -contains 'Play'){
-          $synchash.TwitchTable.columns| & { process {
+          $synchash.TwitchTable.columns | & { process {
               if($_.HeaderText -eq 'Play'){
                 write-ezlogs -text '| Configuring TwitchTable play button' -showtime -logtype Twitch -LogLevel 3
                 $StackPanelFactory = [System.Windows.FrameworkElementFactory]::new([System.Windows.Controls.VirtualizingStackPanel])
@@ -4279,6 +4448,47 @@ $synchash.TwitchMedia_TableStartup_timer.add_Tick({
           [Void]$synchash.TwitchTable.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
           [Void]$synchash.TwitchTable.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
         }
+        #TODO: Dynamically generate columns
+        [Media].GetProperties() | where-object {($_.PropertyType -eq [string] -or $_.PropertyType -eq [bool] -or $_.PropertyType -eq [int] -or $_.PropertyType -eq [System.Nullable`1[System.DateTime]]) -and $_.Name -notmatch 'Number|ToolTip|Margin|AllowDrop|IsExpanded|Border|Font'} | Sort-Object -Property Name | & { process {
+            if($_.Name -notin $synchash.TwitchTable.columns.MappingName){
+              if($VerboseLog){write-ezlogs ">>>> Adding column to game grid: $($_.Name)"}
+              if($_.PropertyType -eq [System.Nullable`1[System.DateTime]]){
+                $Column = [Syncfusion.UI.Xaml.Grid.GridDateTimeColumn]::new()
+                $DateTimeFormatInfo = [System.Globalization.DateTimeFormatInfo]::new()
+                $DateTimeFormatInfo.ShortDatePattern = "MM/dd/yyyy hh:mm:ss"
+                $Column.DateTimeFormat = $DateTimeFormatInfo
+                $Column.FilterRowEditorType = "DateTime"
+                $Column.AllowEditing = $False
+                $Column.MinimumWidth = "115"
+                $Column.IsReadOnly = $true
+                $Column.AllowNullValue = $True
+                $Column.NullText="NA"
+              }else{
+                $Column = [Syncfusion.UI.Xaml.Grid.GridTextColumn]::new()
+              }
+              $GridFactory =[System.Windows.FrameworkElementFactory]::new([Windows.Controls.Grid])
+              $TextBlockFactory = [System.Windows.FrameworkElementFactory]::new([Windows.Controls.TextBlock])
+              $Binding = [System.Windows.Data.Binding]::new("Value")
+              [Void]$TextBlockFactory.SetBinding([Windows.Controls.TextBlock]::TextProperty,$Binding)
+              [Void]$TextBlockFactory.SetValue([Windows.Controls.TextBlock]::VerticalAlignmentProperty, [System.Windows.VerticalAlignment]::Center)
+              [Void]$TextBlockFactory.SetValue([Windows.Controls.TextBlock]::HorizontalAlignmentProperty, [System.Windows.HorizontalAlignment]::Center)
+              [Void]$GridFactory.AppendChild($TextBlockFactory)
+              $dataTemplate = [System.Windows.DataTemplate]::new()
+              $dataTemplate.VisualTree = $GridFactory
+              $Column.CellTemplate = $dataTemplate 
+              $Column.MappingName = $_.Name
+              $Column.UseBindingValue = $true
+              $Column.AllowSorting = $true
+              $Column.AllowFiltering = $true
+              $Column.SetCellBoundValue = $true
+              if($Column.MappingName -notin $thisApp.Config.TwitchMedia_Library_Columns){
+                $Column.isHidden = $true
+              }
+              [Void]$synchash.TwitchTable.columns.add($Column) 
+            }
+        }}
+
+
         if(-not [string]::IsNullOrEmpty($synchash.TwitchMedia_View) -and $synchash.TwitchTable){
           write-ezlogs -text '>>>> Setting Twitch itemssource' -logtype Twitch -LogLevel 0 -Verboselog:$VerboseLog
           # Create a binding to pair the listbox to the observable collection
@@ -4519,6 +4729,7 @@ if($synchash.TwitchMedia_Column_Button){
               $MenuItem = [System.Windows.Controls.MenuItem]::new()
               $MenuItem.IsCheckable = $true
               $MenuItem.Header = $Header
+              $MenuItem.StaysOpenOnClick = $true
               if($_.isHidden){
                 $MenuItem.IsChecked = $false
               }else{
@@ -4562,6 +4773,15 @@ if($synchash.TwitchMedia_Column_Button){
                     $thisApp.Config.TwitchMedia_Library_Columns = $ActiveColumns
                   }catch{
                     write-ezlogs -text "An exception occurred in add_Unchecked for menuitem: $($this.Header)" -CatchError $_
+                  }
+              })
+              $MenuItem.Add_Unloaded({
+                  Param($sender)
+                  try{
+                    [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
+                    [Void](Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Controls.MenuItem]::UnloadedEvent) -RemoveHandlers)
+                  }catch{
+                    write-ezlogs -text "An exception occurred in add_Unloaded for menuitem: $($this.Header)" -CatchError $_
                   }
               })
               [Void]$synchash.TwitchMedia_Column_Button.items.add($MenuItem)
@@ -4822,35 +5042,10 @@ $synchash.PreviewDrop_command = {
           }elseif($LinkDrop -match 'youtube\.com' -or $LinkDrop -match 'youtu\.be'){
             $group = 'Youtube'
             write-ezlogs -text ">>>> Adding Youtube link: $LinkDrop" -showtime -color cyan
-            <#            if($LinkDrop -match '&t='){
-                $LinkDrop = ($($LinkDrop) -split('&t='))[0].trim()
-                }
-                write-ezlogs -text ">>>> Adding Youtube link $LinkDrop" -showtime -color cyan
-
-                if($LinkDrop -match '\/tv\.youtube\.com\/'){
-                if($LinkDrop -match '\%3D\%3D'){
-                $LinkDrop = $LinkDrop -replace '\%3D\%3D'
-                }
-                if($LinkDrop -match '\?vp='){
-                $youtube_id = [regex]::matches($LinkDrop, 'tv.youtube.com\/watch\/(?<value>.*)\?vp\=')| ForEach-Object -Process {$_.groups[1].value}
-                }elseif($LinkDrop -match '\?v='){
-                $youtube_id = [regex]::matches($LinkDrop, 'tv.youtube.com\/watch\?v=(?<value>.*)')| ForEach-Object -Process {$_.groups[1].value}
-                }else{
-                $youtube_id = [regex]::matches($LinkDrop, 'tv.youtube.com\/watch\/(?<value>.*)')| ForEach-Object -Process {$_.groups[1].value}
-                }
-                $type = 'YoutubeTV'
-                }elseif($LinkDrop -match 'v='){
-                $youtube_id = ($($LinkDrop) -split('v='))[1].trim()
-                }elseif($LinkDrop -match 'list='){
-                $youtube_id = ($($LinkDrop) -split('list='))[1].trim()
-                }elseif($LinkDrop -match '\/watch\/'){
-                $youtube_id = [regex]::matches($LinkDrop, '\/watch\/(?<value>.*)')| ForEach-Object -Process {$_.groups[1].value}
-                }elseif($LinkDrop -notmatch 'v=' -and $LinkDrop -notmatch '\?' -and $LinkDrop -notmatch '\&'){
-                $youtube_id = (([uri]$LinkDrop).segments | Select-Object -Last 1) -replace '/',''
-                }
-                if($youtube_id -match '\&pp='){
-                $youtube_id = ($youtube_id -split '\&pp=')[0]
-            } #>
+            $d.Handled = $true
+          }elseif($LinkDrop -match 'spotify'){
+            $group = 'Spotify'
+            write-ezlogs -text ">>>> Adding Spotify link from dragdrop: $LinkDrop" -showtime
             $d.Handled = $true
           }
           if($d.Handled){
@@ -4858,57 +5053,6 @@ $synchash.PreviewDrop_command = {
               if($group -eq 'Youtube'){
                 $synchash.Youtube_Progress_Ring.isActive = $true
                 Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkDrop -StartPlayback
-                <#                if($youtube_id){
-                    try{
-                    $video_info = Get-YouTubeVideo -Id $youtube_id
-                    }catch{
-                    write-ezlogs -text 'An exception occurred executing Get-YoutubeVideo' -showtime -CatchError $_
-                    }
-                    if($video_info){
-                    if($video_info.snippet.title){
-                    $title = $video_info.snippet.title
-                    }elseif($video_info.localizations.en.title){
-                    $title = $video_info.localizations.en.title
-                    }
-                    $description = $video_info.snippet.description
-                    $channel_id = $video_info.snippet.channelId
-                    $channel_title = $video_info.snippet.channelTitle
-                    $images = $video_info.snippet.thumbnails
-                    $thumbnail = $video_info.snippet.thumbnails.medium.url
-                    if($video_info.contentDetails.duration){
-                    $TimeValues = $video_info.contentDetails.duration
-                    if($TimeValues){
-                    try{
-                    $duration = [TimeSpan]::FromHours((Convert-TimespanToInt -Timespan $TimeValues))
-                    if($duration){
-                    $duration = "$(([string]$duration.hours).PadLeft(2,'0')):$(([string]$duration.Minutes).PadLeft(2,'0')):$(([string]$duration.Seconds).PadLeft(2,'0'))"
-                    }
-                    }catch{
-                    write-ezlogs -text "An exception occurred parsing duration for $($title)" -showtime -CatchError $_
-                    }
-                    }
-                    }
-                    $viewcount = $video_info.statistics.viewCount
-                    }else{
-                    $title = "Youtube Video - $youtube_id"
-                    }
-                    }
-                    $media = [PSCustomObject]::new(@{
-                    'title'            = $title
-                    'description'      = $description
-                    'channel_id'       = $channel_id
-                    'id'               = $youtube_id
-                    'duration'         = $duration
-                    'url'              = $url
-                    'thumbnail'        = $thumbnail
-                    'type'             = ''
-                    'images'           = $images
-                    'Playlist_url'     = ''
-                    'playlist_id'      = $youtube_id
-                    'Profile_Date_Added' = [DateTime]::Now
-                    'Source'           = 'Youtube'
-                    'Group'            = $group
-                })#>
               }elseif($group -eq 'Twitch'){
                 $TwitchAPI = Get-TwitchAPI -StreamName $twitch_channel -thisApp $thisApp
                 if($TwitchAPI.user_id){
@@ -4958,6 +5102,8 @@ $synchash.PreviewDrop_command = {
                     'Group'            = 'Twitch'
                     'Profile_Date_Added' = $(Get-Date -Format 'MM-dd-yyyy hh:mm:ss:tt')
                 })
+              }elseif($group -eq 'Spotify'){
+                Add-SpotifyPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkDrop -SpotifyType 'Custom' -StartPlayback
               }
               if($media){
                 Start-Media -Media $media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification  -use_WebPlayer:$thisApp.config.Youtube_WebPlayer
@@ -4968,6 +5114,8 @@ $synchash.PreviewDrop_command = {
                 Import-Youtube -Youtube_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp
               }elseif($group -eq 'Twitch'){
                 Import-Twitch -Twitch_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -thisScript $thisScript -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp -use_runspace
+              }elseif($group -eq 'Spotify'){
+                Import-Spotify -synchash $synchash -thisApp $thisApp -Spotify_URL $LinkDrop
               }
               if($thisApp.Config.PlayLink_OnDrop){
                 write-ezlogs -text '>>>> Starting update_status_timer' -showtime
@@ -5042,24 +5190,8 @@ $synchash.PreviewDrop_command = {
       }elseif($d.originalsource.TemplatedParent.Parent.header.title){
         $to_Playlist_Name = $d.originalsource.TemplatedParent.Parent.header.title
       }
-
-      #write-ezlogs "d.header $($item.header | out-string)" -showtime
-      #write-ezlogs "d.parent.header $($item.parent.header| out-string)" -showtime
-      #write-ezlogs "d.source.SelectedItem.parent $($d.source.SelectedItem.parent | out-string)" -showtime
-      #write-ezlogs "d.source.SelectedItem.parent $($d.source.SelectedItem.parent.header | out-string)" -showtime
-      #write-ezlogs "d.source.parent $($d.source.parent | out-string)" -showtime
-      #write-ezlogs "d.originalsource $( $d.originalsource | out-string)" -showtime
-      #write-ezlogs "d.originalsource.parent $( $d.originalsource.parent | out-string)" -showtime
-      #write-ezlogs "d.originalsource.TemplatedParent $( $d.originalsource.TemplatedParent | out-string)" -showtime
-      #write-ezlogs "d.originalsource.parent.TemplatedParent $( $d.originalsource.parent.TemplatedParent | out-string)" -showtime
-      #write-ezlogs "d.originalsource.TemplatedParent.TemplatedParent.SelectedItem $( $d.originalsource.TemplatedParent.TemplatedParent.SelectedItem | out-string)" -showtime
-      #write-ezlogs "d.originalsource.TemplatedParent.TemplatedParent.SelectedItem.parent.header $( $d.originalsource.TemplatedParent.TemplatedParent.SelectedItem.parent.header | out-string)" -showtime
       $from_Playlist = $item.parent.Header
       $to_PlayList = $d.originalsource.datacontext
-      <#      if(!$to_playlist -and $d.originalsource.TemplatedParent.Parent.header.Playlist_ID){
-          $to_playlist = $d.originalsource.TemplatedParent.Parent.header.Playlist_ID
-      }#>
-      #write-ezlogs "sender.items.Name $($sender.items.Name)"
       write-ezlogs -text ">>>> Drag/Drop From Playlist Name: $($From_Playlist_Name)" -showtime
       write-ezlogs -text ">>>> Drag/Drop To Playlist Name $($to_Playlist_Name)" -showtime
       write-ezlogs -text ">>>> to_playlist $($to_PlayList)" -showtime
@@ -5084,12 +5216,7 @@ $synchash.PreviewDrop_command = {
         }else{
           Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -media @($media) -Use_RunSpace -RefreshQueue
           $d.Handled = $true
-          #$d.Handled = $true
-          #$synchash.update_Queue_timer.start()
         }
-        #$synchash.PlayQueue_TreeView.items.refresh()
-        #
-        #$synchash.update_status_timer.start()
       }elseif($From_Playlist_Name -eq 'MediaLibrary' -and $to_Playlist_Name){
         try{
           $d.Effects = [System.Windows.DragDropEffects]::Copy
@@ -5285,19 +5412,25 @@ $synchash.TreeViewDropping_command = {
         }
         $LinkDrop = $e.data.GetData([Windows.Forms.DataFormats]::Text)
         if(-not [string]::IsNullOrEmpty($LinkDrop) -and (Test-url -address $LinkDrop)){
+          if($Target_PlaylistNode.ChildNodes.Content -and $Target_PlaylistNode.Content.title){
+            $Position = $e.DropPosition
+            $Target_Node = $e.TargetNode.Content
+          }
           if($LinkDrop -match 'twitch\.tv'){
-            #$e.Handled = $true
             $twitch_channel = $((Get-Culture).textinfo.totitlecase(($LinkDrop | split-path -Leaf).tolower()))
-            write-ezlogs -text "[TreeViewDropping] >>>> Adding Twitch channel $twitch_channel - $LinkDrop - Playlist: $($PlaylistName)" -showtime
+            write-ezlogs -text "[TreeViewDropping] >>>> Adding Twitch channel $twitch_channel - $LinkDrop - Playlist: $($PlaylistName) - Position: $Position - Target_PlaylistNode: $($Target_Node.title)" -showtime
             if($thisApp.Config.PlayLink_OnDrop){
               Add-TwitchPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkDrop -linktext $twitch_channel -Channel $twitch_channel -AddtoPlaylist $PlaylistName
             }
             Import-Twitch -Twitch_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_runspace
           }elseif($LinkDrop -match 'youtube\.com' -or $LinkDrop -match 'youtu\.be'){
-            write-ezlogs -text "[TreeViewDropping] >>>> Adding Youtube link: $LinkDrop - Playlist: $($PlaylistName)" -showtime -color cyan
-            Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkDrop -AddtoPlaylist $PlaylistName -StartPlayback:$thisApp.Config.PlayLink_OnDrop
+            write-ezlogs -text "[TreeViewDropping] >>>> Adding Youtube link: $LinkDrop - Playlist: $($PlaylistName) - Position: $Position - Target_PlaylistNode: $($Target_Node.title)" -showtime
+            Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkDrop -AddtoPlaylist $PlaylistName -StartPlayback:$thisApp.Config.PlayLink_OnDrop -PlaylistPosition $Position -PlaylistPositionTargetMedia $Target_Node
             Import-Youtube -Youtube_URL $LinkDrop -verboselog:$thisApp.Config.Verbose_Logging -synchash $synchash -Media_Profile_Directory $thisApp.config.Media_Profile_Directory -thisApp $thisApp
-            #$e.Handled = $true
+          }elseif($LinkDrop -match 'spotify'){
+            write-ezlogs -text "[TreeViewDropping] >>>> Adding Spotify link: $LinkDrop - Playlist: $($PlaylistName) - Position: $Position - Target_PlaylistNode: $($Target_Node.title)" -showtime
+            Add-SpotifyPlayback -synchash $synchash -thisApp $thisApp -LinkUri $LinkDrop -SpotifyType 'Custom' -AddtoPlaylist $PlaylistName -StartPlayback:$thisApp.Config.PlayLink_OnDrop -PlaylistPosition $Position -PlaylistPositionTargetMedia $Target_Node
+            Import-Spotify -synchash $synchash -thisApp $thisApp -Spotify_URL $LinkDrop
           }
         }else{
           write-ezlogs -text "[TreeViewDropping] The provided URL is not valid or was not provided! -- $LinkDrop" -showtime -Warning
@@ -7848,8 +7981,23 @@ $initialize_VLC_Runspace = {
     )
     foreach($a in $libvlc_Assemblies){
       if($thisApp.Config.Dev_mode){write-ezlogs -text ">>>> Loading Libvlc assembly: $a" -Dev_mode}
-      [Void][System.Reflection.Assembly]::LoadFrom($a)
+      if($PSVersionTable.PSVersion.Major -le 5){
+        try {
+          $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($a)
+          if($assemblyName.Flags -eq 'PublicKey'){
+            [void][System.Reflection.Assembly]::Load($assemblyName)
+          }else{
+            [void][System.Reflection.Assembly]::LoadFrom($a)
+          }         
+        } catch {
+          write-ezlogs "Fallback to Loading assembly ($assemblyName) from path: $a" -Warning
+          [void][System.Reflection.Assembly]::LoadFrom($a)
+        }
+      }else{
+        [void][System.Reflection.Assembly]::LoadFrom($a)
+      }
     }
+    $libvlc_Assembly_Measure = $Initialize_VLC_Runspace_Measure.Elapsed
     if([bool]('LibVLCSharp.Core' -as [Type])){
       $libvlc_Version = 4
     }elseif([bool]('LibVLCSharp.Shared.Core' -as [Type])){
@@ -7893,7 +8041,9 @@ $initialize_VLC_Runspace = {
     if($Initialize_VLC_Runspace_Measure){
       $Initialize_VLC_Runspace_Measure.Stop()
       write-ezlogs -text 'initialize_VLC_Runspace' -PerfTimer $Initialize_VLC_Runspace_Measure -GetMemoryUsage:$thisApp.Config.Memory_perf_measure
+      write-ezlogs -text '| Libvlc_LoadAssemblies' -PerfTimer $libvlc_Assembly_Measure -GetMemoryUsage:$thisApp.Config.Memory_perf_measure
       $Initialize_VLC_Runspace_Measure = $null
+      $libvlc_Assembly_Measure = $Null
     }
   }
 }
@@ -8500,17 +8650,17 @@ if($synchash.ScreenShot_Button){
           [Void](Get-EventHandlers -Element $Element -RoutedEvent ([MahApps.Metro.Controls.MetroWindow]::UnloadedEvent) -RemoveHandlers)
           $synchash.AudioOptions_UnLoaded_Event = $null
           $synchash.Remove('AudioOptions_UnLoaded_Event')
-          $hashkeys = [System.Collections.ArrayList]::new($synchash.keys)
-          $hashkeys | & { process {
+          <#          $hashkeys = [System.Collections.ArrayList]::new($synchash.keys)
+              $hashkeys | & { process {
               if($sender.FindName($_)){
-                if($thisApp.Config.Dev_mode){write-ezlogs -text ">>>> Unregistering AudioOptions_Viewer UI name: $_" -Dev_mode}
-                [void]$sender.UnRegisterName($_)
-                [void]$synchash.Remove($_)
+              if($thisApp.Config.Dev_mode){write-ezlogs -text ">>>> Unregistering AudioOptions_Viewer UI name: $_" -Dev_mode}
+              [void]$sender.UnRegisterName($_)
+              [void]$synchash.Remove($_)
               }
-          }}
+          }}#>
+          [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
           write-ezlogs -text ">>>> AudioOptions_Viewer window $($sender.Name) has unloaded" -showtime -LogLevel 2 -GetMemoryUsage -forceCollection
           $sender = $null
-          $hashkeys = $null
         }catch{
           write-ezlogs -text 'An exception occurred in AudioOptions_Viewer.add_unloaded' -showtime -CatchError $_
         }
@@ -8806,6 +8956,16 @@ if($thisApp.Config.startup_perf_timer){
             if($result -match 'twitch\.tv'){
               write-ezlogs -text "The provided URL is twitch - $result" -showtime
               $type = 'Twitch'
+            }elseif($result -match 'spotify'){
+              if($thisApp.Config.Import_Spotify_Media){
+                write-ezlogs -text ">>>> Adding Spotify URL: $result -- StartPlayback: $StartPlayback" -showtime
+                Import-Spotify -synchash $synchash -thisApp $thisApp -StartPlayback:$StartPlayback -Spotify_URL $result
+                return
+              }else{
+                write-ezlogs -text ">>>> Starting temporary Spotify track: $result"
+                Add-SpotifyPlayback -synchash $synchash -thisApp $thisApp -LinkUri $result -SpotifyType 'Custom' -AddtoQueue -StartPlayback:$StartPlayback
+                return
+              }
             }else{
               write-ezlogs -text "The provided URL is unknown - $result" -showtime -Warning
               $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()

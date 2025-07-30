@@ -46,6 +46,9 @@ function Stop-Media
       write-ezlogs "| Stopping Media Timer" -showtime
       $synchashWeak.Target.Timer.stop()
     }
+    if($thisApp.TwitchChatReplayEnabled){
+      $thisApp.TwitchChatReplayEnabled = $false
+    }
     if($synchashWeak.Target.Update_Playing_Playlist_Timer.isEnabled){
       write-ezlogs "| Stopping Update_Playing_Playlist_Timer" -showtime
       $synchashWeak.Target.Update_Playing_Playlist_Timer.stop()

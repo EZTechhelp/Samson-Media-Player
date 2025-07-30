@@ -237,7 +237,7 @@ function Set-AvalonDock {
         param($sender)
         try{
           $synchash = $synchash
-          write-ezlogs ">>>> $($sender.name) window has loaded"
+          write-ezlogs ">>>> $($sender.name) window has loaded" -LogLevel 0 -Verboselog:$Verboselog
           if($sender.name -eq 'VideoViewWindow'){
             if($sender.icon -ne $synchash.Window.icon){
               $sender.icon = $synchash.Window.icon
@@ -368,7 +368,7 @@ function Set-AvalonDock {
               }
             }
           }elseif($sender.name -eq "$($sender.Uid)Float"){
-            write-ezlogs ">>>> StateChanged Event for: $($sender.name) -- State: $($sender.WindowState)"
+            write-ezlogs ">>>> StateChanged Event for: $($sender.name) -- State: $($sender.WindowState)"  -LogLevel 0 -Verboselog:$Verboselog
             if(!$sender.IsHitTestVisible){
               write-ezlogs ">>>> Setting $($sender.Name) IsHitTestVisible to true" -LogLevel 0 -Verboselog:$Verboselog
               $sender.IsHitTestVisible = $true
@@ -608,6 +608,7 @@ function Set-AvalonDock {
             write-ezlogs "| Miniplayer is open, closing main window video tray"
             Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Close
           }
+          [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
         }catch{
           write-ezlogs "An exception occurred in VideoViewFloat.add_loaded" -showtime -catcherror $_
         }

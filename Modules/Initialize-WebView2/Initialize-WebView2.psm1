@@ -1091,7 +1091,7 @@ try {
     $logtype = 'Webview2'
     $synchash = $synchash
     $thisApp = $thisApp
-    Write-EZLogs '[YoutubeWebView2] >>>> YoutubeWebView2 CoreWebView2InitializationCompleted' -showtime -logtype $logtype -linesbefore 1
+    Write-EZLogs '[YoutubeWebView2] >>>> YoutubeWebView2 CoreWebView2InitializationCompleted' -logtype $logtype
     try{
       if($event.IsSuccess){
         [Microsoft.Web.WebView2.Core.CoreWebView2Settings]$Settings = $synchash.YoutubeWebView2.CoreWebView2.Settings
@@ -1311,7 +1311,7 @@ try {
                                           Write-EZLogs "Unable to find extension with name '$($InstallTask.Result.Name)' in Config.Webview2_Extensions" -logtype Webview2 -warning
                                         }
                                       }else{
-                                        Write-EZLogs "| Installed extension id: $($InstallTask.Result.ID)" -logtype Webview2
+                                        Write-EZLogs "| Installed extension id: $($InstallTask.Result.ID)" -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
                                       }
                                     }catch{
                                       Write-EZLogs "An exception occurred loading YoutubeWebView2 extension: $($Extension | Out-String)" -catcherror $_
@@ -1545,6 +1545,14 @@ try {
           Write-EZLogs "| Source $($e.Source)" -logtype Webview2 -Warning
           Write-EZLogs "| errorCode $($result.value.errorCode) - cpn: $($result.value.cpn)" -logtype Webview2 -Warning
         }
+        if($thisApp.Config.Discord_Integration -and $synchash.Current_playing_media -and (($null -ne "$($result.value.title)" -and $synchash.Youtube_WebPlayer_title -ne "$($result.value.title)") -or ($Null -ne "$($result.value.author)" -and $synchash.Current_playing_media.artist -ne "$($result.value.author)"))){
+          try{
+            if($Verboselog){write-ezlogs ">>>> Calling Set-DiscordPresense for Youtube webplayer - Youtube_WebPlayer_title: $($synchash.Youtube_WebPlayer_title) - Title: $($result.value.title) - Current Media Artist: $($synchash.Current_playing_media.artist) - Author: $($result.value.author) - Youtube_webplayer_current_Media Author: $($synchash.Youtube_webplayer_current_Media.author)  - Youtube_webplayer_current_Media Title: $($synchash.Youtube_webplayer_current_Media.title)" -logtype Discord}
+            Set-DiscordPresense -synchash $synchash -media $synchash.Current_playing_media -thisapp $thisApp -start -update -Artist "$($result.value.author)"
+          }catch{
+            Write-EZLogs "[YoutubeWebView2_WebMessageReceived] An exception occurred setting Set-DiscordPresense for Current_playing_media: $($synchash.Current_playing_media | Out-String)" -CatchError $_
+          }
+        }
         if($result.value.author){
           try{
             if($synchash.Youtube_webplayer_current_Media.author -ne $result.value.author){
@@ -1585,18 +1593,11 @@ try {
             $synchash.Youtube_WebPlayer_title = "$($result.value.title)"
           }
           if($synchash.Now_Playing_title_Label.DataContext -ne "$($result.value.title)"){
-            Write-EZLogs "| Updating Youtube title from webplayer videodata from value: $($synchash.Now_Playing_title_Label.DataContext) - to new value: $($result.value.title)" -logtype Webview2
             $synchash.Now_Playing_title_Label.DataContext = "$($result.value.title)"
           }
           if($synchash.Current_playing_media -and $synchash.Current_playing_media.Title -ne "$($result.value.title)"){
+            Write-EZLogs "| Updating Youtube title from webplayer videodata from value: $($synchash.Now_Playing_title_Label.DataContext) - to new value: $($result.value.title)" -logtype Webview2
             $synchash.Current_playing_media.Title = "$($result.value.title)"
-          }
-          if($thisApp.Config.Discord_Integration){
-            try{
-              Set-DiscordPresense -synchash $synchash -media $synchash.Current_playing_media -thisapp $thisApp -start -update
-            }catch{
-              Write-EZLogs "[YoutubeWebView2_WebMessageReceived] An exception occurred setting Set-DiscordPresense for Current_playing_media: $($synchash.Current_playing_media | Out-String)"
-            }
           }
           if($result.value.video_id){
             if($thisApp.Config.Enable_Sponsorblock -and $thisApp.Config.Sponsorblock_ActionType -and !$result.value.isLive){
@@ -1605,52 +1606,57 @@ try {
             }else{
               $thisApp.SponsorBlock = $null
             }
-            Write-EZLogs "| Getting Youtube dislikes for video id: $($result.value.video_id)" -showtime -logtype Webview2 -LogLevel 2
-            try{
-              $req = [System.Net.HTTPWebRequest]::Create("https://returnyoutubedislikeapi.com/votes?videoId=$($result.value.video_id)")
-              $req.Method = 'GET'
-              $req.Timeout = 5000
-              $response = $req.GetResponse()
-              $strm = $response.GetResponseStream()
-              $sr = [System.IO.Streamreader]::new($strm)
-              $output = $sr.ReadToEnd()
-              $youtube_ds = $output | ConvertFrom-Json -ErrorAction SilentlyContinue
-              $response.Dispose()
-              $strm.Dispose()
-              $sr.Dispose()
-            }catch{
-              Write-EZLogs "An exception occurred getting youtube dislikes with url: https://returnyoutubedislikeapi.com/votes?videoId=$($result.value.video_id)" -catcherror $_
-              $error.clear()
-            }finally{
-              if($response){
+            if($synchash.Youtube_webplayer_current_Media.Video_id -and $synchash.Youtube_webplayer_current_Media.Video_id -ne $result.value.video_id){
+              $synchash.Youtube_webplayer_current_Media.Video_id = $result.value.video_id
+            }
+            if($synchash.Current_playing_media -and (($null -ne "$($result.value.title)" -and $synchash.Current_playing_media.Title -ne "$($result.value.title)") -or ($Null -ne "$($result.value.author)" -and $synchash.Current_playing_media.artist -ne "$($result.value.author)"))){
+              Write-EZLogs "| Getting Youtube dislikes for video id: $($result.value.video_id)" -showtime -logtype Webview2 -LogLevel 2
+              try{
+                $req = [System.Net.HTTPWebRequest]::Create("https://returnyoutubedislikeapi.com/votes?videoId=$($result.value.video_id)")
+                $req.Method = 'GET'
+                $req.Timeout = 5000
+                $response = $req.GetResponse()
+                $strm = $response.GetResponseStream()
+                $sr = [System.IO.Streamreader]::new($strm)
+                $output = $sr.ReadToEnd()
+                $youtube_ds = $output | ConvertFrom-Json -ErrorAction SilentlyContinue
                 $response.Dispose()
-              }
-              if($strm){
                 $strm.Dispose()
-              }
-              if($sr){
                 $sr.Dispose()
+              }catch{
+                Write-EZLogs "An exception occurred getting youtube dislikes with url: https://returnyoutubedislikeapi.com/votes?videoId=$($result.value.video_id)" -catcherror $_
+                $error.clear()
+              }finally{
+                if($response){
+                  $response.Dispose()
+                }
+                if($strm){
+                  $strm.Dispose()
+                }
+                if($sr){
+                  $sr.Dispose()
+                }
+                $req = $null
               }
-              $req = $null
-            }
-            if($youtube_ds.dislikes){
-              $DisLikes = $($youtube_ds.dislikes -as [decimal]).ToString('N0')
-            }
-            if($youtube_ds.likes){
-              $Likes = $($youtube_ds.likes -as [decimal]).ToString('N0')
-            }
-            if($synchash.Likes_Total -and $synchash.DisLikes_Total){
-              if($youtube_ds){
-                $synchash.Likes_Total.Visibility = 'Visible'
-                $synchash.Likes_Total.text = $Likes
-                $synchash.DisLikes_Total.text = $DisLikes
-              }else{
-                $synchash.Likes_Total.Visibility = 'Collapsed'
-                $synchash.Likes_Total.text = ''
-                $synchash.DisLikes_Total.text = ''
+              if($youtube_ds.dislikes){
+                $DisLikes = $($youtube_ds.dislikes -as [decimal]).ToString('N0')
+              }
+              if($youtube_ds.likes){
+                $Likes = $($youtube_ds.likes -as [decimal]).ToString('N0')
+              }
+              if($synchash.Likes_Total -and $synchash.DisLikes_Total){
+                if($youtube_ds){
+                  $synchash.Likes_Total.Visibility = 'Visible'
+                  $synchash.Likes_Total.text = $Likes
+                  $synchash.DisLikes_Total.text = $DisLikes
+                }else{
+                  $synchash.Likes_Total.Visibility = 'Collapsed'
+                  $synchash.Likes_Total.text = ''
+                  $synchash.DisLikes_Total.text = ''
+                }
               }
             }
-            if($thisApp.Config.Enable_YoutubeComments -and !$result.value.isLive -and $youtube_ds){
+            if($thisApp.Config.Enable_YoutubeComments -and !$result.value.isLive){
               #TODO: Update comments on video change
               Update-ChatView -synchash $synchash -thisApp $thisApp -Navigate -Youtube_ID $($result.value.video_id) -show
             }

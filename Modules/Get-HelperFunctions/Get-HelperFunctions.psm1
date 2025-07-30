@@ -2130,7 +2130,22 @@ function Set-WindowTopMost {
 
   Begin {
     if(-not [bool]('WindowTopMost' -as [Type])){
-      [void][System.Reflection.Assembly]::LoadFrom("$($thisApp.Config.Current_Folder)\Assembly\EZT-MediaPlayer\EZT_MediaPlayer.dll")
+      $Dll = "$($thisApp.Config.Current_Folder)\Assembly\EZT-MediaPlayer\EZT_MediaPlayer.dll"
+      if($PSVersionTable.PSVersion.Major -le 5){
+        try {
+          $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($Dll)
+          if($assemblyName.Flags -eq 'PublicKey'){
+            [void][System.Reflection.Assembly]::Load($assemblyName)
+          }else{
+            [void][System.Reflection.Assembly]::LoadFrom($Dll)
+          }         
+        } catch {
+          write-ezlogs "Fallback to Loading assembly ($assemblyName) from path: $Dll" -Warning
+          [void][System.Reflection.Assembly]::LoadFrom($Dll)
+        }
+      }else{
+        [void][System.Reflection.Assembly]::LoadFrom($Dll)
+      }
     }
   }
   Process {

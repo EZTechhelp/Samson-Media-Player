@@ -96,6 +96,7 @@ function Show-CustomWindow{
       $synchash
     )
     try{
+      write-ezlogs ">>>> Initializing Show-CustomWindow"
       $CustomWindowLoad_Measure = [system.diagnostics.stopwatch]::StartNew()
       $Current_Folder = "$($thisApp.Config.Current_Folder)"
       $CustomWindow_XML = "$($Current_Folder)\Views\CustomWindow.xaml"
@@ -355,6 +356,11 @@ function Show-CustomWindow{
                       write-ezlogs "An exception occurred in $($Sender.Name).add_TextChanged" -CatchError $_ -enablelogs
                     }
                 })
+              }
+              if($option.isReadOnly){
+                $CustomWindow_hash."$($Option.Name)_textbox".IsReadOnly = $true
+                $CustomWindow_hash."$($Option.Name)_textbox".BorderThickness= "0,0,0,0"
+                $CustomWindow_hash."$($Option.Name)_textbox".IsUndoEnabled= $false
               }
               $null = $grid.AddChild($CustomWindow_hash."$($Option.Name)_textbox")
               if($Option.BrowseType -in 'OpenFile','OpenFolder','SaveFolder','SaveFile' -and !$CustomWindow_hash."$($Option.Name)_textbox_Browse_$($Option.BrowseType)"){

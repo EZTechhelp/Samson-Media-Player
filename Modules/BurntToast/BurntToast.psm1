@@ -2617,16 +2617,76 @@ if ($WinMajorVersion -ge 10) {
   #foreach ($Type in $Library) {
   try {
     if (-not ('Microsoft.Toolkit.Uwp.Notifications.ToastContent'  -as [type])) {
-      [void][System.Reflection.Assembly]::LoadFrom("$PSScriptRoot\lib\Microsoft.Toolkit.Uwp.Notifications\Microsoft.Toolkit.Uwp.Notifications.dll")
+      $Dll = "$PSScriptRoot\lib\Microsoft.Toolkit.Uwp.Notifications\Microsoft.Toolkit.Uwp.Notifications.dll"
+      if($PSVersionTable.PSVersion.Major -le 5){
+        try {        
+          $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($Dll)
+          if($assemblyName.Flags -eq 'PublicKey'){
+            [void][System.Reflection.Assembly]::Load($assemblyName)
+          }else{
+            [void][System.Reflection.Assembly]::LoadFrom($Dll)
+          }
+        } catch {
+          write-warning "Fallback to Loading assembly ($assemblyName) from path: $Dll"
+          [void][System.Reflection.Assembly]::LoadFrom($Dll)
+        }
+      }else{
+        [void][System.Reflection.Assembly]::LoadFrom($Dll)
+      }
       $AssemblyPath = "$([System.IO.DirectoryInfo]::new($PSScriptRoot).parent.parent.FullName)\Assembly\WinRT"
       if([system.IO.File]::Exists("$AssemblyPath\Microsoft.Windows.SDK.NET.dll")){
-        [void][System.Reflection.Assembly]::LoadFrom("$AssemblyPath\Microsoft.Windows.SDK.NET.dll")
+        $Dll = "$AssemblyPath\Microsoft.Windows.SDK.NET.dll"
+        if($PSVersionTable.PSVersion.Major -le 5){
+          try {        
+            $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($Dll)
+            if($assemblyName.Flags -eq 'PublicKey'){
+              [void][System.Reflection.Assembly]::Load($assemblyName)
+            }else{
+              [void][System.Reflection.Assembly]::LoadFrom($Dll)
+            }
+          } catch {
+            write-warning "Fallback to Loading assembly ($assemblyName) from path: $Dll"
+            [void][System.Reflection.Assembly]::LoadFrom($Dll)
+          }
+        }else{
+          [void][System.Reflection.Assembly]::LoadFrom($Dll)
+        }
       }      
       if([system.IO.File]::Exists("$AssemblyPath\WinRT.Runtime.dll")){
-        [void][System.Reflection.Assembly]::LoadFrom("$AssemblyPath\WinRT.Runtime.dll")
+        $Dll = "$AssemblyPath\WinRT.Runtime.dll"
+        if($PSVersionTable.PSVersion.Major -le 5){
+          try {        
+            $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($Dll)
+            if($assemblyName.Flags -eq 'PublicKey'){
+              [void][System.Reflection.Assembly]::Load($assemblyName)
+            }else{
+              [void][System.Reflection.Assembly]::LoadFrom($Dll)
+            }
+          } catch {
+            write-warning "Fallback to Loading assembly ($assemblyName) from path: $Dll"
+            [void][System.Reflection.Assembly]::LoadFrom($Dll)
+          }
+        }else{
+          [void][System.Reflection.Assembly]::LoadFrom($Dll)
+        }
       }
       if([system.IO.File]::Exists("$AssemblyPath\PoshWinRT.dll")){
-        [void][System.Reflection.Assembly]::LoadFrom("$AssemblyPath\PoshWinRT.dll")
+        $Dll = "$AssemblyPath\PoshWinRT.dll"
+        if($PSVersionTable.PSVersion.Major -le 5){
+          try {        
+            $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($Dll)
+            if($assemblyName.Flags -eq 'PublicKey'){
+              [void][System.Reflection.Assembly]::Load($assemblyName)
+            }else{
+              [void][System.Reflection.Assembly]::LoadFrom($Dll)
+            }
+          } catch {
+            write-warning "Fallback to Loading assembly ($assemblyName) from path: $Dll"
+            [void][System.Reflection.Assembly]::LoadFrom($Dll)
+          }
+        }else{
+          [void][System.Reflection.Assembly]::LoadFrom($Dll)
+        }
       }
     }
   } catch {

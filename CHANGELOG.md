@@ -2,6 +2,45 @@
 
 ## [Unreleased]
 
+## 1.0.4 - PUBLIC
+> - Branch: Samson
+
+### Added
++ Ability to add Spotify media URLs via Add/Open media dialog
++ Ability to add Spotify media by dragging external links directly into playlists
++ Playlist Owner, ID and isPublic properties for Spotify media profiles
++ Ability to view current viewer count for live Twitch channels in playlists
++ Setting option for VLC logging level under General - Advanced Media Player Options
++ First iteration of Twitch Chat Replay system for playback of chat messages with Twitch VODS
+  + Chat view will autoscroll to latest message unless mouse is over
+  + Skipping back in Twitch vod will auto scroll back to relevent message timestamps
+  + Emotes only show as their string, not sure worth the effort to make those work honestly
+  + Uses Youtube comments view for now so formatting is a bit messy
+  + Powered by RechatTool by jdpurcell. Maybe implement natively at some point, maybe not
+
+### Changes
++ Using the download audio only option for Youtube videos now extracts and saves audio to flac
++ Discord presense now always properly shows the playing channel for Youtube videos
++ Minor Refactor and code cleanup for Show-ProfileEditor
++ Manually refreshing the Spotify library now forces all playlists to be fetched from API vs cached xml files
++ ProjectM presets can now be excluded from install during Inno Setup 
++ Optimized how assemblies are loaded when installed into GAC
++ Adding external media to playlists via dragdrop now respects the position where it was dropped
++ All media profile properties of type string, int and datetime are now available as columns to show in media libraries
+  + Pick from columns drop down. Names are raw values and some may not be used, will likely cleanup list more in future
++ Various cleanup and refactoring of code and comments
+
+### Fixed
++ Small memory leak when switching to and from Miniplayer mode
++ Media titles can become increasingly duplicated when playing from a playlist
++ Invalid entries can sometimes be stored within the Spotify_playlists array in config
++ Editing media properties with the profile editor doesnt update profiles within custom playlists
++ Youtube commments and discord presense sometimes doesnt update on Youtube video change
++ Youtube videos can fail to play or not play the correct audio language when not using the webplayer
+
+### Comments
++ Will NOT trigger first time setup when upgrading
+
 ## 1.0.3 - PUBLIC
 > - Branch: Samson
 

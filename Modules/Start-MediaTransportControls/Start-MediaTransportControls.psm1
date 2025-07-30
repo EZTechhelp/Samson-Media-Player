@@ -34,14 +34,16 @@ function Start-MediaTransportControls{
   param (
     $synchash,
     $thisApp,
-    [switch]$use_Runspace
+    [switch]$use_Runspace,
+    [switch]$VerboseLog
   )
   $MediaTransportControls_ScriptBlock = {
     [CmdletBinding()]
     param (
       $synchash,
       $thisApp,
-      [switch]$use_Runspace
+      [switch]$use_Runspace,
+      [switch]$VerboseLog
     )
     try{
       $MediaTransportControl_Assemblies = @(
@@ -52,11 +54,36 @@ function Start-MediaTransportControls{
       if($psversiontable.PSVersion.Major -gt 5){
         foreach($a in $MediaTransportControl_Assemblies){
           if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Loading WinRT assembly: $a" -Dev_mode}
-          $null = [System.Reflection.Assembly]::LoadFrom($a)
+          if($PSVersionTable.PSVersion.Major -le 5){
+            try {
+              $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($a)
+              if($assemblyName.Flags -eq 'PublicKey'){
+                [void][System.Reflection.Assembly]::Load($assemblyName)
+              }else{
+                [void][System.Reflection.Assembly]::LoadFrom($a)
+              }         
+            } catch {
+              write-ezlogs "Fallback to Loading assembly ($assemblyName) from path: $a" -Warning
+              [void][System.Reflection.Assembly]::LoadFrom($a)
+            }
+          }else{
+            [void][System.Reflection.Assembly]::LoadFrom($a)
+          }
         }   
       }else{
         if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Loading WinRT assembly: $($thisApp.Config.Current_Folder)\Assembly\WinRT\PoshWinRT.dll" -Dev_mode}
-        $null = [System.Reflection.Assembly]::LoadFrom("$($thisApp.Config.Current_Folder)\Assembly\WinRT\PoshWinRT.dll")
+        try {
+          $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName("$($thisApp.Config.Current_Folder)\Assembly\WinRT\PoshWinRT.dll")
+          if($assemblyName.Flags -eq 'PublicKey'){
+            [void][System.Reflection.Assembly]::Load($assemblyName)
+          }else{
+            [void][System.Reflection.Assembly]::LoadFrom("$($thisApp.Config.Current_Folder)\Assembly\WinRT\PoshWinRT.dll")
+          }
+        } catch {
+          write-ezlogs "Fallback to Loading assembly ($assemblyName) from path: $($thisApp.Config.Current_Folder)\Assembly\WinRT\PoshWinRT.dll" -Warning -LogLevel 0 -Verboselog:$Verboselog
+          [void][System.Reflection.Assembly]::LoadFrom("$($thisApp.Config.Current_Folder)\Assembly\WinRT\PoshWinRT.dll")
+        }
+        #$null = [System.Reflection.Assembly]::LoadFrom("$($thisApp.Config.Current_Folder)\Assembly\WinRT\PoshWinRT.dll")
         [void][Windows.Media.Playback.MediaPlayer,Windows.Media.Playback,ContentType=WindowsRuntime]
       }
       Import-module "$($thisApp.Config.Current_Folder)\Modules\Register-WinRTEvent\Register-WinRTEvent.psm1" -NoClobber -DisableNameChecking -Scope Local

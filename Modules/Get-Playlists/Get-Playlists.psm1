@@ -91,8 +91,10 @@ function Update-Playlists {
                             }
                           }
                         }else{
+                          [void][System.Windows.Data.BindingOperations]::ClearBinding($syncHash.Playlists_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::ItemsSourceProperty)
                           $Binding = [System.Windows.Data.Binding]::new()
                           $Binding.Source = $synchash.All_Playlists
+                          $Binding.NotifyOnSourceUpdated = $true
                           [void][System.Windows.Data.BindingOperations]::SetBinding($syncHash.Playlists_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::ItemsSourceProperty, $Binding)
                         }
                       }catch{
@@ -766,8 +768,8 @@ function Get-Playlists
                               }else{
                                 $artist = $($Track.Artist_Name)
                               }
-                              $track_name = $Track.title
-                              $Title = "$($artist) - $($track_name)"
+                              #$Title = $Track.title
+                              $Title = "$($Track.Title)"
                               if($verboselog){write-ezlogs "| Found Spotify Track Title: $($Title) " -showtime -LogLevel 3 -logtype Spotify}
                               $icon_Path = $SpotifyIcon
                             }elseif($Track.url -match 'twitch\.tv'){
@@ -926,10 +928,24 @@ function Get-Playlists
                               }
                             }elseif($Track.url -match 'soundcloud\.com'){
                               $Title = "$($Track.Title)"
+                              if($Track.Artist){
+                                $artist = $Track.Artist
+                              }elseif($Track.Artist_Name){
+                                $artist = $($Track.Artist_Name)
+                              }else{
+                                $artist = $Track.Channel_Name
+                              }
                               if($verboselog){write-ezlogs "| Found SoundCloud Track Title: $($Title) " -showtime -Dev_mode:$verboselog} 
                               $icon_path = $SoundcloudIcon
                             }elseif($Track.type -match 'Youtube' -or $Track.source -eq 'Youtube' -or $Track.url -match 'youtube\.com' -or $Track.url -match 'youtu\.be'){
                               $Title = "$($Track.Title)"
+                              if($Track.Artist){
+                                $artist = $Track.Artist
+                              }elseif($Track.Channel_Name){
+                                $artist = $Track.Channel_Name
+                              }else{
+                                $artist = $Track.Artist_Name
+                              }
                               if($verboselog){write-ezlogs "| Found Youtube Track Title: $($Title) " -showtime -LogLevel 3 -logtype Youtube} 
                               if($Track.url -match 'tv\.youtube'){
                                 $icon_path = $YoutubeTVIcon
@@ -937,15 +953,25 @@ function Get-Playlists
                                 $icon_path = $YoutubeIcon
                               }                            
                             }elseif($Track.Artist -and $Track.Title){        
-                              $Title = "$($Track.Artist) - $($Track.Title)"
-                              if($verboselog){write-ezlogs "| Found Track Artist and Title: $($Title) " -showtime -LogLevel 3}
+                              $Title = "$($Track.Title)"
+                              if($Track.Artist){
+                                $artist = $Track.Artist
+                              }elseif($Track.Channel_Name){
+                                $artist = $Track.Channel_Name
+                              }
+                              if($verboselog){write-ezlogs "| Found Track Artist and Title: $($Title) " -showtime -LogLevel 0 -Verboselog:$Verboselog}
                               $icon_path = $HardDiskIcon
                             }elseif($Track.Title){
-                              if($verboselog){write-ezlogs "| Found Track Title: $($Track.Title) " -showtime -LogLevel 3}
+                              if($verboselog){write-ezlogs "| Found Track Title: $($Track.Title) " -showtime -LogLevel 0 -Verboselog:$Verboselog}
                               $Title = "$($Track.Title)"
+                              if($Track.Artist){
+                                $artist = $Track.Artist
+                              }elseif($Track.Channel_Name){
+                                $artist = $Track.Channel_Name
+                              }
                               $icon_path = $HardDiskIcon
                             }elseif($Track.Name){
-                              if($verboselog){write-ezlogs "| Found Track Name: $($Track.Name) " -showtime -LogLevel 3}
+                              if($verboselog){write-ezlogs "| Found Track Name: $($Track.Name) " -showtime -LogLevel 0 -Verboselog:$Verboselog}
                               if(!$Track.Artist -and [System.IO.Directory]::Exists($Track.directory)){     
                                 try{
                                   $artist = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($Track.directory))).trim()
@@ -958,11 +984,7 @@ function Get-Playlists
                                 $artist = $Track.Artist
                                 if($verboselog){write-ezlogs "| Found Track Name artist: $($artist) " -showtime -LogLevel 3}
                               }
-                              if(-not [string]::IsNullOrEmpty($artist)){
-                                $Title = "$($artist) - $($Track.Name)"
-                              }else{
-                                $Title = "$($Track.Name)"
-                              }
+                              $Title = "$($Track.Name)"
                               $icon_path = $HardDiskIcon
                             }else{
                               $title = $null
@@ -970,6 +992,8 @@ function Get-Playlists
                             }  
                             if(-not [string]::IsNullOrEmpty($Track.Display_Name)){
                               $Display_Name = $Track.Display_Name
+                            }elseif(-not [string]::IsNullOrEmpty($artist) -and $title -notmatch "$([regex]::Escape("$artist")) -|- $([regex]::Escape("$artist"))"){
+                              $Display_Name = "$artist - $title"
                             }else{
                               $Display_Name = $title
                             }
@@ -977,7 +1001,7 @@ function Get-Playlists
                               $fontstyle = 'Italic'
                               $fontcolor = 'Gray'
                               $FontWeight = 'Normal'
-                              $FontSize = [Double]'12'          
+                              $FontSize = [Double]'12'
                             }elseif($Track.live_status -eq 'Online' -or $Track.live_status -eq 'Live'){
                               $fontstyle = 'Normal'
                               $fontcolor = 'LightGreen'

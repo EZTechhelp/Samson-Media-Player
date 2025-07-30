@@ -43,7 +43,22 @@ function Get-GlobalHotKeys{
       $HotKeys_Measure = [system.diagnostics.stopwatch]::StartNew()
     }
     if(-not [bool]('mrousavy.HotKey' -as [Type])){
-      [void][System.Reflection.Assembly]::LoadFrom("$($thisApp.Config.Current_folder)\Assembly\EZT-MediaPlayer\Hotkeys.dll")
+      $Dll = "$($thisApp.Config.Current_folder)\Assembly\EZT-MediaPlayer\Hotkeys.dll"
+      if($PSVersionTable.PSVersion.Major -le 5){
+        try {
+          $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($Dll)
+          if($assemblyName.Flags -eq 'PublicKey'){
+            [void][System.Reflection.Assembly]::Load($assemblyName)
+          }else{
+            [void][System.Reflection.Assembly]::LoadFrom($Dll)
+          }         
+        } catch {
+          write-ezlogs "Fallback to Loading assembly ($assemblyName) from path: $Dll" -Warning
+          [void][System.Reflection.Assembly]::LoadFrom($Dll)
+        }
+      }else{
+        [void][System.Reflection.Assembly]::LoadFrom($Dll)
+      }
     }
     if($UnRegister){
       write-ezlogs "| Disposing and unregistering existing hot keys"
@@ -88,7 +103,7 @@ function Get-GlobalHotKeys{
       }
     }
     if($Register){
-      write-ezlogs "#### Registering Global HotKeys ####" -color yellow -linesbefore 1
+      write-ezlogs ">>>> Registering Global HotKeys"
       if($synchash.MiniPlayer_Viewer.isInitialized){
         $Window = [System.Windows.Interop.WindowInteropHelper]::new($synchash.MiniPlayer_Viewer) 
       }elseif($synchash.Window.isInitialized){

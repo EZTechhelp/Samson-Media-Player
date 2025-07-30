@@ -36,6 +36,7 @@ function Get-MediaProfile
     $Media_URL,
     $Playlist_ID,
     $Media_title,
+    $Media_Channel,
     $thisApp,
     $synchash,
     [switch]$Use_RunSpace,
@@ -55,6 +56,7 @@ function Get-MediaProfile
       $Media_URL = $Media_URL,
       $Playlist_ID = $Playlist_ID,
       $Media_title = $Media_title,
+      $Media_Channel = $Media_Channel,
       [switch]$Verboselog = $Verboselog
     )
     if($Verboselog){
@@ -75,6 +77,9 @@ function Get-MediaProfile
     }elseif($Media_title){
       $ids = $Media_title
       $Property = 'title'
+    }elseif($Media_Channel){
+      $ids = $Media_Channel
+      $Property = 'channel_name'
     }else{
       $Ids = $Media_ID
       $Property = 'id'
@@ -89,6 +94,16 @@ function Get-MediaProfile
                   $index = $synchash.all_playlists.Playlist_tracks.values.$Property.IndexOf($_)
                   if($index -ne -1){
                     $synchash.all_playlists.Playlist_tracks.values[$index]
+                  }
+                }
+              }
+              if(!$track -and $Property -eq 'title'){               
+                $track = lock-object -InputObject $synchash.all_playlists_ListLock -ScriptBlock {
+                  if($synchash.all_playlists.Playlist_tracks){
+                    $index = $synchash.all_playlists.Playlist_tracks.values.'channel_name'.IndexOf($_)
+                    if($index -ne -1){
+                      $synchash.all_playlists.Playlist_tracks.values[$index]
+                    }
                   }
                 }
               }
@@ -234,6 +249,10 @@ function Get-MediaProfile
           if(!$track -and $synchash.Current_playing_media.$Property -and $synchash.Current_playing_media.$Property -eq $_){
             $track = $synchash.Current_playing_media
             write-ezlogs "[Get-MediaProfile] Queue item: $($_) is Current_playing_media: $($track.title)" -warning -LogLevel 0 -Verboselog:$Verboselog
+          }
+          if(!$track -and $thisapp.config.Current_Playing_Media.$Property -and $thisapp.config.Current_Playing_Media.$Property -eq $_){
+            $track = $thisapp.config.Current_Playing_Media
+            write-ezlogs "[Get-MediaProfile] Queue item: $($_) is Config.Current_playing_media: $($track.title)" -warning -LogLevel 0 -Verboselog:$Verboselog
           }
           if($track){
             return $track

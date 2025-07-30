@@ -30,8 +30,8 @@ foreach($p in  "$PSScriptRoot\Public\Get-SpotifyAccessToken.ps1",
   "$PSScriptRoot\Public\Users Profile\Get-CurrentUserProfile.ps1",
   "$PSScriptRoot\Public\Users Profile\Get-SpotifyUserProfile.ps1",
   "$PSScriptRoot\Public\Episodes\Get-Episode.ps1"
-  ){
- . $P
+){
+  . $P
 }
 
 #Backup-Library.ps1

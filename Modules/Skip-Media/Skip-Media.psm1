@@ -52,6 +52,9 @@ function Skip-Media
     $synchash.Spotify_WebPlayer_title = $null
     $synchash.Spotify_WebPlayer_URL = $null
     $synchash.Start_media = $null 
+    if($thisApp.TwitchChatReplayEnabled){
+      $thisApp.TwitchChatReplayEnabled = $false
+    }
 
     $synchash.Current_playing_media = $null 
     $synchash.Youtube_webplayer_current_Media = $Null

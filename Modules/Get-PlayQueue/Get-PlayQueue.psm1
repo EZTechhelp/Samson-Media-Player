@@ -72,10 +72,10 @@ function Update-PlayQueue
       try{
         if($Startup){
           try{
-<#            try{
-              $synchash.Queue_Pause_relaycommand = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.PauseMedia_Command -target $synchash.PlayQueue_TreeView
-            }catch{
-              write-ezlogs "An exception occurred updating playqueue_treeview" -showtime -catcherror $_
+            <#            try{
+                $synchash.Queue_Pause_relaycommand = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.PauseMedia_Command -target $synchash.PlayQueue_TreeView
+                }catch{
+                write-ezlogs "An exception occurred updating playqueue_treeview" -showtime -catcherror $_
             }#>
             #TODO: Finish for setting queue itemssource from another thread
             $synchash.PlayQueue_Update_Timer = [System.Windows.Threading.DispatcherTimer]::New([System.Windows.Threading.DispatcherPriority]::DataBind)
@@ -546,20 +546,21 @@ function Get-PlayQueue
                       if($Track.Source -eq 'Spotify' -or $Track.uri -match 'spotify\:' -or $track.url -eq 'spotify\:'){
                         if($Track.Artist){
                           $artist = $Track.Artist
+                        }elseif($Track.Channel_Name){
+                          $artist = $Track.Channel_Name
                         }else{
                           $artist = $Track.Artist_Name
                         }
-                        $track_name = $track.title
-                        $Title = "$($artist) - $($track_name)"
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Spotify Track Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog}
+                        $Title = "$($track.title)"
+                        if($VerboseLog){write-ezlogs "[Get-PlayQueue] | Found Spotify Track Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog}
                         $icon_path = $SpotifyIcon
                       }elseif($Track.url -match 'twitch\.tv'){
                         $Title = "$($Track.Title)"
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Twitch Track Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog}
+                        if($VerboseLog){write-ezlogs "[Get-PlayQueue] | Found Twitch Track Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog}
                         if($Track.profile_image_url){
-                          if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Media Image found: $($Track.profile_image_url)" -LogLevel 0 -Verboselog:$VerboseLog}
+                          if($VerboseLog){write-ezlogs "[Get-PlayQueue] | Media Image found: $($Track.profile_image_url)" -LogLevel 0 -Verboselog:$VerboseLog}
                           if(!([System.IO.Directory]::Exists(($thisApp.config.image_Cache_path)))){
-                            if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime}
+                            if($VerboseLog){write-ezlogs "[Get-PlayQueue] | Creating image cache directory: $($thisApp.config.image_Cache_path)" -showtime}
                             [void][System.IO.Directory]::CreateDirectory($thisApp.config.image_Cache_path)
                           }
                           $encodeduri = $Null
@@ -569,7 +570,7 @@ function Get-PlayQueue
                           if([System.IO.File]::Exists($image_Cache_path)){
                             $cached_image = $image_Cache_path
                           }elseif($Track.profile_image_url){
-                            if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Destination path for cached image: $image_Cache_path" -LogLevel 0 -Verboselog:$VerboseLog}
+                            if($VerboseLog){write-ezlogs "[Get-PlayQueue] | Destination path for cached image: $image_Cache_path" -LogLevel 0 -Verboselog:$VerboseLog}
                             $retry = $false
                             if(!([System.IO.File]::Exists($image_Cache_path))){
                               try{
@@ -658,11 +659,25 @@ function Get-PlayQueue
                         }
                       }elseif($track.url -match 'soundcloud\.com'){
                         $Title = "$($Track.Title)"
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found SoundCloud Track Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog -logtype Youtube}
+                        if($Track.Artist){
+                          $artist = $Track.Artist
+                        }elseif($Track.Artist_Name){
+                          $artist = $($Track.Artist_Name)
+                        }else{
+                          $artist = $Track.Channel_Name
+                        }
+                        if($VerboseLog){write-ezlogs "[Get-PlayQueue] | Found SoundCloud Track Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog -logtype Youtube}
                         $icon_path = $SoundcloudIcon
                       }elseif($Track.type -match 'Youtube' -or $track.source -eq 'Youtube' -or $track.url -match 'youtube\.com' -or $track.url -match 'youtu\.be'){
                         $Title = "$($Track.Title)"
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Youtube Track Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog -logtype Youtube}
+                        if($Track.Artist){
+                          $artist = $Track.Artist
+                        }elseif($Track.Channel_Name){
+                          $artist = $Track.Channel_Name
+                        }else{
+                          $artist = $Track.Artist_Name
+                        }
+                        if($VerboseLog){write-ezlogs "[Get-PlayQueue] | Found Youtube Track Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog -logtype Youtube}
                         if($track.url -match 'tv\.youtube'){
                           $icon_path = $YoutubeTVIcon
                         }else{
@@ -670,17 +685,34 @@ function Get-PlayQueue
                         }
                       }elseif($Track.source -eq 'TOR'){
                         $Title = "$($Track.Title)"
+                        if($Track.Artist){
+                          $artist = $Track.Artist
+                        }elseif($Track.Channel_Name){
+                          $artist = $Track.Channel_Name
+                        }else{
+                          $artist = $Track.Artist_Name
+                        }
                         $icon_path = $TorIcon
                       }elseif($Track.Artist -and $Track.Title){
-                        $Title = "$($Track.Artist) - $($Track.Title)"
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Track Artist and Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog }
+                        $Title = "$($Track.Title)"
+                        if($Track.Artist){
+                          $artist = $Track.Artist
+                        }elseif($Track.Channel_Name){
+                          $artist = $Track.Channel_Name
+                        }
+                        if($VerboseLog){write-ezlogs "[Get-PlayQueue] | Found Track Artist and Title: $($Title) " -LogLevel 0 -Verboselog:$VerboseLog }
                         $icon_path = $HardDiskIcon
                       }elseif($Track.Title){
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Track Title: $($Track.Title) " -LogLevel 0 -Verboselog:$VerboseLog }
+                        if($VerboseLog){write-ezlogs "[Get-PlayQueue] | Found Track Title: $($Track.Title) " -LogLevel 0 -Verboselog:$VerboseLog }
                         $Title = "$($Track.Title)"
+                        if($Track.Artist){
+                          $artist = $Track.Artist
+                        }elseif($Track.Channel_Name){
+                          $artist = $Track.Channel_Name
+                        }
                         $icon_path = $HardDiskIcon
                       }elseif($Track.Name){
-                        if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Track Name: $($Track.Name) " -LogLevel 0 -Verboselog:$VerboseLog }
+                        if($VerboseLog){write-ezlogs "[Get-PlayQueue] | Found Track Name: $($Track.Name) " -LogLevel 0 -Verboselog:$VerboseLog }
                         if(!$Track.Artist -and [System.IO.Directory]::Exists($Track.directory)){
                           try{
                             $artist = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase(([System.IO.Path]::GetFileNameWithoutExtension($Track.directory))).trim()
@@ -688,23 +720,21 @@ function Get-PlayQueue
                             write-ezlogs "[Get-PlayQueue] An exception occurred getting file name without extension for $($Track.directory)" -catcherror $_
                             $artist = ''
                           }
-                          if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Using Directory name for artist: $($artist) " -LogLevel 0 -Verboselog:$VerboseLog }
+                          if($VerboseLog){write-ezlogs "[Get-PlayQueue] | Using Directory name for artist: $($artist) " -LogLevel 0 -Verboselog:$VerboseLog }
                         }elseif($Track.Artist){
                           $artist = $Track.Artist
-                          if($thisApp.Config.Verbose_logging){write-ezlogs "[Get-PlayQueue] | Found Track Name artist: $($artist) " -LogLevel 0 -Verboselog:$VerboseLog }
+                          if($VerboseLog){write-ezlogs "[Get-PlayQueue] | Found Track Name artist: $($artist) " -LogLevel 0 -Verboselog:$VerboseLog }
                         }
-                        if(-not [string]::IsNullOrEmpty($artist)){
-                          $Title = "$($artist) - $($Track.Name)"
-                        }else{
-                          $Title = "$($Track.Name)"
-                        }
+                        $Title = "$($Track.Name)"
                         $icon_path = $HardDiskIcon
                       }else{
                         $title = $null
                         write-ezlogs "[Get-PlayQueue] Can't find type or title for track: $($track) - Key: $($_) - id: $($item)" -warning
                       }
-                      if(-not [string]::IsNullOrEmpty($track.Display_Name)){
-                        $Display_Name = $track.Display_Name
+                      if(-not [string]::IsNullOrEmpty($Track.Display_Name)){
+                        $Display_Name = $Track.Display_Name
+                      }elseif(-not [string]::IsNullOrEmpty($artist) -and $title -notmatch "$([regex]::Escape("$artist")) -|- $([regex]::Escape("$artist"))"){
+                        $Display_Name = "$($artist) - $($title)"
                       }else{
                         $Display_Name = $title
                       }

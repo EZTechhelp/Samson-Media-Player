@@ -177,6 +177,30 @@ function Add-Playlist
           }else{
             $index++
           }
+          if($Position -and $PositionTargetMedia -and $Playlist_to_Update.Playlist_Tracks.values.id -contains $PositionTargetMedia.id){
+            write-ezlogs "| Getting destination dropindex of target: $($PositionTargetMedia.title) -- for position: $($Position)"
+            $TargetIndex = $Playlist_to_Update.Playlist_Tracks.values.id.indexof($PositionTargetMedia.id)
+            if(-not [string]::IsNullOrEmpty($TargetIndex) -and $TargetIndex -ne -1){
+              write-ezlogs "| Targetindex: $TargetIndex"
+              switch($Position)
+              {
+                'DropAbove' {
+                  if($TargetIndex -eq 0){
+                    $DropIndex = 0
+                  }else{
+                    $DropIndex = $TargetIndex# - 1
+                  }
+                }
+                'DropBelow' {
+                  $DropIndex = $TargetIndex# + 1
+                }
+                'DropHere' {
+                  $DropIndex = $TargetIndex
+                }
+              }
+              write-ezlogs "| Destination dropindex: $DropIndex"
+            }
+          }
           foreach($item in $media){
             try{
               if([string]::IsNullOrEmpty($item.id) -and -not [string]::IsNullOrEmpty($item)){
@@ -200,15 +224,40 @@ function Add-Playlist
                     $track = Convertto-Media -InputObject $track
                   }
                   if($thisApp.Config.Dev_mode){write-ezlogs " | Adding '$($track.title)' to playlist '$($Playlist)' at index '$index'" -showtime -Dev_mode}
-                  <#              if($Position -and -not [string]::IsNullOrEmpty($DropIndex)){
-                      write-ezlogs "| Adding media at dropindex: $DropIndex"
-                      [void]$Playlist_to_Update.PlayList_tracks.add($DropIndex,$track)
-                      }else{
-                      [void]$Playlist_to_Update.PlayList_tracks.add($index,$track)
-                  }#>
-                  [void]$Playlist_to_Update.PlayList_tracks.add($index,$track)
-                  $index = ($Playlist_to_Update.PlayList_tracks.keys | Measure-Object -Maximum).Maximum
-                  $index++
+                  if($Position -and $PositionTargetMedia -and $Null -ne $DropIndex){
+                    #Reorder
+                    try{
+                      if($Position -in 'DropAbove','DropBelow'){
+                        [array]$existingitems = $Playlist_to_Update.Playlist_Tracks.values
+                        $Count = 0
+                        [void]$Playlist_to_Update.Playlist_Tracks.clear()
+                        $existingitems | & { process {
+                            if($Count -eq $DropIndex){
+                              write-ezlogs "| Inserting media at position: $($Count) -- for target media: $($track.title)"
+                              [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$track)
+                              $Count++
+                              if($_.id -notin $Playlist_to_Update.Playlist_Tracks.values.id){
+                                write-ezlogs "| Inserting existing media: $($_.title) -- at position: $($Count)" -LogLevel 4 -Verboselog:$Verboselog
+                                [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
+                                $Count++
+                              }
+                            }elseif($_.id -ne $track.id -and $_.id -notin $Playlist_to_Update.Playlist_Tracks.values.id){
+                              write-ezlogs "| Inserting existing media: $($_.title) -- at position: $($Count)" -LogLevel 4 -Verboselog:$Verboselog
+                              [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
+                              $Count++
+                            }
+                        }}
+                      }
+                      $index = ($Playlist_to_Update.PlayList_tracks.keys | Measure-Object -Maximum).Maximum
+                      $index++
+                    }catch{
+                      write-ezlogs "An exception occurred reordering playlist track: $($media.title) -- TargetIndex: $TargetIndex -- DropIndex: $DropIndex -- Position: $Position" -CatchError $_
+                    }
+                  }else{
+                    [void]$Playlist_to_Update.PlayList_tracks.add($index,$track)
+                    $index = ($Playlist_to_Update.PlayList_tracks.keys | Measure-Object -Maximum).Maximum
+                    $index++
+                  }
                 }
               }elseif($id){
                 write-ezlogs " | Media with ID $($id) has already been added to playlist $($Playlist)" -showtime -warning

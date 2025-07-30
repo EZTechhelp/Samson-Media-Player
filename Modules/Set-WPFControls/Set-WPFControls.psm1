@@ -1380,17 +1380,20 @@ function Open-MiniPlayer
           $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::MouseLeftButtonDownEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)
           if($synchash.MiniPlayer_DockPanel){
             $null = Get-EventHandlers -Element $synchash.MiniPlayer_DockPanel -RoutedEvent ([System.Windows.Window]::MouseLeftButtonDownEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)
-          }
+          }          
           [void][System.Windows.Data.BindingOperations]::ClearAllBindings($synchash.TaskbarItem_PlayButton)
           [void][System.Windows.Data.BindingOperations]::ClearAllBindings($synchash.Mini_TaskbarItem_StopButton)
           $synchash.MiniPlayer_Viewer.Remove_closing($Synchash.MiniPlayer_ClosingScriptblock)
           $synchash.MiniPlayer_Viewer.Remove_closed($Synchash.MiniPlayer_ClosedScriptblock)
           $synchash.MiniPlayer_Viewer.Remove_ContentRendered($Synchash.MiniPlayer_ContentRenderedScriptblock)
-          $synchash.MiniPlayer_Viewer = $Null
           if($synchash.Window.isVisible -and $synchash.VideoView.Visibility -in 'Hidden','Collapsed' -and (!$synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio) -and $synchash.WebPlayer_State -eq 0 -and !$synchash.Youtube_WebPlayer_title -and ($synchash.VideoButton_ToggleButton.isChecked -or $synchash.MediaViewAnchorable.isFloating)){
             write-ezlogs ">>>> Video view is hidden, Youtube webplayer not playing, unhiding video view" -Warning
             $synchash.VideoView.Visibility = 'Visible'
           }
+          $null = Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Window]::MouseLeftButtonDownEvent) -RemoveHandlers -VerboseLog:$($thisApp.Config.Dev_mode)
+          [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
+          $sender = $null
+          $synchash.Remove('MiniPlayer_Viewer')
         }catch{
           write-ezlogs "An exception occurred in MiniPlayer_Viewer unloaded event" -showtime -catcherror $_
         }finally{
@@ -2420,9 +2423,9 @@ function Reset-MainPlayer {
             #Reset VideoView Control
             #TODO: Set VideoView_Grid to black to avoid white flickering when not playing
             #This is kind of pointless as it doesn't really work - keeping for now as note to cleanup when proper solution is found
-<#            if($synchash.VideoView_Grid.Background -ne 'Black'){
-              write-ezlogs "[Reset-MainPlayer] Setting VideoView_Grid background to Black" -warning -Dev_mode
-              $synchash.VideoView_Grid.Background = 'Black'
+            <#            if($synchash.VideoView_Grid.Background -ne 'Black'){
+                write-ezlogs "[Reset-MainPlayer] Setting VideoView_Grid background to Black" -warning -Dev_mode
+                $synchash.VideoView_Grid.Background = 'Black'
             }#>
             #TODO: Setting video view to visible here potentially contributes towards Layout measurement override crash if video view is currently collapsed
             #UPDATE - This should now be resolved with Libvclsharp 3.9.3 - leaving notes for now but should be cleaned up at some point
@@ -3189,10 +3192,30 @@ function Add-WPFMenu {
                               $SubmenuItem_lvl3.RemoveHandler([System.Windows.Controls.Menuitem]::PreviewMouseLeftButtonDownEvent,[System.Windows.RoutedEventHandler]$Subitem_lvl3.Command)
                               $SubmenuItem_lvl3.AddHandler([System.Windows.Controls.Menuitem]::PreviewMouseLeftButtonDownEvent,[System.Windows.RoutedEventHandler]$Subitem_lvl3.Command)
                             }
+                            $SubmenuItem_lvl3.Add_Unloaded({
+                                Param($sender)
+                                try{
+                                  write-ezlogs -text ">>>> Menu item (lvl3) has unloaded for: $($sender.Header)"
+                                  [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
+                                  [Void](Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Controls.MenuItem]::UnloadedEvent) -RemoveHandlers)
+                                }catch{
+                                  write-ezlogs -text "An exception occurred in add_Unloaded for menuitem: $($this.Header)" -CatchError $_
+                                }
+                            })
                             $null = $SubmenuItem_lvl2.Items.Add($SubmenuItem_lvl3)
                           }
                         }
                       }
+                      $SubmenuItem_lvl2.Add_Unloaded({
+                          Param($sender)
+                          try{
+                            write-ezlogs -text ">>>> Menu item (lvl2) has unloaded for: $($sender.Header)"
+                            [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
+                            [Void](Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Controls.MenuItem]::UnloadedEvent) -RemoveHandlers)
+                          }catch{
+                            write-ezlogs -text "An exception occurred in add_Unloaded for menuitem: $($this.Header)" -CatchError $_
+                          }
+                      })
                       $null = $SubmenuItem.Items.Add($SubmenuItem_lvl2)
                     }
                   }
@@ -3201,6 +3224,15 @@ function Add-WPFMenu {
               }
             }
           }
+          $MenuItem.Add_Unloaded({
+              Param($sender)
+              try{
+                [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
+                [Void](Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Controls.MenuItem]::UnloadedEvent) -RemoveHandlers)
+              }catch{
+                write-ezlogs -text "An exception occurred in add_Unloaded for menuitem: $($this.Header)" -CatchError $_
+              }
+          })
           if($addchild){
             $null = $control.AddChild($menuItem)
           }elseif($contextMenu){

@@ -49,6 +49,7 @@ function Set-DiscordPresense {
     [switch]$Startup,
     [switch]$Stop,
     [switch]$runspace,
+    [string]$Artist,
     [string]$Playlist_Profile_Directory = $thisApp.config.Playlist_Profile_Directory,
     [switch]$Verboselog
   )
@@ -60,6 +61,8 @@ function Set-DiscordPresense {
         'Start' = $Start
         'update' = $update
         'Stop' = $Stop
+        'Artist' = $Artist
+        'Verboselog' = $Verboselog
     })
     $synchash.DSClientTimer.add_Tick({
         try{
@@ -67,6 +70,8 @@ function Set-DiscordPresense {
           $stop = $this.tag.Stop
           $media = $this.tag.media
           $update = $this.tag.update
+          $Artist = $this.tag.Artist
+          $Verboselog = $this.tag.Verboselog
           $synchash = $synchash
           $thisapp = $thisapp
           if($Start){   
@@ -140,7 +145,9 @@ function Set-DiscordPresense {
                 }elseif($media.title){
                   $details = "$($media.title)"
                 }
-                if($media.artist){
+                if($Artist){
+                  $dsState = "Channel: $($Artist)"
+                }elseif($media.artist){
                   $dsState = "Channel: $($media.Artist)"
                 }elseif($media.Playlist){
                   $dsState = "Channel: $($media.Playlist)"
@@ -209,7 +216,7 @@ function Set-DiscordPresense {
                 Label          = $Label
                 Url            = $url
                 Details        = $details
-                State          = "$($dsState)"
+                State          = "$dsState"
                 LoggerType     = "ConsoleLogger"
                 LoggerLevel    = "Info"
                 TimerRefresh   = 1
@@ -232,11 +239,11 @@ function Set-DiscordPresense {
               $params = @{
                 ApplicationID  = "1012233037855080448"
                 LargeImageKey  = "samson_icon_notext1"
-                LargeImageText = "$($thisApp.Config.App_Name) - $($thisApp.Config.App_Version)"
+                LargeImageText = "$($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version)"
                 SmallImageKey  = $SmallImageKey
                 SmallImageText = $SmallImageText
                 Details        = $details
-                State          = "$($dsState)"
+                State          = "$dsState"
                 LoggerType     = "ConsoleLogger"
                 LoggerLevel    = "Info"
                 TimerRefresh   = 1
@@ -252,7 +259,7 @@ function Set-DiscordPresense {
             }
             if($synchash.DSClient.IsInitialized){
               try{
-                write-ezlogs "[Set-DiscordPresense] >>>> Clearing presence for existing DSClient $($synchash.DSClient.CurrentPresence.Details)" -showtime -logtype Discord -LogLevel 2
+                write-ezlogs "[Set-DiscordPresense] >>>> Clearing presence for existing DSClient: $($synchash.DSClient.CurrentPresence.Details) -- State: $($synchash.DSClient.CurrentPresence.State)" -showtime -logtype Discord -LogLevel 0 -Verboselog:$Verboselog
                 #[void]$synchash.DSClient.ClearPresence()
                 [void](Stop-DSClient)
               }catch{
@@ -302,7 +309,10 @@ function Set-DiscordPresense {
           'Start' = $Start
           'Stop' = $Stop
           'update' = $update
+          'Artist' = $Artist
+          'Verboselog' = $Verboselog
       })
+      if($Verboselog){write-ezlogs "[Caller: $((Get-PSCallStack)[1].Location):$((Get-PSCallStack)[1].ScriptLineNumber)] >>>> Starting DSClient Timer - Start: $Start - Update: $update - Stop: $Stop"}
       $synchash.DSClientTimer.start()
     }else{
       write-ezlogs "No discordclient timer has been created, haulting further actions" -showtime -warning -logtype Discord

@@ -179,8 +179,6 @@ function Add-VLCRegisteredEvents
         if(-not $([string]$synchash.vlc.media.Mrl).StartsWith("dshow://")){
           $synchash.Now_Playing_Title_Label.DataContext = 'OPENING...'
         }
-        #write-ezlogs ">>>> VLC Opening event: $($event.SourceArgs | out-string)" -logtype Libvlc -Dev_mode
-        #$synchash.VideoView.Background = [System.Windows.Media.Brushes]::Black
       }catch{
         write-ezlogs "An exception occurred in vlc Opening event" -showtime -catcherror $_
       }
@@ -189,20 +187,7 @@ function Add-VLCRegisteredEvents
     write-ezlogs "An exception occurred Registering an event" -showtime -catcherror $_
   }
 
-  #VLC Stopped Event
-  <#  try{
-      $null = Register-ObjectEvent -InputObject $synchash.Vlc -EventName Stopped -MessageData $synchash -Action {
-      $synchash = $Event.MessageData
-      try{
-      #$synchash.Timer.Stop()
-      #if($thisApp.Config.Verbose_logging){write-ezlogs ">>>> [VLC_Stopped_EVENT] Stopping tick timer" -showtime -color cyan}
-      }catch{
-      write-ezlogs "An exception occurred in vlc TimeChanged event" -showtime -catcherror $_
-      }
-      }
-      }catch{
-      write-ezlogs "An exception occurred Registering an event" -showtime -catcherror $_
-  }#>
+  #Vlc Encountered Error Event
   try{
     $EncounteredError = $Registered_Events | Where-Object {$_.EventName -eq 'EncounteredError'}
     if($EncounteredError){
@@ -361,49 +346,6 @@ function Add-VLCRegisteredEvents
   }catch{
     write-ezlogs "An exception occurred Registering Paused event" -showtime -catcherror $_
   }
-
-  #VolumeChanged
-  <#  try{
-      $null = Register-ObjectEvent -InputObject $synchash.Vlc -EventName VolumeChanged -MessageData $synchash -Action {
-      $synchash = $Event.MessageData
-      try{
-      #write-ezlogs ">>>> [VLC_VolumeChanged_Event]: Volume: $($($synchash.vlc.volume) | out-string)" -showtime -logtype Libvlc -LogLevel 2
-      #write-ezlogs " | Event Sender: $($Event.sender | out-string)" -logtype Libvlc -LogLevel 2
-      }catch{
-      write-ezlogs "An exception occurred in vlc VolumeChanged event" -showtime -catcherror $_
-      }
-      }
-      }catch{
-      write-ezlogs "An exception occurred Registering VolumeChanged event" -showtime -catcherror $_
-  }#>
-
-  #Forward
-  <#  try{
-      $null = Register-ObjectEvent -InputObject $synchash.Vlc -EventName Forward -MessageData $synchash -Action {
-      $synchash = $Event.MessageData
-      try{
-      write-ezlogs ">>>> [VLC_Forward_Event]: $($($synchash.vlc) | out-string)" -showtime -color cyan  -LogLevel 2 -logtype Libvlc
-      }catch{
-      write-ezlogs "An exception occurred in vlc Forward event" -showtime -catcherror $_
-      }
-      }
-      }catch{
-      write-ezlogs "An exception occurred Registering Forward event" -showtime -catcherror $_
-  }#>
-
-  #Backward
-  <#  try{
-      $null = Register-ObjectEvent -InputObject $synchash.Vlc -EventName Backward -MessageData $synchash -Action {
-      $synchash = $Event.MessageData
-      try{
-      write-ezlogs ">>>> [VLC_Backward_Event]: $($($synchash.vlc) | out-string)" -showtime -color cyan  -LogLevel 2 -logtype Libvlc
-      }catch{
-      write-ezlogs "An exception occurred in vlc Backward event" -showtime -catcherror $_
-      }
-      }
-      }catch{
-      write-ezlogs "An exception occurred Registering Backward event" -showtime -catcherror $_
-  }#>
   $Registered_Events = $Null
 }
 #----------------------------------------------

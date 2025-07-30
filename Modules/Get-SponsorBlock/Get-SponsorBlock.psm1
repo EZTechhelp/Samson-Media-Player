@@ -49,7 +49,7 @@ function Get-SponsorBlock {
       $reqs = $([System.Web.HTTPUtility]::UrlEncode("[`"$($categories -join '","')`"]"))
       $Uri += "&requiredSegments=$($reqs)"
     } 
-    write-ezlogs "[Get-SponsorBlock] >>>> Getting Sponsorblock data for Youtube videoid: $($videoId)" 
+    write-ezlogs "[Get-SponsorBlock] [Caller: $((Get-PSCallStack)[1].Location):$((Get-PSCallStack)[1].ScriptLineNumber)] >>>> Getting Sponsorblock data for Youtube videoid: $($videoId)" 
     try{       
       $req=[System.Net.HTTPWebRequest]::Create($uri)
       $req.Timeout = 5000

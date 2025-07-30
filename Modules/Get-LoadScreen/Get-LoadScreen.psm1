@@ -217,14 +217,30 @@ function Start-SplashScreen{
         "$Current_Folder\Assembly\EZT-MediaPlayer\Microsoft.Xaml.Behaviors.dll" 
       ) 
       foreach($a in $splash_Screen_Assemblies){
-        if($verboselog){write-ezlogs ">>>> Loading assembly $a"}
-        [void][System.Reflection.Assembly]::LoadFrom($a)        
+        if($verboselog){write-ezlogs ">>>> Loading assembly $a" -LogLevel 0 -Verboselog:$verboselog}
+        if($PSVersionTable.PSVersion.Major -le 5){
+          try {
+            $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($a)
+            if($assemblyName.Flags -eq 'PublicKey'){
+              [void][System.Reflection.Assembly]::Load($assemblyName)
+            }else{
+              [void][System.Reflection.Assembly]::LoadFrom($a)
+            }         
+          } catch {
+            write-ezlogs "Fallback to Loading assembly ($assemblyName) from path: $a" -Warning
+            [void][System.Reflection.Assembly]::LoadFrom($a)
+          }
+        }else{
+          [void][System.Reflection.Assembly]::LoadFrom($a)
+        }              
       }
       $Splash_dll_load_Measure.stop()   
     }catch{
       write-ezlogs "An exception occurred loading assemblies" -CatchError $_
       [void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms")
       [void][System.Windows.Forms.MessageBox]::Show("[ERROR]`nAn exception occurred starting ($($thisApp.Config.App_Name) Media Player - Version: $($thisApp.Config.App_Version) - PID: $($pid)) An exception occurred loading assemblines.`n$($_ | out-string)`n`nThis app will close","$($thisApp.Config.App_Name)",[System.Windows.Forms.MessageBoxButtons]::OK,[System.Windows.Forms.MessageBoxIcon]::Error) 
+    }finally{
+      $error.clear()
     }
   }
   $Splash_Scriptblock = {
@@ -604,7 +620,7 @@ $datetime$splash_load_Xaml_Status [PERF] splash_load_Xaml: | Time: $($splash_loa
 $datetime$splash_show_UI_Status [PERF] splash_show_UI: | Time: $($splash_show_UI.Elapsed.hours):$($splash_show_UI.Elapsed.Minutes):$($splash_show_UI.Elapsed.Seconds):$(([string]$splash_show_UI.Elapsed.Milliseconds).PadLeft(3,'0'))
 $datetime$Splash_Load_Controls_Status [PERF] Splash_Load_Controls: | Time: $($Splash_Load_Controls.Elapsed.hours):$($Splash_Load_Controls.Elapsed.Minutes):$($Splash_Load_Controls.Elapsed.Seconds):$(([string]$Splash_Load_Controls.Elapsed.Milliseconds).PadLeft(3,'0'))
 "@
-      write-ezlogs -text $message -linesbefore 1 -logfile $perf_log -Perf
+      write-ezlogs -text $message -logfile $perf_log -Perf
     }  
     try{     
       [void][System.Windows.Threading.Dispatcher]::Run()
@@ -642,13 +658,25 @@ $datetime$Splash_Load_Controls_Status [PERF] Splash_Load_Controls: | Time: $($Sp
         if($splash_Screen_Assemblies -notcontains $a -and $a -notmatch 'WebView2Loader|LibVLCSharp\.dll|Microsoft\.Windows\.SDK\.NET|PoshWinRT|WinRT.Runtime|FindFilesFast|MonoTorrent'){
           if($Debug_verboselog){write-ezlogs ">>>> Loading assembly $a" -Dev_mode}
           if($PSVersionTable.PSVersion.Major -le 5){
-            [void][System.Reflection.Assembly]::LoadFrom($a)
+            try {
+              $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($a)
+              if($assemblyName.Flags -eq 'PublicKey'){
+                [void][System.Reflection.Assembly]::Load($assemblyName)
+              }else{
+                [void][System.Reflection.Assembly]::LoadFrom($a)
+              }
+            } catch {
+              if($Verboselog){write-ezlogs "Fallback to Loading assembly ($assemblyName) from path: $a" -Warning -LogLevel 0 -Verboselog:$Verboselog}
+              [void][System.Reflection.Assembly]::LoadFrom($a)
+            }
           }elseif($a -notmatch 'System\.Text\.Json|System\.Memory|System\.Numerics\.Vectors|System\.Buffers'){
             [void][System.Reflection.Assembly]::LoadFrom($a)
           }
         }
       }catch{
         write-ezlogs "An exception occurred loading assembly file: $a" -catcherror $_
+      }finally{
+        $error.clear()
       }
     }  
     $dll_load_Measure.stop()  

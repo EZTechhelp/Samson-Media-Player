@@ -895,7 +895,7 @@ $(if(-not [string]::IsNullOrEmpty(($message.CatchError.InvocationInfo.UnboundArg
             }elseif($message.Perftimer -is [Timespan]){
               $Time = $message.Perftimer
             }else{
-              $Time -eq $null
+              $Time = $null
             }
             if($Time.Minutes -gt 0 -or $Time.hours -gt 0){
               $perfstate = ' [+HIGHLOAD]:'

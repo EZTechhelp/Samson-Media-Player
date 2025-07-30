@@ -54,6 +54,9 @@ function Start-Media{
     $Start_Media_Measure = [system.diagnostics.stopwatch]::StartNew()
     write-ezlogs "[Caller: $((Get-PSCallStack)[1].Location):$((Get-PSCallStack)[1].ScriptLineNumber)] ##### Start-Media Executed for: $($Media.title) -- Media Type: $($media.type)" -linesbefore 1
     $synchashWeak.Target.VLC_PlaybackCancel = $true
+    if($thisApp.TwitchChatReplayEnabled){
+      $thisApp.TwitchChatReplayEnabled = $false
+    }
     $Supported_Youtube_Types = 'YoutubePlaylist','YoutubeVideo','YoutubeTV','YoutubeChannel','YoutubeSubscription','YoutubeMusic','YoutubePlaylistItem'
     if(!$start_Paused){
       write-ezlogs ">>>> Updating Now_Playing_Title_Label to loading" -Dev_mode
@@ -738,9 +741,14 @@ function Start-Media{
               }
             }
             try{
+              if($thisApp.config.Youtube_Browser){
+                $Browser = "--cookies-from-browser $($thisApp.config.Youtube_Browser)"
+              }else{
+                $Browser = $null
+              }
               $newProc = [System.Diagnostics.ProcessStartInfo]::new($youtubedl_path)
               $newProc.WindowStyle = 'Hidden'
-              $newProc.Arguments = "-f b -g $($media.url) -o '*' -j --cookies-from-browser $($thisApp.config.Youtube_Browser) --add-header `"Device-Id:twitch-web-wall-mason`" --add-header `"X-Device-Id:twitch-web-wall-mason`" --add-header `"Authorization: OAuth $($Twitch_token)`" --sponsorblock-remove all"
+              $newProc.Arguments = "-f b -g $($media.url) -o '*' -j $Browser --add-header `"Device-Id:twitch-web-wall-mason`" --add-header `"X-Device-Id:twitch-web-wall-mason`" --add-header `"Authorization: OAuth $($Twitch_token)`" --sponsorblock-remove all"
               $newProc.UseShellExecute = $false
               $newProc.CreateNoWindow = $true
               $newProc.RedirectStandardOutput = $true
@@ -815,9 +823,14 @@ function Start-Media{
                 }
                 #Yt-dlp arguments that allow downloading YT Premium bitrates/quality: --extractor-args "youtube:player_client=default,ios || -f 'bestvideo+bestaudio/best'"
                 try{
+                  if($thisApp.config.Youtube_Browser){
+                    $Browser = "--cookies-from-browser $($thisApp.config.Youtube_Browser)"
+                  }else{
+                    $Browser = $null
+                  }
                   $newProc = [System.Diagnostics.ProcessStartInfo]::new($youtubedl_path)
                   $newProc.WindowStyle = 'Hidden'
-                  $newProc.Arguments = "$media_link --sponsorblock-remove all --sponsorblock-mark all --sponsorblock-chapter-title '`"[SponsorBlock]: %(category_names)l`"' --extractor-args `"youtube:player_client=default,ios`" --no-check-certificate --skip-download --youtube-skip-dash-manifest --cookies-from-browser $($thisApp.config.Youtube_Browser) -j"
+                  $newProc.Arguments = "$media_link --sponsorblock-remove all --sponsorblock-mark all --sponsorblock-chapter-title '`"[SponsorBlock]: %(category_names)l`"' --extractor-args `"youtube:player_client=default,ios`" --no-check-certificate --skip-download --youtube-skip-dash-manifest $Browser -j"
                   $newProc.UseShellExecute = $false
                   $newProc.CreateNoWindow = $true
                   $newProc.RedirectStandardOutput = $true
@@ -862,7 +875,11 @@ function Start-Media{
               }else{
                 $best_quality = $yt_dlp.url | Select-Object -last 1
                 if(!$best_quality -and $yt_dlp.format){
-                  $yt_dlp_audio = ($yt_dlp.formats.where({$_.abr -eq ($yt_dlp.formats | Measure-Object -Property abr -Maximum).Maximum}) | Select-Object -last 1)
+                  $Formats = $yt_dlp.formats | Where-Object {$_.language -eq 'en-US'}
+                  if(!$Formats){
+                    $Formats = $yt_dlp.formats
+                  }
+                  $yt_dlp_audio = ($Formats.where({$_.abr -eq ($Formats | Measure-Object -Property abr -Maximum).Maximum}) | Select-Object -last 1)
                   $audio_url = ($yt_dlp_audio).url
                   write-ezlogs "| Getting Best Quality Audio $($yt_dlp_audio.format) -- ABR: $($yt_dlp_audio.abr)" -showtime -logtype Youtube
                   if($thisapp.config.Youtube_Quality -eq 'Best'){
@@ -1106,13 +1123,17 @@ function Start-Media{
         return
       }
       try{
-        if(Test-ValidPath $chat_url -Type URL){
+        if(!$TwitchArchive -and (Test-ValidPath $chat_url -Type URL)){
           write-ezlogs "| Chat URL: $($chat_url)" -showtime -Dev_mode
           $synchashWeak.Target.ChatView_URL = $chat_url
           Update-ChatView -synchash $synchashWeak.Target -thisApp $thisApp -Navigate -ChatView_URL $synchashWeak.Target.ChatView_URL -show:$thisApp.Config.Chat_View
         }elseif($youtube_id -and $media_link -notmatch 'tv\.youtube\.com' -and $media.url -notmatch 'tv\.youtube\.com' -and $media.type -ne 'YoutubeTV' -and $thisApp.Config.Enable_YoutubeComments){
           $synchashWeak.Target.ChatView_URL = $Null
+          #TODO: This may end up being called twice if using webplayer. Need more testing. Doesnt really cause issues other than unneeded resource usage
           Update-ChatView -synchash $synchashWeak.Target -thisApp $thisApp -Navigate -Youtube_ID $youtube_id -show:$thisApp.Config.Chat_View
+        }elseif($TwitchArchive -and $VideoId){
+          $synchashWeak.Target.ChatView_URL = $Null
+          Update-ChatView -synchash $synchashWeak.Target -thisApp $thisApp -Navigate -TwitchVOD_ID $VideoId -show:$thisApp.Config.Chat_View
         }else{
           $synchashWeak.Target.ChatView_URL = $Null
           Update-ChatView -synchash $synchashWeak.Target -thisApp $thisApp -Disable -Hide

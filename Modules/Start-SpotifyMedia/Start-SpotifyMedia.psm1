@@ -70,6 +70,9 @@ function Start-SpotifyMedia{
     if($synchash.Start_media_timer){
       $synchash.Start_media_timer.stop() 
     }
+    if($thisApp.TwitchChatReplayEnabled){
+      $thisApp.TwitchChatReplayEnabled = $false
+    }
     Reset-MainPlayer -thisApp $thisApp -synchash $synchash -SkipSpotify:$use_WebPlayer
     if(!$use_WebPlayer){
       Set-SpotifyWebPlayerTimer -synchash $synchash -thisApp $thisApp

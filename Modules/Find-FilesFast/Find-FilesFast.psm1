@@ -40,8 +40,23 @@ function Find-FilesFast{
     [switch]$FollowReparsePoints
   )
   Begin{
-    if(-not [bool]('FindFilesFast.Finder' -as [Type]) -and [system.IO.File]::Exists("$($thisApp.Config.Current_Folder)\Assembly\FindFilesFast\FindFilesFast.dll")){ 
-      [void][System.Reflection.Assembly]::LoadFrom("$($thisApp.Config.Current_Folder)\Assembly\FindFilesFast\FindFilesFast.dll")
+    $Dll = "$($thisApp.Config.Current_Folder)\Assembly\FindFilesFast\FindFilesFast.dll"
+    if(-not [bool]('FindFilesFast.Finder' -as [Type]) -and [system.IO.File]::Exists($Dll)){  
+      if($PSVersionTable.PSVersion.Major -le 5){
+        try {
+          $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($Dll)
+          if($assemblyName.Flags -eq 'PublicKey'){
+            [void][System.Reflection.Assembly]::Load($assemblyName)
+          }else{
+            [void][System.Reflection.Assembly]::LoadFrom($Dll)
+          }         
+        } catch {
+          write-ezlogs "Fallback to Loading assembly ($assemblyName) from path: $Dll" -Warning
+          [void][System.Reflection.Assembly]::LoadFrom($Dll)
+        }
+      }else{
+        [void][System.Reflection.Assembly]::LoadFrom($Dll)
+      }
     }
   }
   Process { 

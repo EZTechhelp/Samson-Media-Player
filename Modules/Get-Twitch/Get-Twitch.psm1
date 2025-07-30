@@ -681,6 +681,7 @@ function Get-TwitchVideos{
   )
   #TODO: Twitch VOD chat replay: https://rechat.twitch.tv/rechat-messages?start=1458316988&video_id=v55153756
   #each query will return a 30 second window of messages
+  #Above doesnt seem to work anymore - another possible tool to use: https://github.com/jdpurcell/RechatTool/blob/master/RechatTool/Rechat.cs
   try{
     try{
       $Name = $($thisApp.Config.App_Name)
@@ -2084,4 +2085,151 @@ function Get-Twitch
 #----------------------------------------------
 #endregion Get-Twitch Function
 #----------------------------------------------
-Export-ModuleMember -Function @('Get-TwitchAPI','Get-TwitchStatus','Start-TwitchMonitor','Get-TwitchApplication','Set-TwitchApplication','Get-TwitchAccessToken','Get-TwitchFollows','Get-Twitch','Get-TwitchVideos','Update-TwitchStatus')
+
+#----------------------------------------------
+#region Start-TwitchChatReplay Function
+#----------------------------------------------
+function Start-TwitchChatReplay
+{
+  Param (
+    [string]$StreamName,
+    [string]$VideoID,
+    $Interval,
+    $thisApp,
+    $synchash,
+    [switch]$use_Runspace,
+    [switch]$Verboselog = $thisApp.Config.Verbose_logging
+  )
+  try{
+    #TODO: WIP
+    #Leverage Rechat tool: https://github.com/jdpurcell/RechatTool
+    write-ezlogs "#### Starting Twitch ChatReplay - VideoID: $VideoID" -color yellow
+    if($use_Runspace){
+      try{
+        $null = Stop-Runspace -thisApp $thisApp -runspace_name 'TwitchChatReplay_RUNSPACE' -force
+      }catch{
+        write-ezlogs " An exception occurred checking for existing runspace 'TwitchChatReplay_RUNSPACE'" -showtime -catcherror $_
+      }
+    }
+
+    if(!$VideoID){
+      Write-ezlogs "Cannot start Twitch Chat Replay - no Twitch video Id provided!" -Warning
+    }
+
+    $ScriptBlock = {
+      Param (
+        [string]$StreamName = $StreamName,
+        [string]$VideoID = $VideoID,
+        $Interval = $Interval,
+        $thisApp = $thisApp,
+        $synchash = $synchash,
+        [switch]$use_Runspace = $use_Runspace,
+        [switch]$Verboselog = $Verboselog
+      )
+      try{
+        Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'Comments_Progress_Ring' -Property 'IsActive' -value $true
+        $synchash.TwitchChatReplaymessages = [System.Collections.Generic.List[PsCustomObject]]::new()
+        $RechatPath = "$($ThisApp.Config.Current_Folder)\Resources\Twitch\Rechat"
+        $envpaths = $env:path -split ';'
+        if($envpaths -notcontains $RechatPath){
+          $env:Path += ";$RechatPath"
+        }
+        $OutputPath = "$($thisApp.Config.Temp_Folder)"
+        $Outputtjsonname = "$VideoID.json"
+        $outputjson = [system.io.path]::Combine($OutputPath,$Outputtjsonname)
+        $OutputTextFile = [system.io.path]::Combine($OutputPath,"$VideoID.txt")
+        if([system.io.file]::Exists($outputjson)){
+          $Null = Remove-Item -Path $outputjson -Force -ErrorAction SilentlyContinue
+        }
+        if([system.io.file]::Exists($OutputTextFile)){
+          $Null = Remove-Item -Path $OutputTextFile -Force -ErrorAction SilentlyContinue
+        }
+        $null = RechatTool.exe -D $VideoID $outputjson -o
+
+        if(-not [system.io.file]::Exists($OutputTextFile)){
+          write-ezlogs "Cannot continue! Unable to find Rechat output text file: $OutputTextFile" -Warning
+          return
+        }
+        Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'Comments_Progress_Ring' -Property 'IsActive' -value $false
+        [system.io.file]::ReadAllLines($OutputTextFile) | & { process {
+            $Line = $_
+            $timestamp = [regex]::Match($Line, '\[(\d{2}:\d{2}:\d{2})\]').Groups[1].Value
+            $author = [regex]::Match($Line, '\] (.*): ').Groups[1].Value
+            $text = [regex]::Match($Line, ': (.*)').Groups[1].Value.Trim()
+            $timestampSeconds = [int]([TimeSpan]::Parse($timestamp)).TotalSeconds
+            [void]$synchash.TwitchChatReplaymessages.add([PSCustomObject]@{
+                TimestampSecs = $timestampSeconds
+                Timestamp = $timestamp
+                Author     = $author
+                Text       = $text
+            })
+        }}
+
+        # Initialize message index
+        $synchash.TwitchChatReplayIndex = 0
+
+        $thisApp.TwitchChatReplayEnabled = $true
+        $jobs = [System.WeakReference]::new($thisApp.Jobs.clone(),$false).Target
+        $waithandle = $jobs[$($jobs.Name.IndexOf('TwitchChatReplay_RUNSPACE'))]
+
+        do
+        {
+          try{
+            $currentVideoTime = $($([timespan]::FromMilliseconds($synchash.VLC.Time)).TotalSeconds)
+            $nextMessage = $synchash.TwitchChatReplaymessages[$synchash.TwitchChatReplayIndex]
+            if ($currentVideoTime -ge $nextMessage.TimestampSecs) {
+              $parentNOde = [Syncfusion.UI.Xaml.TreeView.Engine.TreeViewNode]::new()
+              $parentnode.Content = [PSCustomObject]@{
+                'textDisplay' = $nextMessage.Text
+                'authorDisplayName' = $nextMessage.Author
+                'updatedAt' = $nextMessage.Timestamp
+                'TimestampSecs' = $nextMessage.TimestampSecs
+              }
+              Update-YoutubeComments -synchash $synchash -thisApp $thisApp -itemssource $parentNOde -UpdateItemssource -BringIntoView
+              write-ezlogs "Posting Message: Timestamp: $($nextMessage.Timestamp) -- author: $($nextMessage.Author) -- text: $($nextMessage.Text) -- currentVideoTime: $currentVideoTime - nextMessage.TimestampSecs: $($nextMessage.TimestampSecs)" -LogLevel 0 -Verboselog:$Verboselog
+              $synchash.TwitchChatReplayIndex++
+              $Wait = 10
+            }else{
+              Update-YoutubeComments -synchash $synchash -thisApp $thisApp -BringIntoView #-RefreshView
+              $Wait = 500
+            }
+          }catch{
+            Start-Sleep -Milliseconds 500
+            write-ezlogs "An exception occurred in TwitchChatReplay while loop" -catcherror $_
+          }finally{
+            [void]$waithandle.runspace.AsyncWaitHandle.WaitOne($Wait,$false)
+          }
+        } while($thisApp.TwitchChatReplayEnabled -and $synchash.TwitchChatReplayIndex -lt $synchash.TwitchChatReplaymessages.Count)
+        write-ezlogs ">>>> TwitchChatReplay has ended -- TwitchChatReplayIndex: $($synchash.TwitchChatReplayIndex) -- TwitchChatReplaymessages.Count: $($synchash.TwitchChatReplaymessages.Count) -- TwitchChatReplayEnabled: $($thisApp.TwitchChatReplayEnabled)" -Warning
+      }catch{
+        write-ezlogs "An exception occured in TwitchChatReplay Runspace" -catcherror $_
+      }finally{      
+        $synchash.TwitchChatReplayIndex = 0
+        $synchash.TwitchChatReplaymessages = $Null
+        $thisApp.TwitchChatReplayEnabled = $false
+        Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'Comments_Progress_Ring' -Property 'IsActive' -value $false
+        if([system.io.file]::Exists($outputjson)){
+          $Null = Remove-Item -Path $outputjson -Force -ErrorAction SilentlyContinue
+        }
+        if([system.io.file]::Exists($OutputTextFile)){
+          write-ezlogs "| Removing Rechat output text file: $outputjson"
+          $Null = Remove-Item -Path $OutputTextFile -Force -ErrorAction SilentlyContinue
+        }
+      }
+    }
+    if($use_Runspace){
+      $keys = $PSBoundParameters.keys
+      $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant" -and $_.Name -in $keys){$_}}}
+      Start-Runspace -scriptblock $ScriptBlock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'TwitchChatReplay_RUNSPACE' -thisApp $thisApp -synchash $synchash -ApartmentState STA
+      Remove-Variable Variable_list
+    }else{
+      Invoke-Command -ScriptBlock $ScriptBlock
+    }
+  }catch{
+    write-ezlogs "An exception occured in Start-TwitchChatReplay" -catcherror $_
+  }
+}
+#----------------------------------------------
+#endregion Start-TwitchChatReplay Function
+#----------------------------------------------
+Export-ModuleMember -Function @('Get-TwitchAPI','Get-TwitchStatus','Start-TwitchMonitor','Get-TwitchApplication','Set-TwitchApplication','Get-TwitchAccessToken','Get-TwitchFollows','Get-Twitch','Get-TwitchVideos','Update-TwitchStatus','Start-TwitchChatReplay')

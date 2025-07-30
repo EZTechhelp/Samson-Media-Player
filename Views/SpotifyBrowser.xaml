@@ -59,7 +59,9 @@
 				<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="Artist" FilterBehavior="StringTyped" MinimumWidth="90" IsReadOnly="False" AllowEditing="True" AllowSorting="True"/>	
 				<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="Album" FilterBehavior="StringTyped" MinimumWidth="95" IsReadOnly="False" AllowEditing="True" AllowSorting="True"/>	
 				<syncfusion:GridTimeSpanColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="Duration" Width="115" MaximumWidth="115" MinimumWidth="115" IsReadOnly="True" AllowSorting="True"/>				
-				<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="Playlist" FilterBehavior="StringTyped" MinimumWidth="110" IsReadOnly="True" AllowSorting="True"/>			
+				<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="Playlist" FilterBehavior="StringTyped" MinimumWidth="110" IsReadOnly="True" AllowSorting="True"/>
+				<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="PlaylistOwner" FilterBehavior="StringTyped" MinimumWidth="110" IsReadOnly="True" AllowSorting="True"/>
+				<syncfusion:GridTextColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" MappingName="PlaylistisPublic" FilterBehavior="StringTyped" MinimumWidth="80" IsReadOnly="True" AllowSorting="True"/>
 	            <syncfusion:GridDateTimeColumn SetCellBoundValue="True" UseBindingValue="true" CellTemplate="{StaticResource cellTemplate}" HeaderText="Added" MappingName="Profile_Date_Added" MinimumWidth="115" IsReadOnly="True" AllowSorting="True">
 					<syncfusion:GridDateTimeColumn.DateTimeFormat>
 						<global:DateTimeFormatInfo ShortDatePattern="MM/dd/yyyy hh:mm:ss"/>

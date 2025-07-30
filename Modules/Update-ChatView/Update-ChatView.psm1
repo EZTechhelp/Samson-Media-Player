@@ -37,6 +37,7 @@ function Update-ChatView
     $thisApp = $thisApp,
     [string]$ChatView_URL = $synchash.ChatView_URL,
     [string]$Youtube_ID,
+    [string]$TwitchVOD_ID,
     [switch]$Show,
     [switch]$Hide,
     [switch]$Reload,
@@ -135,6 +136,15 @@ function Update-ChatView
                 $synchash.Chat_View_Button.Opacity='1'           
                 $synchash.Chat_View_Button.IsEnabled = $true
                 Get-YoutubeComments -synchash $synchash -thisApp $thisApp -Youtube_VID $object.Youtube_ID -use_Runspace
+              }elseif($object.Navigate -and $object.TwitchVOD_ID -and $thisApp.Config.Enable_YoutubeComments){
+                $synchash.Chat_View_Button.ToolTip="Comments View"
+                $synchash.Chat_Icon.Kind="Chat"
+                $synchash.Chat_View_Button.Opacity='1'           
+                $synchash.Chat_View_Button.IsEnabled = $true
+                if($synchash.Comments_Progress_Ring.IsActive){
+                  $synchash.Comments_Progress_Ring.IsActive = $false
+                }                
+                Start-TwitchChatReplay -synchash $synchash -thisApp $thisApp -VideoID $object.TwitchVOD_ID -use_Runspace
               }elseif($object.Navigate -and (Test-URL $object.ChatView_URL)){
                 $synchash.Chat_View_Button.ToolTip="Chat View" 
                 $synchash.Chat_Icon.Kind="Chat"
@@ -286,6 +296,7 @@ function Update-ChatView
             'Navigate' = $Navigate
             'Reload' = $Reload
             'Youtube_ID' = $Youtube_ID
+            'TwitchVOD_ID' = $TwitchVOD_ID
             'Show' = $Show
             'Hide' = $Hide
             'Sender' = $Sender

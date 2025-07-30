@@ -331,44 +331,44 @@ function Set-ApplicationAudioDevice
         $capture_device = $all_Audio_Devices | Where-Object {$_.friendlyname -match 'CABLE Input \(VB-Audio Virtual Cable\)'}
         if($start){
           if($ProcessID){
-            write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking up process with provided id $($ProcessID)"
+            write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking up process with provided id $($ProcessID)" -logtype Libvlc
             $webviewProcesses = [System.Diagnostics.Process]::GetProcessById($ProcessID)
             $Process = $webviewProcesses.Id
           }else{
             if($ProcessName){
-              write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking for process name $ProcessName"
+              write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking for process name $ProcessName" -logtype Libvlc
               if($ProcessName -match '\.exe'){
                 $processes = [System.Diagnostics.Process]::GetProcessesByName([System.IO.Path]::GetFileNameWithoutExtension($ProcessName))
               }else{
                 $processes = [System.Diagnostics.Process]::GetProcessesByName($ProcessName)
               }
               if($Processes){
-                write-ezlogs "[Set-ApplicationAudioDevice] | Found process with name: $($ProcessName) - IDs: $($Processes.Id)" -Success
+                write-ezlogs "[Set-ApplicationAudioDevice] | Found process with name: $($ProcessName) - IDs: $($Processes.Id)" -Success -logtype Libvlc
                 $Process = $ProcessName
               }elseif($wait){
                 $timeout = 0
-                write-ezlogs "[Set-ApplicationAudioDevice] | Waiting until process '$($ProcessName)' becomes available"
+                write-ezlogs "[Set-ApplicationAudioDevice] | Waiting until process '$($ProcessName)' becomes available" -logtype Libvlc
                 while(!$Processes -and $timeout -lt 600){
                   $timeout++
                   $processes = [System.Diagnostics.Process]::GetProcessesByName($ProcessName)
                   start-sleep -Milliseconds 5
                 }
                 if($timeout -eq 600){
-                  write-ezlogs "[Set-ApplicationAudioDevice] Timed out waiting for process '$($ProcessName)' EQ will not be enabled" -warning -AlertUI
+                  write-ezlogs "[Set-ApplicationAudioDevice] Timed out waiting for process '$($ProcessName)' EQ will not be enabled" -warning -AlertUI -logtype Libvlc
                   $Process = $null
                 }else{
-                  write-ezlogs "[Set-ApplicationAudioDevice] | Found process with name: $($ProcessName) - IDs: $($Processes.ProcessId)" -Success
+                  write-ezlogs "[Set-ApplicationAudioDevice] | Found process with name: $($ProcessName) - IDs: $($Processes.ProcessId)" -Success -logtype Libvlc
                   $Process = $ProcessName
                 }
               }
             }else{
-              write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking for all webview2 processes" -Dev_mode
+              write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking for all webview2 processes" -Dev_mode -logtype Libvlc
               $query = [System.Management.ObjectQuery]::new("SELECT * FROM Win32_Process WHERE Name = 'msedgewebview2.exe' AND CommandLine LIKE '%AudioService%' AND CommandLine LIKE '%$([regex]::Escape("$($thisApp.Config.Temp_Folder)"))%'")
               $searcher = [System.Management.ManagementObjectSearcher]::new($query)
               $AudioProcess = $searcher.get()
               $searcher.Dispose()
               if(-not [string]::IsNullOrEmpty($AudioProcess) -and $AudioProcess.count -gt 0){
-                write-ezlogs "[Set-ApplicationAudioDevice] | Found webvieww2 process with AudioService in commandline: $($AudioProcess.ProcessId)" -Success
+                write-ezlogs "[Set-ApplicationAudioDevice] | Found webvieww2 process with AudioService in commandline: $($AudioProcess.ProcessId)" -Success -logtype Libvlc
                 $Process = $AudioProcess.ProcessId
               }elseif($wait){
                 $timeout = 0
@@ -376,7 +376,7 @@ function Set-ApplicationAudioDevice
                   $null = $AudioProcess.dispose()
                   $AudioProcess = $Null
                 }
-                write-ezlogs "[Set-ApplicationAudioDevice] | Waiting until webview2 with audio becomes available"
+                write-ezlogs "[Set-ApplicationAudioDevice] | Waiting until webview2 with audio becomes available" -logtype Libvlc
                 while(!$AudioProcess.ProcessId -and ($timeout -lt 600 -or $synchash.Youtube_WebPlayer_URL)){
                   $timeout++
                   $query = [System.Management.ObjectQuery]::new("SELECT * FROM Win32_Process WHERE Name = 'msedgewebview2.exe' AND CommandLine LIKE '%AudioService%' AND CommandLine LIKE '%$([regex]::Escape("$($thisApp.Config.Temp_Folder)"))%'")
@@ -386,7 +386,7 @@ function Set-ApplicationAudioDevice
                   start-sleep -Milliseconds 5
                 }
                 if($timeout -eq 600 -and !$AudioProcess.ProcessID){
-                  write-ezlogs "Timed out waiting for a webview2 process playing audio - using process name" -warning
+                  write-ezlogs "Timed out waiting for a webview2 process playing audio - using process name" -warning -logtype Libvlc
                   $query = [System.Management.ObjectQuery]::new("SELECT * FROM Win32_Process WHERE Name = 'msedgewebview2.exe'")
                   $searcher = [System.Management.ManagementObjectSearcher]::new($query)
                   $AudioProcess = $searcher.get()
@@ -395,7 +395,7 @@ function Set-ApplicationAudioDevice
                     $Process = $AudioProcess.name[0]
                   }
                 }else{
-                  write-ezlogs "[Set-ApplicationAudioDevice] | Found webview2 process with Audio: $($AudioProcess.ProcessId)" -Success
+                  write-ezlogs "[Set-ApplicationAudioDevice] | Found webview2 process with Audio: $($AudioProcess.ProcessId)" -Success -logtype Libvlc
                   $Process = $AudioProcess.ProcessId
                 }
               }else{
@@ -406,7 +406,7 @@ function Set-ApplicationAudioDevice
                 if($AudioProcess.name){
                   $Process = $AudioProcess.name[0]
                 }
-                write-ezlogs "[Set-ApplicationAudioDevice] | Couldnt find webview2 process with audio, using process name: $($Process)"
+                write-ezlogs "[Set-ApplicationAudioDevice] | Couldnt find webview2 process with audio, using process name: $($Process)" -logtype Libvlc
               }
               if($AudioProcess -is [System.IDisposable]){
                 $null = $AudioProcess.dispose()
@@ -416,7 +416,7 @@ function Set-ApplicationAudioDevice
           }
           if($Process){
             if($Startlibvlc){
-              write-ezlogs "[Set-ApplicationAudioDevice] | Creating libvlc session for dshow://" -LogLevel 0 -Verboselog:$Verboselog
+              write-ezlogs "[Set-ApplicationAudioDevice] | Creating libvlc session for dshow://" -LogLevel 0 -Verboselog:$Verboselog -logtype Libvlc
               $allDevices = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::EnumerateDevices([CSCore.CoreAudioAPI.DataFlow]::All)
               $capture_device = $allDevices | Where-Object {$_.friendlyname -match 'CABLE Input \(VB-Audio Virtual Cable\)'}
               if($thisApp.Config.Enable_EQ -and !$synchash.libvlc){
@@ -435,7 +435,7 @@ function Set-ApplicationAudioDevice
             }
             write-ezlogs "[Set-ApplicationAudioDevice] >>> Redirecting audio output for process: $($Process) to virtual audio cable" -logtype Libvlc
             try{
-              write-ezlogs "[Set-ApplicationAudioDevice] | Rerouting audio for process '$process' to deviceid: $($capture_device.DeviceID)" -showtime
+              write-ezlogs "[Set-ApplicationAudioDevice] | Rerouting audio for process '$process' to deviceid: $($capture_device.DeviceID)" -showtime -logtype Libvlc
               $newProc = [System.Diagnostics.ProcessStartInfo]::new("$soundviewpath`svcl.exe")
               $newProc.WindowStyle = 'Hidden'
               $newProc.Arguments = "/Stdout /SetAppDefault $($capture_device.DeviceID) All $Process"
@@ -542,10 +542,10 @@ function Set-ApplicationAudioDevice
                   $Null = $eqfilter.Filters.Add(1,$eqchannelfilter) #Right Channel
               $Null = $synchash.Current_VirtualEQ.SampleFilters.Add($eqfilter)#>
             }elseif($Use_Cscore){
-              write-ezlogs "[Set-ApplicationAudioDevice] Unable to find capture device - CSCORE capture device: $($capture_device) - svlc_ouptput: $($svlc_ouptput | out-string)" -Warning
+              write-ezlogs "[Set-ApplicationAudioDevice] Unable to find capture device - CSCORE capture device: $($capture_device) - svlc_ouptput: $($svlc_ouptput | out-string)" -Warning -logtype Libvlc
             }
           }else{
-            write-ezlogs "[Set-ApplicationAudioDevice] Unable to find process $($ProcessID) in order to route audio to virtual audio cable" -warning
+            write-ezlogs "[Set-ApplicationAudioDevice] Unable to find process $($ProcessID) in order to route audio to virtual audio cable" -warning -logtype Libvlc
           }
         }
         if($stop){
@@ -558,17 +558,17 @@ function Set-ApplicationAudioDevice
             write-ezlogs "[Set-ApplicationAudioDevice] >>> Looking up process with name: $($ProcessName)"
             $Processes = [System.Diagnostics.Process]::GetProcessesByName($ProcessName)
             if($Processes){
-              write-ezlogs "[Set-ApplicationAudioDevice] | Found process with name: $($ProcessName) - IDs: $($Processes.ProcessId)" -Success
+              write-ezlogs "[Set-ApplicationAudioDevice] | Found process with name: $($ProcessName) - IDs: $($Processes.ProcessId)" -Success -logtype Libvlc
               $Process = $ProcessName
             }
           }else{
-            write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking for all webview2 processes" -Dev_mode
+            write-ezlogs "[Set-ApplicationAudioDevice] >>>> Looking for all webview2 processes" -Dev_mode -logtype Libvlc
             $query = [System.Management.ObjectQuery]::new("SELECT * FROM Win32_Process WHERE Name = 'msedgewebview2.exe' AND CommandLine LIKE '%AudioService%' AND CommandLine LIKE '%$([regex]::Escape("$($thisApp.Config.Temp_Folder)"))%'")
             $searcher = [System.Management.ManagementObjectSearcher]::new($query)
             $AudioProcess = $searcher.get()
             $searcher.Dispose()
             if(-not [string]::IsNullOrEmpty($AudioProcess) -and $AudioProcess.count -gt 0){
-              write-ezlogs "[Set-ApplicationAudioDevice] | Found webvieww2 process with AudioService in commandline: $($AudioProcess.ProcessId)" -Success
+              write-ezlogs "[Set-ApplicationAudioDevice] | Found webvieww2 process with AudioService in commandline: $($AudioProcess.ProcessId)" -Success -logtype Libvlc
               $Process = $AudioProcess.ProcessId
             }else{
               if($AudioProcess -is [System.IDisposable]){
@@ -582,10 +582,10 @@ function Set-ApplicationAudioDevice
               if($AudioProcess.name){
                 $Process = $AudioProcess.name[0]
               }
-              write-ezlogs "[Set-ApplicationAudioDevice] | Couldnt find webview2 process with audio, using process name: $($Process)" -LogLevel 0 -Verboselog:$Verboselog
+              write-ezlogs "[Set-ApplicationAudioDevice] | Couldnt find webview2 process with audio, using process name: $($Process)" -LogLevel 0 -logtype Libvlc -Verboselog:$Verboselog
             }
             if($thisApp.Config.Use_Spicetify){
-              write-ezlogs "[Set-ApplicationAudioDevice] >>> Looking for all Spotify processes"
+              write-ezlogs "[Set-ApplicationAudioDevice] >>> Looking for all Spotify processes" -logtype Libvlc
               $query = [System.Management.ObjectQuery]::new("SELECT * FROM Win32_Process WHERE Name = 'Spotify.exe'")
               $searcher = [System.Management.ManagementObjectSearcher]::new($query)
               $SpotifyProcesses = $searcher.get()
@@ -597,7 +597,7 @@ function Set-ApplicationAudioDevice
             }
           }
           if($Process){
-            write-ezlogs "[Set-ApplicationAudioDevice] >>>> Resetting audio output for process: $Process to DefaultRenderDevice" -LogLevel 0 -Verboselog:$Verboselog
+            write-ezlogs "[Set-ApplicationAudioDevice] >>>> Resetting audio output for process: $Process to DefaultRenderDevice" -LogLevel 0 -logtype Libvlc -Verboselog:$Verboselog
             try{
               $newProc = [System.Diagnostics.ProcessStartInfo]::new("$soundviewpath`svcl.exe")
               $newProc.WindowStyle = 'Hidden'
@@ -617,7 +617,7 @@ function Set-ApplicationAudioDevice
               }
             }
             if($svlc_ouptput){
-              write-ezlogs "[Set-ApplicationAudioDevice] | Soundvolumeview: $($svlc_ouptput)"
+              write-ezlogs "[Set-ApplicationAudioDevice] | Soundvolumeview: $($svlc_ouptput)" -logtype Libvlc
             }
           }elseif($SpotifyProcesses.processid){
             write-ezlogs "[Set-ApplicationAudioDevice] >>>> Resetting audio output for Spotify process: $($SpotifyProcesses.processid) to DefaultRenderDevice"
@@ -646,7 +646,7 @@ function Set-ApplicationAudioDevice
             write-ezlogs "[Set-ApplicationAudioDevice] >>>> No processes found/provided to reset audio output"
           }
           if($Stoplibvlc){
-            write-ezlogs "[Set-ApplicationAudioDevice] | Executing Update-MainPlayer to stop libvlc session for dshow://" -Dev_mode
+            write-ezlogs "[Set-ApplicationAudioDevice] | Executing Update-MainPlayer to stop libvlc session for dshow://" -Dev_mode -logtype Libvlc
             Update-MainPlayer -synchash $synchash -thisApp $thisApp -Stoplibvlc
           }
           if($synchash.current_soundout -and $synchash.current_soundout.PlaybackState -ne 'Stopped'){
@@ -654,27 +654,27 @@ function Set-ApplicationAudioDevice
             $synchash.current_soundout.stop()
             $synchash.current_soundout.Dispose()
           }else{
-            write-ezlogs "[Set-ApplicationAudioDevice] No current_soundout instance is recording or available to stop" -warning -Dev_mode
+            write-ezlogs "[Set-ApplicationAudioDevice] No current_soundout instance is recording or available to stop" -warning -Dev_mode -logtype Libvlc
           }
           if($synchash.current_soundInsource){
-            write-ezlogs "[Set-ApplicationAudioDevice] | Disposing current_soundInsource"
+            write-ezlogs "[Set-ApplicationAudioDevice] | Disposing current_soundInsource" -logtype Libvlc
             $synchash.current_soundInsource.Dispose()
           }
           if($synchash.Current_VirtualEQ){
-            write-ezlogs "[Set-ApplicationAudioDevice] | Disposing Current_VirtualEQ"
+            write-ezlogs "[Set-ApplicationAudioDevice] | Disposing Current_VirtualEQ" -logtype Libvlc
             $synchash.Current_VirtualEQ.Dispose()
           }
           if($capture_device){
-            write-ezlogs "[Set-ApplicationAudioDevice] | Disposing capture_device" -Dev_mode
+            write-ezlogs "[Set-ApplicationAudioDevice] | Disposing capture_device" -Dev_mode -logtype Libvlc
             $capture_device.Dispose()
             $capture_device = $Null
           }
           if($synchash.current_Capture -and $synchash.current_Capture.RecordingState -ne 'Stopped'){
-            write-ezlogs "[Set-ApplicationAudioDevice] | Stopping and Disposing current_Capture"
+            write-ezlogs "[Set-ApplicationAudioDevice] | Stopping and Disposing current_Capture" -logtype Libvlc
             $synchash.current_Capture.Stop()
             $synchash.current_Capture.Dispose()
           }else{
-            write-ezlogs "[Set-ApplicationAudioDevice] No current_Capture instance is recording or available to stop" -warning -Dev_mode
+            write-ezlogs "[Set-ApplicationAudioDevice] No current_Capture instance is recording or available to stop" -warning -Dev_mode -logtype Libvlc
           }
         }
       }catch{
@@ -686,7 +686,7 @@ function Set-ApplicationAudioDevice
           $Set_ApplicationAudioDevice_Measure = $Null
         }
         if($all_Audio_Devices){
-          write-ezlogs "[Set-ApplicationAudioDevice] | Disposing All_Audio_Devices" -Dev_mode
+          write-ezlogs "[Set-ApplicationAudioDevice] | Disposing All_Audio_Devices" -Dev_mode -logtype Libvlc
           $Null = $all_Audio_Devices.dispose()
           $all_Audio_Devices = $Null
         }

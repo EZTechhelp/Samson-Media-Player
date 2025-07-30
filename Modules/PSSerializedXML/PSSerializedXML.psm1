@@ -193,6 +193,9 @@ public class Media : INotifyPropertyChanged
     public string Playlist { get; set; }
     public string playlist_id { get; set; }
     public string playlist_item_id { get; set; }
+    public string PlaylistOwner { get; set; }
+    public string PlaylistOwnerID { get; set; }
+    public bool PlaylistisPublic { get; set; }
     public string Playlist_url { get; set; }
     public string Channel_Name { get; set; }
     public string Channel_ID { get; set; }
@@ -1112,6 +1115,9 @@ function ConvertTo-Media {
                 'Playlist' = $object.Playlist
                 'Playlist_id' = $object.Playlist_id
                 'Playlist_url' = $object.Playlist_url
+                'PlaylistOwner' = $object.PlaylistOwner
+                'PlaylistOwnerID' = $object.PlaylistOwnerID
+                'PlaylistisPublic' = $object.PlaylistisPublic
                 'Description' = $object.Description
                 'Cached_Image_Path' = $object.Cached_Image_Path
                 'Source' = $object.Source

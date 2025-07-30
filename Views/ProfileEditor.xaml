@@ -39,16 +39,6 @@
 	<Window.Effect>
 		<DropShadowEffect/>
 	</Window.Effect>
-	<Window.Background>
-		<!-- 		<LinearGradientBrush PresentationOptions:Freeze="True"
-		                     EndPoint="0.5,1"
-		                     StartPoint="0.5,0">
-			<GradientStop Color="Black"
-			              Offset="0.0"/>
-			<GradientStop Offset="1"
-			              Color="#FF0A2347"/>
-		</LinearGradientBrush> -->
-	</Window.Background>
 	<Window.Resources>
 		<ResourceDictionary>
 			<ResourceDictionary.MergedDictionaries>
@@ -82,19 +72,7 @@
 			<RowDefinition Height="*"/>
 			<RowDefinition Height="70"/>
 		</Grid.RowDefinitions>
-		<!-- 		<Image Name="Background_Image_Top"
-		       Grid.ColumnSpan="2"
-		       Grid.Row="0"
-			   Height="258"
-			   Width="735"
-		       VerticalAlignment="Top"/> -->
 		<Grid Name="Background_TileGrid" Grid.ColumnSpan="2" Margin="0,30,0,0" Grid.Row="0" Grid.RowSpan="3" MaxWidth="600" MinHeight="40" HorizontalAlignment="Stretch"/>
-		<!-- 		<ImageBrush Name="Background_Image_Tile"
-		       Grid.ColumnSpan="2"
-		       Grid.Row="1"
-		       ViewportUnits = "Absolute"
-			   TileMode = 'Tile'
-		       Viewport = "0,0,735,40"/> -->
 		<Image Name="Background_Image_Bottom"
 		       Grid.ColumnSpan="2"
 		       Grid.Row="2"
@@ -102,24 +80,6 @@
 		       Height="52"
 		       MaxWidth="600"
 		       VerticalAlignment="Bottom"/>
-		<!-- 		<Image Name="Editor_Background_Image"
-		       Grid.ColumnSpan="2"
-		       Grid.Row="0"
-		       VerticalAlignment="Center"
-		       HorizontalAlignment="Right">
-			<Image.OpacityMask>
-				<LinearGradientBrush StartPoint="1,0"
-				                     EndPoint="1,0">
-					<GradientStop Offset="0.2"
-					              Color="black"/>
-					<GradientStop Offset="1"
-					              Color="Transparent"/>
-				</LinearGradientBrush>
-			</Image.OpacityMask>
-			<Image.Effect>
-				<BlurEffect Radius="0"/>
-			</Image.Effect>
-		</Image> -->
 		<mah:ProgressRing Margin="10,0,10,0" Foreground="White" Height="100" Width="100" Name='Profile_Editor_Progress_Ring' IsActive="false" Grid.Row="0" Grid.ColumnSpan="3" Grid.RowSpan="3" HorizontalAlignment="Center" VerticalAlignment="Center" Panel.ZIndex="4"/>
 		<mah:MetroTabControl Style="{DynamicResource MahApps.Styles.TabControl.Animated}"
 		                     Name="Editor_TabControl"
@@ -260,32 +220,6 @@
 								         RenderTransformOrigin="0.502,0.52"
 								         MinWidth="150"
 								         HorizontalAlignment="Left"/>
-								<!-- 								<StackPanel Orientation = "Horizontal">
-									<Label Name='Media_Type_Label'
-									       Content="Media Type"
-									       VerticalAlignment="Top"
-									       Margin="25,0,0,0"
-									       Foreground="#ffffff"
-									       Visibility="Visible"
-									       BorderBrush="Red"
-									       BorderThickness="2,0,0,0"
-									       HorizontalAlignment="Left"/>
-									<ComboBox Margin="13,0,0,0"
-									          Name='Media_Type_ComboBox'
-									          mah:TextBoxHelper.ClearTextButton="True"
-									          VerticalAlignment="Top"
-									          Background="Transparent"
-									          mah:TextBoxHelper.UseFloatingWatermark="True"
-									          HorizontalAlignment="Left"
-									          IsEditable="False"
-									          SelectedIndex="0">
-										<ComboBox.ContextMenu>
-											<ContextMenu IsEnabled="False"
-											             Visibility="Collapsed"/>
-										</ComboBox.ContextMenu>
-									</ComboBox>
-								</StackPanel> -->
-								
 								<Label Name='Media_Album_Label'
 								       Content="Album"
 								       VerticalAlignment="Top"
@@ -327,6 +261,7 @@
 											 Name='Media_Description_textbox'
 								             VerticalScrollBarVisibility="Auto"
 								             HorizontalScrollBarVisibility="Disabled"
+											 UndoLimit="10"
 								             Grid.Column="1"
 								             Grid.ColumnSpan="3"
 								             Grid.Row="3"
@@ -675,26 +610,6 @@
 					</Grid>
 				</Button>
 			</Grid>
-			<!-- 			<Button Name='Save_Profile_Button' FontSize="14" FontWeight="Bold" Height="35" Grid.Row="2"  Style="{StaticResource DetailButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Right" IsEnabled="true">
-				<StackPanel Orientation="Horizontal">
-					<iconPacks:PackIconMaterial Kind="ContentSave"
-												Margin="0 0 0 0"
-												Width="14"
-												Height="14"
-												VerticalAlignment="Center"/>
-					<TextBlock Name="Setup_Button_Textblock" Text="Save" Margin="2 2 2 2" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button> -->
-			<!-- 			<Button Name='Cancel_Setup_Button' FontSize="14" FontWeight="Bold" Height="35" Grid.Row="2" Style="{StaticResource DetailButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Right" IsEnabled="true">
-				<StackPanel Orientation="Horizontal">
-					<iconPacks:PackIconMaterial Kind="CloseBox"
-												Margin="0 0 0 0"
-												Width="14"
-												Height="14"
-												VerticalAlignment="Center"/>
-					<TextBlock Name="Cancel_Button_Text" Text="Cancel" Margin="2 2 2 2" VerticalAlignment="Center"/>
-				</StackPanel>
-			</Button> -->
 		</StackPanel>
 		<mah:TransitioningContentControl Name="Save_status_transitioningControl"
 		                                 VerticalAlignment="Top"
@@ -710,7 +625,7 @@
 				<DropShadowEffect/>
 			</mah:FlyoutsControl.Effect>
 			<mah:Flyout Header="Profile Editor Help" BorderBrush="{StaticResource MahApps.Brushes.Accent}" BorderThickness="1,1,1,1" HorizontalContentAlignment="Right" Background="#FF0A2347" Position="Right" IsOpen="false" Name="Editor_Help_Flyout" AnimateOpacity="True" CloseButtonVisibility="visible" VerticalAlignment="stretch" HorizontalAlignment="Stretch" TitleVisibility="visible" Theme="Adapt">
-				<RichTextBox Name='EditorHelpFlyout' VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" Background="transparent" Margin="5,5,0,5" Padding="0,0,0,0" IsReadOnly="True" VerticalAlignment="stretch" BorderThickness="0,0,0,0" HorizontalAlignment="Stretch" IsDocumentEnabled="True" MaxHeight="{Binding ElementName=Editor_Help_FlyoutControl,Path=MaxHeight}">
+				<RichTextBox Name='EditorHelpFlyout' VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Disabled" IsUndoEnabled="false" Background="transparent" Margin="5,5,0,5" Padding="0,0,0,0" IsReadOnly="True" VerticalAlignment="stretch" BorderThickness="0,0,0,0" HorizontalAlignment="Stretch" IsDocumentEnabled="True" MaxHeight="{Binding ElementName=Editor_Help_FlyoutControl,Path=MaxHeight}">
 					<RichTextBox.Resources>
 						<Style TargetType="{x:Type Paragraph}">
 							<Setter Property="Margin" Value="10"/>

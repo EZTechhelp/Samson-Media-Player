@@ -2,8 +2,8 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Samson"
-#define MyAppVersion "1.0.1"
-#define MyAppBuild "PUBLIC-001"
+#define MyAppVersion "1.0.4"
+#define MyAppBuild "PUBLIC"
 #define Arguments ""
 #define MyAppPublisher "EZTechhelp"
 #define MyAppURL "https://www.EZTechhelp.com/"
@@ -12,7 +12,7 @@
 #define CleanInstall "true"
 #define ForceFreshStart "false"
 #define OutputName "Samson-Setup"
-#define ResourceExclude "*.history.zip,*\plugins.dat,*\__pycache__"
+#define ResourceExclude "*.history.zip,*\plugins.dat,*\__pycache__,\libvlc\Presets\presets_milkdrop"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
@@ -94,15 +94,43 @@ Source: .\{#MyAppName}.ps1; DestDir: {app}; Flags: ignoreversion
 Source: .\Version.txt; DestDir: {app}; Flags: ignoreversion
 Source: .\CHANGELOG.md; DestDir: {app}; Flags: ignoreversion
 Source: .\Assembly\*; DestDir: {app}\Assembly; Flags: recursesubdirs createallsubdirs
-Source: .\Assembly\EZT-MediaPlayer\Microsoft.Xaml.Behaviors.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Microsoft.Xaml.Behaviors, Version=1.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
-Source: .\Assembly\EZT-MediaPlayer\ControlzEx.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "ControlzEx, Version=5.0.0.0, Culture=neutral, PublicKeyToken=69f1c32f803d307e"
-Source: .\Assembly\EZT-MediaPlayer\MahApps.Metro.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "MahApps.Metro, Version=3.0.0.0, Culture=neutral, PublicKeyToken=51482d6f650b2b3f"
-Source: .\Assembly\EZT-MediaPlayer\MahApps.Metro.IconPacks.Core.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "MahApps.Metro.IconPacks.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0c0d510f9915137a"
-Source: .\Assembly\EZT-MediaPlayer\MahApps.Metro.IconPacks.Material.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "MahApps.Metro.IconPacks.Material, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0c0d510f9915137a"
-Source: .\Assembly\EZT-MediaPlayer\EZT-MediaPlayer-Control.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "EZT-MediaPlayer-Control, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9ab3c160d0ed144a"
-Source: .\Assembly\EZT-MediaPlayer\EZT_MediaPlayer.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "EZT_MediaPlayer, Version=1.0.0.0, Culture=neutral, PublicKeyToken=224d9dcaee0e0067"
+//GAC Installs
+Source: .\Assembly\EZT-MediaPlayer\Microsoft.Xaml.Behaviors.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Excludes: {#AssemblyExclude}; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Microsoft.Xaml.Behaviors, Version=1.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+Source: .\Assembly\EZT-MediaPlayer\ControlzEx.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Excludes: {#AssemblyExclude}; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "ControlzEx, Version=5.0.0.0, Culture=neutral, PublicKeyToken=69f1c32f803d307e"
+Source: .\Assembly\EZT-MediaPlayer\MahApps.Metro.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Excludes: {#AssemblyExclude}; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "MahApps.Metro, Version=3.0.0.0, Culture=neutral, PublicKeyToken=51482d6f650b2b3f"
+Source: .\Assembly\EZT-MediaPlayer\MahApps.Metro.IconPacks.Core.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Excludes: {#AssemblyExclude}; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "MahApps.Metro.IconPacks.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0c0d510f9915137a"
+Source: .\Assembly\EZT-MediaPlayer\MahApps.Metro.IconPacks.Material.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Excludes: {#AssemblyExclude}; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "MahApps.Metro.IconPacks.Material, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0c0d510f9915137a"
+Source: .\Assembly\EZT-MediaPlayer\EZT-MediaPlayer-Control.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Excludes: {#AssemblyExclude}; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "EZT-MediaPlayer-Control, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9ab3c160d0ed144a"
+Source: .\Assembly\EZT-MediaPlayer\EZT_MediaPlayer.dll; DestDir: {app}\Assembly\EZT-MediaPlayer; Excludes: {#AssemblyExclude}; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "EZT_MediaPlayer, Version=1.0.0.0, Culture=neutral, PublicKeyToken=224d9dcaee0e0067"
+Source: .\Assembly\WindowsAPICodecPack\Microsoft.WindowsAPICodePack.dll; DestDir: {app}\Assembly\WindowsAPICodecPack; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Microsoft.WindowsAPICodePack, Version=1.1.5.0, Culture=neutral, PublicKeyToken=8985beaab7ea3f04"
+Source: .\Assembly\WindowsAPICodecPack\Microsoft.WindowsAPICodePack.Shell.dll; DestDir: {app}\Assembly\WindowsAPICodecPack; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Microsoft.WindowsAPICodePack.Shell, Version=1.1.5.0, Culture=neutral, PublicKeyToken=8985beaab7ea3f04"
+Source: .\Assembly\WinRT\Microsoft.Windows.SDK.NET.dll; DestDir: {app}\Assembly\WinRT; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Microsoft.Windows.SDK.NET, Version=10.0.22621.24, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+Source: .\Assembly\WinRT\WinRT.Runtime.dll; DestDir: {app}\Assembly\WinRT; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "WinRT.Runtime, Version=1.6.0.0, Culture=neutral, PublicKeyToken=99ea127f02d97709"
+Source: .\Assembly\AvalonDock\AvalonDock.dll; DestDir: {app}\Assembly\AvalonDock; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "AvalonDock, Version=4.72.1.0, Culture=neutral, PublicKeyToken=3e4669d2f30244f4"
+Source: .\Assembly\AvalonDock\AvalonDock.Themes.VS2013.dll; DestDir: {app}\Assembly\AvalonDock; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "AvalonDock.Themes.VS2013, Version=4.72.1.0, Culture=neutral, PublicKeyToken=3e4669d2f30244f4"
+//Source: .\Assembly\CSCore\CSCore.dll; DestDir: {app}\Assembly\CSCore; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "CSCore, Version=1.2.1.2, Culture=neutral, PublicKeyToken=5a08f2b6f4415dea"
+Source: .\Assembly\GongSolutions\GongSolutions.WPF.DragDrop.dll; DestDir: {app}\Assembly\GongSolutions; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "GongSolutions.WPF.DragDrop, Version=3.0.0.0, Culture=neutral, PublicKeyToken=91f1945125b7a587"
+Source: .\Assembly\MdXaml\Fizzler.dll; DestDir: {app}\Assembly\MdXaml; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Fizzler, Version=1.1.21209.0, Culture=neutral, PublicKeyToken=4ebff4844e382110"
+Source: .\Assembly\MdXaml\HtmlAgilityPack.dll; DestDir: {app}\Assembly\MdXaml; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "HtmlAgilityPack, Version=1.11.42.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a"
+Source: .\Assembly\MdXaml\ICSharpCode.AvalonEdit.dll; DestDir: {app}\Assembly\MdXaml; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "ICSharpCode.AvalonEdit, Version=6.3.0.90, Culture=neutral, PublicKeyToken=9cc39be672370310"
+Source: .\Assembly\MdXaml\MdXaml.dll; DestDir: {app}\Assembly\MdXaml; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "MdXaml, Version=1.27.0.0, Culture=neutral, PublicKeyToken=9f8c7afb435b7edc"
+Source: .\Assembly\MdXaml\MdXaml.Html.dll; DestDir: {app}\Assembly\MdXaml; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "MdXaml.Html, Version=1.27.0.0, Culture=neutral, PublicKeyToken=9f8c7afb435b7edc"
+Source: .\Assembly\MdXaml\MdXaml.Plugins.dll; DestDir: {app}\Assembly\MdXaml; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "MdXaml.Plugins, Version=1.27.0.0, Culture=neutral, PublicKeyToken=9f8c7afb435b7edc"
+Source: .\Assembly\MdXaml\MdXaml.Svg.dll; DestDir: {app}\Assembly\MdXaml; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "MdXaml.Svg, Version=1.27.0.0, Culture=neutral, PublicKeyToken=9f8c7afb435b7edc"
+Source: .\Assembly\MdXaml\Svg.dll; DestDir: {app}\Assembly\MdXaml; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Svg, Version=3.0.0.0, Culture=neutral, PublicKeyToken=12a0bac221edeae2"
+Source: .\Assembly\MdXaml\WpfAnimatedGif.dll; DestDir: {app}\Assembly\MdXaml; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "WpfAnimatedGif, Version=2.0.0.0, Culture=neutral, PublicKeyToken=9e7cd3b544a090dc"
+Source: .\Assembly\NotifyIcon\Hardcodet.NotifyIcon.Wpf.dll; DestDir: {app}\Assembly\NotifyIcon; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Hardcodet.NotifyIcon.Wpf, Version=2.0.0.0, Culture=neutral, PublicKeyToken=682384a853a08aad"
+Source: .\Assembly\Taglib\TagLibSharp.dll; DestDir: {app}\Assembly\Taglib; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "TagLibSharp, Version=2.3.0.0, Culture=neutral, PublicKeyToken=db62eba44689b5b0"
+Source: .\Assembly\ToolkitWPF\Microsoft.Toolkit.Win32.UI.XamlHost.Managed.dll; DestDir: {app}\Assembly\ToolkitWPF; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Microsoft.Toolkit.Win32.UI.XamlHost.Managed, Version=6.1.0.0, Culture=neutral, PublicKeyToken=4aff67a105548ee2"
+Source: .\Assembly\ToolkitWPF\Microsoft.Toolkit.Wpf.UI.Controls.dll; DestDir: {app}\Assembly\ToolkitWPF; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Microsoft.Toolkit.Wpf.UI.Controls, Version=6.1.0.0, Culture=neutral, PublicKeyToken=4aff67a105548ee2"
+Source: .\Assembly\ToolkitWPF\Microsoft.Toolkit.Wpf.UI.XamlHost.dll; DestDir: {app}\Assembly\ToolkitWPF; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Microsoft.Toolkit.Wpf.UI.XamlHost, Version=6.1.0.0, Culture=neutral, PublicKeyToken=4aff67a105548ee2"
+Source: .\Assembly\Webview2\Microsoft.Web.WebView2.Core.dll; DestDir: {app}\Assembly\Webview2; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Microsoft.Web.WebView2.Core, Version=1.0.2535.41, Culture=neutral, PublicKeyToken=2a8ab48044d2601e"
+Source: .\Assembly\Webview2\Microsoft.Web.WebView2.WinForms.dll; DestDir: {app}\Assembly\Webview2; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Microsoft.Web.WebView2.WinForms, Version=1.0.2535.41, Culture=neutral, PublicKeyToken=2a8ab48044d2601e"
+Source: .\Assembly\Webview2\Microsoft.Web.WebView2.Wpf.dll; DestDir: {app}\Assembly\Webview2; Flags: recursesubdirs createallsubdirs gacinstall; StrongAssemblyName: "Microsoft.Web.WebView2.Wpf, Version=1.0.2535.41, Culture=neutral, PublicKeyToken=2a8ab48044d2601e"
+
 Source: .\Modules\*; DestDir: {app}\Modules; Excludes: {#ResourceExclude}; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: .\Resources\*; DestDir: {app}\Resources; Excludes: {#ResourceExclude}; Flags: recursesubdirs createallsubdirs
+Source: .\Resources\libvlc\Presets\*; DestDir: {app}\Resources\libvlc\Presets;  Flags: recursesubdirs createallsubdirs; Components: ProjectM
 Source: .\Views\*; DestDir: {app}\Views; Excludes: {#ResourceExclude}; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: .\license.txt; DestDir: {app}; Flags: ignoreversion
 Source: ".\ngen\x86\ngen.exe"; DestDir: {tmp}; Flags: deleteafterinstall; Check: not Is64BitInstallMode; 
@@ -114,7 +142,7 @@ Name: main; Description: Main Files; Types: full compact custom; Flags: fixed
 Name: choco; Description: Chocolatey (Downloaded/Installed on first run if not already - Required); Types: full compact custom; Flags: fixed
 Name: webview2; Description: Webview2 Runtime (Installed after this Setup Wizard Completes - Required); Types: full compact custom; Flags: fixed disablenouninstallwarning
 Name: Streamlink; Description: Streamlink (Installed after this Setup Wizard Completes - Required); Types: full custom compact; Flags: fixed disablenouninstallwarning; ExtraDiskSpaceRequired: 48255498
-
+Name: ProjectM; Description: ProjectM Presets - Visualization plugin with Milkdrop presets; Types: full custom; Flags: checkablealone disablenouninstallwarning
 
 [Messages]
 WelcomeLabel1={#MyAppName} Media Player Setup Wizard%n(Version: {#MyAppVersion})
@@ -180,11 +208,11 @@ Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\MdXaml\Fizzler.d
 Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\MdXaml\Svg.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
 Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\Libvlc\LibVLCSharp.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
 Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\Libvlc\LibVLCSharp.WPF.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
-Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\EmojiWPF\Emoji.Wpf.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
-Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\EmojiWPF\Stfu.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
-Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\EmojiWPF\System.ValueTuple.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
-Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\EmojiWPF\Typography.GlyphLayout.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
-Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\EmojiWPF\Typography.OpenFont.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
+;Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\EmojiWPF\Emoji.Wpf.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
+;Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\EmojiWPF\Stfu.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
+;Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\EmojiWPF\System.ValueTuple.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
+;Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\EmojiWPF\Typography.GlyphLayout.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
+;Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\EmojiWPF\Typography.OpenFont.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
 Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\SecretManagement\Microsoft.PowerShell.SecretManagement.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
 Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\SecretManagement\Microsoft.PowerShell.SecretStore.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden
 Filename: {tmp}\ngen.exe; Parameters: "install ""{app}\Assembly\Taglib\TagLibSharp.dll"""; StatusMsg: Optimizing performance for your system ...; Flags: runhidden

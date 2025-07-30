@@ -3439,6 +3439,45 @@ function Show-SettingsWindow{
       #----------------------------------------------
 
       #----------------------------------------------
+      #region Vlc_Logging Help
+      #----------------------------------------------
+      $hashsetup.Vlc_Logging_Button.add_Click({
+          try{
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Vlc_Logging.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.Vlc_Logging_Label.content -open -clear
+          }catch{
+            write-ezlogs "An exception occurred in Vlc_Logging_Button.add_Click" -CatchError $_ -enablelogs
+          }
+      })
+      #----------------------------------------------
+      #endregion Vlc_Logging Help
+      #----------------------------------------------
+
+      #----------------------------------------------
+      #region Vlc_Logging Combobox
+      #----------------------------------------------
+      [void]$hashsetup.Vlc_Logging_ComboBox.items.add('0')
+      [void]$hashsetup.Vlc_Logging_ComboBox.items.add('1')
+      [void]$hashsetup.Vlc_Logging_ComboBox.items.add('2')
+      [void]$hashsetup.Vlc_Logging_ComboBox.items.add('3')
+      $hashsetup.Vlc_Logging_ComboBox.add_SelectionChanged({
+          Param($Sender)
+          try{
+            if($Sender.Selectedindex -ne -1){
+              $hashsetup.Vlc_Logging_Label.BorderBrush = 'LightGreen'
+              $thisapp.configTemp.Vlc_Verbose_logging = $Sender.selecteditem
+            }else{
+              $hashsetup.Vlc_Logging_Label.BorderBrush = 'LightGreen'
+              $thisapp.configTemp.Vlc_Verbose_logging = 'info'
+            }
+          }catch{
+            write-ezlogs "An exception occurred in Vlc_Logging_ComboBox.add_SelectionChanged" -CatchError $_
+          }
+      })
+      #----------------------------------------------
+      #endregion Vlc_Logging Combobox
+      #----------------------------------------------
+
+      #----------------------------------------------
       #region Optimize_Assembly_Button
       #----------------------------------------------
       $hashsetup.Update_Optimize_Timer = [System.Windows.Threading.DispatcherTimer]::new()
@@ -6676,10 +6715,10 @@ function Show-SettingsWindow{
           Param($Sender)
           try{
             if($Sender.Selectedindex -ne -1){
-              $hashsetup.Twitch_Quality_Label.BorderBrush = 'LightGreen'
+              $hashsetup.Streamlink_Logging_Label.BorderBrush = 'LightGreen'
               $thisapp.configTemp.Streamlink_Verbose_logging = $Sender.selecteditem
             }else{
-              $hashsetup.Twitch_Quality_Label.BorderBrush = 'LightGreen'
+              $hashsetup.Streamlink_Logging_Label.BorderBrush = 'LightGreen'
               $thisapp.configTemp.Streamlink_Verbose_logging = 'info'
             }
           }catch{
@@ -7830,7 +7869,7 @@ function Show-SettingsWindow{
                       }
                       #$playlistName_Cleaned = ([Regex]::Replace($playlist_Name, $pattern3, '')).trim()
                       $Playlist_Profile_path = "$($thisapp.config.Playlist_Profile_Directory)\Spotify_Playlists\$($playlist.id).xml"
-                      write-ezlogs "| Saving new Spotify Playlist profile to $Playlist_Profile_path" -showtime -logtype Setup -LogLevel 3
+                      write-ezlogs "| Saving new Spotify Playlist profile to $Playlist_Profile_path" -showtime -logtype Setup
                       $Playlist_Profile.name = $playlist_Name
                       #$Playlist_Profile.NameCleaned = $playlistName_Cleaned
                       $Playlist_Profile.Playlist_ID = $playlist.id
@@ -8450,6 +8489,7 @@ function Show-SettingsWindow{
           if($hashSetup.TwitchMedia_Settings_Scriptblock){
             $hashSetup.TwitchMedia_Settings_Scriptblock = $Null
           }
+          [void][System.Windows.Data.BindingOperations]::ClearAllBindings($Sender)
           $Sender.Resources.Clear()
           $hashsetup.Window = $Null
           $hashkeys = $null
@@ -9009,6 +9049,23 @@ function Update-Settings {
             }
             #----------------------------------------------
             #endregion vlc_Arguments
+            #----------------------------------------------
+
+            #----------------------------------------------
+            #region Vlc_Logging
+            #----------------------------------------------
+            if(-not [string]::IsNullOrEmpty($thisapp.config.Vlc_Verbose_logging)){
+              $hashsetup.Vlc_Logging_ComboBox.selecteditem = $thisapp.config.Vlc_Verbose_logging
+            }else{
+              $hashsetup.Vlc_Logging_ComboBox.selecteditem = '0'
+            }
+            if($hashsetup.Vlc_Logging_ComboBox.selectedindex -ne -1){
+              $hashsetup.Vlc_Logging_Label.BorderBrush = 'LightGreen'
+            }else{
+              $hashsetup.Vlc_Logging_Label.BorderBrush = 'Red'
+            }
+            #----------------------------------------------
+            #endregion Vlc_Logging
             #----------------------------------------------
 
             #----------------------------------------------
