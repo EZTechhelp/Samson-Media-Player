@@ -658,17 +658,7 @@ $datetime$Splash_Load_Controls_Status [PERF] Splash_Load_Controls: | Time: $($Sp
         if($splash_Screen_Assemblies -notcontains $a -and $a -notmatch 'WebView2Loader|LibVLCSharp\.dll|Microsoft\.Windows\.SDK\.NET|PoshWinRT|WinRT.Runtime|FindFilesFast|MonoTorrent'){
           if($Debug_verboselog){write-ezlogs ">>>> Loading assembly $a" -Dev_mode}
           if($PSVersionTable.PSVersion.Major -le 5){
-            try {
-              $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($a)
-              if($assemblyName.Flags -eq 'PublicKey'){
-                [void][System.Reflection.Assembly]::Load($assemblyName)
-              }else{
-                [void][System.Reflection.Assembly]::LoadFrom($a)
-              }
-            } catch {
-              if($Verboselog){write-ezlogs "Fallback to Loading assembly ($assemblyName) from path: $a" -Warning -LogLevel 0 -Verboselog:$Verboselog}
-              [void][System.Reflection.Assembly]::LoadFrom($a)
-            }
+            [void][System.Reflection.Assembly]::LoadFrom($a)
           }elseif($a -notmatch 'System\.Text\.Json|System\.Memory|System\.Numerics\.Vectors|System\.Buffers'){
             [void][System.Reflection.Assembly]::LoadFrom($a)
           }
