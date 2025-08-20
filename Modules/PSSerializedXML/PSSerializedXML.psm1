@@ -747,6 +747,9 @@ public class Config
     public bool EnableGlobalHotKeys { get; set; }
     public bool Enable_HighDPI { get; set; }
     public bool DisableTransparency { get; set; }
+    public int ProjectM_meshx { get; set; }
+    public int ProjectM_meshy { get; set; }
+    public int ProjectM_TextureSize { get; set; }
 }
 public class API
 {
@@ -1720,6 +1723,9 @@ function Export-SerializedXML {
         'EnableGlobalHotKeys' = $InputObject.EnableGlobalHotKeys
         'Enable_HighDPI' = $InputObject.Enable_HighDPI
         'DisableTransparency' = $InputObject.DisableTransparency
+        'ProjectM_meshx' = $InputObject.ProjectM_meshx
+        'ProjectM_meshy' = $InputObject.ProjectM_meshy
+        'ProjectM_TextureSize' = $inputObject.ProjectM_TextureSize
       }
     }elseif($isPlaylist){
       $output = $InputObject | ConvertTo-Playlists -List -Force:$Force

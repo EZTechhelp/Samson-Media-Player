@@ -1304,10 +1304,24 @@ Function Update-LibVLC
             [void]$vlcArgs.add("--no-video")
           }
           #[void]$vlcArgs.add("--embedded-video")
-          #TODO: Make Projectm settings configurable in settings UI
-          [void]$vlcArgs.add("--projectm-meshx=64")
-          [void]$vlcArgs.add("--projectm-meshy=48")
-          [void]$vlcArgs.add("--projectm-texture-size=1024")
+          if($thisApp.Config.ProjectM_meshx){
+            $Meshx = "$($thisApp.Config.ProjectM_meshx)"
+          }else{
+            $Meshx = '32'
+          }
+          if($thisApp.Config.ProjectM_meshy){
+            $Meshy = "$($thisApp.Config.ProjectM_meshy)"
+          }else{
+            $Meshy = '24'
+          }
+          if($thisApp.Config.ProjectM_TextureSize){
+            $TextureSize = "$($thisApp.Config.ProjectM_TextureSize)"
+          }else{
+            $TextureSize = '1024'
+          }
+          [void]$vlcArgs.add("--projectm-meshx=$Meshx")
+          [void]$vlcArgs.add("--projectm-meshy=$Meshy")
+          [void]$vlcArgs.add("--projectm-texture-size=$TextureSize")
           #[void]$vlcArgs.add("--projectm-title-font=$($thisApp.Config.Current_Folder)\Resources\Fonts\digital-7.ttf")
           write-ezlogs "| Enabling ProjectM Visualizations: --projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`" --projectm-width=$($ProjectMWidth) --projectm-height=$($ProjectMHeight)" -Warning -logtype Libvlc
         }elseif($thisApp.Config.Current_Visualization -eq 'Spectrum'){

@@ -2,6 +2,27 @@
 
 ## [Unreleased]
 
+## 1.0.5 - PUBLIC
+> - Branch: Samson
+
+### Added
++ Custom context menus options used in Webbrowser now available within Youtube webplayer
+  + Ex: Can right click on recommended videos when paused to add to queue, playlists..etc
++ Ability to configure Mesh and Texture size settings for ProjectM visualization plugin
+
+### Changes
++ Revert assembly loading and GAC related changes to prevent issues with PS 5
++ Updated Libvlcsharp to 3.9.4 - FINALLY properly fixes video background flashbang issue!
++ Updated yt-dlp to latest stable version 2025.8.11.0
+
+### Fixed
++ Potential app freeze when executing stop media while webplayer is active
++ VB-Cable can sometimes fail to be detected as installed
++ YT-DLP will sometimes still attempt to use browser cookies when setting is not enabled
+
+### Comments
++ Will NOT trigger first time setup when upgrading
+
 ## 1.0.4 - PUBLIC
 > - Branch: Samson
 

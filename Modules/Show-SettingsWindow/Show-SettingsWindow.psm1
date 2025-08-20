@@ -2556,154 +2556,167 @@ function Show-SettingsWindow{
             }elseif([System.IO.File]::Exists("$env:ProgramW6432\VB\CABLE\VBCABLE_ControlPanel.exe")){
               $appinstalled = [System.IO.FileInfo]::new("$env:ProgramW6432\VB\CABLE\VBCABLE_Setup_x64.exe").versioninfo.fileversion -replace ', ','.'
             }else{
-              write-ezlogs "VB-Cable virtual audio device does not appear to be installed, requesting permissions to install" -warning -logtype setup
-              $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
-              $Button_Settings.AffirmativeButtonText = 'Yes'
-              $Button_Settings.NegativeButtonText = 'No'
-              $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
-              $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Install Virtual Audio","Enabling EQ Support for WebPlayers requires installation of a virtual audio device (VB-Cable).`n`nDo you want to continue?",$okandCancel,$Button_Settings)
-              if($result -eq 'Affirmative'){
-                write-ezlogs "User wished to proceed, installing vb-cable" -showtime -warning -logtype Setup
-                try{
-                  if($hashsetup.Window){
-                    $hashsetup.window.hide()
-                  }
-                  if($First_Run){
-                    write-ezlogs ">>>> UnHiding Splash Screen" -logtype Setup
-                    Update-SplashScreen -hash $hash -SplashMessage 'Installing VB-Cable...' -Splash_More_Info 'Please Wait' -show
-                  }else{
-                    write-ezlogs ">>>> Launching new Splash Screen" -logtype Setup
-                    Start-SplashScreen -SplashTitle "$($thisApp.Config.App_Name) Media Player" -SplashMessage 'Installing VB-Cable...' -Splash_More_Info 'Please Wait' -current_folder $thisapp.Config.Current_Folder -log_file $thisapp.Config.Log_file
-                  }
-                  if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe")){
-                    write-ezlogs "| Attempting to install from $($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -showtime -logtype setup
-                    try{
-                      $default_output_Device = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::DefaultAudioEndpoint([CSCore.CoreAudioAPI.DataFlow]::Render,[CSCore.CoreAudioAPI.Role]::Multimedia)
-                    }catch{
-                      write-ezlogs "An exception occurred installing VB-Cable" -catcherror $_
+              $appinstalled = Get-AudioDevice -List | Where-Object {$_.Type -eq 'Playback' -and $_.Name -match 'VB-Audio Virtual Cable'}
+              if(!$appinstalled){
+                write-ezlogs "VB-Cable virtual audio device does not appear to be installed, requesting permissions to install" -warning -logtype setup
+                $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
+                $Button_Settings.AffirmativeButtonText = 'Yes'
+                $Button_Settings.NegativeButtonText = 'No'
+                $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
+                $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Install Virtual Audio","Enabling EQ Support for WebPlayers requires installation of a virtual audio device (VB-Cable).`n`nDo you want to continue?",$okandCancel,$Button_Settings)
+                if($result -eq 'Affirmative'){
+                  write-ezlogs "User wished to proceed, installing vb-cable" -showtime -warning -logtype Setup
+                  try{
+                    if($hashsetup.Window){
+                      $hashsetup.window.hide()
                     }
-                    if(!$default_output_Device.DeviceID){
+                    if($First_Run){
+                      write-ezlogs ">>>> UnHiding Splash Screen" -logtype Setup
+                      Update-SplashScreen -hash $hash -SplashMessage 'Installing VB-Cable...' -Splash_More_Info 'Please Wait' -show
+                    }else{
+                      write-ezlogs ">>>> Launching new Splash Screen" -logtype Setup
+                      Start-SplashScreen -SplashTitle "$($thisApp.Config.App_Name) Media Player" -SplashMessage 'Installing VB-Cable...' -Splash_More_Info 'Please Wait' -current_folder $thisapp.Config.Current_Folder -log_file $thisapp.Config.Log_file
+                    }
+                    if([system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe")){
+                      write-ezlogs "| Attempting to install from $($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -showtime -logtype setup
                       try{
-                        write-ezlogs "Unable to get default audio device via MMDeviceEnumerator:...attempting Get-AudioDevice" -logtype setup
-                        $Audio_output_Device = Get-AudioDevice -List | Where-Object {$_.type -eq 'Playback' -and $_.default}
+                        $default_output_Device = [CSCore.CoreAudioAPI.MMDeviceEnumerator]::DefaultAudioEndpoint([CSCore.CoreAudioAPI.DataFlow]::Render,[CSCore.CoreAudioAPI.Role]::Multimedia)
                       }catch{
-                        write-ezlogs "An exception occurred executing Get-AudioDevice" -catcherror $_
+                        write-ezlogs "An exception occurred installing VB-Cable" -catcherror $_
                       }
-                      if($Audio_output_Device){
-                        $DeviceID = $Audio_output_Device.id
-                        $DeviceName = $Audio_output_Device.Name
+                      if(!$default_output_Device.DeviceID){
+                        try{
+                          write-ezlogs "Unable to get default audio device via MMDeviceEnumerator:...attempting Get-AudioDevice" -logtype setup
+                          $Audio_output_Device = Get-AudioDevice -List | Where-Object {$_.type -eq 'Playback' -and $_.default}
+                        }catch{
+                          write-ezlogs "An exception occurred executing Get-AudioDevice" -catcherror $_
+                        }
+                        if($Audio_output_Device){
+                          $DeviceID = $Audio_output_Device.id
+                          $DeviceName = $Audio_output_Device.Name
+                        }else{
+                          $NoDefaultDevice = $true
+                        }
+                      }else{
+                        $DeviceID = $default_output_Device.DeviceID
+                        $DeviceName = $default_output_Device.FriendlyName
+                      }
+                      if($DeviceID){
+                        try{
+                          write-ezlogs "| Current Default Audio Device: $($DeviceName) -- ID: $DeviceID" -logtype setup
+                          Start-Process "$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -ArgumentList '-i -h' -Wait -Verb RunAs
+                          #Using where-object vs passing deviceid as param due to sometimes getting type cast error - unknown why may have been specific to test Win11 machine
+                          $set_AudioDevice = Get-AudioDevice -list | where-Object {$_.id -eq "$DeviceID"}
+                          if($set_AudioDevice -and !$set_AudioDevice.Default){
+                            write-ezlogs "| Resetting Default Audio Device to: $($set_AudioDevice.Name)" -logtype setup
+                            Set-AudioDevice -ID "$($set_AudioDevice.id)" -DefaultOnly
+                          }
+                        }catch{
+                          if($_.Exception -match 'No AudioDevice with that ID'){
+                            write-ezlogs "No AudioDevice was found or able to be set with id $($DeviceID) - enumerating all devices" -logtype setup -warning
+                            $audio_devices = Get-AudioDevice -List | Where-Object {$_.Type -eq 'Playback'} | Select-Object -first 1
+                            $set_AudioDevice = Get-AudioDevice -ID $audio_devices.ID | Set-AudioDevice -DefaultOnly
+                            $DefaultDeviceWarning = $true
+                          }else{
+                            write-ezlogs "An exception occurred installing VB-Cable" -catcherror $_
+                          }
+                        }
+                        if($set_AudioDevice){
+                          write-ezlogs "| New Default Audio Device (should be same as previous): $($set_AudioDevice | out-string)" -logtype setup
+                        }
                       }else{
                         $NoDefaultDevice = $true
                       }
                     }else{
-                      $DeviceID = $default_output_Device.DeviceID
-                      $DeviceName = $default_output_Device.FriendlyName
+                      if(!$(get-command choco*)){
+                        [void](confirm-requirements -thisApp $thisApp -noRestart)
+                      }
+                      write-ezlogs "Attempting to install VB-Cable from chocolatey" -showtime -warning -logtype Setup
+                      $choco_install = choco upgrade vb-cable --confirm --force --acceptlicense
+                      write-ezlogs ">>>> Verifying if vb-cable was installed successfully...." -showtime -loglevel 2 -logtype Setup
+                      $chocoappmatch = choco list vb-cable
+                      if($chocoappmatch){
+                        $appinstalled = $($chocoappmatch | Select-String vb-cable | out-string).trim()
+                      }
                     }
-                    if($DeviceID){
-                      try{
-                        write-ezlogs "| Current Default Audio Device: $($DeviceName) -- ID: $DeviceID" -logtype setup
-                        Start-Process "$($thisApp.Config.Current_Folder)\Resources\Audio\VBCABLE_Driver_Pack\VBCABLE_Setup_x64.exe" -ArgumentList '-i -h' -Wait -Verb RunAs
-                        #Using where-object vs passing deviceid as param due to sometimes getting type cast error - unknown why may have been specific to test Win11 machine
-                        $set_AudioDevice = Get-AudioDevice -list | where-Object {$_.id -eq "$DeviceID"}
-                        if($set_AudioDevice -and !$set_AudioDevice.Default){
-                          write-ezlogs "| Resetting Default Audio Device to: $($set_AudioDevice.Name)" -logtype setup
-                          Set-AudioDevice -ID "$($set_AudioDevice.id)" -DefaultOnly
-                        }
-                      }catch{
-                        if($_.Exception -match 'No AudioDevice with that ID'){
-                          write-ezlogs "No AudioDevice was found or able to be set with id $($DeviceID) - enumerating all devices" -logtype setup -warning
-                          $audio_devices = Get-AudioDevice -List | Where-Object {$_.Type -eq 'Playback'} | Select-Object -first 1
-                          $set_AudioDevice = Get-AudioDevice -ID $audio_devices.ID | Set-AudioDevice -DefaultOnly
-                          $DefaultDeviceWarning = $true
+                    if(!$NoDefaultDevice){
+                      if([System.IO.File]::Exists("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_ControlPanel.exe")){
+                        $appinstalled = [System.IO.FileInfo]::new("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_Setup.exe").versioninfo.fileversion -replace ', ','.'
+                        write-ezlogs "VB-Cable successfully installed to ${env:ProgramFiles(x86)}\VB\CABLE\ -- Version: $appinstalled" -logtype Setup -Success
+                        $thisapp.configTemp.Enable_WebEQSupport = $true
+                        $hashsetup.Enable_WebEQSupport_Toggle.isOn = $true
+                        $Message = "VB-Cable was installed succesfully!"
+                        $Header = 'Install Virtual Audio'
+                        $color = 'lightgreen'
+                      }elseif([System.IO.File]::Exists("$env:ProgramW6432\VB\CABLE\VBCABLE_ControlPanel.exe")){
+                        $appinstalled = [System.IO.FileInfo]::new("$env:ProgramW6432\VB\CABLE\VBCABLE_Setup_x64.exe").versioninfo.fileversion -replace ', ','.'
+                        write-ezlogs "VB-Cable successfully installed to $env:ProgramW6432\VB\CABLE\ -- Version: $appinstalled" -logtype Setup -Success
+                        $thisapp.configTemp.Enable_WebEQSupport = $true
+                        $hashsetup.Enable_WebEQSupport_Toggle.isOn = $true
+                        $Message = "VB-Cable was installed succesfully!"
+                        $Header = 'Install Virtual Audio'
+                        $color = 'lightgreen'
+                      }else{
+                        $appinstalled = Get-AudioDevice -List | Where-Object {$_.Type -eq 'Playback' -and $_.Name -match 'VB-Audio Virtual Cable'}
+                        if($appinstalled){
+                          write-ezlogs "VB-Cable audio device detected as successfully installed -- $($appinstalled.Name)" -logtype Setup -Success
+                          $thisapp.configTemp.Enable_WebEQSupport = $true
+                          $hashsetup.Enable_WebEQSupport_Toggle.isOn = $true
+                          $Message = "VB-Cable was installed succesfully!"
+                          $Header = 'Install Virtual Audio'
+                          $color = 'lightgreen'
                         }else{
-                          write-ezlogs "An exception occurred installing VB-Cable" -catcherror $_
+                          write-ezlogs "Vb-Audio did not installed correctly -- disabling Web EQ Suport" -warning -logtype Setup
+                          $appinstalled = ''
+                          $thisapp.configTemp.Enable_WebEQSupport = $false
+                          $hashsetup.Enable_WebEQSupport_Toggle.isOn = $false
+                          update-EditorHelp -content "VB-Cable was not installed succesfully! Check the logs for more information or try again. Disabling Web EQ Support" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -clear -Open -Header 'Install Virtual Audio' -color Orange
+                          return
                         }
                       }
-                      if($set_AudioDevice){
-                        write-ezlogs "| New Default Audio Device (should be same as previous): $($set_AudioDevice | out-string)" -logtype setup
+                      if($DefaultDeviceWarning){
+                        $Message += "`nUnable to determine which audio device should be default. The following active device was found and set as default but may not be correct:`n`nDevice Name: $($audio_devices.Name)"
+                        $Header = 'WARNING: Install Virtual Audio'
+                        $Color = 'Orange'
                       }
                     }else{
-                      $NoDefaultDevice = $true
-                    }
-                  }else{
-                    if(!$(get-command choco*)){
-                      [void](confirm-requirements -thisApp $thisApp -noRestart)
-                    }
-                    write-ezlogs "Attempting to install VB-Cable from chocolatey" -showtime -warning -logtype Setup
-                    $choco_install = choco upgrade vb-cable --confirm --force --acceptlicense
-                    write-ezlogs ">>>> Verifying if vb-cable was installed successfully...." -showtime -loglevel 2 -logtype Setup
-                    $chocoappmatch = choco list vb-cable
-                    if($chocoappmatch){
-                      $appinstalled = $($chocoappmatch | Select-String vb-cable | out-string).trim()
-                    }
-                  }
-                  if(!$NoDefaultDevice){
-                    if([System.IO.File]::Exists("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_ControlPanel.exe")){
-                      $appinstalled = [System.IO.FileInfo]::new("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_Setup.exe").versioninfo.fileversion -replace ', ','.'
-                      write-ezlogs "VB-Cable successfully installed to ${env:ProgramFiles(x86)}\VB\CABLE\ -- Version: $appinstalled" -logtype Setup -Success
-                      $thisapp.configTemp.Enable_WebEQSupport = $true
-                      $hashsetup.Enable_WebEQSupport_Toggle.isOn = $true
-                      $Message = "VB-Cable was installed succesfully!"
-                      $Header = 'Install Virtual Audio'
-                      $color = 'lightgreen'
-                    }elseif([System.IO.File]::Exists("$env:ProgramW6432\VB\CABLE\VBCABLE_ControlPanel.exe")){
-                      $appinstalled = [System.IO.FileInfo]::new("$env:ProgramW6432\VB\CABLE\VBCABLE_Setup_x64.exe").versioninfo.fileversion -replace ', ','.'
-                      write-ezlogs "VB-Cable successfully installed to $env:ProgramW6432\VB\CABLE\ -- Version: $appinstalled" -logtype Setup -Success
-                      $thisapp.configTemp.Enable_WebEQSupport = $true
-                      $hashsetup.Enable_WebEQSupport_Toggle.isOn = $true
-                      $Message = "VB-Cable was installed succesfully!"
-                      $Header = 'Install Virtual Audio'
-                      $color = 'lightgreen'
-                    }else{
-                      write-ezlogs "Vb-Audio did not installed correctly -- disabling Web EQ Suport" -warning -logtype Setup
-                      $appinstalled = ''
+                      $Message += "`nNo default audio device was found or there is an issue with audio device on this system. Cannot continue"
+                      $Header = 'WARNING: Failed to Install Virtual Audio'
+                      $Color = 'Orange'
                       $thisapp.configTemp.Enable_WebEQSupport = $false
                       $hashsetup.Enable_WebEQSupport_Toggle.isOn = $false
-                      update-EditorHelp -content "VB-Cable was not installed succesfully! Check the logs for more information or try again. Disabling Web EQ Support" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -clear -Open -Header 'Install Virtual Audio' -color Orange
-                      return
                     }
-                    if($DefaultDeviceWarning){
-                      $Message += "`nUnable to determine which audio device should be default. The following active device was found and set as default but may not be correct:`n`nDevice Name: $($audio_devices.Name)"
-                      $Header = 'WARNING: Install Virtual Audio'
-                      $Color = 'Orange'
-                    }
-                  }else{
-                    $Message += "`nNo default audio device was found or there is an issue with audio device on this system. Cannot continue"
-                    $Header = 'WARNING: Failed to Install Virtual Audio'
-                    $Color = 'Orange'
+                    update-EditorHelp -content $Message -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -clear -Open -Header $Header -color $Color
+                  }catch{
+                    write-ezlogs "An exception occurred installing VB-Cable" -catcherror $_
+                    update-EditorHelp -content "An exception occurred installing the Virtual Audio Device:`n$_" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -clear -Open -Header 'Install Virtual Audio' -color Tomato
                     $thisapp.configTemp.Enable_WebEQSupport = $false
                     $hashsetup.Enable_WebEQSupport_Toggle.isOn = $false
-                  }
-                  update-EditorHelp -content $Message -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -clear -Open -Header $Header -color $Color
-                }catch{
-                  write-ezlogs "An exception occurred installing VB-Cable" -catcherror $_
-                  update-EditorHelp -content "An exception occurred installing the Virtual Audio Device:`n$_" -RichTextBoxControl $hashsetup.EditorHelpFlyout -FontWeight bold -clear -Open -Header 'Install Virtual Audio' -color Tomato
-                  $thisapp.configTemp.Enable_WebEQSupport = $false
-                  $hashsetup.Enable_WebEQSupport_Toggle.isOn = $false
-                }finally{
-                  if($hashsetup.Window){
-                    write-ezlogs ">>>> Unhiding setup window" -logtype Setup
-                    $hashsetup.window.show()
-                  }
-                  if($hash.Window){
-                    if($First_Run){
-                      write-ezlogs ">>>> Hide Splash Screen for first run" -logtype Setup
-                      Update-SplashScreen -hash $hash -Hide
-                    }else{
-                      write-ezlogs ">>>> Closing Splash Screen" -logtype Setup
-                      Update-SplashScreen -hash $hash -Close
+                  }finally{
+                    if($hashsetup.Window){
+                      write-ezlogs ">>>> Unhiding setup window" -logtype Setup
+                      $hashsetup.window.show()
+                    }
+                    if($hash.Window){
+                      if($First_Run){
+                        write-ezlogs ">>>> Hide Splash Screen for first run" -logtype Setup
+                        Update-SplashScreen -hash $hash -Hide
+                      }else{
+                        write-ezlogs ">>>> Closing Splash Screen" -logtype Setup
+                        Update-SplashScreen -hash $hash -Close
+                      }
+                    }
+                    if($default_output_Device){
+                      $default_output_Device.dispose()
+                      $default_output_Device = $null
                     }
                   }
-                  if($default_output_Device){
-                    $default_output_Device.dispose()
-                    $default_output_Device = $null
-                  }
+                }else{
+                  write-ezlogs "User did not wish to proceed" -showtime -warning -logtype Setup
+                  $thisapp.configTemp.Enable_WebEQSupport = $false
+                  $hashsetup.Enable_WebEQSupport_Toggle.isOn = $false
+                  return
                 }
-              }else{
-                write-ezlogs "User did not wish to proceed" -showtime -warning -logtype Setup
-                $thisapp.configTemp.Enable_WebEQSupport = $false
-                $hashsetup.Enable_WebEQSupport_Toggle.isOn = $false
-                return
               }
             }
             if($appinstalled){
@@ -2992,14 +3005,24 @@ function Show-SettingsWindow{
             if($Sender.Selectedindex -ne -1){
               if($Sender.selecteditem -eq 'Spectrum'){
                 $Visualization = 'Visual'
+                if($hashsetup.ProjectM_StackPanel){
+                  $hashsetup.ProjectM_StackPanel.Visibility = 'Collapsed'
+                }
+              }elseif($Sender.selecteditem -eq 'ProjectM'){
+                if($hashsetup.ProjectM_StackPanel){
+                  $hashsetup.ProjectM_StackPanel.Visibility = 'Visible'
+                }
+                $Visualization = 'ProjectM'
               }else{
                 $Visualization = $Sender.selecteditem
+                if($hashsetup.ProjectM_StackPanel){
+                  $hashsetup.ProjectM_StackPanel.Visibility = 'Collapsed'
+                }
               }
               $hashsetup.Current_Visualization_Label.BorderBrush = 'LightGreen'
               write-ezlogs ">>>> Enabling Use_Visualizations ($($sender.Name)) -- Current_Visualization: $($Visualization)" -logtype Setup
               $thisapp.configTemp.Current_Visualization = $Visualization
-            }
-            else{
+            }else{
               $hashsetup.Current_Visualization_Label.BorderBrush = 'Red'
               write-ezlogs ">>>> Disabling Use_Visualizations ($($sender.Name)) -- no Current_Visualization selected" -logtype Setup
               $thisapp.configTemp.Use_Visualizations = $false
@@ -3007,13 +3030,84 @@ function Show-SettingsWindow{
                 $hashsetup.Use_Visualizations_Toggle.isOn = $false
               }
               $thisapp.configTemp.Current_Visualization = ''
+              if($hashsetup.ProjectM_StackPanel){
+                $hashsetup.ProjectM_StackPanel.Visibility = 'Collapsed'
+              }
             }
           }catch{
-            write-ezlogs "An exception occurred in Current_Visualization_ComboBox.add_SelectionChanged" -CatchError $_ -enablelogs
+            write-ezlogs "An exception occurred in Current_Visualization_ComboBox.add_SelectionChanged" -CatchError $_
           }
       })
       #----------------------------------------------
       #endregion Current_Visualization Combobox
+      #----------------------------------------------
+
+      #----------------------------------------------
+      #region ProjectM Help
+      #----------------------------------------------
+      $hashsetup.ProjectM_Button.add_Click({
+          try{
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\ProjectM.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header $hashsetup.ProjectM_Label.content -clear
+          }catch{
+            write-ezlogs "An exception occurred in ProjectM_Button.add_Click" -CatchError $_ -enablelogs
+          }
+      })
+      #----------------------------------------------
+      #endregion ProjectM Help
+      #----------------------------------------------
+
+      #----------------------------------------------
+      #region ProjectM_meshx_textbox
+      #----------------------------------------------
+      $hashsetup.ProjectM_meshx_textbox.add_textChanged({
+          try{
+            if($hashsetup.ProjectM_meshx_textbox.text -gt 0){
+              $thisApp.ConfigTemp.ProjectM_meshx = $hashsetup.ProjectM_meshx_textbox.text
+            }else{
+              $thisApp.ConfigTemp.ProjectM_meshx = 0
+            }
+          }catch{
+            write-ezlogs "An exception occurred in ProjectM_meshx_textbox.add_textChanged" -CatchError $_
+          }
+      })
+      #----------------------------------------------
+      #endregion ProjectM_meshx_textbox
+      #----------------------------------------------
+
+      #----------------------------------------------
+      #region ProjectM_meshy_textbox
+      #----------------------------------------------
+      $hashsetup.ProjectM_meshy_textbox.add_textChanged({
+          try{
+            if($hashsetup.ProjectM_meshy_textbox.text -gt 0){
+              $thisApp.ConfigTemp.ProjectM_meshy = $hashsetup.ProjectM_meshy_textbox.text
+            }else{
+              $thisApp.ConfigTemp.ProjectM_meshy = 0
+            }
+          }catch{
+            write-ezlogs "An exception occurred in ProjectM_meshy_textbox.add_textChanged" -CatchError $_
+          }
+      })
+      #----------------------------------------------
+      #endregion ProjectM_meshy_textbox
+      #----------------------------------------------
+
+      #----------------------------------------------
+      #region ProjectM_TextureSize_textbox
+      #----------------------------------------------
+      $hashsetup.ProjectM_TextureSize_textbox.add_textChanged({
+          try{
+            if($hashsetup.ProjectM_TextureSize_textbox.text -gt 0){
+              $thisApp.ConfigTemp.ProjectM_TextureSize = $hashsetup.ProjectM_TextureSize_textbox.text
+            }else{
+              $thisApp.ConfigTemp.ProjectM_TextureSize = 0
+            }
+          }catch{
+            write-ezlogs "An exception occurred in ProjectM_TextureSize_textbox.add_textChanged" -CatchError $_
+          }
+      })
+      #----------------------------------------------
+      #endregion ProjectM_TextureSize_textbox
       #----------------------------------------------
 
       #----------------------------------------------
@@ -3935,7 +4029,6 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred in LocalMedia_Display_Syntax_textbox.add_textChanged" -CatchError $_ -enablelogs
           }
       })
-
       #----------------------------------------------
       #endregion LocalMedia_Display_Syntax_textbox
       #----------------------------------------------
@@ -8864,14 +8957,43 @@ function Update-Settings {
             if($thisapp.config.Current_Visualization){
               if($thisapp.config.Current_Visualization -eq 'Visual'){
                 $selected_Visualization = 'Spectrum'
+                if($hashsetup.ProjectM_StackPanel){
+                  $hashsetup.ProjectM_StackPanel.Visibility = 'Collapsed'
+                }
+              }elseif($thisapp.config.Current_Visualization -eq 'ProjectM'){
+                if($hashsetup.ProjectM_StackPanel){
+                  $hashsetup.ProjectM_StackPanel.Visibility = 'Visible'
+                }
+                $selected_Visualization = 'ProjectM'
               }else{
                 $selected_Visualization = $thisapp.config.Current_Visualization
+                if($hashsetup.ProjectM_StackPanel){
+                  $hashsetup.ProjectM_StackPanel.Visibility = 'Collapsed'
+                }
               }
               $hashsetup.Current_Visualization_Label.BorderBrush = 'LightGreen'
               $hashsetup.Current_Visualization_ComboBox.selecteditem = $selected_Visualization
             }else{
               $hashsetup.Current_Visualization_Label.BorderBrush = 'Red'
               $hashsetup.Current_Visualization_ComboBox.Selectedindex = -1
+              if($hashsetup.ProjectM_StackPanel){
+                $hashsetup.ProjectM_StackPanel.Visibility = 'Collapsed'
+              }
+            }
+            if($thisApp.Config.ProjectM_meshx -gt 0){
+              $hashsetup.ProjectM_meshx_textbox.text = $thisApp.Config.ProjectM_meshx
+            }else{
+              $hashsetup.ProjectM_meshx_textbox.text = ''
+            }
+            if($thisApp.Config.ProjectM_meshy -gt 0){
+              $hashsetup.ProjectM_meshy_textbox.text = $thisApp.Config.ProjectM_meshy
+            }else{
+              $hashsetup.ProjectM_meshx_textbox.text = ''
+            }
+            if($thisApp.Config.ProjectM_TextureSize -gt 0){
+              $hashsetup.ProjectM_TextureSize_textbox.text = $thisApp.Config.ProjectM_TextureSize
+            }else{
+              $hashsetup.ProjectM_TextureSize_textbox.text = ''
             }
             #----------------------------------------------
             #endregion Current_Visualization

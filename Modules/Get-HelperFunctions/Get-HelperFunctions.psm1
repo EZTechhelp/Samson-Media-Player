@@ -992,7 +992,10 @@ function confirm-requirements
               $Do_Update = $false
             }
           }elseif($app -eq 'vb-cable'){
-            if([System.IO.File]::Exists("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_ControlPanel.exe")){
+            $appinstalled = Get-AudioDevice -List | Where-Object {$_.Type -eq 'Playback' -and $_.Name -match 'VB-Audio Virtual Cable'}
+            if($appinstalled){
+              $Do_Install = $false
+            }elseif([System.IO.File]::Exists("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_ControlPanel.exe")){
               $appinstalled = [System.IO.FileInfo]::new("$("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_Setup.exe")").versioninfo.fileversion -replace ', ','.'
             }elseif([System.IO.File]::Exists("$env:ProgramW6432\VB\CABLE\VBCABLE_ControlPanel.exe")){
               $appinstalled = [System.IO.FileInfo]::new("$env:ProgramW6432\VB\CABLE\VBCABLE_Setup_x64.exe").versioninfo.fileversion -replace ', ','.'
@@ -1108,13 +1111,13 @@ function confirm-requirements
                         write-ezlogs "| New Default Audio Device (should be same as previous): $($set_AudioDevice | out-string)" -logtype setup
                       }
                       write-ezlogs "| New Default Audio Device (should be same as previous): $($default_output_Device.FriendlyName)"
+                      $appinstalled = Get-AudioDevice -List | Where-Object {$_.Type -eq 'Playback' -and $_.Name -match 'VB-Audio Virtual Cable'}
                       if([System.IO.File]::Exists("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_ControlPanel.exe")){
                         $appinstalled = [System.IO.FileInfo]::new("${env:ProgramFiles(x86)}\VB\CABLE\VBCABLE_Setup.exe").versioninfo.fileversion -replace ', ','.'
                       }elseif([System.IO.File]::Exists("$env:ProgramW6432\VB\CABLE\VBCABLE_ControlPanel.exe")){
                         $appinstalled = [System.IO.FileInfo]::new("$env:ProgramW6432\VB\CABLE\VBCABLE_Setup_x64.exe").versioninfo.fileversion -replace ', ','.'
-                      }else{
+                      }elseif(!$appinstalled){
                         write-ezlogs "$app may not have installed correctly, unable to find VBCABLE_ControlPanel.exe" -warning
-                        $appinstalled = ''
                       }
                     }catch{
                       write-ezlogs "An exception occured attempting to install VBCable" -catcherror $_

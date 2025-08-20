@@ -2372,12 +2372,14 @@ function Reset-MainPlayer {
             if($synchash.VLC_Grid.Children -contains $synchash.VideoViewAirControl){
               Write-EZLogs '[Reset-MainPlayer] | Removing VideoViewAirControl from VLC_Grid' -LogLevel 0 -Verboselog:$this.tag.Verboselog
               $null = $synchash.VLC_Grid.children.Remove($synchash.VideoViewAirControl)
-              $VideoViewAirControl = Get-VisualParentUp -source $synchash.VideoViewAirControl.front -type ([System.Windows.Window])
-              if($VideoViewAirControl){
-                write-ezlogs "| Closing window of VideoViewAirControl" -LogLevel 3 -Verboselog:$this.Tag.VerboseLog
-                $VideoViewAirControl.Owner = $Null
-                $VideoViewAirControl.Close()
-              }
+            }
+            $VideoViewAirControl = Get-VisualParentUp -source $synchash.VideoViewAirControl.front -type ([System.Windows.Window])
+            if($VideoViewAirControl){
+              write-ezlogs "| Closing window of VideoViewAirControl" -LogLevel 3 -Verboselog:$this.Tag.VerboseLog
+              $VideoViewAirControl.Owner = $Null
+              $VideoViewAirControl.Close()
+            }
+            if($synchash.VideoViewAirControl){
               $synchash.VideoViewAirControl.Front = $null
               $synchash.VideoViewAirControl.Back = $null
               $synchash.VideoViewAirControl = $null
@@ -2772,7 +2774,8 @@ function Add-WPFMenu {
     [switch]$addchild,
     [switch]$AddContextMenu,
     [switch]$AnchorableContextMenu,
-    [switch]$TrayMenu
+    [switch]$TrayMenu,
+    [switch]$Verboselog
   )
   process {
     try{
@@ -3195,7 +3198,7 @@ function Add-WPFMenu {
                             $SubmenuItem_lvl3.Add_Unloaded({
                                 Param($sender)
                                 try{
-                                  write-ezlogs -text ">>>> Menu item (lvl3) has unloaded for: $($sender.Header)"
+                                  write-ezlogs -text ">>>> Menu item (lvl3) has unloaded for: $($sender.Header)" -LogLevel 0 -Verboselog:$Verboselog
                                   [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
                                   [Void](Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Controls.MenuItem]::UnloadedEvent) -RemoveHandlers)
                                 }catch{
@@ -3209,7 +3212,7 @@ function Add-WPFMenu {
                       $SubmenuItem_lvl2.Add_Unloaded({
                           Param($sender)
                           try{
-                            write-ezlogs -text ">>>> Menu item (lvl2) has unloaded for: $($sender.Header)"
+                            write-ezlogs -text ">>>> Menu item (lvl2) has unloaded for: $($sender.Header)" -LogLevel 0 -Verboselog:$Verboselog
                             [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
                             [Void](Get-EventHandlers -Element $sender -RoutedEvent ([System.Windows.Controls.MenuItem]::UnloadedEvent) -RemoveHandlers)
                           }catch{

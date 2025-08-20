@@ -15,6 +15,13 @@
 // ==/UserScript==
 function runBlockYoutube() {
     `use strict`;
+		if (window.trustedTypes && window.trustedTypes.createPolicy) { // Feature testing
+			window.trustedTypes.createPolicy('default', {
+				createHTML: string => string,
+				createScriptURL: string => string, // warning: this is unsafe!
+				createScript: string => string, // warning: this is unsafe!
+			});
+		}	
         const LOGO_ID = 'block-youtube-ads-logo';
         const addAdGuardLogoStyle = () => {
             const id = 'block-youtube-ads-logo-style';

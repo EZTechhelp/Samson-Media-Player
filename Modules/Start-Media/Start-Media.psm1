@@ -741,7 +741,7 @@ function Start-Media{
               }
             }
             try{
-              if($thisApp.config.Youtube_Browser){
+              if($thisApp.config.Import_Youtube_Browser_Auth -and $thisApp.config.Youtube_Browser){
                 $Browser = "--cookies-from-browser $($thisApp.config.Youtube_Browser)"
               }else{
                 $Browser = $null
@@ -823,7 +823,7 @@ function Start-Media{
                 }
                 #Yt-dlp arguments that allow downloading YT Premium bitrates/quality: --extractor-args "youtube:player_client=default,ios || -f 'bestvideo+bestaudio/best'"
                 try{
-                  if($thisApp.config.Youtube_Browser){
+                  if($thisApp.config.Import_Youtube_Browser_Auth -and $thisApp.config.Youtube_Browser){
                     $Browser = "--cookies-from-browser $($thisApp.config.Youtube_Browser)"
                   }else{
                     $Browser = $null

@@ -24,6 +24,7 @@
 
     .NOTES
     TODO: Yikes, this module needs ALOT of work, likely complete rebuild
+    TODO: Implement YT-DLP auto update (yt-dlp -U)
 #>
 
 #---------------------------------------------- 
@@ -174,10 +175,10 @@ function Invoke-DownloadMedia{
       $ExtractorArgs = "--extractor-args `"youtube:player_client=default,ios`""
       $MetaDataReplace = "--windows-filenames --replace-in-metadata title `"[\U0000002A\U0000005C\U0000002F\U0000003A\U00000022\U0000003F\U0000007C\U00010000-\U0010FFFF]`" `" `" --replace-in-metadata title `"[\U00000027]`" `"`" --replace-in-metadata title `"’`" `"`""
       #$OutputFormat = '`"%(uploader)s-%(title)s.%(ext)s`"'
-      if(-not [string]::IsNullOrEmpty($thisApp.config.Youtube_Browser)){
+      if($thisApp.config.Import_Youtube_Browser_Auth -and -not [string]::IsNullOrEmpty($thisApp.config.Youtube_Browser)){
         $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f $format $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" $ExtractAudio --cookies-from-browser $($thisApp.config.Youtube_Browser) --ffmpeg-location `"$ffmpeg_Path`" --embed-thumbnail --add-metadata $MetaDataReplace --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
       }else{
-        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f $format $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" $ExtractAudio --embed-thumbnail --ffmpeg-location `"$ffmpeg_Path`" --add-metadata $MetaDataReplace --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
+        $command = "& `"$($thisApp.config.Current_folder)\Resources\youtube-dl\yt-dlp.exe`" -f $format $($media_link) -P `"$Download_Path`" -o `"%(title)s.%(ext)s`" $ExtractAudio --embed-thumbnail --ffmpeg-location `"$ffmpeg_Path`" $ExtractorArgs --add-metadata $MetaDataReplace --compat-options embed-metadata $sponserblock *>'$yt_dlp_tempfile'"
       }
     }else{
       write-ezlogs "No valid youtube URL was provided!" -showtime -warning
@@ -733,4 +734,3 @@ function Invoke-DownloadMedia{
 #endregion Invoke-DownloadMedia Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Invoke-DownloadMedia')
-

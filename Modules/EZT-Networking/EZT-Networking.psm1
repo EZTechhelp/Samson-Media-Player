@@ -792,15 +792,15 @@ function Get-InstalledVPN
   try{   
     write-ezlogs ">>>> Executing Get-InstalledVPN: $VPNName" -LogLevel:$loglevel
     if($VPNName -eq 'ProtonVPN'){
-      $Installedexe = find-filesfast -path "$env:ProgramW6432\Proton" -Filter "ProtonVPN.exe" | Select-Object -last 1
+      $Installedexe = find-filesfast -path "$env:ProgramW6432\Proton" -Filter "ProtonVPN.exe|ProtonVPN.Client.exe" | Select-Object -last 1
       if(!$Installedexe){
-        $Installedexe = find-filesfast -path "${env:ProgramFiles(x86)}\Proton" -Filter "ProtonVPN.exe" | Select-Object -last 1
+        $Installedexe = find-filesfast -path "${env:ProgramFiles(x86)}\Proton" -Filter "ProtonVPN.exe|ProtonVPN.Client.exe" | Select-Object -last 1
       }
       if(!$Installedexe){
-        $Installedexe = find-filesfast -path "${env:ProgramFiles(x86)}\Proton Technologies" -Filter "ProtonVPN.exe" | Select-Object -last 1
+        $Installedexe = find-filesfast -path "${env:ProgramFiles(x86)}\Proton Technologies" -Filter "ProtonVPN.exe|ProtonVPN.Client.exe" | Select-Object -last 1
       }
       if(!$Installedexe){
-        $Installedexe = find-filesfast -path "$env:ProgramW6432\Proton Technologies" -Filter "ProtonVPN.exe" | Select-Object -last 1
+        $Installedexe = find-filesfast -path "$env:ProgramW6432\Proton Technologies" -Filter "ProtonVPN.exe|ProtonVPN.Client.exe" | Select-Object -last 1
       }
     }
     if(Test-ValidPath $Installedexe.FullName -Type File){
@@ -876,18 +876,9 @@ function Install-ProtonVPN
       $protonvpn_setup = Start-process $protonvpn_download_location -ArgumentList "/quiet /norestart /L*v $($thisApp.Config.Temp_Folder)\ProtonVPN-Install.log" -Wait
       if(!(Test-Validpath $installpath -Type File)){
         write-ezlogs ">>>> Verifying ProtonVPN is installed" -LogLevel:$loglevel
-        $Installers = find-filesfast -path "$env:ProgramW6432\Proton" -Filter "ProtonVPN.exe" | select -last 1
-        if(!$Installers){
-          $Installers = find-filesfast -path "${env:ProgramFiles(x86)}\Proton" -Filter "ProtonVPN.exe" | select -last 1
-        }
-        if(!$Installers){
-          $Installers = find-filesfast -path "${env:ProgramFiles(x86)}\Proton Technologies" -Filter "ProtonVPN.exe" | select -last 1
-        }
-        if(!$Installers){
-          $Installers = find-filesfast -path "$env:ProgramW6432\Proton Technologies" -Filter "ProtonVPN.exe" | select -last 1
-        }
-        if(Test-ValidPath $Installers.FullName -Type File){
-          $installpath = $Installers.FullName
+        $Install = Get-InstalledVPN -thisApp $thisApp -VPNName 'ProtonVPN' -LogLevel:$loglevel
+        if(Test-ValidPath $Install -Type File){
+          $installpath = $Install
           write-ezlogs ">>>> ProtonVPN appears to be installed at $installpath" -Success -LogLevel:$loglevel
         }else{
           write-ezlogs "Unable to find ProtonVPN.exe, install may have failed or some other issue occurred. Cannot continue" -Warning -LogLevel:$loglevel
@@ -896,16 +887,18 @@ function Install-ProtonVPN
       }
     }
     #Get ProtonVPN servers
-    write-ezlogs " | Getting ProtonVPN Logical servers for Country: $Country - City: $City" -LogLevel:$loglevel
-    $serversjson = "$env:localappdata\ProtonVPN\Servers.json"
-    if([system.io.file]::Exists($serversjson)){
-      $json = [system.io.file]::ReadAllText($serversjson) | Convertfrom-json
-      $ip = $json | where {$_.entrycountry -eq $Country -and $_.City -match $City} 
-    }else{
-      $json = Invoke-RestMethod 'https://api.protonmail.ch/vpn/logicals'
-      $ip = $json.LogicalServers | where {$_.entrycountry -eq $Country -and $_.City -match $City -and $_.Status -eq 1} 
-    }
-    write-ezlogs " | LogicalServers found: $($ip.servers.entryip | out-string)" -LogLevel:$loglevel
+    #TODO: this appears to be deprecated and moved behind subscription API only
+    <#    write-ezlogs " | Getting ProtonVPN Logical servers for Country: $Country - City: $City" -LogLevel:$loglevel
+        $serversjson = "$env:localappdata\ProtonVPN\Servers.json"
+        if([system.io.file]::Exists($serversjson)){
+        $json = [system.io.file]::ReadAllText($serversjson) | Convertfrom-json
+        $ip = $json | where {$_.entrycountry -eq $Country -and $_.City -match $City} 
+        }else{
+        $json = Invoke-RestMethod 'https://api.protonmail.ch/vpn/logicals'
+        $ip = $json.LogicalServers | where {$_.entrycountry -eq $Country -and $_.City -match $City -and $_.Status -eq 1} 
+        }
+        write-ezlogs " | LogicalServers found: $($ip.servers.entryip | out-string)" -LogLevel:$loglevel
+    #>
     $protonvpn_launch = Start-process $installpath -ArgumentList "/quiet /L*v $($thisApp.Config.Temp_Folder)\ProtonVPN-Install.log"
     $protonlaunch_timeout = 0
     while(!(Get-process protonvpn -ErrorAction SilentlyContinue) -and $protonlaunch_timeout -ge 60){
@@ -1036,54 +1029,61 @@ function Start-ProtonVPN
     }
 
     #CheckConfig?
-    $path = [system.io.directory]::EnumerateFiles("$env:localappdata\ProtonVPN","*user.config*","AllDirectories") | select -last 1
+    $path = [system.io.directory]::EnumerateFiles("$env:localappdata\Proton","*user.config*","AllDirectories") | select -last 1
+    if($Path){
+      $path = [system.io.directory]::EnumerateFiles("$env:localappdata\Proton\Proton VPN","*GlobalSettings*","AllDirectories") | select -last 1
+    }
     if([System.io.file]::Exists($path)){
       write-ezlogs ">>>> Getting content of user.config file at $path" -LogLevel:$loglevel
-      [xml]$Content = [system.io.file]::ReadAllText($Path)
-      if($content.ChildNodes[1].userSettings){
-        $connectonstart = $content.ChildNodes[1].userSettings.'ProtonVPN.Properties.Settings'.setting | where {$_.name -eq 'ConnectOnAppStart'}
-        if(!$connectonstart){
-          $connectonstart = $content.ChildNodes[1].userSettings.'ProtonVPN.Properties.Settings'.setting | where {$_.name -eq 'StartOnBoot'}
-        }
-        if($connectonstart){
-          write-ezlogs " | ConnectOnAppStart Name: $($connectonstart.name) -- value: $($connectonstart.value)" -LogLevel:$loglevel
-          if(-not [string]::IsNullOrEmpty($SetConnectOnStart) -and $connectonstart.value -ne $SetConnectOnStart){
-            write-ezlogs " | Enabling setting StartMinimized" -LogLevel:$loglevel
-            $connectonstart.value = $SetConnectOnStart
-            $save_settings = $true
+      if($path -match "\.json"){
+        $Content = [system.io.file]::ReadAllText($Path) | Convertfrom-Json
+      }else{
+        [xml]$Content = [system.io.file]::ReadAllText($Path)
+        if($content.ChildNodes[1].userSettings){
+          $connectonstart = $content.ChildNodes[1].userSettings.'ProtonVPN.Properties.Settings'.setting | where {$_.name -eq 'ConnectOnAppStart'}
+          if(!$connectonstart){
+            $connectonstart = $content.ChildNodes[1].userSettings.'ProtonVPN.Properties.Settings'.setting | where {$_.name -eq 'StartOnBoot'}
           }
-        }
-        $startminimized = $content.ChildNodes[1].userSettings.'ProtonVPN.Properties.Settings'.setting | where {$_.name -eq 'StartMinimized'}
-        if($startminimized){
-          write-ezlogs " | StartMinimized value: $($startminimized.value)" -LogLevel:$loglevel
-          if(-not [string]::IsNullOrEmpty($SetStartMinimized) -and $startminimized.value -ne $SetStartMinimized){
-            write-ezlogs " | Enabling setting StartMinimized" -LogLevel:$loglevel
-            $startminimized.value = $SetStartMinimized
-            $save_settings = $true
-          }
-        }
-        $userprofiles = $content.ChildNodes[1].userSettings.'ProtonVPN.Properties.Settings'.setting | where {$_.name -match 'UserProfiles'}
-        if($userprofiles){
-          $userprofiles_json = $($userprofiles.value) | convertfrom-json
-          if($userprofiles_json.count -gt 1){
-            write-ezlogs " | Multiple UserProfiles found: $($userprofiles_json | out-string)" -LogLevel:$loglevel
-          }else{
-            write-ezlogs " | UserProfiles User: $($userprofiles_json.user)" -LogLevel:$loglevel
-            if($($userprofiles_json).value.External){
-              write-ezlogs " | Connection profiles for user $($userprofiles_json.user) -- $($($userprofiles_json).value.External.name -join ',')" -LogLevel:$loglevel
+          if($connectonstart){
+            write-ezlogs " | ConnectOnAppStart Name: $($connectonstart.name) -- value: $($connectonstart.value)" -LogLevel:$loglevel
+            if(-not [string]::IsNullOrEmpty($SetConnectOnStart) -and $connectonstart.value -ne $SetConnectOnStart){
+              write-ezlogs " | Enabling setting StartMinimized" -LogLevel:$loglevel
+              $connectonstart.value = $SetConnectOnStart
+              $save_settings = $true
             }
-          }  
+          }
+          $startminimized = $content.ChildNodes[1].userSettings.'ProtonVPN.Properties.Settings'.setting | where {$_.name -eq 'StartMinimized'}
+          if($startminimized){
+            write-ezlogs " | StartMinimized value: $($startminimized.value)" -LogLevel:$loglevel
+            if(-not [string]::IsNullOrEmpty($SetStartMinimized) -and $startminimized.value -ne $SetStartMinimized){
+              write-ezlogs " | Enabling setting StartMinimized" -LogLevel:$loglevel
+              $startminimized.value = $SetStartMinimized
+              $save_settings = $true
+            }
+          }
+          $userprofiles = $content.ChildNodes[1].userSettings.'ProtonVPN.Properties.Settings'.setting | where {$_.name -match 'UserProfiles'}
+          if($userprofiles){
+            $userprofiles_json = $($userprofiles.value) | convertfrom-json
+            if($userprofiles_json.count -gt 1){
+              write-ezlogs " | Multiple UserProfiles found: $($userprofiles_json | out-string)" -LogLevel:$loglevel
+            }else{
+              write-ezlogs " | UserProfiles User: $($userprofiles_json.user)" -LogLevel:$loglevel
+              if($($userprofiles_json).value.External){
+                write-ezlogs " | Connection profiles for user $($userprofiles_json.user) -- $($($userprofiles_json).value.External.name -join ',')" -LogLevel:$loglevel
+              }
+            }  
+          }
+          $UserQuickConnect = $content.ChildNodes[1].userSettings.'ProtonVPN.Properties.Settings'.setting | where {$_.name -match 'UserQuickConnect'}
+          if($UserQuickConnect){
+            $UserQuickConnect_json = $UserQuickConnect.value | convertfrom-json
+            write-ezlogs " | UserQuickConnect -- User: $($UserQuickConnect_json.user) -- value: $($UserQuickConnect_json.value)" -LogLevel:$loglevel
+          }
+          if($save_settings){
+            write-ezlogs ">>>> Saving ProtonVPN settings to config file: $($path)" -LogLevel:$loglevel
+            $null = $content.Save($path)
+          }
         }
-        $UserQuickConnect = $content.ChildNodes[1].userSettings.'ProtonVPN.Properties.Settings'.setting | where {$_.name -match 'UserQuickConnect'}
-        if($UserQuickConnect){
-          $UserQuickConnect_json = $UserQuickConnect.value | convertfrom-json
-          write-ezlogs " | UserQuickConnect -- User: $($UserQuickConnect_json.user) -- value: $($UserQuickConnect_json.value)" -LogLevel:$loglevel
-        }
-        if($save_settings){
-          write-ezlogs ">>>> Saving ProtonVPN settings to config file: $($path)" -LogLevel:$loglevel
-          $null = $content.Save($path)
-        }
-      }
+      } 
     }
 
     $ProtonProcess = Get-CimInstance -Class Win32_Process -Filter "Name = 'ProtonVPN.exe'"

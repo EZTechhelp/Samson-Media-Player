@@ -315,6 +315,28 @@
 										</ComboBox.ContextMenu>
 									</ComboBox>
 								</VirtualizingStackPanel>
+								<VirtualizingStackPanel Name="ProjectM_StackPanel" IsVirtualizing="True" Visibility="Collapsed" VirtualizationMode="Recycling" Margin="30,0,0,0">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,0,0,0">
+										<Button Name="ProjectM_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+											<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+										</Button>
+										<Label Name='ProjectM_Label' Content="Visualization Options" VerticalAlignment="Top" Margin="5,2,0,0" Foreground="#ffffff" FontWeight="Bold" Visibility="Visible" BorderBrush="Red" BorderThickness="0,0,0,0" HorizontalAlignment="Left"/>
+									</VirtualizingStackPanel>
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" IsEnabled="{Binding ElementName=Use_Visualizations_Toggle, Path=IsOn}" Margin="0,0,0,0">
+										<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="30,0,0,0">
+											<TextBlock Text="Mesh X" Margin="0,0,0,0"/>
+											<TextBox Name='ProjectM_meshx_textbox' Text="" Margin="0,0,0,0" UndoLimit="0" Background="Transparent" TextWrapping="NoWrap" IsEnabled="True" Visibility="Visible" RenderTransformOrigin="0.502,0.52" MinWidth="50" MaxWidth="50" HorizontalAlignment="Left"/>
+										</VirtualizingStackPanel>
+										<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="30,0,0,0">
+											<TextBlock Text="Mesh Y" Margin="0,0,0,0"/>
+											<TextBox Name='ProjectM_meshy_textbox' Text="" Margin="0,0,0,0" UndoLimit="0" Background="Transparent" TextWrapping="NoWrap" IsEnabled="True" Visibility="Visible" RenderTransformOrigin="0.502,0.52" MinWidth="50" MaxWidth="50" HorizontalAlignment="Left"/>
+										</VirtualizingStackPanel>
+										<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Margin="30,0,0,0">
+											<TextBlock Text="Texture Size" Margin="0,0,0,0"/>
+											<TextBox Name='ProjectM_TextureSize_textbox' Text="" Margin="0,0,0,0" UndoLimit="0" Background="Transparent" TextWrapping="NoWrap" IsEnabled="True" Visibility="Visible" RenderTransformOrigin="0.502,0.52" MinWidth="50" MaxWidth="50" HorizontalAlignment="Left"/>
+										</VirtualizingStackPanel>										
+									</VirtualizingStackPanel>	
+								</VirtualizingStackPanel>									
 								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,5,0,0">
 									<Button Name="Audio_Output_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
 										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>

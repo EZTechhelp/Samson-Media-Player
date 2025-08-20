@@ -2852,6 +2852,9 @@ public class Config
     public bool EnableGlobalHotKeys { get; set; }
     public bool Enable_HighDPI { get; set; }
     public bool DisableTransparency { get; set; }
+    public int ProjectM_meshx { get; set; }
+    public int ProjectM_meshy { get; set; }
+    public int ProjectM_TextureSize { get; set; }
 }
 public class API
 {
