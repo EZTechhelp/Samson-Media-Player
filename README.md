@@ -129,7 +129,7 @@ See **[CREDITS](/CREDITS.MD)** for a quick list of the various, external apps, c
 
 #### <a name="PrepackagedInstaller">**Prepackaged/Installer**</a>
 
-+ **(NOT YET AVAILABLE TO PUBLIC - SOON™)** Available builds will be listed under `Releases` or shared directly/privately to QA Testers
++ Available builds will be listed under [Releases](https://github.com/EZTechhelp/Samson-Media-Player/releases) or shared directly/privately to QA Testers
 + Prepackaged installer using Inno setup. Will be the primary and recommended version for regular usage
 + **NOTE**: Using the prepackaged installer is not required, but highly recommended. It is used to provide a convenient way to package, deliver and configure.
 + The installer also performs optimizations to improve app performance, such as installing assembles to the GAC and creating native images via [ngen](https://learn.microsoft.com/en-us/dotnet/framework/tools/ngen-exe-native-image-generator)
@@ -151,10 +151,10 @@ See **[CREDITS](/CREDITS.MD)** for a quick list of the various, external apps, c
 ## Installation and Configuration <a name="Installation_and_Configuration"></a>
 
 ### 1. Choose/Download Available Version
-  + If using installer, just run through install wizard, choosing location to install. Let it finish but do not launch yet
+  + If using installer, just run through install wizard, choosing location to install. Let it finish but do not launch yet, as we need to setup API's first
   + If downloading source files, extract/copy to desired location
 
-### 2. API Setup and Configuration (Optional)<a name="API_Setup_and_Configuration_Optional"></a>
+### 2. API Setup and Configuration<a name="API_Setup_and_Configuration_Optional"></a>
 
 + Spotify, YouTube and Twitch features require additional setup for their respective API's.
 + See **[API Setup and Configuration](/Resources/Docs/Setup/API_Authentication_Setup.md)** for set-by-step instructions on how to setup your own API accounts for these services, which are free.
@@ -162,10 +162,10 @@ See **[CREDITS](/CREDITS.MD)** for a quick list of the various, external apps, c
 
 ### 3. Run First Time Setup
   + If using installer, run Samson from shortcut created or via `Samson.exe` in the install folder
-  + If you downloaded source files, execute `Samson.ps1` in the root folder from PowerShell (non-admin)
+  + If you downloaded source files, execute `Samson.ps1` or `Samson.exe` in the root folder from PowerShell (non-admin)
   + Upon running for the first time, the First Run Setup/Settings window will appear. Go through and configure as desired
   + Highly recommend reading the help documentation for each setting, by clicking on the **?** icon next to each
-  + After finishing setup, the app may restart. If it closes but doesn't restart on its own, wait a minute or so then just relaunch
+  + After finishing setup, the app may restart. If it closes but doesn't restart on its own, wait a minute or so then just relaunch. This usually only applies when not using the installer
 * * * 
 
 ## Uninstalling <a name="Uninstalling"></a>

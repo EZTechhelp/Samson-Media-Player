@@ -1,22 +1,22 @@
-Code count as of: 06/21/2025
+Code count as of: 08/21/2025
 
-    9568 text files.
-    527 unique files.
-    9796 files ignored.
-	
-github.com/AlDanial/cloc v 2.00  T=14.85 s (35.5 files/s, 12348.1 lines/s)
+    9569 text files.
+     531 unique files.
+    9761 files ignored.
+
+github.com/AlDanial/cloc v 2.00  T=86.00 s (6.2 files/s, 2142.6 lines/s)
 ------------------------------------------------------------------------------------
 Language                          files          blank        comment           code
 ------------------------------------------------------------------------------------
-PowerShell                          281          11178          24698          91076
-XAML                                 25             77            573          13711
+PowerShell                          281          11133          23254          93283
+XAML                                 25             76            504          13780
 JSON                                 14             15              0          10211
-Markdown                             91           1402              0           6134
-JavaScript                           10            251            416           6039
-XML                                  39            115            458           4609
-C#                                   11            489            201           3449
+Markdown                             93           1427              0           6214
+JavaScript                           10            252            417           6053
+XML                                  40            115            458           4615
+C#                                   11            489            201           3444
 HTML                                 18             36            149           1522
-Text                                 14            308              0           1066
+Text                                 15            311              0           1082
 Lua                                   2            107            211            819
 Python                                1            154            126            819
 TNSDL                                 7            445              0            812
@@ -25,5 +25,5 @@ MSBuild script                        4              1              0           
 Visual Studio Solution                4              4              4             92
 C# Designer                           3             18             41             56
 ------------------------------------------------------------------------------------
-SUM:                                527          14668          27032         141700
+SUM:                                531          14651          25520         144087
 ------------------------------------------------------------------------------------
