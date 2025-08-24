@@ -4699,6 +4699,28 @@ function Show-SettingsWindow{
             $Spotify_AUth_Check_Scriptblock = {
               try{
                 $hashsetup.Spotify_Auth_app = Get-SpotifyApplication -Name $thisApp.config.App_Name
+                if(!$hashsetup.Spotify_Auth_app.token.access_token){
+                  $APIXML = "$($thisApp.Config.Current_folder)\Resources\API\Spotify-API-Config.xml"
+                  write-ezlogs "| Importing Spotify API XML: $APIXML" -showtime -logtype Setup -LogLevel 2
+                  if([System.IO.File]::Exists($APIXML)){
+                    $Spotify_API = Import-Clixml $APIXML
+                    $client_ID = $Spotify_API.ClientID
+                    $client_secret = $Spotify_API.ClientSecret
+                  }
+                  if(!$Spotify_API -or !$client_ID -or !$client_secret){
+                    write-ezlogs "Unable to authenticate with Spotify API -- cannot continue" -showtime -warning -logtype Setup
+                    #$hashsetup.Spotify_Playlists_Import.isEnabled = $false
+                    $hashsetup.Spotify_Auth_Status = $false
+                    if([System.IO.File]::Exists("$($thisApp.Config.Current_Folder)\Resources\Docs\Setup\Spotify_API_Authentication_Setup.md")){
+                      $ApiSetup = [System.IO.File]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Docs\Setup\Spotify_API_Authentication_Setup.md")
+                    }
+                    update-EditorHelp -MarkDownFile "**%{color:#FFFFD265}Unable to authenticate with Spotify API, no API credentials were found. Spotify integration will be unavailable. Please refer to the API Credential Setup Instructions%**<br/>`n$ApiSetup" -MarkDownControl $hashsetup.MarkdownScrollViewer -Header 'Spotify Setup Warning' -use_runspace -clear -Open
+                    #update-EditorHelp -content "[WARNING] Unable to authenticate with Spotify API, no API credentials were found. Spotify integration will be unavailable. Please refer to the API Credential Setup Instructions" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout -use_runspace -clear -Open -Header 'Spotify - Warning'
+                    $hashsetup.Update_SpotifyStatus_Timer.tag = $Null
+                    Update-SettingsWindow -hashsetup $hashsetup -thisApp $thisApp -Control 'Import_Spotify_Playlists_Toggle' -Property 'IsOn' -value $false
+                    return
+                  }
+                }
               }catch{
                 write-ezlogs "An exception occurred executing Get-SpotifyApplication in Import_Spotify_Playlists_Toggle.add_Toggled" -catcherror $_
               }finally{
@@ -4738,7 +4760,7 @@ function Show-SettingsWindow{
       $hashsetup.Import_Spotify_Status_Button_Command = {
         Param($sender)
         try{
-          update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Setup\API_Authentication_Setup.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header 'API Credential Setup Instructions' -clear
+          update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Setup\Spotify_API_Authentication_Setup.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header 'API Credential Setup Instructions' -clear
         }catch{
           write-ezlogs "An exception occurred in Import_Spotify_Status_Button click event" -showtime -catcherror $_
         }
@@ -5866,6 +5888,29 @@ function Show-SettingsWindow{
                 $hashsetup.Import_Youtube_textbox.Inlines.clear()
               }
               if([string]::IsNullOrEmpty($access_token_expires) -or [string]::IsNullOrEmpty($access_token) -or [string]::IsNullOrEmpty($refresh_access_token)){
+                $APIXML = "$($thisApp.Config.Current_folder)\Resources\API\Youtube-API-Config.xml"
+                write-ezlogs "| Importing Youtube API XML: $APIXML" -showtime -logtype Setup -LogLevel 2
+                if([System.IO.File]::Exists($APIXML)){
+                  $Youtube_API = Import-Clixml $APIXML
+                }
+                if(!$Youtube_API -or !$Youtube_API.client_id -or !$Youtube_API.Client_Secret){
+                  write-ezlogs "Unable to authenticate with Youtube API -- cannot continue" -showtime -warning -logtype Setup
+                  if([System.IO.File]::Exists("$($thisApp.Config.Current_Folder)\Resources\Docs\Setup\Youtube_API_Authentication_Setup.md")){
+                    $ApiSetup = [System.IO.File]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Docs\Setup\Youtube_API_Authentication_Setup.md")
+                  }
+                  update-EditorHelp -MarkDownFile "**%{color:#FFFFD265}Unable to authenticate with Youtube API, no API credentials were found. Youtube integration will be unavailable. Please refer to the API Credential Setup Instructions%**<br/>`n$ApiSetup" -MarkDownControl $hashsetup.MarkdownScrollViewer -Header 'Youtube Setup Warning' -use_runspace -clear -Open
+                  $sender.isOn = $false
+                  $hashsetup.Youtube_Playlists_Browse.IsEnabled = $false
+                  $hashsetup.YoutubePlaylists_Grid.IsEnabled = $false
+                  $hashsetup.Import_Youtube_Auth_ComboBox.isEnabled = $false
+                  $hashsetup.Youtube_Playlists_Import.isEnabled = $false
+                  $hashsetup.Import_Youtube_Auth_Toggle.isEnabled = $false
+                  $hashsetup.YoutubePlaylists_Grid.MaxHeight = '0'
+                  $thisapp.configTemp.Import_Youtube_Media = $false
+                  $hashsetup.Import_Youtube_textbox.text = ""
+                  $hashsetup.Import_Youtube_transitioningControl.Height = '0'
+                  return
+                }              
                 $hyperlink = 'https://Youtube_Auth'
                 write-ezlogs "No valid Youtube authentication was found (Access_Token: $($access_token)) - (Access_token_expires: $($access_token_expires)) - (Refresh_access_token: $($refresh_access_token))" -showtime -logtype Setup -Warning
                 $hashsetup.Import_Youtube_Status_textbox.Text="[NONE]"
@@ -5913,7 +5958,7 @@ function Show-SettingsWindow{
               $hashsetup.Youtube_Playlists_Import.isEnabled = $false
               $hashsetup.Import_Youtube_Auth_Toggle.isEnabled = $false
               $hashsetup.YoutubePlaylists_Grid.MaxHeight = '0'
-              Add-Member -InputObject $thisapp.configTemp -Name "Import_Youtube_Media" -Value $false -MemberType NoteProperty -Force -ErrorAction SilentlyContinue
+              $thisapp.configTemp.Import_Youtube_Media = $false
               $hashsetup.Import_Youtube_textbox.text = ""
               $hashsetup.Import_Youtube_transitioningControl.Height = '0'
             }
@@ -5950,7 +5995,7 @@ function Show-SettingsWindow{
       $hashsetup.Import_Youtube_Status_Button_Command = {
         Param($sender)
         try{
-          update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Setup\API_Authentication_Setup.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header 'API Credential Setup Instructions' -clear
+          update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Setup\Youtube_API_Authentication_Setup.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header 'API Credential Setup Instructions' -clear
         }catch{
           write-ezlogs "An exception occurred in Import_Youtube_Status_Button click event" -showtime -catcherror $_
         }
@@ -6942,6 +6987,26 @@ function Show-SettingsWindow{
               $thisapp.configTemp.Import_Twitch_Media = $true
               $TwitchApp = Get-TwitchApplication -Name $($thisApp.Config.App_name)
               if(([string]::IsNullOrEmpty($TwitchApp.token.access_token) -or [string]::IsNullOrEmpty($TwitchApp.token.expires))){
+                $APIXML = "$($thisApp.Config.Current_folder)\Resources\API\Twitch-API-Config.xml"
+                write-ezlogs "| Importing Twitch API XML: $APIXML" -showtime -logtype Setup -LogLevel 2
+                if([System.IO.File]::Exists($APIXML)){
+                  $Twitch_API = Import-SerializedXML -Path $APIXML -isAPI
+                }
+                if(!$Twitch_API -or !$Twitch_API.ClientID -or !$Twitch_API.ClientSecret){
+                  write-ezlogs "Unable to authenticate with Twitch API -- cannot continue" -showtime -warning -logtype Setup
+                  if([System.IO.File]::Exists("$($thisApp.Config.Current_Folder)\Resources\Docs\Setup\Twitch_API_Authentication_Setup.md")){
+                    $ApiSetup = [System.IO.File]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Docs\Setup\Twitch_API_Authentication_Setup.md")
+                  }
+                  update-EditorHelp -MarkDownFile "**%{color:#FFFFD265}Unable to authenticate with Twitch API, no API credentials were found. Twitch integration will be unavailable. Please refer to the API Credential Setup Instructions%**<br/>`n$ApiSetup" -MarkDownControl $hashsetup.MarkdownScrollViewer -Header 'Twitch Setup Warning' -use_runspace -clear -Open
+                  $sender.isOn = $false
+                  $hashsetup.Twitch_Playlists_Browse.IsEnabled = $false
+                  $hashsetup.TwitchPlaylists_Grid.IsEnabled = $false
+                  $hashsetup.TwitchPlaylists_Grid.MaxHeight = '0'
+                  $thisapp.configTemp.Import_Twitch_Media = $false
+                  $hashsetup.Import_Twitch_textbox.text = ""
+                  $hashsetup.Import_Twitch_transitioningControl.Height = '0'
+                  return
+                }
                 $hyperlink = 'https://Twitch_Auth'
                 write-ezlogs "No Twitch authentication returned (Expires: $($TwitchApp.token.access_token)) (Expires: $($TwitchApp.token.expires))" -warning -logtype Setup
                 $hashsetup.Import_Twitch_textbox.isEnabled = $true
@@ -6985,7 +7050,7 @@ function Show-SettingsWindow{
               $hashsetup.Twitch_Playlists_Browse.IsEnabled = $false
               $hashsetup.TwitchPlaylists_Grid.IsEnabled = $false
               $hashsetup.TwitchPlaylists_Grid.MaxHeight = '0'
-              Add-Member -InputObject $thisapp.configTemp -Name "Import_Twitch_Media" -Value $false -MemberType NoteProperty -Force -ErrorAction SilentlyContinue
+              $thisapp.configTemp.Import_Twitch_Media = $false
               $hashsetup.Import_Twitch_textbox.text = ""
               $hashsetup.Import_Twitch_transitioningControl.Height = '0'
             }
@@ -7027,7 +7092,7 @@ function Show-SettingsWindow{
       $hashsetup.Import_Twitch_Status_Button_Command = {
         Param($sender)
         try{
-          update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Setup\API_Authentication_Setup.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header 'API Credential Setup Instructions' -clear
+          update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Setup\Twitch_API_Authentication_Setup.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -Header 'API Credential Setup Instructions' -clear
         }catch{
           write-ezlogs "An exception occurred in Import_Twitch_Status_Button click event" -showtime -catcherror $_
         }
@@ -7123,10 +7188,17 @@ function Show-SettingsWindow{
           $PlaylistRebuild_Required = $PlaylistRebuild_Required
           $hashsetup.Save_Setup_Button_clicked = $true
           $hashsetup.Save_setup_textblock.text = ""
-          $hashsetup.Update_LocalMedia_Sources = $false
-          $thisApp.config = $thisapp.configTemp.psobject.copy()
-          $thisapp.configTemp = $Null
-          #Check for existing custom playlists
+          $hashsetup.Update_LocalMedia_Sources = $false        
+
+          #region Require 1 media type
+          if(!$hashsetup.Import_Local_Media_Toggle.isOn -and !$hashsetup.Import_Youtube_Playlists_Toggle.isOn -and !$hashsetup.Import_Spotify_Playlists_Toggle){
+            write-ezlogs "At least 1 Media type to import was not selected! (Local Media, Spotify, or Youtube)" -showtime -warning -logtype Setup
+            update-EditorHelp -content "[WARNING] You must enable at least 1 Media type to import in order to continue! (Local Media, Spotify, Youtube, or Twitch)" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout  -Header 'Requirements Missing!' -clear -Open
+            return
+          }
+          #endregion Require 1 media type
+
+          #TODO: Verify if really needed anymore - Check for existing custom playlists
           $playlist_pattern = [regex]::new('$(?<=((?i)Playlist.xml))')
           if($First_Run -and ([System.IO.Directory]::Exists($thisApp.config.Playlist_Profile_Directory)) -and $PlaylistRebuild_Required){
             $existing_playlists = Find-FilesFast -Path $thisApp.config.Playlist_Profile_Directory -Recurse -Filter $playlist_pattern
@@ -7167,6 +7239,8 @@ function Show-SettingsWindow{
               return
             }
           }
+          $thisApp.config = $thisapp.configTemp.psobject.copy() 
+          $thisapp.configTemp = $Null
           #region Start on Windows Login
           if($hashsetup.Start_On_Windows_Login_Toggle.isOn){
             $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine', 'Default')
@@ -7288,14 +7362,6 @@ function Show-SettingsWindow{
           }
           #endregion High DPI Mode
 
-          #region Require 1 media type
-          if(!$hashsetup.Import_Local_Media_Toggle.isOn -and !$hashsetup.Import_Youtube_Playlists_Toggle.isOn -and !$hashsetup.Import_Spotify_Playlists_Toggle){
-            write-ezlogs "At least 1 Media type to import was not selected! (Local Media, Spotify, or Youtube)" -showtime -warning -logtype Setup
-            update-EditorHelp -content "[WARNING] You must enable at least 1 Media type to import in order to continue! (Local Media, Spotify, Youtube, or Twitch)" -color orange -FontWeight Bold -RichTextBoxControl $hashsetup.EditorHelpFlyout  -Header 'Requirements Missing!' -clear -Open
-            return
-          }
-          #endregion Require 1 media type
-
           #region Dev Mode
           $thisapp.config.Dev_mode = $($hashsetup.Verbose_logging_Toggle.isOn -eq $true)
           #endregion Dev Mode
@@ -7331,9 +7397,8 @@ function Show-SettingsWindow{
           }
           #endregion Audio Output
 
-
           #----------------------------------------------
-          #region TODO:Media Control Hotkeys
+          #region Media Control Hotkeys
           #----------------------------------------------
           try{
             if($HashSetup.VolUpHotkey.Hotkey -is [MahApps.Metro.Controls.HotKey] -and $HashSetup.VolUpHotkey.text){
@@ -7466,14 +7531,13 @@ function Show-SettingsWindow{
             write-ezlogs "An exception occurred executing Get-GlobalHotkeys" -catcherror $_
           }
           #----------------------------------------------
-          #endregion TODO:Media Control Hotkeys
+          #endregion Media Control Hotkeys
           #----------------------------------------------
 
           #region Import Local Media
           if($hashsetup.Import_Local_Media_Toggle.isOn){
             $thisapp.config.Import_Local_Media = $true
             $newLocalMediaCount = 0
-            #$RemovedLocalMediaCount = 0
             foreach($path in $hashsetup.MediaLocations_Grid.items){
               if([System.IO.Directory]::Exists($path.path)){
                 if($thisApp.Config.Media_Directories -notcontains $path.path){
@@ -7508,9 +7572,7 @@ function Show-SettingsWindow{
             }elseif(!$thisApp.Config.Enable_LocalMedia_Monitor -and ($thisApp.ProfileManagerEnabled -or $thisApp.LocalMedia_Monitor_Enabled)){
               Stop-FileWatcher -thisApp $thisApp -synchash $synchash -use_Runspace -Stop_ProfileManager -force
             }
-          }
-          else
-          {
+          }else{
             Add-Member -InputObject $thisApp.config -Name "Import_Local_Media" -Value $false -MemberType NoteProperty -Force
             if($thisApp.ProfileManagerEnabled -or $thisApp.LocalMedia_Monitor_Enabled){
               Stop-FileWatcher -thisApp $thisApp -synchash $synchash -use_Runspace -Stop_ProfileManager -force
@@ -7519,7 +7581,7 @@ function Show-SettingsWindow{
           #TODO: Display Name Syntax Update
           if($thisApp.Config.LocalMedia_Display_Syntax -ne $hashsetup.LocalMedia_Display_Syntax_textbox.text){
             write-ezlogs ">>>> Local Media Default Display Name Syntax changed from: '$($thisApp.Config.LocalMedia_Display_Syntax)' to '$($hashsetup.LocalMedia_Display_Syntax_textbox.text)'" -logtype Setup
-            Add-Member -InputObject $thisapp.config -Name 'LocalMedia_Display_Syntax' -Value $($hashsetup.LocalMedia_Display_Syntax_textbox.text) -MemberType NoteProperty -Force
+            $thisapp.config.LocalMedia_Display_Syntax = "$($hashsetup.LocalMedia_Display_Syntax_textbox.text)"
           }
           #endregion Import Local Media
 
@@ -7611,7 +7673,6 @@ function Show-SettingsWindow{
                       $Playlist_Profile_path = "$($thisapp.config.Playlist_Profile_Directory)\Youtube_Playlists\$($playlist.id).xml"
                       write-ezlogs "| Saving new Youtube Playlist profile to $Playlist_Profile_path" -showtime -logtype Setup -LogLevel 2
                       $Playlist_Profile.name = $playlist_Name
-                      #$Playlist_Profile.NameCleaned = $playlistName_Cleaned
                       $Playlist_Profile.Playlist_ID = $playlist.id
                       $Playlist_Profile.Playlist_URL = $playlist.path
                       $Playlist_Profile.type = $playlist.type
@@ -7638,7 +7699,7 @@ function Show-SettingsWindow{
             }
             if($hashsetup.Update){
               $hashSetup.playlists_toRemove = [System.Collections.Generic.List[Object]]::new()
-              $playlists_toRemove = $thisApp.Config.Youtube_Playlists | where {$hashsetup.YoutubePlaylists_Grid.items.path -notcontains $_}
+              $playlists_toRemove = $thisApp.Config.Youtube_Playlists | Where-Object {$hashsetup.YoutubePlaylists_Grid.items.path -notcontains $_}
               if($playlists_toRemove){
                 foreach($playlist in $playlists_toRemove){
                   $RemovedYoutubeMediaCount++

@@ -160,7 +160,7 @@ function Get-SpotifyApplication {
       }       
       return $auth
     }else{
-      write-ezlogs "Unable to get Spotify API info from $APIXML -- cannot contineu" -showtime -Warning -logtype Spotify
+      write-ezlogs "Unable to get Spotify API info from $APIXML -- cannot continue" -showtime -Warning -logtype Spotify
       return
     }
   }     
