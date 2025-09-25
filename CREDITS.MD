@@ -28,6 +28,9 @@ A quick list of the various apps, external components or libraries used in this 
 - Includes some plugins that can be enabled to potentially block ads, and so far has worked very well, but cannot be guaranteed to always work due to the volatile nature of Ad blocking
 - Has many other potential use cases not currently tapped into 
 
+**[streamlink-ttvlol](https://github.com/2bc4/streamlink-ttvlol)**
+- Streamlink Twitch plugin modified to work with the TTV.LOL API
+
 **[Spicetify](https://github.com/khanhas/Spicetify)**
 - Command-line tool to customize the official Spotify client. Supports Windows, MacOS and Linux
 - Long ago Spotify stopped supporting direct programmatic control of the Spotify app, or maybe never really did, thus you must use the Spotify API when controlling playback (which is what the SpotiShell module does)
@@ -106,15 +109,59 @@ A quick list of the various apps, external components or libraries used in this 
 **[Denon Classic Style Skin](https://www.aimp.ru/?do=catalog&rec_id=417)**
 - The customized skin for Samson is inspired by this skin which was made by author Black_AVP for AIMP
 
+**[Hardcodet NotifyIcon for WPF](https://github.com/hardcodet/wpf-notifyicon)**
+- NotifyIcon (aka system tray icon or taskbar icon) for the WPF platform
+- Very good framework to implement custom system tray menues and pop-ups
+
+**[Hardcodet NotifyIcon for WPF](https://github.com/whistyun/MdXaml)**
+- Markdown for WPF - alternate version of Markdown.Xaml 
+- Allows easy way to display Markdown or HTML directly within WPF controls. Used mostly for in-app help documentation
+
+**[PoshWinRT](https://github.com/rkeithhill/PoshWinRT)**
+- Windows Runtime API Interop Utilities for Windows PowerShell
+- Allows the ability to create WinRT events in Powershell 5.1. Used with SystemMediaTransportControls and Burnttoast
+
+**[Emoji.Wpf](https://github.com/samhocevar/emoji.wpf)**
+- Adds Emoji rendering support to WPF applications
+- Right now is used very sparingly due to performance reasons, but is best implementation of Emoji support for WPF
+
+**[Return YouTube Dislike](https://github.com/Anarios/return-youtube-dislike)**
+- Return YouTube Dislike is an open-source extension that returns the YouTube dislike count
+- The JS Userscript version is used, only when Youtube comments are enabled
+
+**[RechatTool](https://github.com/jdpurcell/RechatTool)**
+- Command line tool to download the chat log from a Twitch VOD
+- Allows ability to view Twitch chat replay when playing Twitch VODs (WIP)
+
+**[GO2TV](https://github.com/alexballas/go2tv)**
+- Cast media files to UPnP/DLNA Media Renderers and Smart TVs
+- Used for the (very WIP) media casting feature
+
+**[WebNowPlaying-BrowserExtension](https://github.com/tjhrulz/WebNowPlaying-BrowserExtension)**
+- WebNowPlaying browser extension used with Spicetify
+- This is a customized version of the WebNowPlaying extension to allow sending/receiving web-socket commands to/from Spotify
+
+**[FFmpeg](https://ffmpeg.org/)**
+- A complete, cross-platform solution to record, convert and stream audio and video
+- Used in converting various media formats, such as when downloading Youtube videos
+
+**[VB-Cable Virtual Audio Device](https://vb-audio.com/Cable/)**
+- VB-CABLE is a virtual audio device working as virtual audio cable. All audio coming in the CABLE input is simply forwarded to the CABLE output
+- This is used with `SoundVolumeCommandLine` to capture per process audio output which enables features such as EQ support for web-players
+
+**[AudioDeviceCmdlets](https://github.com/frgnca/AudioDeviceCmdlets)**
+- AudioDeviceCmdlets is a suite of PowerShell Cmdlets to control audio devices on Windows
+- Very helpful Powershell Module for easy enumeration of default or all audio devices
 
 ## Credits and Contributions
 <img align="left" src="/Resources/Docs/Images/Woody.png" Width='3%' title="Wøødy"/>**[Wøødy](https://github.com/Woody033)**
 <br clear="left"/>
 
 + MASSIVE thank you to my partner in crime on this project
-+ Helped with testing nearly every build up to the latest
++ Helped with testing nearly every build up 1.0
 + Helped in many other areas including graphic design (many skin components, including the awesome 'Speakers') and various core code
 + Provided great ideas, feedback and motivation to keep this project going
++ Rest in peace my good friend
 
 ***
 

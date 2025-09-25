@@ -433,6 +433,9 @@ public class Media : INotifyPropertyChanged
     public bool hasVideo { get; set; }
     public string Current_Progress_Secs { get; set; }
     public int Track { get; set; }
+    public int Episode { get; set; }
+    public int Season { get; set; }
+    public string MediaType { get; set; }
     private string duration;
     public string Duration
     {
@@ -1099,6 +1102,9 @@ function ConvertTo-Media {
                 'hasVideo' = $object.hasVideo
                 'Current_Progress_Secs' = $object.Current_Progress_Secs
                 'Track' = $object.Track
+                'Episode' = $object.Episode
+                'Season' = $object.Season
+                'MediaType' = $object.MediaType
                 'Duration' = $object.Duration
                 'Size' = $object.Size
                 'Subtitles_Path' = $object.Subtitles_Path
@@ -1153,6 +1159,8 @@ function ConvertTo-Media {
                 'type' = $object.type
                 'Current_Progress_Secs' = $object.Current_Progress_Secs
                 'Track' = $object.Track
+                'Episode' = $object.Episode
+                'Season' = $object.Season
                 'Duration' = $object.Duration
                 'Display_Name' = $object.Display_Name
                 'TimesPlayed' = $object.TimesPlayed

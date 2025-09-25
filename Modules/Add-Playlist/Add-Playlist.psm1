@@ -67,233 +67,262 @@ function Add-Playlist
       $PositionTargetMedia = $PositionTargetMedia,
       $Verboselog = $VerboseLog
     )
-    write-ezlogs "#### Adding/Updating Playlist $Playlist ####" -linesbefore 1 -loglevel 2
-    $illegalfile = "[™$([Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars()))]"
-    if(!$Playlist_File_Path){
-      if($Playlist -match $illegalfile){
-        write-ezlogs " | Cleaning Playlist name due to illegal characters" -warning
-        $Playlist = ([Regex]::Replace($Playlist, $illegalfile, '')).trim()
+    try{
+      write-ezlogs "#### Adding/Updating Playlist $Playlist ####" -linesbefore 1 -loglevel 2
+      $illegalfile = "[™$([Regex]::Escape(-join [System.Io.Path]::GetInvalidFileNameChars()))]"
+      if(!$Playlist_File_Path){
+        if($Playlist -match $illegalfile){
+          write-ezlogs " | Cleaning Playlist name due to illegal characters" -warning
+          $Playlist = ([Regex]::Replace($Playlist, $illegalfile, '')).trim()
+        }
+        $Playlist_Path_Name = "$($Playlist)-CustomPlaylist.xml"
+        $Playlist_Directory_Path = [System.IO.Path]::Combine($Playlist_Profile_Directory,'Custom-Playlists')
+        $Playlist_File_Path = [System.IO.Path]::Combine($Playlist_Directory_Path,$Playlist_Path_Name)
       }
-      $Playlist_Path_Name = "$($Playlist)-CustomPlaylist.xml"
-      $Playlist_Directory_Path = [System.IO.Path]::Combine($Playlist_Profile_Directory,'Custom-Playlists')
-      $Playlist_File_Path = [System.IO.Path]::Combine($Playlist_Directory_Path,$Playlist_Path_Name)
-    }
-    if($synchash.all_playlists.name){
-      $index = $synchash.all_playlists.name.indexof($Playlist)
-    }
-    if(-not [string]::IsNullOrEmpty($index) -and $index -ne -1){
-      if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-        $Playlist_to_Update = $synchash.all_playlists.GetItemAt($index)
+      if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+        $All_Playlists = $synchash.All_Playlists.items
+        if($synchash.all_playlists.IsTracking){
+          Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'all_playlists' -Property 'IsTracking' -value $false
+        }
       }else{
-        $Playlist_to_Update = $synchash.all_playlists[$index]
+        $All_Playlists = $synchash.All_Playlists
       }
-      write-ezlogs " | Updating existing playlist Profile for: $($Playlist_to_Update.name)" -showtime
-    }else{
-      write-ezlogs " | Playlist Profile not found...building new profile" -showtime -loglevel 2
-      $Playlist_to_Update = [playlist]::new()
-      $Playlist_encodedTitle = $Null
-      $Playlist_to_Update.Playlist_Tracks = [SerializableDictionary[int,[Media]]]::new()
-      $Playlist_encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($Playlist)-CustomPlaylist")
-      $Playlist_encodedTitle = [System.Convert]::ToBase64String($Playlist_encodedBytes)
-      if($synchash.all_playlists.Playlist_id -notcontains $Playlist_encodedTitle){
-        $Playlist_to_Update.Playlist_ID = $Playlist_encodedTitle
+      if($All_Playlists.name){
+        $index = $All_Playlists.name.indexof($Playlist)
+      }
+      if(-not [string]::IsNullOrEmpty($index) -and $index -ne -1){
+        if($All_Playlists -is [System.Windows.Data.CollectionView]){
+          $Playlist_to_Update = $All_Playlists.GetItemAt($index)
+        }else{
+          $Playlist_to_Update = $All_Playlists[$index]
+        }
+        write-ezlogs " | Updating existing playlist Profile for: $($Playlist_to_Update.name)" -showtime
       }else{
-        write-ezlogs "An existing playlist exists with id: $Playlist_encodedTitle -- generating new id" -warning
-        $Playlist_encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($Playlist)-$([Datetime]::now.ToString())")
+        write-ezlogs " | Playlist Profile not found...building new profile" -showtime -loglevel 2
+        $Playlist_to_Update = [playlist]::new()
+        $Playlist_encodedTitle = $Null
+        $Playlist_to_Update.Playlist_Tracks = [SerializableDictionary[int,[Media]]]::new()
+        $Playlist_encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($Playlist)-CustomPlaylist")
         $Playlist_encodedTitle = [System.Convert]::ToBase64String($Playlist_encodedBytes)
-        $Playlist_to_Update.Playlist_ID = $Playlist_encodedTitle
+        if($All_Playlists.Playlist_id -notcontains $Playlist_encodedTitle){
+          $Playlist_to_Update.Playlist_ID = $Playlist_encodedTitle
+        }else{
+          write-ezlogs "An existing playlist exists with id: $Playlist_encodedTitle -- generating new id" -warning
+          $Playlist_encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($Playlist)-$([Datetime]::now.ToString())")
+          $Playlist_encodedTitle = [System.Convert]::ToBase64String($Playlist_encodedBytes)
+          $Playlist_to_Update.Playlist_ID = $Playlist_encodedTitle
+        }
+        $Playlist_to_Update.name = $Playlist
+        $Playlist_to_Update.Playlist_Date_Added = [Datetime]::now.ToString()
+        $Playlist_to_Update.type = 'CustomPlaylist'
       }
-      $Playlist_to_Update.name = $Playlist
-      $Playlist_to_Update.Playlist_Date_Added = [Datetime]::now.ToString()
-      $Playlist_to_Update.type = 'CustomPlaylist'
-    }
-    if(-not [string]::IsNullOrEmpty($Playlist_to_Update.Playlist_ID) -and $Playlist){
-      if($Position -and $Playlist_to_Update.Playlist_Tracks.values.id -contains $media.id -and $Playlist_to_Update.Playlist_Tracks.values.id -contains $PositionTargetMedia.id){
-        #TODO: Hacky to ensure index and keys are in same order
-        [array]$existingitems = $Playlist_to_Update.Playlist_Tracks.values
-        $Count = 0
-        [void]$Playlist_to_Update.Playlist_Tracks.clear()
-        $existingitems | & { process {
-            [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
-            $Count++
-        }}
-        write-ezlogs "| Getting destination dropindex of target: $($media.title) -- for position: $($Position)"
-        $TargetIndex = $Playlist_to_Update.Playlist_Tracks.values.id.indexof($PositionTargetMedia.id)
-        if(-not [string]::IsNullOrEmpty($TargetIndex) -and $TargetIndex -ne -1){
-          write-ezlogs "| Targetindex: $TargetIndex"
-          switch($Position)
-          {
-            'DropAbove' {
-              if($TargetIndex -eq 0){
-                $DropIndex = 0
-              }else{
-                $DropIndex = $TargetIndex# - 1
+      if(-not [string]::IsNullOrEmpty($Playlist_to_Update.Playlist_ID) -and $Playlist){
+        if($Position -and $Playlist_to_Update.Playlist_Tracks.values.id -contains $media.id -and $Playlist_to_Update.Playlist_Tracks.values.id -contains $PositionTargetMedia.id){
+          #TODO: Hacky to ensure index and keys are in same order
+          [array]$existingitems = $Playlist_to_Update.Playlist_Tracks.values
+          $Count = 0
+          [void]$Playlist_to_Update.Playlist_Tracks.clear()
+          $existingitems | & { process {
+              [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
+              $Count++
+          }}
+          write-ezlogs "| Getting destination dropindex of target: $($media.title) -- for position: $($Position)"
+          $TargetIndex = $Playlist_to_Update.Playlist_Tracks.values.id.indexof($PositionTargetMedia.id)
+          if(-not [string]::IsNullOrEmpty($TargetIndex) -and $TargetIndex -ne -1){
+            write-ezlogs "| Targetindex: $TargetIndex"
+            switch($Position)
+            {
+              'DropAbove' {
+                if($TargetIndex -eq 0){
+                  $DropIndex = 0
+                }else{
+                  $DropIndex = $TargetIndex# - 1
+                }
+              }
+              'DropBelow' {
+                $DropIndex = $TargetIndex# + 1
+              }
+              'DropHere' {
+                $DropIndex = $TargetIndex
               }
             }
-            'DropBelow' {
-              $DropIndex = $TargetIndex# + 1
-            }
-            'DropHere' {
-              $DropIndex = $TargetIndex
-            }
+            write-ezlogs "| Destination dropindex: $DropIndex"
           }
-          write-ezlogs "| Destination dropindex: $DropIndex"
-        }
-        #Reorder
-        try{
-          if($Position -in 'DropAbove','DropBelow'){
-            [array]$existingitems = $Playlist_to_Update.Playlist_Tracks.values
-            $Count = 0
-            [void]$Playlist_to_Update.Playlist_Tracks.clear()
-            $existingitems | & { process {
-                if($Count -eq $DropIndex){
-                  write-ezlogs "| Inserting media at position: $($Count) -- of target: $($media.title)"
-                  [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$media)
-                  $Count++
-                  if($_.id -notin $Playlist_to_Update.Playlist_Tracks.values.id){
+          #Reorder
+          try{
+            if($Position -in 'DropAbove','DropBelow'){
+              [array]$existingitems = $Playlist_to_Update.Playlist_Tracks.values
+              $Count = 0
+              [void]$Playlist_to_Update.Playlist_Tracks.clear()
+              $existingitems | & { process {
+                  if($Count -eq $DropIndex){
+                    write-ezlogs "| Inserting media at position: $($Count) -- of target: $($media.title)"
+                    [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$media)
+                    $Count++
+                    if($_.id -notin $Playlist_to_Update.Playlist_Tracks.values.id){
+                      write-ezlogs "| Inserting media: $($_.title) -- at position: $($Count)" -LogLevel 4 -Verboselog:$Verboselog
+                      [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
+                      $Count++
+                    }
+                  }elseif($_.id -ne $media.id -and $_.id -notin $Playlist_to_Update.Playlist_Tracks.values.id){
                     write-ezlogs "| Inserting media: $($_.title) -- at position: $($Count)" -LogLevel 4 -Verboselog:$Verboselog
                     [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
                     $Count++
                   }
-                }elseif($_.id -ne $media.id -and $_.id -notin $Playlist_to_Update.Playlist_Tracks.values.id){
-                  write-ezlogs "| Inserting media: $($_.title) -- at position: $($Count)" -LogLevel 4 -Verboselog:$Verboselog
-                  [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
-                  $Count++
-                }
-            }}
-          }
-        }catch{
-          write-ezlogs "An exception occurred reordering playlist track: $($media.title) -- TargetIndex: $TargetIndex -- DropIndex: $DropIndex -- Position: $Position" -CatchError $_
-        }
-      }else{
-        if($ClearPlaylist -and $Playlist_to_Update.Playlist_Tracks){
-          write-ezlogs "| Clearing existing playlist tracks for: $($Playlist_to_Update.name)"
-          $Playlist_to_Update.PlayList_tracks.clear()
-        }
-        if($media){
-          $index = ($Playlist_to_Update.PlayList_tracks.keys | Measure-Object -Maximum).Maximum
-          if([string]::IsNullOrEmpty($index)){
-            $index = 0
-          }else{
-            $index++
-          }
-          if($Position -and $PositionTargetMedia -and $Playlist_to_Update.Playlist_Tracks.values.id -contains $PositionTargetMedia.id){
-            write-ezlogs "| Getting destination dropindex of target: $($PositionTargetMedia.title) -- for position: $($Position)"
-            $TargetIndex = $Playlist_to_Update.Playlist_Tracks.values.id.indexof($PositionTargetMedia.id)
-            if(-not [string]::IsNullOrEmpty($TargetIndex) -and $TargetIndex -ne -1){
-              write-ezlogs "| Targetindex: $TargetIndex"
-              switch($Position)
-              {
-                'DropAbove' {
-                  if($TargetIndex -eq 0){
-                    $DropIndex = 0
-                  }else{
-                    $DropIndex = $TargetIndex# - 1
-                  }
-                }
-                'DropBelow' {
-                  $DropIndex = $TargetIndex# + 1
-                }
-                'DropHere' {
-                  $DropIndex = $TargetIndex
-                }
-              }
-              write-ezlogs "| Destination dropindex: $DropIndex"
+              }}
             }
+          }catch{
+            write-ezlogs "An exception occurred reordering playlist track: $($media.title) -- TargetIndex: $TargetIndex -- DropIndex: $DropIndex -- Position: $Position" -CatchError $_
           }
-          foreach($item in $media){
-            try{
-              if([string]::IsNullOrEmpty($item.id) -and -not [string]::IsNullOrEmpty($item)){
-                $id = $item
-              }else{
-                $id = $item.id
-              }
-              if($id -and $Playlist_to_Update.PlayList_tracks.values.id -notcontains $id){
-                if($item.Group -eq 'WebBrowser' -or $item.type -eq 'WebBrowser'){
-                  $track = $item
-                }elseif(!$item.id){
-                  $track = Get-MediaProfile -thisApp $thisApp -synchash $synchash -Media_ID $id
-                }else{
-                  $track = $item
+        }else{
+          if($ClearPlaylist -and $Playlist_to_Update.Playlist_Tracks){
+            write-ezlogs "| Clearing existing playlist tracks for: $($Playlist_to_Update.name)"
+            $Playlist_to_Update.PlayList_tracks.clear()
+          }
+          if($media){
+            if($Playlist_to_Update.PlayList_tracks.keys -ne $Null){
+              $index = [System.Linq.Enumerable]::Max($Playlist_to_Update.PlayList_tracks.keys)
+            }
+            if([string]::IsNullOrEmpty($index)){
+              $index = 0
+            }else{
+              $index++
+            }
+            if($Position -and $PositionTargetMedia -and $Playlist_to_Update.Playlist_Tracks.values.id -contains $PositionTargetMedia.id){
+              write-ezlogs "| Getting destination dropindex of target: $($PositionTargetMedia.title) -- for position: $($Position)"
+              $TargetIndex = $Playlist_to_Update.Playlist_Tracks.values.id.indexof($PositionTargetMedia.id)
+              if(-not [string]::IsNullOrEmpty($TargetIndex) -and $TargetIndex -ne -1){
+                write-ezlogs "| Targetindex: $TargetIndex"
+                switch($Position)
+                {
+                  'DropAbove' {
+                    if($TargetIndex -eq 0){
+                      $DropIndex = 0
+                    }else{
+                      $DropIndex = $TargetIndex# - 1
+                    }
+                  }
+                  'DropBelow' {
+                    $DropIndex = $TargetIndex# + 1
+                  }
+                  'DropHere' {
+                    $DropIndex = $TargetIndex
+                  }
                 }
-                if($track){
-                  if($track.title -match '---> '){
-                    $track.title = $track.title -replace '---> '
+                write-ezlogs "| Destination dropindex: $DropIndex"
+              }
+            }
+            foreach($item in $media){
+              try{
+                if([string]::IsNullOrEmpty($item.id) -and -not [string]::IsNullOrEmpty($item)){
+                  $id = $item
+                }else{
+                  $id = $item.id
+                }
+                if($id -and $Playlist_to_Update.PlayList_tracks.values.id -notcontains $id){
+                  if($item.Group -eq 'WebBrowser' -or $item.type -eq 'WebBrowser'){
+                    $track = $item
+                  }elseif(!$item.id){
+                    $track = Get-MediaProfile -thisApp $thisApp -synchash $synchash -Media_ID $id
+                  }else{
+                    $track = $item
                   }
-                  if($track -isnot [Media]){
-                    $track = Convertto-Media -InputObject $track
-                  }
-                  if($thisApp.Config.Dev_mode){write-ezlogs " | Adding '$($track.title)' to playlist '$($Playlist)' at index '$index'" -showtime -Dev_mode}
-                  if($Position -and $PositionTargetMedia -and $Null -ne $DropIndex){
-                    #Reorder
-                    try{
-                      if($Position -in 'DropAbove','DropBelow'){
-                        [array]$existingitems = $Playlist_to_Update.Playlist_Tracks.values
-                        $Count = 0
-                        [void]$Playlist_to_Update.Playlist_Tracks.clear()
-                        $existingitems | & { process {
-                            if($Count -eq $DropIndex){
-                              write-ezlogs "| Inserting media at position: $($Count) -- for target media: $($track.title)"
-                              [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$track)
-                              $Count++
-                              if($_.id -notin $Playlist_to_Update.Playlist_Tracks.values.id){
+                  if($track){
+                    if($track.title -match '---> '){
+                      $track.title = $track.title -replace '---> '
+                    }
+                    if($track -isnot [Media]){
+                      $track = Convertto-Media -InputObject $track
+                    }
+                    if($thisApp.Config.Dev_mode){write-ezlogs " | Adding '$($track.title)' to playlist '$($Playlist)' at index '$index'" -showtime -Dev_mode}
+                    if($Position -and $PositionTargetMedia -and $Null -ne $DropIndex){
+                      #Reorder
+                      try{
+                        if($Position -in 'DropAbove','DropBelow'){
+                          [array]$existingitems = $Playlist_to_Update.Playlist_Tracks.values
+                          $Count = 0
+                          [void]$Playlist_to_Update.Playlist_Tracks.clear()
+                          $existingitems | & { process {
+                              if($Count -eq $DropIndex){
+                                write-ezlogs "| Inserting media at position: $($Count) -- for target media: $($track.title)"
+                                [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$track)
+                                $Count++
+                                if($_.id -notin $Playlist_to_Update.Playlist_Tracks.values.id){
+                                  write-ezlogs "| Inserting existing media: $($_.title) -- at position: $($Count)" -LogLevel 4 -Verboselog:$Verboselog
+                                  [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
+                                  $Count++
+                                }
+                              }elseif($_.id -ne $track.id -and $_.id -notin $Playlist_to_Update.Playlist_Tracks.values.id){
                                 write-ezlogs "| Inserting existing media: $($_.title) -- at position: $($Count)" -LogLevel 4 -Verboselog:$Verboselog
                                 [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
                                 $Count++
                               }
-                            }elseif($_.id -ne $track.id -and $_.id -notin $Playlist_to_Update.Playlist_Tracks.values.id){
-                              write-ezlogs "| Inserting existing media: $($_.title) -- at position: $($Count)" -LogLevel 4 -Verboselog:$Verboselog
-                              [void]$Playlist_to_Update.Playlist_Tracks.add($Count,$_)
-                              $Count++
-                            }
-                        }}
+                          }}
+                        }
+                        if($Playlist_to_Update.PlayList_tracks.keys){
+
+                        }
+                        if($Playlist_to_Update.PlayList_tracks.keys -ne $Null){
+                          $index = [System.Linq.Enumerable]::Max($Playlist_to_Update.PlayList_tracks.keys)
+                        }
+                        $index++
+                      }catch{
+                        write-ezlogs "An exception occurred reordering playlist track: $($media.title) -- TargetIndex: $TargetIndex -- DropIndex: $DropIndex -- Position: $Position" -CatchError $_
                       }
-                      $index = ($Playlist_to_Update.PlayList_tracks.keys | Measure-Object -Maximum).Maximum
+                    }else{
+                      [void]$Playlist_to_Update.PlayList_tracks.add($index,$track)
+                      if($Playlist_to_Update.PlayList_tracks.keys -ne $Null){
+                        $index = [System.Linq.Enumerable]::Max($Playlist_to_Update.PlayList_tracks.keys)
+                      }
                       $index++
-                    }catch{
-                      write-ezlogs "An exception occurred reordering playlist track: $($media.title) -- TargetIndex: $TargetIndex -- DropIndex: $DropIndex -- Position: $Position" -CatchError $_
                     }
-                  }else{
-                    [void]$Playlist_to_Update.PlayList_tracks.add($index,$track)
-                    $index = ($Playlist_to_Update.PlayList_tracks.keys | Measure-Object -Maximum).Maximum
-                    $index++
                   }
+                }elseif($id){
+                  write-ezlogs " | Media with ID $($id) has already been added to playlist $($Playlist)" -showtime -warning
+                }else{
+                  write-ezlogs " | Could not get id from item: $item) --- to add to playlist $($Playlist)" -showtime -warning
                 }
-              }elseif($id){
-                write-ezlogs " | Media with ID $($id) has already been added to playlist $($Playlist)" -showtime -warning
-              }else{
-                write-ezlogs " | Could not get id from item: $item) --- to add to playlist $($Playlist)" -showtime -warning
+              }catch{
+                write-ezlogs "An exception occurred adding media: $($item) -- to playlist: $($Playlist_to_Update.Name)" -CatchError $_
               }
-            }catch{
-              write-ezlogs "An exception occurred adding media: $($item) -- to playlist: $($Playlist_to_Update.Name)" -CatchError $_
             }
           }
         }
-      }
-      if($synchash.all_playlists.Playlist_id -notcontains $Playlist_to_Update.Playlist_ID){
-        write-ezlogs ">>>> Adding new playlist: $($Playlist_to_Update.name) - to all playlists library"
-        if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-          [void]$synchash.all_playlists.AddNewItem($Playlist_to_Update)
-          [void]$synchash.all_playlists.CommitNew()
-        }else{
-          [void]$synchash.all_playlists.add($Playlist_to_Update)
+        if($All_Playlists.Playlist_id -notcontains $Playlist_to_Update.Playlist_ID){
+          write-ezlogs ">>>> Adding new playlist: $($Playlist_to_Update.name) - to all playlists library"
+          if($All_Playlists -is [System.Windows.Data.CollectionView]){
+            [void]$All_Playlists.AddNewItem($Playlist_to_Update)
+            [void]$All_Playlists.CommitNew()
+          }else{
+            [void]$All_Playlists.add($Playlist_to_Update)
+          }
         }
-      }
-      if($Export_PlaylistsCache){
-        Export-SerializedXML -InputObject $synchash.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
-      }
-      if($Update_UI){
-        Get-Playlists -verboselog:$thisapp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -use_Runspace -Full_Refresh
+        if($Export_PlaylistsCache){
+          Export-SerializedXML -InputObject $All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
+        }
+        if($Update_UI){
+          if($synchash.all_playlists -is [MyToolkit.ObservableCollectionView[Playlist]] -and !$synchash.all_playlists.IsTracking){
+            Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'all_playlists' -Property 'IsTracking' -value $true
+          }
+          Update-Playlists -synchash $synchash -thisApp $thisApp -use_Runspace -Full_Refresh -GetPlaylists
+          #Get-Playlists -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -use_Runspace -Full_Refresh
+        }else{
+          Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'PlayLists_Progress_Ring' -Property 'IsActive' -value $false
+        }
       }else{
+        write-ezlogs "Could not find Playlist to update or no playlist to update was provided - playlist: $Playlist -- Playlist_to_Update: $($Playlist_to_Update)" -showtime -warning
         Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'PlayLists_Progress_Ring' -Property 'IsActive' -value $false
       }
-    }else{
-      write-ezlogs "Could not find Playlist to update or no playlist to update was provided - playlist: $Playlist -- Playlist_to_Update: $($Playlist_to_Update | out-string)" -showtime -warning
-      Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'PlayLists_Progress_Ring' -Property 'IsActive' -value $false
+    }catch{
+      Write-EZLogs -text "An exception occurred in Add-Playlist" -CatchError $_
+    }finally{
+      if($synchash.all_playlists -is [MyToolkit.ObservableCollectionView[Playlist]] -and !$synchash.all_playlists.IsTracking){
+        Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'all_playlists' -Property 'IsTracking' -value $true
+      }
     }
   }
   if($use_Runspace){
-    Start-Runspace -scriptblock $Add_Playlist_ScriptBlock -StartRunspaceJobHandler -Variable_list $PSBoundParameters -runspace_name 'Add_Playlist_RUNSPACE' -thisApp $thisApp -synchash $synchash -RestrictedRunspace -function_list write-ezlogs,Convertto-Media,Export-SerializedXML,Update-MainWindow,Get-MediaProfile,Get-Playlists
+    Start-Runspace -scriptblock $Add_Playlist_ScriptBlock -StartRunspaceJobHandler -Variable_list $PSBoundParameters -runspace_name 'Add_Playlist_RUNSPACE' -thisApp $thisApp -synchash $synchash -RestrictedRunspace -function_list write-ezlogs,Convertto-Media,Export-SerializedXML,Update-MainWindow,Get-MediaProfile,Update-Playlists
   }else{
     Invoke-Command -ScriptBlock $Add_Playlist_ScriptBlock
     $Add_Playlist_ScriptBlock = $Null

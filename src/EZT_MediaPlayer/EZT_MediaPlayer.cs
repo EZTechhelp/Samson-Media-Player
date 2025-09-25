@@ -1,34 +1,27 @@
 ﻿using System;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media.Animation;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Data;
-using System.Windows.Shapes;
-using System.Runtime.InteropServices;
-using System.Windows.Interop;
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml.Serialization;
-using System.Net;
-using System.Net.Http;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Runtime.CompilerServices;
-using System.Xml.Linq;
-using MahApps.Metro.Controls;
-using ControlzEx.Native;
-using ControlzEx.Standard;
-using System.Diagnostics;
-using System.Windows.Threading;
-using System.Windows.Documents;
-using System.Runtime.Serialization;
-using System.Globalization;
-using static ControlzEx.Standard.NativeMethods;
+using System.ComponentModel;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Web;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Shapes;
+using System.Windows.Threading;
+using System.Xml.Serialization;
+using TorrentTitleParser.Attributes;
 
 namespace ScrollAnimateBehavior.AttachedBehaviors
 {
@@ -572,17 +565,15 @@ namespace ScrollAnimateBehavior.AttachedBehaviors
 namespace WpfExtensions
 {
     using System;
+    using System.ComponentModel;
     using System.Diagnostics;
+    using System.Globalization;
+    using System.Reflection;
     using System.Windows;
     using System.Windows.Controls;
-    using System.Windows.Media;
-    using System.Reflection;
     using System.Windows.Controls.Primitives;
-    using System.Globalization;
-    using System.ComponentModel;
-    using System.Windows.Input;
     using System.Windows.Markup;
-    using static System.Net.Mime.MediaTypeNames;
+    using System.Windows.Media;
 
     public class WidthConverter : IValueConverter
     {
@@ -1260,7 +1251,6 @@ namespace WpfExtensions
         }
     }
 }
-
 public static class FindVisualChildHelper
 {
     public static T GetFirstChildOfType<T>(DependencyObject dependencyObject) where T : DependencyObject
@@ -1550,16 +1540,11 @@ namespace User32Wrapper
     }
 }
 
-
 namespace FileSystemHelpers
 {
     using System;
-    using System.Runtime.InteropServices;
-    using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Reflection;
     using System.Windows.Forms;
-    using System.Security.Cryptography;
 
     /// <summary>
     /// Present the Windows Vista-style open file dialog to select a folder. Fall back for older Windows Versions
@@ -1737,12 +1722,12 @@ namespace FileSystemHelpers
 namespace HighlightText
 {
     using System;
+    using System.Collections.Generic;
     using System.Text.RegularExpressions;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Documents;
     using System.Windows.Media;
-    using System.Collections.Generic;
 
     public class SearchableTextBlock : TextBlock
     {
@@ -2127,6 +2112,1834 @@ public static class WindowExtensions
 
     #endregion
 }
+
+namespace TorrentTitleParser.Attributes
+{
+    [AttributeUsage(AttributeTargets.Property)]
+    public class PatternAttribute : Attribute
+    {
+        public string Regex { get; set; }
+        public string AlternateRegex { get; set; }
+        public RegexOptions Options { get; set; }
+        /// <summary>
+        /// Pipe separated list of text replacements
+        /// e.g .,_|-,_ will replace . with _ and - with _
+        /// </summary>
+        public string Replacements { get; set; }
+    }
+}
+
+namespace TorrentTitleParser
+{
+    public class Torrent
+    {
+        public Torrent() { }
+
+        public Torrent(string name)
+        {
+            ParseInfo(name);
+        }
+
+        [Pattern(Regex = "AMZN")]
+        public bool Amazon { get; set; }
+
+
+        [Pattern(Regex = @"MP3|DDP?\+?|Dual[\- ]Audio|LiNE|D[Tt][Ss](?:-?6[Cc][Hh])?(?:-?HD)?(?:[ \.]?MA)?|AAC(?:\.?2\.0)?|[Aa][Cc]-?3(?:\s?DD)?",
+            Replacements = "., ")]
+        public string Audio { get; set; }
+
+        [Pattern(Regex = @"[257][\s\.][01]|[2567][\s\.]?[01]?[Cc][Hh]", Replacements = " ,.|CH,|Ch,|ch,|cH,")]
+        public string AudioChannels { get; set; }
+
+        [Pattern(Regex = @"((\d+)\s?bit)", Options = RegexOptions.IgnoreCase)]
+        public int? BitDepth { get; set; }
+
+        [Pattern(Regex = "BLURRED")]
+        public bool Blurred { get; set; }
+
+        [Pattern(Regex = @"xvid|[xh]\.?26[45]|hevc", Options = RegexOptions.IgnoreCase)]
+        public string Codec { get; set; }
+
+        [Pattern(Regex = "COMPLETE")]
+        public bool Complete { get; set; }
+
+        [Pattern(Regex = @"[\s\.-](MKV|AVI|MP4|mkv|avi|mp4)")]
+        public string Container { get; set; }
+
+        [Pattern(Regex = @"ATMOS|Atmos\b")]
+        public bool DolbyAtmos { get; set; }
+
+        [Pattern(Regex = @"[Dd]olby\s?[Vv]ision|[Dd][Vv]")]
+        public bool DolbyVision { get; set; }
+
+        [Pattern(Regex = "DUBBED")]
+        public bool Dubbed { get; set; }
+
+        [Pattern(Regex = @"([Eex]([0-9]{2})(?:[^0-9]|$))")]
+        public int? Episode { get; set; }
+
+        [Pattern(Regex = "EXTENDED")]
+        public bool Extended { get; set; }
+
+        [Pattern(Regex = @"(- ?(?:.+\])?([^-\[]+)(?:\[.+\])?)$", AlternateRegex = @"(([A-Za-z0-9]+))$")]
+        public string Group { get; set; }
+
+        [Pattern(Regex = @"HDR(?:\s?10)?([Pp]lus)?(?:[\s\.\]])")]
+        public bool HDR { get; set; }
+
+        [Pattern(Regex = "HC")]
+        public bool HardCoded { get; set; }
+
+        [Pattern(Regex = "([^A-Za-z0-9](3D)[^A-Za-z0-9])")]
+        public bool Is3D { get; set; }
+
+        [Pattern(Regex = "MULT[iI]-?(?:[0-9]+)?")]
+        public bool MultipleLanguages { get; set; }
+
+        /// <summary>
+        /// The raw torrent name
+        /// </summary>
+        public string Name { get; set; }
+
+        [Pattern(Regex = "NF")]
+        public bool Netflix { get; set; }
+
+        [Pattern(Regex = "PROPER")]
+        public bool Proper { get; set; }
+
+        [Pattern(Regex = @"(?:PPV\.)?[HP]DTV|(?:HD)?C[Aa][Mm]|B[DrR]R[iI][pP][sS]?|TS|(?:PPV )?WEB[- ]?DL(?: DVDRip)?|H[dD]Rip|DVDRip|DVDRiP|DVDRIP|[Tt][Ee][Ll][Ee][Ss][Yy][Nn][Cc]|CamRip|W[EB]B[rR]ip|[Bb]lu[ -]?[Rr]ay|DvDScr|hdtv|UHD(?: B[Ll][Uu][- ]?[Rr][Aa][Yy])")]
+        public string Quality { get; set; }
+
+        [Pattern(Regex = @"R[0-9]")]
+        public string Region { get; set; }
+
+        [Pattern(Regex = "REMASTERED")]
+        public bool Remastered { get; set; }
+
+        [Pattern(Regex = "REMUX")]
+        public bool Remux { get; set; }
+
+        [Pattern(Regex = "REPACK")]
+        public bool Repack { get; set; }
+
+        [Pattern(Regex = @"(([0-9]{3,4}p))[^M]")]
+        public string Resolution { get; set; }
+
+        [Pattern(Regex = @"([Ss]([0-9]{1,2}))[Eex\s]")]
+        public int? Season { get; set; }
+
+        [Pattern(Regex = @"(?:full|half)[-\s](?:sbs|ou)", Options = RegexOptions.IgnoreCase)]
+        public string ThreeDFormat { get; set; }
+
+        /// <summary>
+        /// The movie or show title, this is parsed based on other elements
+        /// </summary>
+        public string Title { get; set; }
+
+        [Pattern(Regex = @"TrueHD(?:[ \.]MA)?")]
+        public bool TrueHD { get; set; }
+
+        [Pattern(Regex = @"^(\[ ?([^\]]+?) ?\])")]
+        public string Website { get; set; }
+
+        [Pattern(Regex = @"(?<!^)([\[\(]?((?:19|20)[0-9]{2})[\]\)]?)")]
+        public int Year { get; set; }
+
+        /// <summary>
+        /// This element is used in ignoring elements for parsing the title
+        /// </summary>
+        [Pattern(Regex = @"1400Mb|3rd Nov| ((Rip))| \[no rar\]|[\[\(]?[Rr][Ee][Qq][\]\)]?")]
+        public string Garbage { get; set; }
+
+        public bool IsPreRelease =>
+            Quality != null &&
+            (Quality.Equals("telesync", StringComparison.InvariantCultureIgnoreCase) ||
+            Quality.Equals("hdts", StringComparison.InvariantCultureIgnoreCase) ||
+            Quality.Equals("ts", StringComparison.InvariantCultureIgnoreCase) ||
+            Quality.Contains("cam"));
+
+
+        public override string ToString()
+        {
+            return Name;
+        }
+
+        public void ParseInfo(string name)
+        {
+            var end = name.Length;
+            var start = 0;
+            var clean = "";
+
+            name = HttpUtility.HtmlDecode(name);
+            if (!string.IsNullOrEmpty(name))
+            {
+                var props = this.GetType().GetProperties()
+                    .Where(c => c.GetCustomAttributes(false).Any(d => d is PatternAttribute));
+                foreach (var prop in props)
+                {
+                    var attribute =
+                        (PatternAttribute)prop.GetCustomAttributes(false).First(c => c is PatternAttribute);
+                    var match = Regex.Match(name, attribute.Regex, attribute.Options);
+                    if (!match.Success && !string.IsNullOrEmpty(attribute.AlternateRegex))
+                    {
+                        match = Regex.Match(name, attribute.AlternateRegex, attribute.Options);
+                    }
+
+                    if (match.Success)
+                    {
+                        var cleanIndex = match.Groups.Count > 1 ? 2 : 0;
+                        clean = match.Groups[cleanIndex].Value;
+                        if (prop.PropertyType == typeof(int) || prop.PropertyType == typeof(int?))
+                        {
+                            prop.SetValue(this, int.Parse(clean));
+                        }
+                        else if (prop.PropertyType == typeof(bool))
+                        {
+                            prop.SetValue(this, true);
+                        }
+                        else
+                        {
+                            if (prop.Name == "Group")
+                            {
+                                clean = Regex.Replace(clean, @" *\([^)]*\) *", "");
+                                clean = Regex.Replace(clean, @" *\[[^)]*\] *", "");
+                            }
+
+                            if (!string.IsNullOrEmpty(attribute.Replacements))
+                            {
+                                foreach (var replace in attribute.Replacements.Split('|'))
+                                {
+                                    var parts = replace.Split(',');
+                                    if (parts.Length == 2)
+                                        clean = clean.Replace(parts[0], parts[1]);
+                                }
+                            }
+                            prop.SetValue(this, clean);
+                        }
+
+                        if (match.Index == 0)
+                        {
+                            start = match.Groups[0].Length;
+                        }
+                        else if (match.Index < end)
+                        {
+                            end = match.Index;
+                        }
+                    }
+                }
+
+                var raw = name.Substring(start, end - start).Split('(')[0];
+
+                clean = Regex.Replace(raw, @"^ -", "");
+                if (clean.IndexOf(' ') == -1 && clean.IndexOf('.') != -1)
+                {
+                    clean = Regex.Replace(clean, @"\.", " ");
+                }
+
+                clean = Regex.Replace(clean, @"_|\.", " ");
+                clean = Regex.Replace(clean, @"([\(_]|- ?)$", "").Trim();
+                Title = clean;
+                Name = name;
+            }
+        }
+    }
+}
+
+namespace MyToolkit
+{
+    //-----------------------------------------------------------------------
+    // <copyright file="ObservableCollectionView.cs" company="MyToolkit">
+    //     Copyright (c) Rico Suter. All rights reserved.
+    // </copyright>
+    // <license>https://github.com/MyToolkit/MyToolkit/blob/master/LICENSE.md</license>
+    // <author>Rico Suter, mail@rsuter.com</author>
+    //-----------------------------------------------------------------------
+    public class EventUtilities
+    {
+#if !LEGACY
+
+        /// <summary>Registers an event on the given target object. </summary>
+        /// <param name="target">The target object. </param>
+        /// <param name="eventName">The event name. </param>
+        /// <param name="callback">The callback. </param>
+        /// <returns>The registration token to deregister the event. </returns>
+        public static object RegisterEvent(object target, string eventName, Action<object, object> callback)
+        {
+            var callbackMethodInfo = callback.GetMethodInfo();
+            var eventInfo = target.GetType().GetRuntimeEvent(eventName);
+            var callbackDelegate = callbackMethodInfo.CreateDelegate(eventInfo.EventHandlerType, callback.Target);
+            return eventInfo.AddMethod.Invoke(target, new object[] { callbackDelegate });
+        }
+
+        /// <summary>Registers a static event on the given target object. </summary>
+        /// <param name="type">The target type. </param>
+        /// <param name="eventName">The event name. </param>
+        /// <param name="callback">The callback. </param>
+        /// <returns>The registration token to deregister the event. </returns>
+        public static object RegisterStaticEvent(Type type, string eventName, Action<object, object> callback)
+        {
+            var callbackMethodInfo = callback.GetMethodInfo();
+            var eventInfo = type.GetRuntimeEvent(eventName);
+            var callbackDelegate = callbackMethodInfo.CreateDelegate(eventInfo.EventHandlerType, callback.Target);
+            return eventInfo.AddMethod.Invoke(null, new object[] { callbackDelegate });
+        }
+
+        /// <summary>Deregisters an event from the target object. </summary>
+        /// <param name="target">The target object. </param>
+        /// <param name="eventName">The event name. </param>
+        /// <param name="token">The registration token. </param>
+        public static void DeregisterEvent(object target, string eventName, object token)
+        {
+            var eventInfo = target.GetType().GetRuntimeEvent(eventName);
+            eventInfo.RemoveMethod.Invoke(target, new object[] { token });
+        }
+
+        /// <summary>Deregisters a static event from the target type. </summary>
+        /// <param name="type">The target type. </param>
+        /// <param name="eventName">The event name. </param>
+        /// <param name="token">The registration token. </param>
+        public static void DeregisterStaticEvent(Type type, string eventName, object token)
+        {
+            var eventInfo = type.GetRuntimeEvent(eventName);
+            eventInfo.RemoveMethod.Invoke(null, new object[] { token });
+        }
+
+#else
+
+        /// <summary>Registers an event on the given target object. </summary>
+        /// <param name="target">The target object. </param>
+        /// <param name="eventName">The event name. </param>
+        /// <param name="callback">The callback. </param>
+        /// <returns>The registration token to deregister the event. </returns>
+        public static object RegisterEvent(object target, string eventName, Action<object, object> callback)
+        {
+            var callbackMethodInfo = callback.Method;
+            var eventInfo = target.GetType().GetEvent(eventName);
+            var callbackDelegate = Delegate.CreateDelegate(eventInfo.EventHandlerType, callback.Target, callbackMethodInfo);
+            return eventInfo.GetAddMethod().Invoke(target, new object[] { callbackDelegate });
+        }
+
+        /// <summary>Registers a static event on the given target object. </summary>
+        /// <param name="type">The target type. </param>
+        /// <param name="eventName">The event name. </param>
+        /// <param name="callback">The callback. </param>
+        /// <returns>The registration token to deregister the event. </returns>
+        public static object RegisterStaticEvent(Type type, string eventName, Action<object, object> callback)
+        {
+            var callbackMethodInfo = callback.Method;
+            var eventInfo = type.GetEvent(eventName);
+            var callbackDelegate = Delegate.CreateDelegate(eventInfo.EventHandlerType, callback.Target, callbackMethodInfo);
+            return eventInfo.GetAddMethod().Invoke(null, new object[] { callbackDelegate });
+        }
+
+        /// <summary>Deregisters an event from the target object. </summary>
+        /// <param name="target">The target object. </param>
+        /// <param name="eventName">The event name. </param>
+        /// <param name="token">The registration token. </param>
+        public static void DeregisterEvent(object target, string eventName, object token)
+        {
+            var eventInfo = target.GetType().GetEvent(eventName);
+            eventInfo.GetRemoveMethod().Invoke(target, new object[] { token });
+        }
+
+        /// <summary>Deregisters a static event from the target type. </summary>
+        /// <param name="type">The target type. </param>
+        /// <param name="eventName">The event name. </param>
+        /// <param name="token">The registration token. </param>
+        public static void DeregisterStaticEvent(Type type, string eventName, object token)
+        {
+            var eventInfo = type.GetEvent(eventName);
+            eventInfo.GetRemoveMethod().Invoke(null, new object[] { token });
+        }
+
+#endif
+    }
+
+    public class ReflectionUtilities
+    {
+#if !LEGACY
+        public static IEnumerable<PropertyInfo> GetProperties(Type type)
+        {
+            return type.GetRuntimeProperties();
+        }
+
+        public static PropertyInfo GetProperty(Type type, string name)
+        {
+            return type.GetRuntimeProperty(name);
+        }
+
+        public static MethodInfo GetMethod(Type type, string name)
+        {
+            return type.GetRuntimeMethod(name, null);
+        }
+
+        public static Type GetBaseType(Type type)
+        {
+            return type.GetTypeInfo().BaseType;
+        }
+
+        public static IList<Type> GetGenericArguments(Type type)
+        {
+            return type.GenericTypeArguments;
+        }
+
+        public static IEnumerable<Type> GetInterfaces(Type type)
+        {
+            return type.GetTypeInfo().ImplementedInterfaces;
+        }
+#else
+        public static Type GetBaseType(Type type)
+        {
+            return type.BaseType;
+        }
+#endif
+    }
+
+    /// <summary>Provides methods to register and deregister weak events. </summary>
+    public static class WeakEvent
+    {
+        private static List<WeakEventRegistration> _registeredWeakEvents = null;
+        internal static List<WeakEventRegistration> RegisteredWeakEvents
+        {
+            get
+            {
+                if (_registeredWeakEvents == null)
+                {
+                    lock (typeof(EventUtilities))
+                    {
+                        if (_registeredWeakEvents == null)
+                            _registeredWeakEvents = new List<WeakEventRegistration>();
+                    }
+                }
+                return _registeredWeakEvents;
+            }
+        }
+
+        /// <summary>Registers a weak event handler which is automatically deregistered after the subscriber 
+        /// has been garbage collected (checked on each event call). </summary>
+        public static EventHandler<TArgs> RegisterEvent<TSubscriber, TArgs>(
+            TSubscriber subscriber,
+            Action<EventHandler<TArgs>> register,
+            Action<EventHandler<TArgs>> deregister,
+            Action<TSubscriber, object, TArgs> handler)
+            where TArgs : EventArgs
+            where TSubscriber : class
+        {
+            Func<EventHandler<TArgs>, EventHandler<TArgs>> converter = h => h;
+            var weakReference = new WeakReference(subscriber);
+            EventHandler<TArgs> @delegate = null;
+            @delegate = converter(
+                (s, e) =>
+                {
+                    var strongReference = weakReference.Target as TSubscriber;
+                    if (strongReference != null)
+                        handler(strongReference, s, e);
+                    else
+                    {
+                        deregister(@delegate);
+                        @delegate = null;
+                    }
+                });
+            register(@delegate);
+            return @delegate;
+        }
+
+        /// <summary>Registers a weak event handler which is automatically deregistered after the subscriber 
+        /// has been garbage collected (checked on each event call). </summary>
+        /// <param name="subscriber"></param>
+        /// <param name="deregister"></param>
+        /// <param name="register"></param>
+        /// <param name="converter">The converter: h => (o, e) => h(o, e)</param>
+        /// <param name="handler"></param>
+        public static TDelegate RegisterEvent<TSubscriber, TDelegate, TArgs>(
+            TSubscriber subscriber,
+            Action<TDelegate> register,
+            Action<TDelegate> deregister,
+            Func<EventHandler<TArgs>, TDelegate> converter,
+            Action<TSubscriber, object, TArgs> handler)
+            where TArgs : EventArgs
+            where TDelegate : class
+            where TSubscriber : class
+        {
+            var weakReference = new WeakReference(subscriber);
+            TDelegate @delegate = null;
+            @delegate = converter(
+                (s, e) =>
+                {
+                    var strongReference = weakReference.Target as TSubscriber;
+                    if (strongReference != null)
+                        handler(strongReference, s, e);
+                    else
+                    {
+                        deregister(@delegate);
+                        @delegate = null;
+                    }
+                });
+            register(@delegate);
+            return @delegate;
+        }
+
+#if !LEGACY
+
+        /// <summary>Adds a weak event handler to the given source object. </summary>
+        /// <typeparam name="TEventSource">The type of the source object.</typeparam>
+        /// <typeparam name="TEventArgs">The type of the event args.</typeparam>
+        /// <param name="source">The source object to register the event on. </param>
+        /// <param name="eventName">The event name to create the registration for.</param>
+        /// <param name="handler">The delegate that handles the event.</param>
+        public static void RegisterEvent<TEventSource, TEventArgs>(TEventSource source, string eventName, EventHandler<TEventArgs> handler)
+        {
+            var eventInfo = typeof(TEventSource).GetRuntimeEvent(eventName);
+            RegisteredWeakEvents.Add(new WeakEventRegistration(source, eventInfo, handler));
+        }
+
+        /// <summary>Adds a static weak event handler to a static event. </summary>
+        /// <typeparam name="TEventArgs">The type of the event args.</typeparam>
+        /// <param name="sourceType">The type of the class that contains the static event. </param>
+        /// <param name="eventName">The event name to create the registration for.</param>
+        /// <param name="handler">The delegate that handles the event.</param>
+        public static void RegisterStaticEvent<TEventArgs>(Type sourceType, string eventName, EventHandler<TEventArgs> handler)
+        {
+            var eventInfo = sourceType.GetRuntimeEvent(eventName);
+            RegisteredWeakEvents.Add(new WeakEventRegistration(null, eventInfo, handler));
+        }
+
+        /// <summary>Adds a static weak event handler to a static event. </summary>
+        /// <typeparam name="TEventArgs">The type of the event args.</typeparam>
+        /// <typeparam name="TEventSource">The type of the class that contains the static event. </typeparam>
+        /// <param name="eventName">The event name to create the registration for.</param>
+        /// <param name="handler">The delegate that handles the event.</param>
+        public static void RegisterStaticEvent<TEventSource, TEventArgs>(string eventName, EventHandler<TEventArgs> handler)
+        {
+            var eventInfo = typeof(TEventSource).GetRuntimeEvent(eventName);
+            RegisteredWeakEvents.Add(new WeakEventRegistration(null, eventInfo, handler));
+        }
+
+        /// <summary>Removes a weak event registration from the given source object.</summary>
+        /// <typeparam name="TEventSource">The type of the source object.</typeparam>
+        /// <param name="source">The source object to register the event from. </param>
+        /// <param name="eventName">The event name to remove the registration from.</param>
+        /// <param name="handler">The handler to remove.</param>
+        /// <returns>True if the event registration could be found and was removed. </returns>
+        public static bool DeregisterEvent<TEventSource>(TEventSource source, string eventName, Delegate handler)
+        {
+            var eventInfo = typeof(TEventSource).GetRuntimeEvent(eventName);
+            return DeregisterEvent(source, handler, eventInfo);
+        }
+
+        /// <summary>Removes a static weak event registration from a static event.</summary>
+        /// <param name="sourceType">The type of the class that contains the static event. </param>
+        /// <param name="eventName">The event name to remove the registration from.</param>
+        /// <param name="handler">The handler to remove. </param>
+        /// <returns>True if the event registration could be found and was removed. </returns>
+        public static bool DeregisterStaticEvent(Type sourceType, string eventName, Delegate handler)
+        {
+            var eventInfo = sourceType.GetRuntimeEvent(eventName);
+            return DeregisterEvent(null, handler, eventInfo);
+        }
+
+        private static bool DeregisterEvent(object source, Delegate handler, EventInfo eventInfo)
+        {
+            var weakEvent = RegisteredWeakEvents.FirstOrDefault(e => e.Matches(source, eventInfo, handler));
+            if (weakEvent != null)
+                weakEvent.DeregisterEvent();
+            return weakEvent != null;
+        }
+
+        internal class WeakEventRegistration
+        {
+            private static readonly MethodInfo OnEventCalledInfo =
+              typeof(WeakEventRegistration).GetTypeInfo().GetDeclaredMethod("OnEventCalled");
+
+            private EventInfo _eventInfo;
+            private object _eventHandler;
+
+            private readonly object _source;
+
+            private readonly MethodInfo _handlerMethod;
+            private readonly WeakReference<object> _handlerTarget;
+
+            public WeakEventRegistration(object source, EventInfo eventInfo, Delegate handler)
+            {
+                _source = source;
+                _eventInfo = eventInfo;
+
+                _handlerMethod = handler.GetMethodInfo();
+                _handlerTarget = new WeakReference<object>(handler.Target);
+
+                var eventHandler = CreateEventHandler();
+                _eventHandler = eventInfo.AddMethod.Invoke(source, new object[] { eventHandler });
+
+                if (_eventHandler == null)
+                    _eventHandler = eventHandler;
+            }
+
+            public bool Matches(object source, EventInfo eventInfo, Delegate handler)
+            {
+                if (source == _source && Equals(eventInfo, _eventInfo))
+                {
+                    object target;
+                    if (_handlerTarget.TryGetTarget(out target))
+                        return handler.Target == target && Equals(handler.GetMethodInfo(), _handlerMethod);
+                }
+
+                return false;
+            }
+
+            public void DeregisterEvent()
+            {
+                if (_eventInfo != null)
+                {
+                    RegisteredWeakEvents.Remove(this);
+
+                    _eventInfo.RemoveMethod.Invoke(_source, new object[] { _eventHandler });
+
+                    _eventHandler = null;
+                    _eventInfo = null;
+                }
+            }
+
+            public void OnEventCalled<T>(object sender, T args)
+            {
+                object instance;
+                if (_handlerTarget.TryGetTarget(out instance))
+                    _handlerMethod.Invoke(instance, new object[] { sender, args });
+                else
+                    DeregisterEvent();
+            }
+
+            private object CreateEventHandler()
+            {
+                Type eventType = _eventInfo.EventHandlerType;
+                ParameterInfo[] parameters = eventType.GetTypeInfo()
+                  .GetDeclaredMethod("Invoke")
+                  .GetParameters();
+
+                return OnEventCalledInfo
+                  .MakeGenericMethod(parameters[1].ParameterType)
+                  .CreateDelegate(eventType, this);
+            }
+        }
+
+#else
+
+        /// <summary>Adds a weak event handler to the given source object. </summary>
+        /// <typeparam name="TEventSource">The type of the source object.</typeparam>
+        /// <typeparam name="TEventArgs">The type of the event args.</typeparam>
+        /// <param name="source">The source object to register the event on. </param>
+        /// <param name="eventName">The event name to create the registration for.</param>
+        /// <param name="handler">The delegate that handles the event.</param>
+        public static void Register<TEventSource, TEventArgs>(TEventSource source, string eventName, EventHandler<TEventArgs> handler)
+            where TEventArgs : EventArgs
+        {
+            var eventInfo = typeof(TEventSource).GetEvent(eventName);
+            RegisteredWeakEvents.Add(new WeakEventRegistration(source, eventInfo, handler));
+        }
+
+        /// <summary>Adds a static weak event handler to a static event. </summary>
+        /// <typeparam name="TEventArgs">The type of the event args.</typeparam>
+        /// <param name="sourceType">The type of the class that contains the static event. </param>
+        /// <param name="eventName">The event name to create the registration for.</param>
+        /// <param name="handler">The delegate that handles the event.</param>
+        public static void RegisterStaticWeakEvent<TEventArgs>(Type sourceType, string eventName, EventHandler<TEventArgs> handler)
+            where TEventArgs : EventArgs
+        {
+            var eventInfo = sourceType.GetEvent(eventName);
+            RegisteredWeakEvents.Add(new WeakEventRegistration(null, eventInfo, handler));
+        }
+
+        /// <summary>Adds a static weak event handler to a static event. </summary>
+        /// <typeparam name="TEventArgs">The type of the event args.</typeparam>
+        /// <typeparam name="TEventSource">The type of the class that contains the static event. </typeparam>
+        /// <param name="eventName">The event name to create the registration for.</param>
+        /// <param name="handler">The delegate that handles the event.</param>
+        public static void RegisterStaticWeakEvent<TEventSource, TEventArgs>(string eventName, EventHandler<TEventArgs> handler)
+            where TEventArgs : EventArgs
+        {
+            var eventInfo = typeof(TEventSource).GetEvent(eventName);
+            RegisteredWeakEvents.Add(new WeakEventRegistration(null, eventInfo, handler));
+        }
+
+        /// <summary>Removes a weak event registration from the given source object.</summary>
+        /// <typeparam name="TEventSource">The type of the source object.</typeparam>
+        /// <param name="source">The source object to register the event from. </param>
+        /// <param name="eventName">The event name to remove the registration from.</param>
+        /// <param name="handler">The handler to remove.</param>
+        /// <returns>True if the event registration could be found and was removed. </returns>
+        public static bool DeregisterWeakEvent<TEventSource>(TEventSource source, string eventName, Delegate handler)
+        {
+            var eventInfo = typeof(TEventSource).GetEvent(eventName);
+            return DeregisterWeakEvent(source, handler, eventInfo);
+        }
+
+        /// <summary>Removes a static weak event registration from a static event.</summary>
+        /// <param name="sourceType">The type of the class that contains the static event. </param>
+        /// <param name="eventName">The event name to remove the registration from.</param>
+        /// <param name="handler">The handler to remove. </param>
+        /// <returns>True if the event registration could be found and was removed. </returns>
+        public static bool DeregisterStaticWeakEvent(Type sourceType, string eventName, Delegate handler)
+        {
+            var eventInfo = sourceType.GetEvent(eventName);
+            return DeregisterWeakEvent(null, handler, eventInfo);
+        }
+
+        private static bool DeregisterWeakEvent(object source, Delegate handler, EventInfo eventInfo)
+        {
+            var weakEvent = RegisteredWeakEvents.FirstOrDefault(e => e.Matches(source, eventInfo, handler));
+            if (weakEvent != null)
+                weakEvent.DeregisterEvent();
+            return weakEvent != null;
+        }
+
+        internal class WeakEventRegistration
+        {
+            private static readonly MethodInfo _onEventCalledInfo =
+              typeof(WeakEvent).GetMethod("OnEventCalled");
+
+            private EventInfo _eventInfo;
+            private object _eventHandler;
+
+            private readonly object _source;
+
+            private readonly MethodInfo _handlerMethod;
+            private readonly WeakReference _handlerTarget;
+
+            public WeakEventRegistration(object source, EventInfo eventInfo, Delegate handler)
+            {
+                _source = source;
+                _eventInfo = eventInfo;
+
+                _handlerMethod = handler.Method;
+                _handlerTarget = new WeakReference(handler.Target);
+
+                var eventHandler = CreateEventHandler();
+                _eventHandler = eventInfo.GetAddMethod().Invoke(source, new object[] { eventHandler });
+
+                if (_eventHandler == null)
+                    _eventHandler = eventHandler;
+            }
+
+            public bool Matches(object source, EventInfo eventInfo, Delegate handler)
+            {
+                if (source == _source && Equals(eventInfo, _eventInfo))
+                {
+                    var target = _handlerTarget.Target;
+                    if (target != null)
+                        return handler.Target == target && Equals(handler.Method, _handlerMethod);
+                }
+
+                return false;
+            }
+
+            public void DeregisterEvent()
+            {
+                if (_eventInfo != null)
+                {
+                    RegisteredWeakEvents.Remove(this);
+
+                    _eventInfo.GetRemoveMethod().Invoke(_source, new object[] { _eventHandler });
+
+                    _eventHandler = null;
+                    _eventInfo = null;
+                }
+            }
+
+            public void OnEventCalled<T>(object sender, T args)
+            {
+                var instance = _handlerTarget.Target;
+                if (instance != null)
+                    _handlerMethod.Invoke(instance, new object[] { sender, args });
+                else
+                    DeregisterEvent();
+            }
+
+            private object CreateEventHandler()
+            {
+                var eventType = _eventInfo.EventHandlerType;
+                return Delegate.CreateDelegate(eventType, this, _onEventCalledInfo);
+            }
+        }
+
+#endif
+    }
+
+    /// <summary>Provides extension methods for enumerations. </summary>
+    public static class EnumerableExtensions
+    {
+        /// <summary>Provides ordering by two expressions. Use this method instaed of OrderBy(...).ThenBy(...) as it calls ThenBy only if necessary. </summary>
+        public static IEnumerable<TSource> OrderByThenBy<TSource, TKey1, TKey2>(this IEnumerable<TSource> source, Func<TSource, TKey1> orderBy, Func<TSource, TKey2> thenBy)
+        {
+            var sorted = source
+                .Select(s => new Tuple<TSource, TKey1>(s, orderBy(s)))
+                .OrderBy(s => s.Item2)
+                .GroupBy(s => s.Item2);
+
+            var result = new List<TSource>();
+            foreach (var s in sorted)
+            {
+                if (s.Count() > 1)
+                    result.AddRange(s.Select(p => p.Item1).OrderBy(thenBy));
+                else
+                    result.Add(s.First().Item1);
+            }
+            return result;
+        }
+
+        /// <summary>Removes equal objects by specifing the comparing key. </summary>
+        /// <typeparam name="TSource">The type of an item. </typeparam>
+        /// <typeparam name="TKey">The type of the key. </typeparam>
+        /// <param name="source">The source enumerable. </param>
+        /// <param name="keySelector">The key selector. </param>
+        /// <returns>The filtered enumerable. </returns>
+        public static IEnumerable<TSource> DistinctBy<TSource, TKey>(this IEnumerable<TSource> source, Func<TSource, TKey> keySelector)
+        {
+            return source.GroupBy(keySelector).Select(g => g.First());
+        }
+
+        /// <summary>Returns true if the second list contains exactly the same items in the same order or is equal. </summary>
+        /// <typeparam name="T">The item type. </typeparam>
+        /// <param name="list1">The first list. </param>
+        /// <param name="list2">The second list. </param>
+        /// <returns></returns>
+        public static bool IsCopyOf<T>(this IList<T> list1, IList<T> list2)
+        {
+            if (list1 == null && list2 == null)
+                return true;
+            if (Equals(list1, list2))
+                return true;
+
+            if (list1 == null)
+                return false;
+            if (list2 == null)
+                return false;
+
+            if (list1.Count != list2.Count)
+                return false;
+
+            // Has same order
+            for (int i = 0; i < list1.Count; i++)
+            {
+                if (!Equals(list1[i], list2[i]))
+                    return false;
+            }
+
+            // Has same elements
+            if (list1.Any(a => !list2.Contains(a)))
+                return false;
+            if (list2.Any(a => !list1.Contains(a)))
+                return false;
+
+            return true;
+        }
+
+        /// <summary>Returns true if the second list contains exactly the same items or is equal. </summary>
+        /// <typeparam name="T">The item type. </typeparam>
+        /// <param name="list1">The first collection. </param>
+        /// <param name="list2">The second collection. </param>
+        /// <returns></returns>
+        public static bool IsCopyOf<T>(this ICollection<T> list1, ICollection<T> list2)
+        {
+            if (list1 == null && list2 == null)
+                return true;
+            if (Equals(list1, list2))
+                return true;
+
+            if (list1 == null)
+                return false;
+            if (list2 == null)
+                return false;
+
+            if (list1.Count != list2.Count)
+                return false;
+
+            // Has same elements
+            if (list1.Any(a => !list2.Contains(a)))
+                return false;
+            if (list2.Any(a => !list1.Contains(a)))
+                return false;
+
+            return true;
+        }
+
+        /// <summary>Returns a shuffled list. </summary>
+        /// <typeparam name="T">The item type. </typeparam>
+        /// <param name="source">The list to shuffle. </param>
+        /// <returns>The shuffled list. </returns>
+        public static IEnumerable<T> Shuffle<T>(this IEnumerable<T> source)
+        {
+            var rand = new Random((int)DateTime.Now.Ticks);
+            return source.Select(t => new KeyValuePair<int, T>(rand.Next(), t)).
+                OrderBy(pair => pair.Key).Select(pair => pair.Value).ToList();
+        }
+
+        /// <summary>Takes random items from the given list. </summary>
+        /// <typeparam name="T">The item type. </typeparam>
+        /// <param name="source">The list to take the items from. </param>
+        /// <param name="amount">The amount of items to take. </param>
+        /// <returns>The randomly taken items. </returns>
+        public static IList<T> TakeRandom<T>(this IList<T> source, int amount)
+        {
+            source = new List<T>(source);
+
+            var count = source.Count;
+            var output = new List<T>();
+            var rand = new Random((int)DateTime.Now.Ticks);
+            for (var i = 0; (0 < count) && (i < amount); i++)
+            {
+                var index = rand.Next(count);
+                var item = source[index];
+                output.Add(item);
+                source.RemoveAt(index);
+                count--;
+            }
+            return output;
+        }
+
+        /// <summary>Takes the minimal object from a list. </summary>
+        /// <typeparam name="T">The item type. </typeparam>
+        /// <typeparam name="U">The compared type. </typeparam>
+        /// <param name="list">The list to search in. </param>
+        /// <param name="selector">The selector of the object to compare. </param>
+        /// <returns>The minimal object. </returns>
+        public static T MinObject<T, U>(this IEnumerable<T> list, Func<T, U> selector)
+            where T : class
+            where U : IComparable
+        {
+            U resultValue = default(U);
+            T result = null;
+            foreach (var t in list)
+            {
+                var value = selector(t);
+                if (result == null || value.CompareTo(resultValue) < 0)
+                {
+                    result = t;
+                    resultValue = value;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>Takes the maximum object from a list. </summary>
+        /// <typeparam name="T">The item type. </typeparam>
+        /// <typeparam name="TProperty">The compared type. </typeparam>
+        /// <param name="list">The list to search in. </param>
+        /// <param name="selector">The selector of the object to compare. </param>
+        /// <returns>The maximum object. </returns>
+        public static T MaxObject<T, TProperty>(this IEnumerable<T> list, Func<T, TProperty> selector)
+            where T : class
+            where TProperty : IComparable
+        {
+            TProperty resultValue = default(TProperty);
+            T result = null;
+            foreach (var t in list)
+            {
+                var value = selector(t);
+                if (result == null || value.CompareTo(resultValue) > 0)
+                {
+                    result = t;
+                    resultValue = value;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>Gets a specified amount of items in the middle of a list. </summary>
+        /// <typeparam name="T">The item type. </typeparam>
+        /// <param name="list">The list. </param>
+        /// <param name="count">The amount of items to retrieve. </param>
+        /// <returns>The middle items. </returns>
+        public static IList<T> MiddleElements<T>(this IList<T> list, int count)
+        {
+            if (list.Count < count)
+                return null;
+            if (list.Count == count)
+                return list.ToList();
+
+            var output = new List<T>();
+            var startIndex = list.Count / 2 - count / 2;
+            for (var i = 0; i < count; i++)
+                output.Add(list[startIndex + i]);
+            return output;
+        }
+
+        /// <summary>Partitions an enumerable into blocks of a given size.</summary>
+        /// <typeparam name="T">The item type. </typeparam>
+        /// <param name="source">The source enumeration.</param>
+        /// <param name="blockSize">Size of the block.</param>
+        /// <returns>The partitions. </returns>
+        public static IEnumerable<IEnumerable<T>> Partition<T>(this IEnumerable<T> source, int blockSize)
+        {
+            var enumerator = source.GetEnumerator();
+            while (enumerator.MoveNext())
+                yield return GetNextPartition(enumerator, blockSize);
+        }
+
+        private static IEnumerable<T> GetNextPartition<T>(IEnumerator<T> enumerator, int blockSize)
+        {
+            do
+            {
+                yield return enumerator.Current;
+            }
+            while (--blockSize > 0 && enumerator.MoveNext());
+        }
+    }
+
+    public class MtNotifyCollectionChangedEventArgs<T> : PropertyChangedEventArgs, IExtendedNotifyCollectionChangedEventArgs
+    {
+#if !LEGACY
+        public MtNotifyCollectionChangedEventArgs(IReadOnlyList<T> addedItems, IReadOnlyList<T> removedItems, IReadOnlyList<T> oldCollection)
+            : base(null)
+        {
+            AddedItems = addedItems;
+            RemovedItems = removedItems;
+            OldCollection = oldCollection;
+        }
+
+        /// <summary>Gets or sets the list of added items. </summary>
+        public IReadOnlyList<T> AddedItems { get; private set; }
+
+        /// <summary>Gets or sets the list of removed items. </summary>
+        public IReadOnlyList<T> RemovedItems { get; private set; }
+
+        /// <summary>Gets the previous collection (only provided when enabled in the <see cref="MtObservableCollection{T}"/> object). </summary>
+        public IReadOnlyList<T> OldCollection { get; private set; }
+
+#else
+        public MtNotifyCollectionChangedEventArgs(IList<T> addedItems, IList<T> removedItems, IList<T> oldCollection)
+            : base(null)
+        {
+            AddedItems = addedItems;
+            RemovedItems = removedItems;
+            OldCollection = oldCollection;
+        }
+
+        /// <summary>
+        /// Gets or sets the list of added items. 
+        /// </summary>
+        public IList<T> AddedItems { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the list of removed items. 
+        /// </summary>
+        public IList<T> RemovedItems { get; private set; }
+
+        /// <summary>
+        /// Gets the previous collection (only provided when enabled in the <see cref="MtObservableCollection{T}"/> object). 
+        /// </summary>
+        public IList<T> OldCollection { get; private set; }
+
+#endif
+
+        IEnumerable IExtendedNotifyCollectionChangedEventArgs.RemovedItems
+        {
+            get { return RemovedItems; }
+        }
+
+        IEnumerable IExtendedNotifyCollectionChangedEventArgs.AddedItems
+        {
+            get { return AddedItems; }
+        }
+
+        IEnumerable IExtendedNotifyCollectionChangedEventArgs.OldCollection
+        {
+            get { return OldCollection; }
+        }
+    }
+
+    public interface IExtendedNotifyCollectionChangedEventArgs
+    {
+        /// <summary>Gets the list of added items. </summary>
+        IEnumerable AddedItems { get; }
+
+        /// <summary>Gets the list of removed items. </summary>
+        IEnumerable RemovedItems { get; }
+
+        /// <summary>Gets the previous collection (only provided when enabled in the <see cref="MtObservableCollection{T}"/> object). </summary>
+        IEnumerable OldCollection { get; }
+    }
+
+    public class MtObservableCollection<T> : ObservableCollection<T>
+    {
+        private List<T> _oldCollection;
+        private event EventHandler<MtNotifyCollectionChangedEventArgs<T>> _extendedCollectionChanged;
+
+        /// <summary>Initializes a new instance of the <see cref="MtObservableCollection{T}"/> class.</summary>
+        public MtObservableCollection() { }
+
+        /// <summary>Initializes a new instance of the <see cref="MtObservableCollection{T}"/> class.</summary>
+        /// <param name="collection">The collection.</param>
+        public MtObservableCollection(IEnumerable<T> collection) : base(collection) { }
+
+        /// <summary>Gets or sets a value indicating whether to provide the previous collection in the extended collection changed event. 
+        /// Enabling this feature may have a performance impact as for each collection changed event a copy of the collection gets created. </summary>
+        public bool ProvideOldCollection { get; set; }
+
+        /// <summary>Occurs when a property value changes. 
+        /// This is the same event as on the <see cref="ObservableCollection{T}"/> except that it is public. </summary>
+        public new event PropertyChangedEventHandler PropertyChanged
+        {
+            add { base.PropertyChanged += value; }
+            remove { base.PropertyChanged -= value; }
+        }
+
+        /// <summary>Adds multiple items to the collection. </summary>
+        /// <param name="collection">The items to add. </param>
+        /// <exception cref="ArgumentNullException">The value of 'collection' cannot be null. </exception>
+        public void AddRange(IEnumerable<T> collection)
+        {
+            if (collection == null)
+                throw new ArgumentNullException("collection");
+
+            foreach (var item in collection)
+                Items.Add(item);
+
+            OnPropertyChanged(new PropertyChangedEventArgs("Count"));
+#if LEGACY
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+#else
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, collection.ToList()));
+#endif
+        }
+
+        /// <summary>Removes multiple items from the collection. </summary>
+        /// <param name="collection">The items to remove. </param>
+        /// <exception cref="ArgumentNullException">The value of 'collection' cannot be null. </exception>
+        public void RemoveRange(IEnumerable<T> collection)
+        {
+            if (collection == null)
+                throw new ArgumentNullException("collection");
+
+            foreach (var item in collection.ToList())
+                Items.Remove(item);
+
+            OnPropertyChanged(new PropertyChangedEventArgs("Count"));
+#if LEGACY
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+#else
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, collection.ToList()));
+#endif
+        }
+
+        /// <summary>Resets the whole collection with a given list. </summary>
+        /// <param name="collection">The collection. </param>
+        /// <exception cref="ArgumentNullException">The value of 'collection' cannot be null. </exception>
+        public void Initialize(IEnumerable<T> collection)
+        {
+            if (collection == null)
+                throw new ArgumentNullException("collection");
+
+            Items.Clear();
+            foreach (var i in collection)
+                Items.Add(i);
+
+            OnPropertyChanged(new PropertyChangedEventArgs("Count"));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
+
+        /// <summary>Collection changed event with safe/always correct added items and removed items list. </summary>
+        public event EventHandler<MtNotifyCollectionChangedEventArgs<T>> ExtendedCollectionChanged
+        {
+            add
+            {
+                lock (this)
+                {
+                    if (_extendedCollectionChanged == null)
+                        _oldCollection = new List<T>(this);
+                    _extendedCollectionChanged += value;
+                }
+            }
+            remove
+            {
+                lock (this)
+                {
+                    _extendedCollectionChanged -= value;
+                    if (_extendedCollectionChanged == null)
+                        _oldCollection = null;
+                }
+            }
+        }
+
+        /// <summary>Raises the System.Collections.ObjectModel.ObservableCollection{T}.CollectionChanged event with the provided arguments. </summary>
+        /// <param name="e">Arguments of the event being raised. </param>
+        protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
+        {
+            base.OnCollectionChanged(e);
+
+            var copy = _extendedCollectionChanged;
+            if (copy != null)
+            {
+                var oldCollection = ProvideOldCollection ? _oldCollection.ToList() : null;
+
+                var addedItems = new List<T>();
+                foreach (var item in this.Where(x => !_oldCollection.Contains(x))) // new items
+                {
+                    addedItems.Add(item);
+                    _oldCollection.Add(item);
+                }
+
+                var removedItems = new List<T>();
+                foreach (var item in _oldCollection.Where(x => !Contains(x)).ToArray()) // deleted items
+                {
+                    removedItems.Add(item);
+                    _oldCollection.Remove(item);
+                }
+
+                copy(this, new MtNotifyCollectionChangedEventArgs<T>(addedItems, removedItems, oldCollection));
+            }
+        }
+    }
+
+    [Obsolete("Use MtObservableCollection<T> instead. 11/29/2014")]
+    public class ExtendedObservableCollection<T> : MtObservableCollection<T>
+    {
+        public ExtendedObservableCollection()
+        {
+        }
+
+        public ExtendedObservableCollection(IEnumerable<T> collection)
+            : base(collection)
+        {
+        }
+    }
+
+    public interface IObservableCollectionView : IList, INotifyCollectionChanged, INotifyPropertyChanged
+    {
+        /// <summary>Gets or sets a value indicating whether the view should automatically be updated when needed. 
+        /// Disable this flag when doing multiple of operations on the underlying collection. 
+        /// Enabling this flag automatically updates the view if needed. </summary>
+        bool IsTracking { get; set; }
+
+        /// <summary>Gets or sets the maximum number of items in the view. </summary>
+        int Limit { get; set; }
+
+        /// <summary>Gets or sets the offset from where the results a selected. </summary>
+        int Offset { get; set; }
+
+        /// <summary>Gets or sets a value indicating whether to sort ascending or descending. </summary>
+        bool Ascending { get; set; }
+
+        /// <summary>Gets or sets the filter (a Func{TItem, bool} object). </summary>
+        object Filter { get; set; }
+
+        /// <summary>Gets or sets the order (a Func{TItem, object} object). </summary>
+        object Order { get; set; }
+
+        /// <summary>Refreshes the view. </summary>
+        void Refresh();
+    }
+
+    public abstract class ObservableCollectionViewBase<TItem> : IList<TItem>, IDisposable, IList, INotifyCollectionChanged, INotifyPropertyChanged
+    {
+        private NotifyCollectionChangedEventHandler _itemsChangedHandler;
+        private MtObservableCollection<TItem> _internalCollection = new MtObservableCollection<TItem>();
+        private readonly Dictionary<INotifyPropertyChanged, PropertyChangedEventHandler> _events =
+            new Dictionary<INotifyPropertyChanged, PropertyChangedEventHandler>();
+
+        private readonly object _syncRoot = new object();
+        private bool _isTracking;
+        private bool _trackItemChanges;
+        private bool _trackCollectionChanges;
+
+        /// <summary>Initializes a new instance of the <see cref="ObservableCollectionViewBase{TItem}"/> class. </summary>
+        protected ObservableCollectionViewBase()
+            : this(new ObservableCollection<TItem>(), false)
+        {
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="ObservableCollectionViewBase{TItem}"/> class. </summary>
+        /// <param name="items">The source item list. </param>
+        protected ObservableCollectionViewBase(IList<TItem> items)
+            : this(items, false)
+        {
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="ObservableCollectionViewBase{TItem}"/> class. </summary>
+        /// <param name="items">The source item list. </param>
+        /// <param name="trackItemChanges">The value indicating whether to track items which implement <see cref="INotifyPropertyChanged"/></param>
+        protected ObservableCollectionViewBase(IList<TItem> items, bool trackItemChanges)
+        {
+            Items = items;
+
+            TrackItemChanges = trackItemChanges;
+            TrackCollectionChanges = true;
+
+            if (TrackItemChanges)
+                TrackAllItems();
+
+            _internalCollection.CollectionChanged += OnInternalCollectionChanged;
+            _internalCollection.PropertyChanged += OnInternalPropertyChanged;
+
+            _isTracking = true;
+            Refresh();
+        }
+
+        /// <summary>Gets the original items source. </summary>
+        public IList<TItem> Items { get; private set; }
+
+        /// <summary>Gets or sets a flag whether the view should automatically be updated when needed. 
+        /// Disable this flag when doing multiple of operations on the underlying collection. 
+        /// Enabling this flag automatically updates the view if needed. </summary>
+        public bool IsTracking
+        {
+            get { return _isTracking; }
+            set
+            {
+                _isTracking = value;
+                if (value)
+                    Refresh();
+            }
+        }
+
+        /// <summary>Gets or sets a value indicating whether the view should listen for collection 
+        /// changed events on the underlying collection (default: true). </summary>
+        public bool TrackCollectionChanges
+        {
+            get { return _trackCollectionChanges; }
+            set
+            {
+                if (value != _trackCollectionChanges)
+                {
+                    _trackCollectionChanges = value;
+                    if (_trackCollectionChanges)
+                        TrackCollection();
+                    else
+                        UntrackCollection();
+                    Refresh();
+                }
+            }
+        }
+
+        /// <summary>Gets or sets a value indicating whether the items in the collection should be tracked for property changes. 
+        /// The items must implement <see cref="INotifyPropertyChanged"/> to support item tracking. 
+        /// Enable this property if your items are mutable and the list has to be restored if an item property changes. </summary>
+        public bool TrackItemChanges
+        {
+            get { return _trackItemChanges; }
+            set
+            {
+                if (value != _trackItemChanges)
+                {
+                    _trackItemChanges = value;
+                    if (_trackItemChanges)
+                        TrackAllItems();
+                    else
+                        UntrackAllItems();
+                    Refresh();
+                }
+            }
+        }
+
+        /// <summary>Adds a multiple elements to the underlying collection. </summary>
+        /// <param name="items">The items to add. </param>
+        [Obsolete("Use methods on Items property instead. 9/20/2014")]
+        public void AddRange(IEnumerable<TItem> items)
+        {
+            var old = TrackCollectionChanges;
+            TrackCollectionChanges = false;
+
+            var collection = Items as MtObservableCollection<TItem>;
+            if (collection != null)
+                collection.AddRange(items);
+            else
+            {
+                foreach (var i in items)
+                    Add(i);
+            }
+
+            TrackCollectionChanges = old;
+        }
+
+        /// <summary>Releases all used resources and deregisters all events on the items and the underlying collection. </summary>
+        public void Dispose()
+        {
+            TrackCollectionChanges = false;
+            TrackItemChanges = false;
+
+            _internalCollection = null;
+            Items = null;
+        }
+
+        /// <summary>Releases all used resources and deregisters all events on the items and the underlying collection. </summary>
+        [Obsolete("Use Dispose instead. 5/17/2014")]
+        public void Close()
+        {
+            Dispose();
+        }
+
+        /// <summary>Refreshes the view. </summary>
+        [Obsolete("Use Refresh method instead. 10/19/2014")]
+        public void Update()
+        {
+            Refresh();
+        }
+
+        /// <summary>Refreshes the view. </summary>
+        public void Refresh()
+        {
+            if (!IsTracking)
+                return;
+
+            lock (SyncRoot)
+            {
+                var list = GetItems();
+                if (!_internalCollection.IsCopyOf(list))
+                    _internalCollection.Initialize(list);
+            }
+        }
+
+        /// <summary>Gets the list of items with the current order and filter.</summary>
+        /// <returns>The items. </returns>
+        protected abstract IList<TItem> GetItems();
+
+        private void OnOriginalCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            lock (SyncRoot)
+            {
+                Refresh();
+
+                if (TrackItemChanges)
+                {
+                    if (e.Action == NotifyCollectionChangedAction.Reset)
+                    {
+                        UntrackAllItems();
+                        TrackAllItems();
+                    }
+                    else
+                    {
+                        if (e.NewItems != null)
+                        {
+                            foreach (var item in e.NewItems.OfType<INotifyPropertyChanged>())
+                                RegisterEvent(item);
+                        }
+
+                        if (e.OldItems != null)
+                        {
+                            foreach (var item in e.OldItems.OfType<INotifyPropertyChanged>())
+                                DeregisterEvent(item);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void RegisterEvent(INotifyPropertyChanged item)
+        {
+            if (_events.ContainsKey(item))
+                return;
+
+            var handler = WeakEvent.RegisterEvent<ObservableCollectionViewBase<TItem>, PropertyChangedEventHandler, PropertyChangedEventArgs>(
+                this,
+                h => item.PropertyChanged += h,
+                h => item.PropertyChanged -= h,
+                h => (o, e) => h(o, e),
+                (subscriber, s, e) => subscriber.Refresh());
+
+            _events.Add(item, handler);
+        }
+
+        private void DeregisterEvent(INotifyPropertyChanged item)
+        {
+            if (!_events.ContainsKey(item))
+                return;
+
+            var handler = _events[item];
+            item.PropertyChanged -= handler;
+            _events.Remove(item);
+        }
+
+        private void TrackCollection()
+        {
+            var items = Items as ObservableCollection<TItem>;
+            if (items != null)
+            {
+                var collection = items;
+                _itemsChangedHandler = WeakEvent.RegisterEvent<ObservableCollectionViewBase<TItem>, NotifyCollectionChangedEventHandler, NotifyCollectionChangedEventArgs>(
+                    this,
+                    h => collection.CollectionChanged += h,
+                    h => collection.CollectionChanged -= h,
+                    h => (o, e) => h(o, e),
+                    (subscriber, s, e) => subscriber.OnOriginalCollectionChanged(s, e));
+            }
+        }
+
+        private void UntrackCollection()
+        {
+            if (_itemsChangedHandler != null)
+            {
+                ((ObservableCollection<TItem>)Items).CollectionChanged -= _itemsChangedHandler;
+                _itemsChangedHandler = null;
+            }
+        }
+
+        private void TrackAllItems()
+        {
+            foreach (var i in Items.OfType<INotifyPropertyChanged>())
+                RegisterEvent(i);
+        }
+
+        private void UntrackAllItems()
+        {
+            foreach (var item in _events.Keys.ToArray())
+                DeregisterEvent(item);
+        }
+
+        #region Interfaces
+
+        public event NotifyCollectionChangedEventHandler CollectionChanged;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnInternalCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            var copy = CollectionChanged;
+            if (copy != null)
+                copy(this, e);
+        }
+
+        private void OnInternalPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            var copy = PropertyChanged;
+            if (copy != null)
+                copy(this, e);
+        }
+
+        public int Count
+        {
+            get
+            {
+                lock (SyncRoot)
+                    return _internalCollection.Count;
+            }
+        }
+
+        public IEnumerator<TItem> GetEnumerator()
+        {
+            lock (SyncRoot)
+                return _internalCollection.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            lock (SyncRoot)
+                return _internalCollection.GetEnumerator();
+        }
+
+        public int IndexOf(TItem item)
+        {
+            lock (SyncRoot)
+                return _internalCollection.IndexOf(item);
+        }
+
+        public TItem this[int index]
+        {
+            get
+            {
+                lock (SyncRoot)
+                    return _internalCollection[index];
+            }
+            set { throw new NotSupportedException("Use ObservableCollectionViewBase.Items[] instead."); }
+        }
+
+        object IList.this[int index]
+        {
+            get
+            {
+                lock (SyncRoot)
+                    return _internalCollection[index];
+            }
+            set { throw new NotSupportedException("Use ObservableCollectionViewBase.Items[] instead."); }
+        }
+
+        public bool Contains(TItem item)
+        {
+            lock (SyncRoot)
+                return _internalCollection.Contains(item);
+        }
+
+        public bool IsReadOnly { get { return true; } }
+
+        public bool Contains(object value)
+        {
+            lock (SyncRoot)
+                return value is TItem && _internalCollection.Contains((TItem)value);
+        }
+
+        public int IndexOf(object value)
+        {
+            if (!(value is TItem))
+                return -1;
+
+            lock (SyncRoot)
+                return _internalCollection.IndexOf((TItem)value);
+        }
+
+        public bool IsFixedSize { get { return false; } }
+
+        public bool IsSynchronized { get { return true; } }
+
+        public object SyncRoot
+        {
+            get { return _syncRoot; }
+        }
+
+        public void CopyTo(Array array, int index)
+        {
+            CopyTo((TItem[])array, index);
+        }
+
+        public void CopyTo(TItem[] array, int arrayIndex)
+        {
+            lock (SyncRoot)
+                _internalCollection.CopyTo(array, arrayIndex);
+        }
+
+        //int IList.Add(object value)
+        //{
+        //    throw new NotSupportedException("Use ObservableCollectionViewBase.Add() instead.");
+        //}
+
+        //public void Add(T item)
+        //{
+        //    throw new NotSupportedException("Use ObservableCollectionViewBase.Add() instead.");
+        //}
+
+        //public void Clear()
+        //{
+        //    throw new NotSupportedException("Use ObservableCollectionViewBase.Clear() instead.");
+        //}
+
+        //public bool Remove(T item)
+        //{
+        //    throw new NotSupportedException("Use ObservableCollectionViewBase.Remove() instead.");
+        //}
+
+        //public void Remove(object value)
+        //{
+        //    throw new NotSupportedException("Use ObservableCollectionViewBase.Remove() instead.");
+        //}
+
+        [Obsolete("Use methods on Items property instead. 9/20/2014")]
+        int IList.Add(object value)
+        {
+            return ((IList)Items).Add(value);
+        }
+
+        [Obsolete("Use methods on Items property instead. 9/20/2014")]
+        public void Add(TItem item)
+        {
+            Items.Add(item);
+        }
+
+        [Obsolete("Use methods on Items property instead. 9/20/2014")]
+        public void Clear()
+        {
+            Items.Clear();
+        }
+
+        [Obsolete("Use methods on Items property instead. 9/20/2014")]
+        public bool Remove(TItem item)
+        {
+            return Items.Remove(item);
+        }
+
+        [Obsolete("Use methods on Items property instead. 9/20/2014")]
+        public void Remove(object value)
+        {
+            ((IList)Items).Remove(value);
+        }
+
+        [Obsolete("Use methods on Items property instead. 9/20/2014")]
+        public void Insert(int index, TItem item)
+        {
+            throw new NotSupportedException("Use ObservableCollectionViewBase.Insert() instead.");
+        }
+
+        [Obsolete("Use methods on Items property instead. 9/20/2014")]
+        public void Insert(int index, object value)
+        {
+            throw new NotSupportedException("Use ObservableCollectionViewBase.Insert() instead.");
+        }
+
+        [Obsolete("Use methods on Items property instead. 9/20/2014")]
+        public void RemoveAt(int index)
+        {
+            throw new NotSupportedException("Use ObservableCollectionViewBase.Insert() instead.");
+        }
+
+        #endregion
+    }
+
+    public class ObservableCollectionView<TItem> : ObservableCollectionViewBase<TItem>, IObservableCollectionView
+    {
+        private Func<TItem, bool> _filter;
+        private Func<TItem, object> _order;
+
+        private int _offset;
+        private int _limit;
+        private bool _ascending = true;
+
+        /// <summary>Initializes a new instance of the <see cref="ObservableCollectionView{TItem}"/> class. </summary>
+        public ObservableCollectionView()
+            : this(new ObservableCollection<TItem>())
+        {
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="ObservableCollectionView{TItem}"/> class. </summary>
+        /// <param name="items">The source item list. </param>
+        public ObservableCollectionView(IList<TItem> items)
+            : this(items, null, null, true, false)
+        {
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="ObservableCollectionView{TItem}"/> class. </summary>
+        /// <param name="items">The source item list. </param>
+        /// <param name="filter">The filter of the view. </param>
+        public ObservableCollectionView(IList<TItem> items, Func<TItem, bool> filter)
+            : this(items, filter, null, true, false)
+        {
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="ObservableCollectionView{TItem}"/> class. </summary>
+        /// <param name="items">The source item list. </param>
+        /// <param name="filter">The filter of the view. </param>
+        /// <param name="orderBy">The order key of the view. </param>
+        public ObservableCollectionView(IList<TItem> items, Func<TItem, bool> filter, Func<TItem, object> orderBy)
+            : this(items, filter, orderBy, true, false)
+        {
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="ObservableCollectionView{TItem}"/> class. </summary>
+        /// <param name="items">The source item list. </param>
+        /// <param name="filter">The filter of the view. </param>
+        /// <param name="orderBy">The order key of the view. </param>
+        /// <param name="ascending">The value indicating whether to sort ascending. </param>
+        public ObservableCollectionView(IList<TItem> items, Func<TItem, bool> filter, Func<TItem, object> orderBy, bool ascending)
+            : this(items, filter, orderBy, ascending, false)
+        {
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="ObservableCollectionView{TItem}"/> class. </summary>
+        /// <param name="items">The source item list. </param>
+        /// <param name="filter">The filter of the view. </param>
+        /// <param name="orderBy">The order key of the view. </param>
+        /// <param name="ascending">The value indicating whether to sort ascending. </param>
+        /// <param name="trackItemChanges">The value indicating whether to track items which implement <see cref="INotifyPropertyChanged"/></param>
+        public ObservableCollectionView(IList<TItem> items, Func<TItem, bool> filter, Func<TItem, object> orderBy, bool ascending, bool trackItemChanges)
+            : base(items, trackItemChanges)
+        {
+            Order = orderBy;
+            Filter = filter;
+            Ascending = ascending;
+        }
+
+        /// <summary>Gets or sets the filter. </summary>
+        public Func<TItem, bool> Filter
+        {
+            get { return _filter; }
+            set
+            {
+                _filter = value;
+                Refresh();
+            }
+        }
+
+        /// <summary>Gets or sets the filter (a Func{TItem, bool} object). </summary>
+        object IObservableCollectionView.Filter
+        {
+            get { return Filter; }
+            set { Filter = (Func<TItem, bool>)value; }
+        }
+
+        /// <summary>Gets or sets the sorting/order function. </summary>
+        public Func<TItem, object> Order
+        {
+            get { return _order; }
+            set
+            {
+                _order = value;
+                Refresh();
+            }
+        }
+
+        /// <summary>Gets or sets the order. </summary>
+        object IObservableCollectionView.Order
+        {
+            get { return Order; }
+            set { Order = (Func<TItem, object>)value; }
+        }
+
+        /// <summary>Gets or sets the maximum number of items in the view. </summary>
+        public int Limit
+        {
+            get { return _limit; }
+            set
+            {
+                if (_limit != value)
+                {
+                    _limit = value;
+                    Refresh();
+                }
+            }
+        }
+
+        /// <summary>Gets or sets the offset from where the results a selected. </summary>
+        public int Offset
+        {
+            get { return _offset; }
+            set
+            {
+                if (_offset != value)
+                {
+                    _offset = value;
+                    Refresh();
+                }
+            }
+        }
+
+        /// <summary>Gets or sets a value indicating whether the sorting should be ascending; otherwise descending. </summary>
+        public bool Ascending
+        {
+            get { return _ascending; }
+            set
+            {
+                if (_ascending != value)
+                {
+                    _ascending = value;
+                    Refresh();
+                }
+            }
+        }
+
+        /// <summary>Gets the list of items with the current order and filter.</summary>
+        /// <returns>The items. </returns>
+        protected override IList<TItem> GetItems()
+        {
+            List<TItem> list;
+
+            if (Filter != null && Order != null && Ascending)
+                list = Items.Where(Filter).OrderBy(Order).ToList();
+            else if (Filter != null && Order != null && !Ascending)
+                list = Items.Where(Filter).OrderByDescending(Order).ToList();
+            else if (Filter == null && Order != null && Ascending)
+                list = Items.OrderBy(Order).ToList();
+            else if (Filter == null && Order != null && !Ascending)
+                list = Items.OrderByDescending(Order).ToList();
+            else if (Filter != null && Order == null)
+                list = Items.Where(Filter).ToList();
+            else if (Filter == null && Order == null)
+                list = Items.ToList();
+            else
+                throw new Exception();
+
+            if (Limit > 0 || Offset > 0)
+                list = list.Skip(Offset).Take(Limit).ToList();
+
+            return list;
+        }
+    }
+}
+
+
 
 [XmlRoot("dictionary")]
 public class SerializableDictionary<TKey, TValue>
@@ -2539,6 +4352,9 @@ public class Media : INotifyPropertyChanged
         }
     }
     public int Track { get; set; }
+    public int Episode { get; set; }
+    public int Season { get; set; }
+    public string MediaType { get; set; }
     private string duration;
     public string Duration
     {

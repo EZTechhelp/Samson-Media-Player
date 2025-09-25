@@ -329,7 +329,7 @@ function Import-Media
       $Controls_to_Update = $Null
     }
   }
-  Start-Runspace -scriptblock $import_LocalMedia_scriptblock -StartRunspaceJobHandler -arguments $PSBoundParameters -runspace_name 'import_LocalMedia_scriptblock' -thisApp $thisApp -synchash $synchash -RestrictedRunspace:$RestrictedRunspace -PSProviders 'Function','Registry','Environment','FileSystem','Variable'
+  Start-Runspace -scriptblock $import_LocalMedia_scriptblock -StartRunspaceJobHandler -arguments $PSBoundParameters -runspace_name 'import_LocalMedia_scriptblock' -thisApp $thisApp -synchash $synchash -RestrictedRunspace:$RestrictedRunspace -PSProviders 'Function','Registry','Environment','FileSystem','Variable' -modules_list 'Microsoft.PowerShell.Utility'
   $import_LocalMedia_scriptblock = $Null
 }
 #---------------------------------------------- 

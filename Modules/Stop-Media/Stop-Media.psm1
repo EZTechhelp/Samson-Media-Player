@@ -231,7 +231,8 @@ function Stop-Media
     $synchashWeak.Target.Temporary_Playback_Media = $null
 
     #Refresh Playlists and Queue
-    Get-Playlists -verboselog:$false -synchashWeak $synchashWeak -Media_Profile_Directory $thisapp.Config.Media_Profile_Directory -thisApp $thisapp -use_Runspace -Quick_Refresh
+    Update-Playlists -synchash $synchashWeak.Target -thisApp $thisapp -use_Runspace -Quick_Refresh -GetPlaylists
+    #Get-Playlists -verboselog:$false -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace -Quick_Refresh
     Get-PlayQueue -verboselog:$false -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace
 
     #Reset Main UI controls to blank/default 

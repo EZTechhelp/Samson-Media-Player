@@ -148,10 +148,18 @@ function Remove-Media {
             $null = $thisapp.config.Current_Playlist.Remove($index_toremove)                  
           }
           try{
+            if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+              if($synchash.all_playlists.IsTracking){
+                Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'all_playlists' -Property 'IsTracking' -value $false
+              }
+              $All_Playlists = $synchash.All_Playlists.items
+            }else{
+              $All_Playlists = $synchash.All_Playlists
+            }
             $playlist_to_modify = lock-object -InputObject $synchash.all_playlists_ListLock -ScriptBlock {
-              $playlist_to_modify = $synchash.all_playlists.where({$_.playlist_tracks.values.id -eq $Media.id})
+              $playlist_to_modify = $All_Playlists.where({$_.playlist_tracks.values.id -eq $Media.id})
               if(!$playlist_to_modify){
-                $playlist_to_modify = $synchash.all_playlists.where({($_.playlist_tracks.values.url -replace '\\\\','\') -eq ($Media.url -replace '\\\\','\')})
+                $playlist_to_modify = $All_Playlists.where({($_.playlist_tracks.values.url -replace '\\\\','\') -eq ($Media.url -replace '\\\\','\')})
               }
               $playlist_to_modify
             }
@@ -173,7 +181,7 @@ function Remove-Media {
               }
             }
             write-ezlogs ">>>> Saving all_playlists profile to path: $($thisApp.Config.Playlists_Profile_Path)"
-            Export-SerializedXML -InputObject $synchash.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
+            Export-SerializedXML -InputObject $All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
           }    
           if($Media.Source -eq 'Local'){   
             $synchash.update_status_timer.tag = 'Local'

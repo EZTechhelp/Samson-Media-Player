@@ -76,7 +76,7 @@ function Start-InterProcessPipes{
             $wait = $InterProcessPipe.WaitForConnectionAsync($Token.Token)
             do{
               if($thisApp.Config.Dev_mode -or $Verboselog){write-ezlogs "....Waiting for Named Pipe Connection" -Dev_mode:($thisApp.Config.Dev_mode -or $Verboselog)}
-              Start-Sleep -Milliseconds 500
+              [System.Threading.Thread]::Sleep(500)
             }while(!$Wait.IsCanceled -and !$wait.IsCompleted -and $thisApp.InterProcessPipes)
             if($thisApp.InterProcessPipes){
               $sr = [System.IO.StreamReader]::new($InterProcessPipe)

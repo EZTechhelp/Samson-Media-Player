@@ -466,7 +466,8 @@ function New-WebContextMenuScriptBlock {
   Param(
     $synchash,
     $thisApp,
-    $Webview2
+    $Webview2,
+    [switch]$VerboseLog
   )
   try{
     $WebBrowserWebView2_ContextMenuRequested_Scriptblock = [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuRequestedEventArgs]]{
@@ -478,7 +479,7 @@ function New-WebContextMenuScriptBlock {
         $SpotifyAlbumPattern = '^(https:\/\/open.spotify.com\/album\/|spotify:user:spotify:album:)([a-zA-Z0-9]+)(.*)$'
         $SpotifyArtistPattern = '^(https:\/\/open.spotify.com\/artist\/|spotify:user:spotify:artist:)([a-zA-Z0-9]+)(.*)$'
         $SpotifyTrackPattern = '^(https:\/\/open.spotify.com\/track\/|spotify:user:spotify:track:)([a-zA-Z0-9]+)(.*)$'
-        write-ezlogs ">>>> Creating new context menu for webview2: $Webview2" -warning
+        write-ezlogs ">>>> Creating new context menu for webview2: $Webview2" -warning -LogLevel 0 -Verboselog:$thisApp.Config.Dev_mode
         if($thisApp.Config.Dev_mode){Write-EZLogs "[$Webview2] >>>> $Webview2 ContexeMenuRequested $($e.ContextMenuTarget | Out-String)" -Dev_mode}
         $synchashWeak.Target.WebView2_ContextMenuLink = $null
         $synchashWeak.Target.WebView2_ContextMenuText = $null
@@ -655,8 +656,13 @@ function New-WebContextMenuScriptBlock {
             }else{
               $synchashWeak.Target."$($Webview2)_AddPlaylistSubCommand".Children.Clear()
             }
-            if($synchashWeak.Target.all_playlists.count -gt 0){
-              foreach ($Playlist in $synchashWeak.Target.all_playlists.where({-not [string]::IsNullOrEmpty($_.name) -and $_.Playlist_tracks.values.url -notcontains $e.ContextMenuTarget.LinkUri}))
+            if($synchashweak.target.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+              $All_Playlists = $synchashweak.target.All_Playlists.items
+            }else{
+              $All_Playlists = $synchashweak.target.All_Playlists
+            }
+            if($All_Playlists.count -gt 0){
+              foreach ($Playlist in $All_Playlists.where({-not [string]::IsNullOrEmpty($_.name) -and $_.Playlist_tracks.values.url -notcontains $e.ContextMenuTarget.LinkUri}))
               {
                 $Playlist_name = $Playlist.name
                 $Playlist_ID = $Playlist.Playlist_ID
@@ -925,8 +931,13 @@ function New-WebContextMenuScriptBlock {
             }else{
               $synchashWeak.Target."$($Webview2)_AddPlaylistSubCommand".Children.Clear()
             }
-            if($synchashWeak.Target.all_playlists.count -gt 0){
-              foreach ($Playlist in $synchashWeak.Target.all_playlists.where({-not [string]::IsNullOrEmpty($_.name) -and $_.Playlist_tracks.values.url -notcontains $e.ContextMenuTarget.LinkUri}))
+            if($synchashweak.target.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+              $All_Playlists = $synchashweak.target.All_Playlists.items
+            }else{
+              $All_Playlists = $synchashweak.target.All_Playlists
+            }
+            if($All_Playlists.count -gt 0){
+              foreach ($Playlist in $All_Playlists.where({-not [string]::IsNullOrEmpty($_.name) -and $_.Playlist_tracks.values.url -notcontains $e.ContextMenuTarget.LinkUri}))
               {
                 $Playlist_name = $Playlist.name
                 $Playlist_ID = $Playlist.Playlist_ID
@@ -1064,8 +1075,13 @@ function New-WebContextMenuScriptBlock {
               }else{
                 $synchashWeak.Target."$($Webview2)_AddPlaylistSubCommand".Children.Clear()
               }
-              if($synchashWeak.Target.all_playlists.count -gt 0){
-                foreach ($Playlist in $synchashWeak.Target.all_playlists.where({-not [string]::IsNullOrEmpty($_.name) -and $_.Playlist_tracks.values.url -notcontains $e.ContextMenuTarget.LinkUri}))
+              if($synchashweak.target.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+                $All_Playlists = $synchashweak.target.All_Playlists.items
+              }else{
+                $All_Playlists = $synchashweak.target.All_Playlists
+              }
+              if($All_Playlists.count -gt 0){
+                foreach ($Playlist in $All_Playlists.where({-not [string]::IsNullOrEmpty($_.name) -and $_.Playlist_tracks.values.url -notcontains $e.ContextMenuTarget.LinkUri}))
                 {
                   $Playlist_name = $Playlist.name
                   $Playlist_ID = $Playlist.Playlist_ID
@@ -1113,6 +1129,7 @@ Function Initialize-YoutubeWebPlayer
     [switch]$Verboselog
   )
   try{
+    $thisApp.YTWebVerboseLog = $Verboselog
     if(!$synchash.YoutubeWebView2 -or !$synchash.YoutubeWebView2.CoreWebView2){
       Write-EZLogs '#### Creating new YoutubeWebView2 instance' -showtime -logtype Webview2 -linesbefore 1
       $synchash.YoutubeWebView2 = [Microsoft.Web.WebView2.Wpf.WebView2]::new()
@@ -1156,7 +1173,7 @@ Function Initialize-YoutubeWebPlayer
     param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs]$e)
     $synchash = $synchash
     $thisApp = $thisApp
-    $Verboselog = $Verboselog
+    $Verboselog = $thisApp.YTWebVerboseLog
     try{
       if($e.IsSuccess){
         $logtype = 'Webview2'
@@ -2507,7 +2524,7 @@ try {
             $Segment = $thisApp.SponsorBlock | Where-Object {[timespan]::FromSeconds($_.segment[0]) -eq $currentime -or ($currentime -gt [timespan]::FromSeconds($_.segment[0]) -and $currentime -lt [timespan]::FromSeconds($_.segment[1]))}
             if($Segment){
               if($thisApp.Config.Sponsorblock_ActionType -eq 'Skip'){
-                Write-EZLogs ">>>> Sponsorblock skipping segment for youtubeid $($Segment.videoId) - Start: $($Segment.segment[0]) -- End: $($Segment.segment[1])" -warning
+                Write-EZLogs ">>>> Sponsorblock skipping segment for youtubeid $($Segment.videoId) - Start: $($Segment.segment[0]) -- End: $($Segment.segment[1])" -warning -logtype Webview2
                 $YoutubeWebView2_SeekScript = @"
 try {
   var player = document.getElementById('movie_player');
@@ -2529,12 +2546,12 @@ try {
                 )
               }elseif($thisApp.Config.Sponsorblock_ActionType -eq 'Mute'){
                 if(!$synchash.YoutubeWebView2.CoreWebView2.IsMuted){
-                  Write-EZLogs ">>>> Sponsorblock muting segment for youtubeid $($Segment.videoId) - Start: $($Segment.segment[0]) -- End: $($Segment.segment[1])" -warning
+                  Write-EZLogs ">>>> Sponsorblock muting segment for youtubeid $($Segment.videoId) - Start: $($Segment.segment[0]) -- End: $($Segment.segment[1])" -warning -logtype Webview2
                   $synchash.YoutubeWebView2.CoreWebView2.IsMuted = $true
                 }
               }
             }elseif($thisApp.Config.Sponsorblock_ActionType -eq 'Mute' -and $synchash.YoutubeWebView2.CoreWebView2.IsMuted){
-              Write-EZLogs ">>>> Sponsorblock unmuting segment for youtubeid $($Segment.videoId)" -warning
+              Write-EZLogs ">>>> Sponsorblock unmuting segment for youtubeid $($Segment.videoId)" -warning -logtype Webview2
               $synchash.YoutubeWebView2.CoreWebView2.IsMuted = $false
             }
           }catch{
@@ -2703,17 +2720,20 @@ try {
           }
         }elseif(($synchash.WebPlayer_State -eq 0 -or $synchash.WebPlayer_State -eq 99) -and ($synchash.Current_playing_media.Url -notmatch 'tv\.youtube\.com' -and $synchash.Current_playing_media.Type -notmatch 'YoutubeTV' -and !$synchash.WebPlayer_finished_state)){
           Write-EZLogs ">>>> Youtube webplayer $($result.key): $($result.value)" -showtime -logtype Webview2
-          if(($thisApp.config.Auto_Playback -and $synchash.Youtube_WebPlayer_URL -match '\&list=') -and $synchash.WebPlayer_State -eq 99 -or ($synchash.WebPlayer_State -eq 0 -and $synchash.WebPlayer_Continue)){
-            write-ezlogs "| Youtube webplayer is playing a playlist, Auto_Playback is enabled so letting playback continue to next video" -warning -logtype Webview2
-            if($synchash.WebPlayer_State -eq 0 -and $synchash.WebPlayer_Continue){
+          if(($thisApp.config.Auto_Playback -and $synchash.Youtube_WebPlayer_URL -match '\&list=') -and $synchash.WebPlayer_State -eq 99 -or ($synchash.WebPlayer_State -eq 0 -and ($synchash.WebPlayer_Continue -or [DateTime]::Now.Subtract([TimeSpan]::FromSeconds(1)) -lt $synchash.WebPlayer_ContinueTimeStamp))){
+            write-ezlogs "| Youtube webplayer is playing a playlist, Auto_Playback is enabled so letting playback continue to next video - WebPlayer_ContinueTimeStamp: $($synchash.WebPlayer_ContinueTimeStamp)" -warning -logtype Webview2
+            #TODO: Really hacky way to deal with somewhat random race condition where Youtube player state returns 0 multiple times before moving to next video in a playlist
+            if($synchash.WebPlayer_State -eq 0 -and ($synchash.WebPlayer_Continue -or [DateTime]::Now.Subtract([TimeSpan]::FromSeconds(1)) -lt $synchash.WebPlayer_ContinueTimeStamp)){
               $synchash.WebPlayer_Continue = $false
             }else{
               $synchash.WebPlayer_Continue = $true
+              $synchash.WebPlayer_ContinueTimeStamp = [DateTime]::Now
             }
             return
           }else{
             $synchash.Youtube_WebPlayer_title = $null
             $synchash.WebPlayer_Continue = $false
+            $synchash.WebPlayer_ContinueTimeStamp = $Null
             Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop
             if($synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled){
               $synchash.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus = 'Stopped'
@@ -2739,6 +2759,7 @@ try {
           }
         }else{
           $synchash.WebPlayer_Continue = $false
+          $synchash.WebPlayer_ContinueTimeStamp = $Null
         }
       }
       if($result.key -eq 'Playerlabel'){
@@ -2946,6 +2967,7 @@ try {
     }catch{
       Write-EZLogs 'An exception occurred in YoutubeWebView2 WebMessageReceived event' -showtime -catcherror $_
       $synchash.WebPlayer_Continue = $false
+      $synchash.WebPlayer_ContinueTimeStamp = $Null
     }
   }
   $synchash.YoutubeWebView2.Remove_WebMessageReceived($synchash.YoutubeWebView2_WebMessageReceived)
@@ -3867,7 +3889,7 @@ Function Initialize-WebBrowser
             $Youtube = Get-YoutubeUrl -thisApp $thisApp -URL $url
             Write-EZLogs "| Youtube page: $($synchash.WebBrowser_Youtube_URL)" -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
           }
-          if($Youtube.id -and $url -notmatch 'tv\.youtube\.com' -and $url -notmatch 'accounts\.google\.com'){
+          if($Youtube.id -and $url -notmatch 'tv\.youtube\.com' -and $url -notmatch 'accounts\.google\.com' -and $Youtube.Type -ne 'YoutubeChannel'){
             Write-EZLogs "| Youtube id: $($Youtube.id)" -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
             if($thisApp.Config.Enable_Sponsorblock -and $thisApp.Config.Sponsorblock_ActionType){
               $thisApp.SponsorBlock = Get-SponsorBlock -videoId $Youtube.id -actionType $thisApp.Config.Sponsorblock_ActionType
@@ -4211,8 +4233,8 @@ document.addEventListener('click', function (e) {
         }
     });
 "@
-<#          $sender.ExecuteScriptAsync(
-            $webbrowserJavaScript
+          <#          $sender.ExecuteScriptAsync(
+              $webbrowserJavaScript
           )#>
 
           if($youtube_ds.dislikes){
@@ -4643,6 +4665,15 @@ document.addEventListener('click', function (e) {
                                         Write-EZLogs "An exception occurred loading Webbrowser extension: $($Extension | Out-String)" -catcherror $_
                                       }finally{
                                         Add-Webview2Extension -synchash $synchash -thisapp $thisApp -Extensions $Extension
+                                        if($synchash.WebBrowser_url -and $synchash.WebBrowser.Source -ne $synchash.WebBrowser_url){
+                                          Write-EZLogs "[WebBrowser] >>>> Navigating WebBrowser to $($synchash.WebBrowser_url)" -logtype Webview2
+                                          $synchash.WebBrowser.CoreWebView2.Navigate($synchash.WebBrowser_url)
+                                          $synchash.txtUrl.text = $synchash.WebBrowser_url
+                                        }elseif($NavigateUrl -and $synchash.WebBrowser.Source -ne $NavigateUrl){
+                                          Write-EZLogs "[WebBrowser] >>>> Navigating WebBrowser to $NavigateUrl" -logtype Webview2
+                                          $synchash.WebBrowser.CoreWebView2.Navigate($NavigateUrl)
+                                          $synchash.txtUrl.text = $NavigateUrl
+                                        }
                                       }
                                     }
                                   }.GetNewClosure()
@@ -4664,11 +4695,11 @@ document.addEventListener('click', function (e) {
                       $null = $Task.Dispose()
                       $task = $Null
                     }
-                    if($synchash.WebBrowser_url -and $synchash.txtUrl.text -ne $synchash.WebBrowser_url){
+                    if($synchash.WebBrowser_url -and $synchash.WebBrowser.Source -ne $synchash.WebBrowser_url){
                       Write-EZLogs "[WebBrowser] >>>> Navigating WebBrowser to $($synchash.WebBrowser_url)" -logtype Webview2
                       $synchash.WebBrowser.CoreWebView2.Navigate($synchash.WebBrowser_url)
                       $synchash.txtUrl.text = $synchash.WebBrowser_url
-                    }elseif($NavigateUrl -and $synchash.WebBrowser.Source -ne $synchash.txtUrl.text){
+                    }elseif($NavigateUrl -and $synchash.WebBrowser.Source -ne $NavigateUrl){
                       Write-EZLogs "[WebBrowser] >>>> Navigating WebBrowser to $NavigateUrl" -logtype Webview2
                       $synchash.WebBrowser.CoreWebView2.Navigate($NavigateUrl)
                       $synchash.txtUrl.text = $NavigateUrl
@@ -4723,8 +4754,13 @@ document.addEventListener('click', function (e) {
                 $LinkType = $synchashWeak.Target.WebView2_ContextMenuLinkType
                 $SpotifyID = $synchashWeak.Target.WebView2_ContextMenuSpotifyID
                 Write-EZLogs "[WebBrowser] Playlist Name: $($this.Label)"
-                $Playlist = Get-IndexesOf $synchash.all_playlists.Playlist_name -Value $this.Label | & { process {
-                    $synchash.all_playlists[$_]
+                if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+                  $All_Playlists = $synchash.All_Playlists.items
+                }else{
+                  $All_Playlists = $synchash.All_Playlists
+                }
+                $Playlist = Get-IndexesOf $All_Playlists.Playlist_name -Value $this.Label | & { process {
+                    $All_Playlists[$_]
                 }}
                 $Playlist_name = $Playlist.name
                 if($Channel -and $LinkUri -match 'twitch\.tv'){
@@ -4981,7 +5017,7 @@ document.addEventListener('click', function (e) {
                   $currentime = [timespan]::FromSeconds($result.value)
                   $Segment = $thisApp.SponsorBlock | Where-Object {[timespan]::FromSeconds($_.segment[0]) -eq $currentime -or ($currentime -gt [timespan]::FromSeconds($_.segment[0]) -and $currentime -lt [timespan]::FromSeconds($_.segment[0]).add('0:0:0:0.4'))}
                   if($Segment){
-                    Write-EZLogs ">>>> Sponsorblock skipping segment for youtubeid $($thisApp.SponsorBlock.videoId) - Start: $($Segment.segment[0]) -- End: $($Segment.segment[1])" -warning
+                    Write-EZLogs ">>>> Sponsorblock skipping segment for youtubeid $($thisApp.SponsorBlock.videoId) - Start: $($Segment.segment[0]) -- End: $($Segment.segment[1])" -warning -logtype Webview2
                     $YoutubeWebView2_SeekScript = @"
 try {
   var player = document.getElementById('movie_player');
@@ -5048,21 +5084,22 @@ try {
           if($result.key -eq 'targetlink'){
             $Link = $result.value
             Write-EZLogs ">>>> Received webbrowser event for targetlink - source: $($Link)" -warning -logtype Webview2
-<#            if($Link -match 'youtube|youtu\.be|youtube\-nocookie\.com' -and ($Link -match 'v=|\/watch\/|\/v\/|list\=')){
-              try{
+            #TODO: Find way to cancel any navigation after click event, likely need to do in javascript
+            <#            if($Link -match 'youtube|youtu\.be|youtube\-nocookie\.com' -and ($Link -match 'v=|\/watch\/|\/v\/|list\=')){
+                try{
                 $synchash.WebBrowser.Stop()
                 if(-not [string]::IsNullOrEmpty($Link) -and (Test-URL $Link)){
-                  if($Link -match '&t='){
-                    $Link = ($($Link) -split('&t='))[0].trim()
-                  }
-                  Write-EZLogs "[WebBrowser] >>>> Playing Youtube link in Samson: $Link" -showtime -logtype Webview2
-                  Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $Link -PlayOnly -StartPlayback
-                }else{
-                  Write-EZLogs "[WebBrowser] The provided URL is not valid or was not provided! -- $Link" -showtime -warning -logtype Webview2
+                if($Link -match '&t='){
+                $Link = ($($Link) -split('&t='))[0].trim()
                 }
-              }catch{
+                Write-EZLogs "[WebBrowser] >>>> Playing Youtube link in Samson: $Link" -showtime -logtype Webview2
+                Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $Link -PlayOnly -StartPlayback
+                }else{
+                Write-EZLogs "[WebBrowser] The provided URL is not valid or was not provided! -- $Link" -showtime -warning -logtype Webview2
+                }
+                }catch{
                 Write-EZLogs "[WebBrowser] An exception occurred in CustomItemSelected.Add_Click" -showtime -catcherror $_
-              }
+                }
             }#>
           }
         }

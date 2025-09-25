@@ -2,6 +2,43 @@
 
 ## [Unreleased]
 
+## 1.0.6 - PUBLIC
+> - Branch: Samson
+
+### Added
++ Ability to search and filter custom playlists
+  + Search textbox added to playlist toolbar
+  + Will filter against playlist and media title, artist, album or channel name
+  + Currently if any media in a playlist matches the search, the whole playlist is returned
+  + Filtering/returning only matched media within playlists to be implemented...eventually
+  + Returns results as you type but going too fast may not process or miss a character. Will improve
++ Context menu option `Browse Youtube Channel` for YT media - navigates to channel page via in-app browser
++ First iteration of TMDB lookups of local media files via Get-TMDB module
+  + Very WIP. Use context menu option `Lookup on TMDB` available only on local media files
+  + Currently no real UI feedback after selecting other than media info like title may update if found
+  + Requires a TMDB account and API token configured in `\Resources\API\TMDB-API-Config.xml`
++ `Quick Settings` context menu to access various common options without needing to open full settings window
+  + Access via right-click anywhere on MiniPlayer skin or tray icon
+
+### Changes
++ Updated API setup documentation and in-app help logic
++ `Add to Play Queue` menu option now also available at first level and `Add Selected to` submenu levels
++ Updated `PSSerializedXML` and `EZT-MediaPlayer` classes to support TMDB lookups feature
++ Implemented `ObservableCollectionView` to allow filtering and ordering for custom playlists
++ Various minor UI formatting and style changes
++ Updated included Ublock Origin extension to latest version
++ Various logging, code and comment cleanup and refactoring
++ README, CREDITS and CODECOUNT updates
+
+### Fixed
++ Webbrowser can fail to load default page on first startup after installing extensions
++ Unable to drag/drop items from library to playlists
++ Some native PS cmdlets fail when running in restricted runspaces
++ Youtube web player state returns 0 (stop) multiple times before moving to next video in a playlist
+
+### Comments
++ Will NOT trigger first time setup when upgrading
+
 ## 1.0.5 - PUBLIC
 > - Branch: Samson
 

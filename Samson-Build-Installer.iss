@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Samson"
-#define MyAppVersion "1.0.5"
+#define MyAppVersion "1.0.6"
 #define MyAppBuild "PUBLIC"
 #define Arguments ""
 #define MyAppPublisher "EZTechhelp"
@@ -48,7 +48,7 @@ BackColor=$FF0000
 BackColor2=$FF0000
 ShowTasksTreeLines=true
 AppendDefaultDirName=no
-LicenseFile=.\License.txt
+LicenseFile=.\LICENSE
 UserInfoPage=no
 DisableWelcomePage=No
 RestartIfNeededByRun=No

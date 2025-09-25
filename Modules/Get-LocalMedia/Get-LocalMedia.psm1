@@ -487,7 +487,10 @@ function Get-LocalMedia
                 if(($synchash.All_local_Media.SourceDirectory.indexof("$_".ToUpper()) -eq -1 -and $synchash.All_local_Media.SourceDirectory.indexof("$_".ToLower()) -eq -1)){
                   $_
                 }
-            }} | Select-Object -Unique
+            }}
+            if($directories -as [System.Collections.Generic.IEnumerable[System.Object]]){
+              $directories = [System.Linq.Enumerable]::Distinct([System.Collections.Generic.IEnumerable[System.Object]]$directories)
+            }    
           }
           write-ezlogs "[Get-LocalMedia] | New directories not already included in media library: Count $($directories.count)" -showtime -logtype LocalMedia
         }catch{
@@ -1013,17 +1016,32 @@ function Update-Media
     $all_Playlists,
     $UpdateDirectory,
     $UpdateMedia,
-    [switch]$SkipGetMedia
+    [switch]$SkipGetMedia,
+    [switch]$TMDBLookup
   )
   try{
     if(!$NoTagScan){
       $songinfo = Get-SongInfo -path $($InputObject.url) #-use_FFPROBE_Fallback
     }
-    if($songinfo){
-      if($songinfo.Artist -ne $Null -and $songinfo.Artist -ne '' -and $InputObject.artist -ne $songinfo.Artist){
+    if($TMDBLookup){
+      try{
+        $TMDB = Get-TMDB -FilePath $InputObject.url -ParseTorName
+        $TMDBCount = @($TMDB).count
+      }catch{
+        write-ezlogs "An exception occurred executing Get-TMDB" -CatchError $_
+      }
+    }
+    if($songinfo -or $TMDBCount -eq 1){
+      if($TMDBCount -eq 1 -and $Null -ne $Tmdb.ShowName -and $Tmdb.ShowName -ne '' -and $InputObject.artist -ne $Tmdb.ShowName){
+        $InputObject.artist = [Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase($Tmdb.ShowName)
+      }elseif($songinfo.Artist -ne $Null -and $songinfo.Artist -ne '' -and $InputObject.artist -ne $songinfo.Artist){
         $InputObject.artist = [Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase($songinfo.Artist)
       }
-      if($Songinfo.title -ne $Null -and $Songinfo.title -ne '' -and $InputObject.title -ne $Songinfo.title){
+      if($TMDBCount -eq 1 -and $Null -ne $Tmdb.Name -and $Tmdb.Name -ne '' -and $InputObject.title -ne $Tmdb.Name){
+        $InputObject.title = $Tmdb.Name
+      }elseif($TMDBCount -eq 1 -and $Null -ne $Tmdb.title -and $Tmdb.title -ne '' -and $InputObject.title -ne $Tmdb.title){
+        $InputObject.title = $Tmdb.title
+      }elseif($Songinfo.title -ne $Null -and $Songinfo.title -ne '' -and $InputObject.title -ne $Songinfo.title){
         $InputObject.title = $Songinfo.title
       }
       if($songinfo.duration -ne $null -and $songinfo.duration -ne ''){
@@ -1057,6 +1075,23 @@ function Update-Media
       if($InputObject.Track -ne $Songinfo.tracknumber){
         $InputObject.Track = $Songinfo.tracknumber
       }
+      if($TMDBCount -eq 1 -and $Tmdb.SeasonNumber -and $InputObject.Season -ne $Tmdb.SeasonNumber){
+        $InputObject.Season = $Tmdb.SeasonNumber
+        $MediaType = 'TvShow'
+      }
+      if($TMDBCount -eq 1 -and $Tmdb.EpisodeNumber -and $InputObject.Episode -ne $Tmdb.EpisodeNumber){
+        $InputObject.Episode = $Tmdb.EpisodeNumber
+        $MediaType = 'TvShow'
+      }
+      if($TMDBCount -eq 1 -and $Tmdb.Overview -and $InputObject.description -ne $Tmdb.Overview){
+        $InputObject.description = $Tmdb.Overview
+      }
+      if($TMDBCount -eq 1 -and $Tmdb.StillPath -and $null -eq $InputObject.Image){
+        $InputObject.Image = "https://image.tmdb.org/t/p/w780/$($Tmdb.StillPath)"
+      }elseif($TMDBCount -eq 1 -and $Tmdb.PosterPath -and $null -eq $InputObject.Image){
+        $InputObject.Image = "https://image.tmdb.org/t/p/w780/$($Tmdb.PosterPath)"
+        $MediaType = 'Movie'
+      }
       if($InputObject.Album -ne $songinfo.album){
         $InputObject.Album = $songinfo.album
       }
@@ -1070,7 +1105,10 @@ function Update-Media
         $InputObject.Size = $Songinfo.Length
       }
       if($thisApp.Config.LocalMedia_Display_Syntax -ne $null -and $InputObject.Display_Name -eq $null){
-        $InputObject.Display_Name = $($thisApp.Config.LocalMedia_Display_Syntax -replace '%artist%',$InputObject.artist -replace '%title%',$InputObject.title -replace '%track%',$InputObject.Track -replace '%album%',$InputObject.Album)
+        $InputObject.Display_Name = $($thisApp.Config.LocalMedia_Display_Syntax -replace '%artist%',$InputObject.artist -replace '%title%',$InputObject.title -replace '%track%',$InputObject.Track -replace '%album%',$InputObject.Album -replace '%episode%',$InputObject.Episode -replace '%season%',$InputObject.Season)
+      }
+      if($MediaType -and $InputObject.MediaType -ne $MediaType){
+        $InputObject.MediaType = $MediaType
       }
       $songinfo = $Null
     }
@@ -1173,6 +1211,7 @@ function Update-LocalMedia
     $UpdateMedia,
     [switch]$SkipGetMedia,
     [switch]$use_runspace,
+    [switch]$TMDBLookup,
     [switch]$VerboseLog = $thisApp.config.Verbose_logging
   )
   $media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)avi|(?i)wmv|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mov|(?i)h264|(?i)mpeg|(?i)mpg4|(?i)movie|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))')
@@ -1185,6 +1224,7 @@ function Update-LocalMedia
     $UpdateDirectory = $UpdateDirectory
     $UpdateMedia = $UpdateMedia
     $UpdatePlaylists = $UpdatePlaylists
+    $TMDBLookup = $TMDBLookup
     try{
       Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\Write-EZLogs\Write-EZLogs.psm1" -NoClobber -DisableNameChecking -Scope Local
       Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\Set-WPFControls\Set-WPFControls.psm1" -NoClobber -DisableNameChecking -Scope Local
@@ -1192,6 +1232,9 @@ function Update-LocalMedia
       Import-module -Name "$($thisApp.Config.Current_Folder)\Modules\Get-HelperFunctions\Get-HelperFunctions.psm1" -NoClobber -DisableNameChecking -Scope Local
       Import-module -Name "$($thisApp.Config.Current_Folder)\Modules\PSParallel\PSParallel.psd1" -NoClobber -DisableNameChecking -Scope Local
       Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\PSSerializedXML\PSSerializedXML.psm1" -NoClobber -DisableNameChecking -Scope Local
+      if($TMDBLookup){
+        Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\Get-TMDB\Get-TMDB.psm1" -NoClobber -DisableNameChecking -Scope Local
+      }
       if($synchash.All_local_Media.count -gt 0){
         $AllMedia_Profile_Directory_Path = [System.IO.Path]::Combine($thisApp.Config.Media_Profile_Directory,"All-MediaProfile")
         $AllMedia_Profile_File_Path = [System.IO.Path]::Combine($AllMedia_Profile_Directory_Path,"All-Media-Profile.xml")
@@ -1209,6 +1252,12 @@ function Update-LocalMedia
                 $synchash.All_local_Media[$_]
             }}
           }
+          if(!$media_to_Update){
+            Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\Get-MediaProfile\Get-MediaProfile.psm1" -NoClobber -DisableNameChecking -Scope Local
+            $media_to_Update = foreach($Media in $UpdateMedia){
+              Get-MediaProfile -thisApp $thisApp -synchash $synchash -Media_ID $Media.id
+            }
+          }
         }else{
           write-ezlogs ">>>> Updating all local media"
           $media_to_Update = $synchash.All_local_Media
@@ -1221,11 +1270,19 @@ function Update-LocalMedia
         $synchash.UpdateMediaCount = 0
         Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'MediaTable_RefreshProgress_Label' -Property 'Text' -value "[$($synchash.UpdateMediaCount)/$($TotalCount)]"
         if($media_to_Update){
-          if($UpdatePlaylists -and $synchash.all_playlists){
-            if($synchash.all_playlists -isnot [System.Collections.Generic.List[Playlist]]){
-              $all_Playlists = $synchash.all_playlists | ConvertTo-Playlists -List
+          if($UpdatePlaylists){
+            if($synchash.all_playlists.IsTracking){
+              Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'all_playlists' -Property 'IsTracking' -value $false
+            }
+            if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+              $All_Playlists = $synchash.All_Playlists.items
             }else{
-              $all_Playlists = [System.Collections.Generic.List[Playlist]]::new($synchash.all_playlists)
+              $All_Playlists = $synchash.All_Playlists
+            }
+            if($All_Playlists -isnot [System.Collections.Generic.List[Playlist]]){
+              $all_Playlists = $All_Playlists | ConvertTo-Playlists -List
+            }else{
+              $all_Playlists = [System.Collections.Generic.List[Playlist]]::new($All_Playlists)
             }
           }
           if([int]$env:NUMBER_OF_PROCESSORS -le 4){
@@ -1234,7 +1291,7 @@ function Update-LocalMedia
             $Thottle = [int]$env:NUMBER_OF_PROCESSORS
           }
           $media_to_Update | & { process {if($_.url -and ([System.IO.Path]::HasExtension($_.url))){$_}}} | Invoke-Parallel -NoProgress -ThrottleLimit ($Thottle) {
-            Update-Media -InputObject $_ -synchash $synchash -thisapp $thisApp -all_Playlists $all_Playlists -TotalCount $TotalCount -UpdatePlaylists:$UpdatePlaylists -update_Library:$update_Library -UpdateMedia:$UpdateMedia -UpdateDirectory:$UpdateDirectory -NoTagScan:$NoTagScan
+            Update-Media -InputObject $_ -synchash $synchash -thisapp $thisApp -all_Playlists $all_Playlists -TotalCount $TotalCount -UpdatePlaylists:$UpdatePlaylists -update_Library:$update_Library -UpdateMedia:$UpdateMedia -UpdateDirectory:$UpdateDirectory -NoTagScan:$NoTagScan -TMDBLookup:$TMDBLookup
           }
           if($AllMedia_Profile_File_Path){
             write-ezlogs ">>>> Exporting All Media Profile cache to file $($AllMedia_Profile_File_Path)" -showtime -color cyan -logtype LocalMedia -LogLevel 3
@@ -1243,7 +1300,8 @@ function Update-LocalMedia
           if($UpdatePlaylists -and $all_Playlists){
             Export-SerializedXML -InputObject $all_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
             Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\Get-Playlists\Get-Playlists.psm1" -NoClobber -DisableNameChecking -Scope Local
-            Get-Playlists -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -use_Runspace -Import_Playlists_Cache -Quick_Refresh
+            Update-Playlists -synchash $synchash -thisApp $thisapp -use_Runspace -Import_Playlists_Cache -Quick_Refresh -GetPlaylists
+            #Get-Playlists -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -use_Runspace -Import_Playlists_Cache -Quick_Refresh
             [void]$all_Playlists.clear()
             $all_Playlists = $Null
           }
@@ -1285,7 +1343,7 @@ function Update-LocalMedia
     }
   }
   $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
-  Start-Runspace -scriptblock $update_LocalMedia_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'update_LocalMedia_Runspace' -thisApp $thisApp -synchash $synchash -CheckforExisting -RestrictedRunspace -PSProviders 'Function','Registry','Environment','FileSystem','Variable'
+  Start-Runspace -scriptblock $update_LocalMedia_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'update_LocalMedia_Runspace' -thisApp $thisApp -synchash $synchash -CheckforExisting -RestrictedRunspace -PSProviders 'Function','Registry','Environment','FileSystem','Variable' -modules_list 'Microsoft.PowerShell.Utility'
   $update_LocalMedia_scriptblock = $Null
   $Variable_list = $Null
 }

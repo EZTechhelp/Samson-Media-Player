@@ -1224,6 +1224,11 @@ function Update-TwitchStatus
         }
       }
       try{
+        if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+          $All_Playlists = $synchash.All_Playlists.items
+        }else{
+          $All_Playlists = $synchash.All_Playlists
+        }
         if([System.IO.File]::Exists($AllTwitch_Media_Profile_File_Path) -or [System.IO.File]::Exists($thisApp.Config.Playlists_Profile_Path)){
           if($CheckAll){
             if($syncHash.All_Twitch_Media.count -gt 0){
@@ -1231,8 +1236,8 @@ function Update-TwitchStatus
             }elseif([System.IO.File]::Exists($AllTwitch_Media_Profile_File_Path)){
               if($Verboselog){write-ezlogs "[Get-TwitchStatus] | Importing Twitch Media Profile: $AllTwitch_Media_Profile_File_Path" -logtype Twitch -VerboseDebug:$Verboselog}
               $Available_Twitch_Media = Import-SerializedXML -Path $AllTwitch_Media_Profile_File_Path
-            }elseif($synchash.all_playlists.playlist_tracks){
-              $Available_Twitch_Media = $synchash.all_playlists.playlist_tracks.values | & { process {if ($_.url -match 'twitch.tv'){$_}}}
+            }elseif($All_Playlists.playlist_tracks){
+              $Available_Twitch_Media = $All_Playlists.playlist_tracks.values | & { process {if ($_.url -match 'twitch.tv'){$_}}}
             }
           }elseif($media){
             $Available_Twitch_Media = $media
@@ -1254,11 +1259,6 @@ function Update-TwitchStatus
           if(!($TwitchData)){
             write-ezlogs "[Get-TwitchStatus] Unable to get TwitchData, cannot continue. Check logs for more details!" -warning -logtype Twitch -LogLevel 2
             return
-          }
-          if($synchash.all_playlists.count -gt 0){
-            $all_Playlists = $synchash.all_playlists
-          }elseif($synchash.all_playlists.SourceCollection.count -gt 0){
-            $all_Playlists = $synchash.all_playlists.SourceCollection
           }
           $changes = 0
           $synchash.Twitch_status_changes = $Null
@@ -1283,6 +1283,9 @@ function Update-TwitchStatus
                 if($all_Playlists.Playlist_tracks.values.url){
                   $Playlist_index = $all_Playlists.Playlist_tracks.values.url.IndexOf($twitchmedia.url)
                   if($Playlist_index -ne -1){
+                    if($synchash.all_playlists.IsTracking){
+                      Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'all_playlists' -Property 'IsTracking' -value $false
+                    }
                     $playlist_track = $all_Playlists.Playlist_tracks.values[$Playlist_index]
                   }
                 }
@@ -1364,8 +1367,12 @@ function Update-TwitchStatus
                       $Message = "Twitch Channel '$twitch_channel' is now $twitch_status!`nPlaying: $($TwitchAPI.game_name)$TimeLive"
                       if($TwitchAPI.profile_image_url){
                         $applogo = $TwitchAPI.profile_image_url
-                      }elseif($twitchmedia.profile_image_url){
-                        $applogo = $($twitchmedia.profile_image_url | Select-Object -First 1)
+                      }elseif($twitchmedia.profile_image_url){                       
+                        if($twitchmedia.profile_image_url.count -gt 1){
+                          $applogo = [System.Linq.Enumerable]::First($twitchmedia.profile_image_url)
+                        }else{
+                          $applogo = $twitchmedia.profile_image_url
+                        }                        
                       }else{
                         $applogo = "$($thisApp.Config.Current_folder)\Resources\Twitch\Material-Twitch.png"
                       }
@@ -1490,7 +1497,10 @@ function Update-TwitchStatus
               }else{
                 Export-SerializedXML -InputObject $synchash.All_Twitch_Media -Path $AllTwitch_Media_Profile_File_Path
               }
-              Export-SerializedXML -InputObject $synchash.all_playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
+              Export-SerializedXML -InputObject $all_playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
+              if($synchash.all_playlists -is [MyToolkit.ObservableCollectionView[Playlist]] -and !$synchash.all_playlists.IsTracking){
+                Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'all_playlists' -Property 'IsTracking' -value $true
+              }
               if($synchash.update_Queue_timer -and !$synchash.update_Queue_timer.isEnabled){
                 $synchash.update_Queue_timer.Tag = 'UpdateQueue'
                 $synchash.update_Queue_timer.start()
@@ -1597,7 +1607,9 @@ function Get-TwitchStatus
                 [switch]$Force
               )
               try{
-                $checktwitch_stopwatch = [system.diagnostics.stopwatch]::StartNew()
+                if($Verboselog -or $thisApp.Config.Dev_mode){
+                  $checktwitch_stopwatch = [system.diagnostics.stopwatch]::StartNew()
+                }
                 Update-TwitchStatus @PSBoundParameters
               }catch{
                 write-ezlogs "An exception occurred in checktwitch_scriptblock" -catcherror $_
@@ -1607,7 +1619,7 @@ function Get-TwitchStatus
                   write-ezlogs ">>>> Get-TwitchStatus Measure" -PerfTimer $checktwitch_stopwatch -Perf -logtype Twitch
                   $GetTwitch_stopwatch = $Null
                 }
-                if($thisApp.Config.Dev_mode){
+                if($Verboselog -or $thisApp.Config.Dev_mode){
                   [void][ScriptBlock].GetMethod('ClearScriptBlockCache', [System.Reflection.BindingFlags]'Static,NonPublic').Invoke($Null, $Null)
                   write-ezlogs ('Memory: {0:n1} MB' -f $([System.GC]::GetTotalMemory($true) / 1MB)) -logtype Twitch -Dev_mode
                 }
@@ -1772,10 +1784,15 @@ function Get-Twitch
   $TwitchData = Get-TwitchAPI -StreamName $twitch_Streams -thisApp $thisApp
   $total_channels = @($Twitch_URLs).count
   $synchash.processed_Twitch_Channels = 0
-  if($synchash.all_playlists -and $synchash.all_playlists -isnot [System.Collections.Generic.List[Playlist]]){
-    $synchash.Temp_all_Playlists = $synchash.all_playlists | ConvertTo-Playlists -List
-  }elseif($synchash.all_playlists){
-    $synchash.Temp_all_Playlists = [System.Collections.Generic.List[Playlist]]::new($synchash.all_playlists)
+  if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+    $All_Playlists = $synchash.All_Playlists.items
+  }else{
+    $All_Playlists = $synchash.All_Playlists
+  }
+  if($All_Playlists -and $All_Playlists -isnot [System.Collections.Generic.List[Playlist]]){
+    $synchash.Temp_all_Playlists = $All_Playlists | ConvertTo-Playlists -List
+  }elseif($All_Playlists){
+    $synchash.Temp_all_Playlists = [System.Collections.Generic.List[Playlist]]::new($All_Playlists)
   }
   foreach($channel in $Twitch_URLs){
     try{
@@ -2073,7 +2090,8 @@ function Get-Twitch
     }
     $synchash.Temp_TwitchPlaylist_to_Save = $null
     [void]$synchash.Remove('Temp_TwitchPlaylist_to_Save')
-    Get-Playlists -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -use_Runspace -Import_Playlists_Cache
+    Update-Playlists -synchash $synchash -thisApp $thisapp -use_Runspace -Import_Playlists_Cache -GetPlaylists
+    #Get-Playlists -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -use_Runspace -Import_Playlists_Cache
   }
   if($GetTwitch_stopwatch){
     $GetTwitch_stopwatch.stop()
@@ -2139,10 +2157,10 @@ function Start-TwitchChatReplay
         $outputjson = [system.io.path]::Combine($OutputPath,$Outputtjsonname)
         $OutputTextFile = [system.io.path]::Combine($OutputPath,"$VideoID.txt")
         if([system.io.file]::Exists($outputjson)){
-          $Null = Remove-Item -Path $outputjson -Force -ErrorAction SilentlyContinue
+          [void][system.io.file]::Delete($outputjson)
         }
         if([system.io.file]::Exists($OutputTextFile)){
-          $Null = Remove-Item -Path $OutputTextFile -Force -ErrorAction SilentlyContinue
+          [void][system.io.file]::Delete($OutputTextFile)
         }
         $null = RechatTool.exe -D $VideoID $outputjson -o
 
@@ -2167,11 +2185,9 @@ function Start-TwitchChatReplay
 
         # Initialize message index
         $synchash.TwitchChatReplayIndex = 0
-
         $thisApp.TwitchChatReplayEnabled = $true
         $jobs = [System.WeakReference]::new($thisApp.Jobs.clone(),$false).Target
         $waithandle = $jobs[$($jobs.Name.IndexOf('TwitchChatReplay_RUNSPACE'))]
-
         do
         {
           try{
@@ -2209,11 +2225,11 @@ function Start-TwitchChatReplay
         $thisApp.TwitchChatReplayEnabled = $false
         Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'Comments_Progress_Ring' -Property 'IsActive' -value $false
         if([system.io.file]::Exists($outputjson)){
-          $Null = Remove-Item -Path $outputjson -Force -ErrorAction SilentlyContinue
+          [void][system.io.file]::Delete($outputjson)
         }
         if([system.io.file]::Exists($OutputTextFile)){
-          write-ezlogs "| Removing Rechat output text file: $outputjson"
-          $Null = Remove-Item -Path $OutputTextFile -Force -ErrorAction SilentlyContinue
+          write-ezlogs "| Removing Rechat output text file: $OutputTextFile"
+          [void][system.io.file]::Delete($OutputTextFile)
         }
       }
     }

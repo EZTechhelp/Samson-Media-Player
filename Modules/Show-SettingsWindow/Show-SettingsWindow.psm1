@@ -4388,7 +4388,7 @@ function Show-SettingsWindow{
                 }
                 if($secretstore){
                   write-ezlogs ">>>> Removing stored Spotify authentication secrets from vault: $($secretstore.name)" -showtime -warning -logtype Setup
-                  foreach($secret in $hashsetup.valid_secrets | where {$_ -match 'Spoty'}){
+                  foreach($secret in $hashsetup.valid_secrets | Where-Object {$_ -match 'Spoty'}){
                     $secret_info = Get-SecretInfo -Filter $secret -VaultName $thisApp.config.App_Name -ErrorAction SilentlyContinue
                     if($secret_info.Name -eq $secret){
                       try{
@@ -9516,8 +9516,13 @@ function Update-Settings {
                 $hashsetup.Install_Spotify_Toggle.isEnabled = $true
               }
               try{
-                if($synchash.all_playlists){
-                  foreach($playlist in $synchash.all_playlists){
+                if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+                  $All_Playlists = $synchash.All_Playlists.items
+                }else{
+                  $All_Playlists = $synchash.All_Playlists
+                }
+                if($All_Playlists){
+                  foreach($playlist in $All_Playlists){
                     if(($playlist.gettype()).name -eq 'ArrayList'){
                       $playlist = $playlist | select *
                     }
@@ -9947,10 +9952,15 @@ function Update-Settings {
                   }
                 }
                 try{
-                  if($synchash.all_playlists){
-                    foreach($playlist in $synchash.all_playlists){
+                  if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+                    $All_Playlists = $synchash.All_Playlists.items
+                  }else{
+                    $All_Playlists = $synchash.All_Playlists
+                  }
+                  if($All_Playlists){
+                    foreach($playlist in $All_Playlists){
                       if(($playlist.gettype()).name -eq 'ArrayList'){
-                        $playlist = $playlist | select *
+                        $playlist = $playlist | Select-Object *
                       }
                       if($playlist.PlayList_tracks.values){
                         $PlayList_tracks = $playlist.PlayList_tracks.values.where({$_.Playlist_URL -match 'youtu\.be' -or $_ -match 'youtube\.com'})

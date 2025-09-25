@@ -44,21 +44,24 @@ static void RunPowershell(string[] args)
         Directory.CreateDirectory(logdirectory);
     }
     sb.Append($"\n[{DateTime.Now}]#### Starting Launcher for Samson Media Player ####");
-    
-    RegistryKey key = Registry.LocalMachine.OpenSubKey("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{4C8E33BE-7E0A-4970-A7EC-B70180A6CD8E}_is1");
-    if (key != null)
+
+    using (RegistryKey key = Registry.LocalMachine.OpenSubKey("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{4C8E33BE-7E0A-4970-A7EC-B70180A6CD8E}_is1"))
     {
-        object objRegisteredValue = key.GetValue("InstallLocation");
-        if (objRegisteredValue != null) {
-            installfolder = objRegisteredValue.ToString();
-            installpath = $"{installfolder}Samson.ps1";
-        }    
-        key.Dispose();
-    }
-    else
-    {
-        installfolder = System.IO.Directory.GetCurrentDirectory();
-        installpath = $"{installfolder}\\Samson.ps1";
+        if (key != null)
+        {
+            object objRegisteredValue = key.GetValue("InstallLocation");
+            if (objRegisteredValue != null)
+            {
+                installfolder = objRegisteredValue.ToString();
+                installpath = $"{installfolder}Samson.ps1";
+            }
+            key.Dispose();
+        }
+        else
+        {
+            installfolder = System.IO.Directory.GetCurrentDirectory();
+            installpath = $"{installfolder}\\Samson.ps1";
+        }
     }
 
     if (File.Exists(installpath))
@@ -70,7 +73,7 @@ static void RunPowershell(string[] args)
         else
         {
             PSPath = PS5;
-        }       
+        }
         arguments = $"-NoProfile -ExecutionPolicy Bypass -windowstyle hidden -NoLogo -file \"{installpath}\"";
         foreach (string arg in args)
         {

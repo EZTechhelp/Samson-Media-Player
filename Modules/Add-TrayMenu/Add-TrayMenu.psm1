@@ -139,6 +139,414 @@ function Add-TrayMenu
           write-ezlogs "An exception occurred in VideoView_Command routed event" -showtime -catcherror $_
         }
       }
+      [System.Windows.RoutedEventHandler]$synchash.QuickSettings_Command = {
+        param($sender)
+        try{       
+          switch($sender.Header)
+          {
+            'Start on Windows Login' {
+              if(!$sender.isChecked){
+                Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: false"
+                $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine', 'Default')
+                foreach ($keyName in $Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\").GetSubKeyNames()) {
+                  if($Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$keyName").GetValue('DisplayName') -match $($thisApp.Config.App_Name)){
+                    $install_folder = $Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$keyName").GetValue('InstallLocation')
+                  }
+                }
+                if(!$install_folder){
+                  $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser', 'Default')
+                  foreach ($keyName in $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\").GetSubKeyNames()) {
+                    if($Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$keyName").GetValue('DisplayName') -match $($thisApp.Config.App_Name)){
+                      $install_folder = $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$keyName").GetValue('InstallLocation')
+                    }
+                  }
+                }
+                [void]$Registry.Dispose()
+                if([System.IO.Directory]::Exists($install_folder)){
+                  $Main_exe = [System.IO.Path]::Combine($install_folder,"$($thisApp.Config.App_Name).exe")
+                  if([System.IO.File]::Exists($Main_exe)){
+                    $thisapp.config.Start_On_Windows_Login = $true
+                    $thisapp.config.App_Exe_Path = $Main_exe
+                    $sender.isChecked = $true
+                    if([System.IO.File]::Exists((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')."$($thisApp.Config.App_Name)")){
+                      write-ezlogs "[Quick Settings] The app $($thisApp.Config.App_Name) is already configured to start on Windows logon" -Warning
+                    }else{
+                      try{
+                        New-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -Name $($thisApp.Config.App_Name) -Value $Main_exe -Force -ErrorAction SilentlyContinue
+                        if([System.IO.File]::Exists((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')."$($thisApp.Config.App_Name)")){
+                          write-ezlogs "[Quick Settings] The app $($thisApp.Config.App_Name) has been successfully configured to start automatically upon logon to Windows (current user)" -Success
+                        }else{
+                          write-ezlogs "[Quick Settings] Unable to verify if $($thisApp.Config.App_Name) was successfully configured to start automatically upon logon to Windows (current user) - List of current user Run reg entries $((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run') | out-string)" -Warning
+                        }
+                      }catch{
+                        write-ezlogs "[Quick Settings] An exception occurred attempting to create startup entry for exe path $($Main_exe)" -CatchError $_
+                        $thisapp.config.Start_On_Windows_Login = $false
+                        $sender.isChecked = $false
+                        return
+                      }
+                    }
+                  }else{
+                    $thisapp.config.Start_On_Windows_Login = $false
+                    $sender.isChecked = $false
+                    write-ezlogs "Can't enable option 'Start on Windows Login'. Could not find main exe file for $($thisApp.Config.App_Name) in folder ($install_folder)" -Warning -AlertUI
+                    if([System.IO.File]::Exists((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')."$($thisApp.Config.App_Name)")){
+                      try{
+                        Remove-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -Name $($thisApp.Config.App_Name) -Force
+                        write-ezlogs "[Quick Settings] Removed app $($thisApp.Config.App_Name) from starting on Windows logon." -Warning
+                      }catch{
+                        write-ezlogs "[Quick Settings] An exception occurred attempting to remove startup entry for: $($thisApp.Config.App_Name)" -CatchError $_
+                      }
+                    }
+                    return
+                  }
+                }else{
+                  write-ezlogs "Can't enable option 'Start on Windows Login'. Could not find app install folder ($install_folder)" -Warning -AlertUI
+                  $thisapp.config.Start_On_Windows_Login = $false
+                  $sender.isChecked = $false
+                  if([System.IO.File]::Exists((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')."$($thisApp.Config.App_Name)")){
+                    try{
+                      Remove-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -Name $($thisApp.Config.App_Name) -Force
+                      $thisapp.config.Start_On_Windows_Login = $false
+                      write-ezlogs "[Quick Settings] Removed app $($thisApp.Config.App_Name) from starting on Windows logon" -Warning
+                    }catch{
+                      write-ezlogs "[Quick Settings] An exception occurred attempting to remove startup entry for: $($thisApp.Config.App_Name)" -CatchError $_
+                    }
+                  }
+                }
+              }else{
+                Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: true"
+                $Sender.isChecked = $false
+                $thisapp.config.Start_On_Windows_Login = $false
+                if([System.IO.File]::Exists((Get-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run')."$($thisApp.Config.App_Name)")){
+                  try{
+                    write-ezlogs ">>>> Disabling setting: $($sender.Header)"
+                    Remove-ItemProperty -Path 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -Name $($thisApp.Config.App_Name) -Force -ErrorAction SilentlyContinue
+                    write-ezlogs "[Quick Settings] Removed app $($thisApp.Config.App_Name) from starting on Windows logon." -Success
+                  }catch{
+                    write-ezlogs "[Quick Settings] An exception occurred attempting to remove startup entry for: $($thisApp.Config.App_Name)" -CatchError $_
+                  }
+                }else{
+                  write-ezlogs "[Quick Settings] The app $($thisApp.Config.App_Name) is not configured to start on Windows logon."
+                }
+              }
+            }
+            'Start As MiniPlayer' {
+              if($Sender.isChecked){
+                $thisApp.Config.Start_Mini_only = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Start_Mini_only = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Use Hardware Acceleration' {
+              if($Sender.isChecked){
+                $thisApp.Config.Use_HardwareAcceleration = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Use_HardwareAcceleration = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Auto Open/Close Video Player' {
+              if($Sender.isChecked){
+                $thisApp.Config.Open_VideoPlayer = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Open_VideoPlayer = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Remember Playback Progress' {
+              if($Sender.isChecked){
+                $thisApp.Config.Remember_Playback_Progress = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Remember_Playback_Progress = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Enable Audio Visualizations' {
+              if($Sender.isChecked){
+                $thisApp.Config.Use_Visualizations = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Use_Visualizations = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Enable Discord Integration' {
+              if(!$Sender.isChecked){
+                $Sender.isChecked = $true
+                $thisApp.config.Discord_Integration = $true
+                if($synchash.Current_playing_media -and $synchash.DSClientTimer){
+                  try{
+                    Set-DiscordPresense -synchash $synchash -media $synchash.Current_playing_media -thisapp $thisApp -start -Startup
+                  }catch{
+                    write-ezlogs "An exception occurred executing Set-DiscordPresence" -showtime -catcherror $_
+                  }
+                }
+              }else{
+                try{
+                  $Sender.isChecked = $false
+                  $thisApp.config.Discord_Integration = $false
+                  Set-DiscordPresense -synchash $synchash -thisapp $thisApp -stop -runspace
+                }catch{
+                  write-ezlogs "An exception occurred executing Set-DiscordPresence" -showtime -catcherror $_
+                }
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Skip Duplicates' {
+              if($Sender.isChecked){
+                $thisApp.Config.LocalMedia_SkipDuplicates = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.LocalMedia_SkipDuplicates = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Monitor Local Paths' {
+              if($Sender.isChecked){
+                $thisApp.Config.Enable_LocalMedia_Monitor = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Enable_LocalMedia_Monitor = $true
+                $Sender.isChecked = $true
+              }
+              if($thisApp.Config.Enable_LocalMedia_Monitor -and $thisApp.Config.Media_Directories -and (!$thisApp.ProfileManagerEnabled -or !$thisApp.LocalMedia_Monitor_Enabled)){
+                $thisApp.Config.Media_Directories | & { process {
+                    Start-FileWatcher -FolderPath $_ -MonitorSubFolders -use_Runspace -Start_ProfileManager:$(!$thisApp.ProfileManagerEnabled) -synchash $synchash -thisApp $thisApp -Runspace_Guid (New-GUID).Guid
+                }}
+              }elseif(!$thisApp.Config.Enable_LocalMedia_Monitor -and ($thisApp.ProfileManagerEnabled -or $thisApp.LocalMedia_Monitor_Enabled)){
+                Stop-FileWatcher -thisApp $thisApp -synchash $synchash -use_Runspace -Stop_ProfileManager -force
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Auto Sync Spotify Playlists' {
+              if($Sender.isChecked){
+                $thisApp.Config.Spotify_Update = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Spotify_Update = $true
+                $Sender.isChecked = $true
+              }
+              if($thisapp.config.Spotify_Update -and -not [string]::IsNullOrEmpty($thisapp.config.Spotify_Update_Interval) -and $thisapp.config.Spotify_Update_Interval -ne 'On Startup'){
+                try{
+                  Start-SpotifyMonitor -Interval $thisapp.config.Spotify_Update_Interval -thisApp $thisapp -synchash $synchash -Verboselog
+                }catch{
+                  write-ezlogs 'An exception occurred in Start-SpotifyMonitor' -catcherror $_
+                }
+              }elseif($thisApp.SpotifyMonitorEnabled -and (!$thisapp.config.Spotify_Update -or [string]::IsNullOrEmpty($thisapp.config.Spotify_Update_Interval)) -and $thisapp.config.Spotify_Update_Interval -ne 'On Startup'){
+                try{
+                  $thisApp.SpotifyMonitorEnabled = $false
+                }catch{
+                  write-ezlogs 'An exception occurred in Start-SpotifyMonitor' -catcherror $_
+                }
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Use Spotify Web Player' {
+              if($Sender.isChecked){
+                $thisApp.Config.Spotify_WebPlayer = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Spotify_WebPlayer = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Auto Sync Youtube Playlists' {
+              if($Sender.isChecked){
+                $thisApp.Config.Youtube_Update = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Youtube_Update = $true
+                $Sender.isChecked = $true
+              }
+              if($thisapp.config.Youtube_Update -and -not [string]::IsNullOrEmpty($thisapp.config.Youtube_Update_Interval) -and $thisapp.config.Youtube_Update_Interval -ne 'On Startup'){
+                try{
+                  Start-YoutubeMonitor -Interval $thisapp.config.Youtube_Update_Interval -thisApp $thisapp -synchash $synchash -Verboselog
+                }catch{
+                  write-ezlogs 'An exception occurred in Start-YoutubeMonitor' -catcherror $_
+                }
+              }elseif($thisApp.YoutubeMonitorEnabled -and (!$thisapp.config.Youtube_Update -or [string]::IsNullOrEmpty($thisapp.config.Youtube_Update_Interval)) -and $thisapp.config.Youtube_Update_Interval -ne 'On Startup'){
+                try{
+                  $thisApp.YoutubeMonitorEnabled = $false
+                  $Stop_Runspace = Stop-Runspace -thisApp $thisApp -runspace_name 'Youtube_Monitor_Runspace' -force
+                }catch{
+                  write-ezlogs 'An exception occurred in Start-YoutubeMonitor' -catcherror $_
+                }
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Use Youtube Web Player' {
+              if($Sender.isChecked){
+                $thisApp.Config.Youtube_WebPlayer = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Youtube_WebPlayer = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Enable Sponserblock' {
+              if($Sender.isChecked){
+                $thisApp.Config.Enable_Sponsorblock = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Enable_Sponsorblock = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Enable Youtube Comments' {
+              if($Sender.isChecked){
+                $thisApp.Config.Enable_YoutubeComments = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Enable_YoutubeComments = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Start Playback on Drop' {
+              if($Sender.isChecked){
+                $thisApp.Config.PlayLink_OnDrop = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.PlayLink_OnDrop = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Auto Quality' {
+              if($Sender.isChecked){
+                $Sender.isChecked = $false
+              }
+              $thisApp.Config.Youtube_Quality = 'Auto'
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Youtube_Quality' to: $($Sender.Header)"
+            }
+            'Best Quality' {
+              if($Sender.isChecked){
+                $Sender.isChecked = $false
+              }
+              $thisApp.Config.Youtube_Quality = 'Best'
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Youtube_Quality' to: $($Sender.Header)"
+            }
+            'Medium Quality' {
+              if($Sender.isChecked){
+                $Sender.isChecked = $false
+              }
+              $thisApp.Config.Youtube_Quality = 'Medium'
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Youtube_Quality' to: $($Sender.Header)"
+            }
+            'Low Quality' {
+              if($Sender.isChecked){
+                $Sender.isChecked = $false
+              }
+              $thisApp.Config.Youtube_Quality = 'Low'
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Youtube_Quality' to: $($Sender.Header)"
+            }
+            'Auto Sync Twitch Channels' {
+              if($Sender.isChecked){
+                $thisApp.Config.Twitch_Update = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Twitch_Update = $true
+                $Sender.isChecked = $true
+              }
+              if($thisapp.config.Twitch_Update -and -not [string]::IsNullOrEmpty($thisapp.config.Twitch_Update_Interval)){
+                try{
+                  Start-TwitchMonitor -Interval $thisapp.config.Twitch_Update_Interval -thisApp $thisapp -synchash $synchash -Verboselog
+                }catch{
+                  write-ezlogs 'An exception occurred starting Start-TwitchMonitor' -catcherror $_
+                }
+              }else{
+                try{
+                  if($synchash.TwitchMonitor_timer.isEnabled){
+                    write-ezlogs ">>>> Stopping existing TwitchMonitor timer"
+                    $synchash.TwitchMonitor_timer.stop()
+                  }
+                }catch{
+                  write-ezlogs 'An exception occurred stopping TwitchMonitor_timer' -catcherror $_
+                }
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Enable Twitch Notifications' {
+              if($Sender.isChecked){
+                $thisApp.Config.Enable_Twitch_Notifications = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Enable_Twitch_Notifications = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Skip Twitch Ads' {
+              if($Sender.isChecked){
+                $thisApp.Config.Skip_Twitch_Ads = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.Skip_Twitch_Ads = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
+            'Best' {
+              if($Sender.isChecked){
+                $Sender.isChecked = $false
+              }
+              $thisApp.Config.Twitch_Quality = 'Best'
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Twitch_Quality' to: $($Sender.Header)"
+            }
+            '1080p' {
+              if($Sender.isChecked){
+                $Sender.isChecked = $false
+              }
+              $thisApp.Config.Twitch_Quality = '1080p'
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Twitch_Quality' to: $($Sender.Header)"
+            }
+            '720p' {
+              if($Sender.isChecked){
+                $Sender.isChecked = $false
+              }
+              $thisApp.Config.Twitch_Quality = '720p'
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Twitch_Quality' to: $($Sender.Header)"
+            }
+            '480p' {
+              if($Sender.isChecked){
+                $Sender.isChecked = $false
+              }
+              $thisApp.Config.Twitch_Quality = '480p'
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Twitch_Quality' to: $($Sender.Header)"
+            }
+            'Worst' {
+              if($Sender.isChecked){
+                $Sender.isChecked = $false
+              }
+              $thisApp.Config.Twitch_Quality = 'Worst'
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Twitch_Quality' to: $($Sender.Header)"
+            }
+            'Audio_Only' {
+              if($Sender.isChecked){
+                $Sender.isChecked = $false
+              }
+              $thisApp.Config.Twitch_Quality = 'Audio_Only'
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Twitch_Quality' to: $($Sender.Header)"
+            }
+          }
+        }catch{
+          write-ezlogs "An exception occurred in QuickSettings_Command routed event" -showtime -catcherror $_
+        }
+      }
       $synchash.TrayPlayer.Icon =  "$($thisApp.Config.current_folder)\Resources\Samson_Icon_NoText1.ico"
       $synchash.TrayPlayer.Visibility = 'Visible'
       $synchash.TrayPlayer.PopupPlacement = 'AbsolutePoint'
@@ -807,8 +1215,8 @@ function Add-TrayMenu
       })
 
       [System.Windows.RoutedEventHandler]$synchash.MiniPlayer_ContextMenu = {
-        param($sender,[System.Windows.Input.MouseButtonEventArgs]$e)
-        if ($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right){
+        param($sender,$e)
+        if ($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right -or $e.RoutedEvent -eq [Hardcodet.Wpf.TaskbarNotification.TaskbarIcon]::TrayRightMouseDownEvent){
           $items = [System.Collections.Generic.List[Object]]::new()
           if($sender.name -eq 'TrayPlayerGrid'){
             $Open_app_header = "Open Main Player"
@@ -858,16 +1266,6 @@ function Add-TrayMenu
             'IsCheckable' = $false
           }
           $null = $items.Add($Open_WebBrowser)
-          $Open_Settings = @{
-            'Header' = "App Settings"
-            'Color' = 'White'
-            'Icon_Color' = 'WhiteSmoke'
-            'Command' = $synchash.OpenSettings_Command
-            'Icon_kind' = 'Cog'
-            'Enabled' = $true
-            'IsCheckable' = $false
-          }
-          $null = $items.Add($Open_Settings)
           $Open_AudioSettings = @{
             'Header' = "Audio Settings"
             'Color' = 'White'
@@ -878,6 +1276,286 @@ function Add-TrayMenu
             'IsCheckable' = $false
           }
           $null = $items.Add($Open_AudioSettings)
+          $Open_Settings = @{
+            'Header' = "App Settings"
+            'Color' = 'White'
+            'Icon_Color' = 'WhiteSmoke'
+            'Command' = $synchash.OpenSettings_Command
+            'Icon_kind' = 'Cog'
+            'Enabled' = $true
+            'IsCheckable' = $false
+          }
+          $null = $items.Add($Open_Settings)
+          $SettingsSubitems = [System.Collections.Generic.List[object]]::new()
+          $GeneralSubitems = [System.Collections.Generic.List[object]]::new()
+          $StartOnLogin = @{
+            'Header' = "Start on Windows Login"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.Start_On_Windows_Login
+            'IsCheckable' = $True
+          }
+          $null = $GeneralSubitems.Add($StartOnLogin)
+          $StartAsMiniPlayer = @{
+            'Header' = "Start As MiniPlayer"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.Start_Mini_only
+            'IsCheckable' = $True
+          }
+          $null = $GeneralSubitems.Add($StartAsMiniPlayer)
+          $HardwareAcceleration = @{
+            'Header' = "Use Hardware Acceleration"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.Use_HardwareAcceleration
+            'IsCheckable' = $True
+          }
+          $null = $GeneralSubitems.Add($HardwareAcceleration)
+          $Open_VideoPlayer = @{
+            'Header' = "Auto Open/Close Video Player"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.Open_VideoPlayer
+            'IsCheckable' = $True
+          }
+          $null = $GeneralSubitems.Add($Open_VideoPlayer)
+          $RememberProgress = @{
+            'Header' = "Remember Playback Progress"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.Remember_Playback_Progress
+            'IsCheckable' = $True
+          }
+          $null = $GeneralSubitems.Add($RememberProgress)
+          $Visualizations = @{
+            'Header' = "Enable Audio Visualizations"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.Use_Visualizations
+            'IsCheckable' = $True
+          }
+          $null = $GeneralSubitems.Add($Visualizations)
+          $DiscordIntegration = @{
+            'Header' = "Enable Discord Integration"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.Discord_Integration
+            'IsCheckable' = $True
+          }
+          $null = $GeneralSubitems.Add($DiscordIntegration)
+          $GeneralOptions = @{
+            'Header'   = 'General'
+            'Color'    = 'White'
+            'Icon_Color' = 'WhiteSmoke'
+            'Icon_kind' = 'Cogs'
+            'Enabled'  = $true
+            'Sub_items' = $GeneralSubitems
+          }
+          [Void]$SettingsSubitems.Add($GeneralOptions)
+          $LocalSubitems = [System.Collections.Generic.List[object]]::new()
+          $SkipDuplicates = @{
+            'Header' = "Skip Duplicates"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.LocalMedia_SkipDuplicates
+            'IsCheckable' = $True
+          }
+          $null = $LocalSubitems.Add($SkipDuplicates)
+          $MonitorPaths = @{
+            'Header' = "Monitor Local Paths"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.Enable_LocalMedia_Monitor
+            'IsCheckable' = $True
+          }
+          $null = $LocalSubitems.Add($MonitorPaths)
+          $LocalOptions = @{
+            'Header'   = 'Local Media'
+            'Color'    = 'White'
+            'Icon_Color' = 'WhiteSmoke'
+            'Icon_kind' = 'Harddisk'
+            'Enabled'  = $true
+            'Sub_items' = $LocalSubitems
+          }
+          [Void]$SettingsSubitems.Add($LocalOptions)
+          if($thisApp.Config.Import_Spotify_Media){
+            $SpotifySubitems = [System.Collections.Generic.List[object]]::new()
+            $SpotifySync = @{
+              'Header' = "Auto Sync Spotify Playlists"
+              'Color' = 'White'
+              'Command' = $synchash.QuickSettings_Command
+              'Enabled' = $true
+              'IsChecked' = $thisApp.Config.Spotify_Update
+              'IsCheckable' = $True
+            }
+            $null = $SpotifySubitems.Add($SpotifySync)
+            $SpotifyWebPlayer = @{
+              'Header' = "Use Spotify Web Player"
+              'Color' = 'White'
+              'Command' = $synchash.QuickSettings_Command
+              'Enabled' = $true
+              'IsChecked' = $thisApp.Config.Spotify_WebPlayer
+              'IsCheckable' = $True
+            }
+            $null = $SpotifySubitems.Add($SpotifyWebPlayer)
+            $SpotifyOptions = @{
+              'Header'   = 'Spotify'
+              'Color'    = 'White'
+              'Icon_Color' = '#FF1ED760'
+              'Icon_kind' = 'Spotify'
+              'Enabled'  = $true
+              'Sub_items' = $SpotifySubitems
+            }
+            [Void]$SettingsSubitems.Add($SpotifyOptions)
+          }
+          $YoutubeSubitems = [System.Collections.Generic.List[object]]::new()
+          if($thisApp.Config.Import_Youtube_Media){
+            $YoutubeSync = @{
+              'Header' = "Auto Sync Youtube Playlists"
+              'Color' = 'White'
+              'Command' = $synchash.QuickSettings_Command
+              'Enabled' = $true
+              'IsChecked' = $thisApp.Config.Youtube_Update
+              'IsCheckable' = $True
+            }
+            $null = $YoutubeSubitems.Add($YoutubeSync)
+          }
+          $YoutubeWebPlayer = @{
+            'Header' = "Use Youtube Web Player"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.Youtube_WebPlayer
+            'IsCheckable' = $True
+          }
+          $null = $YoutubeSubitems.Add($YoutubeWebPlayer)
+          $SponserBlock = @{
+            'Header' = "Enable SponserBlock"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.Enable_Sponsorblock
+            'IsCheckable' = $True
+          }
+          $null = $YoutubeSubitems.Add($SponserBlock)
+          $YoutubeComments = @{
+            'Header' = "Enable Youtube Comments"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.Enable_YoutubeComments
+            'IsCheckable' = $True
+          }
+          $null = $YoutubeSubitems.Add($YoutubeComments)
+          $PlaybackOnDrop = @{
+            'Header' = "Start Playback on Drop"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.PlayLink_OnDrop
+            'IsCheckable' = $True
+          }
+          $null = $YoutubeSubitems.Add($PlaybackOnDrop)
+          $YoutubeQualitySubitems = [System.Collections.Generic.List[object]]::new()
+          'Auto','Best','Medium','Low' | & { process {
+              $Quality = @{
+                'Header' = "$_ Quality"
+                'Color' = 'White'
+                'Command' = $synchash.QuickSettings_Command
+                'Enabled' = $true
+                'IsChecked' = $thisApp.Config.Youtube_Quality -eq $_
+                'IsCheckable' = $True
+              }
+              $null = $YoutubeQualitySubitems.Add($Quality)
+          }}
+          $YoutubeQuality = @{
+            'Header'   = 'Preferred Playback Quality'
+            'Color'    = 'White'
+            'Icon_Color' = 'WhiteSmoke'
+            'Icon_kind' = 'QualityHigh'
+            'Enabled'  = $true
+            'Sub_items' = $YoutubeQualitySubitems
+          }
+          [Void]$YoutubeSubitems.Add($YoutubeQuality)
+          $YoutubeOptions = @{
+            'Header'   = 'Youtube'
+            'Color'    = 'White'
+            'Icon_Color' = '#FFFF3737'
+            'Icon_kind' = 'Youtube'
+            'Enabled'  = $true
+            'Sub_items' = $YoutubeSubitems
+          }
+          [Void]$SettingsSubitems.Add($YoutubeOptions)
+          $TwitchSubitems = [System.Collections.Generic.List[object]]::new()
+          if($thisApp.Config.Import_Twitch_Media){
+            $TwitchSync = @{
+              'Header' = "Auto Sync Twitch Channels"
+              'Color' = 'White'
+              'Command' = $synchash.QuickSettings_Command
+              'Enabled' = $true
+              'IsChecked' = $thisApp.Config.Twitch_Update
+              'IsCheckable' = $True
+            }
+            $null = $TwitchSubitems.Add($TwitchSync)
+          }
+          $TwitchAds = @{
+            'Header' = "Skip Twitch Ads"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.Skip_Twitch_Ads
+            'IsCheckable' = $True
+          }
+          $null = $TwitchSubitems.Add($TwitchAds)
+          $TwitchQualitySubitems = [System.Collections.Generic.List[object]]::new()
+          'Best','1080p','720p','480p','Worst','Audio_Only' | & { process {
+              $Quality = @{
+                'Header' = "$_"
+                'Color' = 'White'
+                'Command' = $synchash.QuickSettings_Command
+                'Enabled' = $true
+                'IsChecked' = $thisApp.Config.Twitch_Quality -eq $_
+                'IsCheckable' = $True
+              }
+              $null = $TwitchQualitySubitems.Add($Quality)
+          }}
+          $TwitchQuality = @{
+            'Header'   = 'Preferred Stream Quality'
+            'Color'    = 'White'
+            'Icon_Color' = 'WhiteSmoke'
+            'Icon_kind' = 'QualityHigh'
+            'Enabled'  = $true
+            'Sub_items' = $TwitchQualitySubitems
+          }
+          [Void]$TwitchSubitems.Add($TwitchQuality)
+          $TwitchOptions = @{
+            'Header'   = 'Twitch'
+            'Color'    = 'White'
+            'Icon_Color' = '#FFA970FF'
+            'Icon_kind' = 'Youtube'
+            'Enabled'  = $true
+            'Sub_items' = $TwitchSubitems
+          }
+          [Void]$SettingsSubitems.Add($TwitchOptions)
+          $QuickOptions = @{
+            'Header'   = 'Quick Settings'
+            'Color'    = 'White'
+            'Icon_Color' = 'WhiteSmoke'
+            'Icon_kind' = 'CogTransfer'
+            'Enabled'  = $true
+            'Sub_items' = $SettingsSubitems
+          }
+          [Void]$items.Add($QuickOptions)
           $DevCommand = @{
             'Header' = "(Dev) Clear Memory"
             'Color' = 'White'
@@ -908,93 +1586,12 @@ function Add-TrayMenu
           }else{
             Add-WPFMenu -control $synchash.TrayPlayer -items $items -AddContextMenu -sourceWindow $synchash -TrayMenu
           }
+        }else{
+          write-ezlogs "Unknown routed event trigger for MiniPlayer_ContextMenu" -Warning
         }
       }
-
       $null = $synchash.TrayPlayerGrid.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.MiniPlayer_ContextMenu)
-
-      $items = [System.Collections.Generic.List[Object]]::new()
-      $Open_App = @{
-        'Header' = "Open App"
-        'Color' = 'White'
-        'Command' = $Synchash.OpenApp_Command
-        'icon_image' = "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"
-        'Enabled' = $true
-        'IsCheckable' = $false
-      }
-      $null = $items.Add($Open_App)
-      $Open_Video = @{
-        'Header' = "Video Player"
-        'Color' = 'White'
-        'IconPack' = 'PackIconFontAwesome'
-        'ToolTip' = 'Show Video Player'
-        'Icon_Color' = 'WhiteSmoke'
-        'Command' = $Synchash.VideoView_Command
-        'Icon_kind' = 'PhotoVideoSolid'
-        'Enabled' = $true
-        'IsCheckable' = $false
-      }
-      $null = $items.Add($Open_Video)
-      $Open_MediaLibrary = @{
-        'Header' = "Media Library"
-        'Color' = 'White'
-        'IconPack' = 'PackIconCodicons'
-        'Icon_Color' = 'WhiteSmoke'
-        'Command' = $synchash.Detach_Library_button_Command
-        'Icon_kind' = 'Library'
-        'Enabled' = $true
-        'IsCheckable' = $false
-      }
-      $null = $items.Add($Open_MediaLibrary)
-      $Open_WebBrowser = @{
-        'Header' = "Web Browser"
-        'Color' = 'White'
-        'Icon_Color' = 'WhiteSmoke'
-        'Tag' = 'WebBrowser'
-        'Command' = $synchash.Float_Command
-        'Icon_kind' = 'Web'
-        'Enabled' = $true
-        'IsCheckable' = $false
-      }
-      $null = $items.Add($Open_WebBrowser)
-      $Open_Settings = @{
-        'Header' = "App Settings"
-        'Color' = 'White'
-        'Icon_Color' = 'WhiteSmoke'
-        'Command' = $synchash.OpenSettings_Command
-        'Icon_kind' = 'Cog'
-        'Enabled' = $true
-        'IsCheckable' = $false
-      }
-      $null = $items.Add($Open_Settings)
-      $Open_AudioSettings = @{
-        'Header' = "Audio Settings"
-        'Color' = 'White'
-        'Icon_Color' = 'WhiteSmoke'
-        'Command' = $synchash.Audio_Options_Command
-        'Icon_kind' = 'TuneVerticalVariant'
-        'Enabled' = $true
-        'IsCheckable' = $false
-      }
-      $null = $items.Add($Open_AudioSettings)
-      $separator = @{
-        'Separator' = $true
-        'Style' = 'SeparatorGradient'
-      }            
-      $null = $items.Add($separator) 
-      $Exit_App = @{
-        'Header' = "Exit App"
-        'Color' = 'White'
-        'Icon_Color' = 'White'
-        'Command' = $Synchash.CloseApp_Command
-        'Icon_kind' = 'Close'
-        'Enabled' = $true
-        'IsCheckable' = $false
-      }
-      $null = $items.Add($Exit_App)
-      Add-WPFMenu -control $synchash.TrayPlayer -items $items -AddContextMenu -sourceWindow $synchash -TrayMenu
-
-      #$null = $synchash.TrayPlayer.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$OpenApp_Command)
+      $null = $synchash.TrayPlayer.AddHandler([Hardcodet.Wpf.TaskbarNotification.TaskbarIcon]::TrayRightMouseDownEvent,$synchash.MiniPlayer_ContextMenu)
       $null = $synchash.TrayPlayer.AddHandler([Hardcodet.Wpf.TaskbarNotification.TaskbarIcon]::TrayMouseDoubleClickEvent,$Synchash.OpenApp_Command)
       if($addJumplist){
         Add-JumpList -thisApp $thisApp -synchash $synchash -StartMini:$StartMini -Use_Runspace -Startup
@@ -1078,7 +1675,9 @@ function Add-JumpList
       [switch]$Verboselog = $Verboselog
     )
     try{
-      $add_Jumplist_Measure = [system.diagnostics.stopwatch]::StartNew()
+      if($Verboselog -or $thisApp.Config.Dev_mode){
+        $add_Jumplist_Measure = [system.diagnostics.stopwatch]::StartNew()
+      }
       if($synchash.jumplist){
         #Tasks
         if($Startup -and [System.IO.File]::Exists($thisApp.Config.App_Exe_Path)){

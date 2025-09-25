@@ -23,7 +23,8 @@
     EZTechhelp - https://www.eztechhelp.com
 
     .NOTES
-
+    #TODO: Using Full or Quick refresh causes event handler leak in treeviewnodecollection. Not using refresh and setting istracking to false then true when done works fine for all changes from all systems
+    #TODO: Except fucking filter and order, the whole point of even using the collectionview. Filter and order will not trigger a view refresh for anything, do not know whats wrong. Would probably require .net debugging and more tests..ugh
 #>
 
 #---------------------------------------------- 
@@ -43,7 +44,13 @@ function Update-Playlists {
     [switch]$verboselog,
     [switch]$Startup,
     [switch]$Full_Refresh,
-    [switch]$test
+    [switch]$GetPlaylists,
+    [switch]$test,
+    $Group,
+    [string]$SortBy,
+    [string]$Filter,
+    [string]$SortDirection,
+    [switch]$SortItems
   )
   try{
     if($Startup){      
@@ -53,155 +60,175 @@ function Update-Playlists {
           try{   
             $object = @{}
             $Process = $synchash.Playlists_UpdateQueue.TryDequeue([ref]$object)
-            if($Process -and -not [string]::IsNullOrEmpty($object.Itemssource) -or $object.UpdateItemssource){
-              if($syncHash.Playlists_TreeView){
-                if($object.UpdateItemssource){
-                  if($synchash.all_playlists.count -eq 0){
-                    write-ezlogs ">>>> Clearing all items from playlists_treeview - no playlists found"
-                    if($syncHash.Playlists_TreeView.Nodes -is [System.IDisposable]){
-                      $syncHash.Playlists_TreeView.Nodes.dispose()
-                    }
-                    if($syncHash.TrayPlayer_TreeView.Nodes -is [System.IDisposable]){
-                      $syncHash.TrayPlayer_TreeView.Nodes.dispose()
-                    }
-                    if($syncHash.LocalMedia_TreeView.Nodes -is [System.IDisposable]){
-                      $syncHash.LocalMedia_TreeView.Nodes.dispose()
-                    }
-                    if($syncHash.Playlists_TreeView.Itemssource.IsInUse){
-                      [void]$syncHash.Playlists_TreeView.Itemssource.DetachFromSourceCollection()
-                    }
-                    if($syncHash.Playlists_TreeView -is [System.Windows.DependencyObject]){
-                      write-ezlogs ">>>> Removing all data bindings from: Playlists_TreeView.Nodes" -warning
-                      [void][System.Windows.Data.BindingOperations]::ClearAllBindings($syncHash.Playlists_TreeView)
-                    }
-                    $syncHash.Playlists_TreeView.SelectedItem = $Null
-                    $syncHash.Playlists_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemsProperty)
-                    $syncHash.Playlists_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemProperty)
-                    $syncHash.Playlists_TreeView.Itemssource = $Null
-                  }elseif(($syncHash.Playlists_TreeView.Itemssource -or $syncHash.Playlists_TreeView.Itemssource.NeedsRefresh -or $object.Quick_Refresh) -and !$object.Full_Refresh){
-                    if($syncHash.Playlists_TreeView.ItemsSource.NeedsRefresh -or $synchash.Get_Playlists_Changes -gt 0 -or $object.Quick_Refresh){
-                      if($thisApp.Config.Dev_mode){write-ezlogs "| NeedsRefresh: $($syncHash.Playlists_TreeView.ItemsSource.NeedsRefresh) - all_playlists_View NeedsRefresh: $($Synchash.all_playlists_View.NeedsRefresh)" -Dev_mode}
+            if($Process -and -not [string]::IsNullOrEmpty($object.Itemssource) -or $object.UpdateItemssource -or $Object.GetPlaylists){
+              if($Object.GetPlaylists){
+                $GetPlaylists_Args = @{
+                  'Startup' = $Object.Startup
+                  'use_Runspace' = $Object.use_Runspace
+                  'Quick_Refresh' = $Object.Quick_Refresh
+                  'Full_Refresh' = $Object.Full_Refresh
+                  'synchashWeak' = [System.WeakReference]::new($synchash)
+                  'thisApp' = $thisApp
+                  'Group' = $Object.Group
+                  'SortBy' = $Object.SortBy
+                  'Filter' = $Object.Filter
+                  'SortDirection' = $Object.SortDirection
+                  'SortItems' = $Object.SortItems
+                  'VerboseLog' = $Object.VerboseLog
+                  'Import_Playlists_Cache' = $Object.Import_Playlists_Cache
+                  'Test' = $Object.Test
+                  'Force' = $true
+                }
+                Get-Playlists @GetPlaylists_Args               
+              }else{
+                if($syncHash.Playlists_TreeView){
+                  if($object.UpdateItemssource){
+                    if($synchash.all_playlists.count -eq 0 -and $synchash.all_playlists.items.count -eq 0){
+                      write-ezlogs ">>>> Clearing all items from playlists_treeview - no playlists found"
+                      if($syncHash.Playlists_TreeView.Nodes -is [System.IDisposable]){
+                        $syncHash.Playlists_TreeView.Nodes.dispose()
+                      }
+                      if($syncHash.TrayPlayer_TreeView.Nodes -is [System.IDisposable]){
+                        $syncHash.TrayPlayer_TreeView.Nodes.dispose()
+                      }
+                      if($syncHash.LocalMedia_TreeView.Nodes -is [System.IDisposable]){
+                        $syncHash.LocalMedia_TreeView.Nodes.dispose()
+                      }
+                      if($syncHash.Playlists_TreeView.Itemssource.IsInUse){
+                        [void]$syncHash.Playlists_TreeView.Itemssource.DetachFromSourceCollection()
+                      }
+                      if($syncHash.Playlists_TreeView -is [System.Windows.DependencyObject]){
+                        write-ezlogs ">>>> Removing all data bindings from: Playlists_TreeView.Nodes" -warning
+                        [void][System.Windows.Data.BindingOperations]::ClearAllBindings($syncHash.Playlists_TreeView)
+                      }
+                      $syncHash.Playlists_TreeView.SelectedItem = $Null
+                      $syncHash.Playlists_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemsProperty)
+                      $syncHash.Playlists_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemProperty)
+                      $syncHash.Playlists_TreeView.Itemssource = $Null
+                    }elseif(($syncHash.Playlists_TreeView.Itemssource -or $syncHash.Playlists_TreeView.Itemssource.NeedsRefresh -or $object.Quick_Refresh) -and !$object.Full_Refresh){
+                      if($syncHash.Playlists_TreeView.ItemsSource.NeedsRefresh -or $synchash.Get_Playlists_Changes -gt 0 -or $object.Quick_Refresh){
+                        if($thisApp.Config.Dev_mode){write-ezlogs "| NeedsRefresh: $($syncHash.Playlists_TreeView.ItemsSource.NeedsRefresh) - all_playlists_View NeedsRefresh: $($Synchash.all_playlists_View.NeedsRefresh)" -Dev_mode}
+                        try{
+                          $syncHash.Playlists_TreeView.BeginInit()
+                          if($syncHash.Playlists_TreeView.Itemssource -is [System.Windows.Data.CollectionView]){
+                            if($syncHash.Playlists_TreeView.ItemsSource.NeedsRefresh -or $object.Quick_Refresh){
+                              write-ezlogs "| Refreshing existing itemssource"
+                              $synchash.Playlists_TreeView.Dispatcher.InvokeAsync{
+                                $syncHash.Playlists_TreeView.ItemsSource.Refresh()
+                              }
+                            }
+                          }else{
+                            #[void][System.Windows.Data.BindingOperations]::ClearAllBindings($syncHash.Playlists_TreeView)
+                            [void][System.Windows.Data.BindingOperations]::ClearBinding($syncHash.Playlists_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::ItemsSourceProperty)
+                            $Binding = [System.Windows.Data.Binding]::new()
+                            $Binding.Source = $synchash.All_Playlists
+                            $Binding.NotifyOnSourceUpdated = $true
+                            [void][System.Windows.Data.BindingOperations]::SetBinding($syncHash.Playlists_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::ItemsSourceProperty, $Binding)
+                          }
+                        }catch{
+                          write-ezlogs "An exception occurred updating binding for playlists_Treeview itemssource" -catcherror $_
+                        }          
+                        try{
+                          $syncHash.Playlists_TreeView.EndInit()
+                        }catch{
+                          write-ezlogs "An exception occurred calling Playlists_TreeView.EndInit" -catcherror $_
+                        }
+                        $UpdateNodes = $true
+                      }else{
+                        write-ezlogs "| No changes to playlists found"
+                        $UpdateNodes = $false
+                      }
+                    }else{
+                      $UpdateNodes = $true
                       try{
                         $syncHash.Playlists_TreeView.BeginInit()
-                        if($syncHash.Playlists_TreeView.Itemssource -is [System.Windows.Data.CollectionView]){
-                          if($syncHash.Playlists_TreeView.ItemsSource.NeedsRefresh -or $object.Quick_Refresh){
-                            write-ezlogs "| Refreshing existing itemssource"
-                            $synchash.Playlists_TreeView.Dispatcher.InvokeAsync{
-                              $syncHash.Playlists_TreeView.ItemsSource.Refresh()
-                            }
-                          }
-                        }else{
-                          [void][System.Windows.Data.BindingOperations]::ClearBinding($syncHash.Playlists_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::ItemsSourceProperty)
-                          $Binding = [System.Windows.Data.Binding]::new()
-                          $Binding.Source = $synchash.All_Playlists
-                          $Binding.NotifyOnSourceUpdated = $true
-                          [void][System.Windows.Data.BindingOperations]::SetBinding($syncHash.Playlists_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::ItemsSourceProperty, $Binding)
+                      }catch{
+                        write-ezlogs "An exception occurred calling Playlists_TreeView.BeginInit()" -catcherror $_
+                      }
+                      try{
+                        if($syncHash.Playlists_TreeView.Nodes.count -gt 0 -and $syncHash.Playlists_TreeView.Nodes -is [System.IDisposable]){
+                          $syncHash.Playlists_TreeView.SelectedItem = $Null
+                          $syncHash.Playlists_TreeView.ItemsSource = $null
+                        }
+                        if($syncHash.TrayPlayer_TreeView.Nodes.count -gt 0 -and $syncHash.TrayPlayer_TreeView.Nodes -is [System.IDisposable]){
+                          $syncHash.TrayPlayer_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemsProperty)
+                          $syncHash.TrayPlayer_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemProperty)
+                        }
+                        if($syncHash.LocalMedia_TreeView.Nodes.count -gt 0 -and $syncHash.LocalMedia_TreeView.Nodes -is [System.IDisposable]){
+                          $syncHash.LocalMedia_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemsProperty)
+                          $syncHash.LocalMedia_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemProperty)
+                        }
+                        write-ezlogs ">>>> Binding new all_playlists_View to Playlists_TreeView.Itemssource" -LogLevel 0 -Verboselog:$verboselog
+                        if($Synchash.all_playlists_View -and $syncHash.Playlists_TreeView.Itemssource.IsInUse){
+                          [void]$syncHash.Playlists_TreeView.Itemssource.DetachFromSourceCollection()
                         }
                       }catch{
-                        write-ezlogs "An exception occurred updating binding for playlists_Treeview itemssource" -catcherror $_
-                      }          
+                        write-ezlogs "An exception occurred clearing data from treeviews" -catcherror $_
+                      }
+                      try{                        
+                        [void][System.Windows.Data.BindingOperations]::ClearBinding($syncHash.Playlists_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::ItemsSourceProperty)
+                        [void][System.Windows.Data.BindingOperations]::EnableCollectionSynchronization($synchash.All_Playlists,$synchash.all_playlists_ListLock)
+                        $Binding = [System.Windows.Data.Binding]::new()
+                        $Binding.Source = $synchash.All_Playlists
+                        $Binding.NotifyOnSourceUpdated = $true
+                        [void][System.Windows.Data.BindingOperations]::SetBinding($syncHash.Playlists_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::ItemsSourceProperty, $Binding)     
+                      }catch{
+                        write-ezlogs "An exception occurred binding All_Playlists to Playlists_TreeView" -catcherror $_
+                      }
                       try{
                         $syncHash.Playlists_TreeView.EndInit()
                       }catch{
-                        write-ezlogs "An exception occurred calling Playlists_TreeView.EndInit" -catcherror $_
+                        write-ezlogs "An exception occurred calling Playlists_TreeView.EndInit()" -catcherror $_
                       }
-                      $UpdateNodes = $true
-                    }else{
-                      write-ezlogs "| No changes to playlists found"
-                      $UpdateNodes = $false
+                      try{
+                        if($synchash.TrayPlayer_TreeView){
+                          [void][System.Windows.Data.BindingOperations]::ClearAllBindings($syncHash.TrayPlayer_TreeView)
+                          $Binding = [System.Windows.Data.Binding]::new()
+                          $Binding.Source = $syncHash.Playlists_TreeView
+                          $Binding.Path = "Nodes"
+                          $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+                          [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.TrayPlayer_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::NodesProperty, $Binding)
+                        }
+                      }catch{
+                        write-ezlogs "An exception occurred binding Playlists_TreeView and TrayPlayer_TreeView nodes" -catcherror $_
+                      }
+                      try{
+                        if($synchash.LocalMedia_TreeView){
+                          [void][System.Windows.Data.BindingOperations]::ClearAllBindings($syncHash.LocalMedia_TreeView)
+                          $Binding = [System.Windows.Data.Binding]::new()
+                          $Binding.Source = $syncHash.Playlists_TreeView
+                          $Binding.Path = "Nodes"
+                          $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+                          [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.LocalMedia_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::NodesProperty, $Binding)
+                        }
+                      }catch{
+                        write-ezlogs "An exception occurred binding Playlists_TreeView and LocalMedia_TreeView nodes" -catcherror $_
+                      }
                     }
                   }else{
-                    $UpdateNodes = $true
-                    try{
-                      $syncHash.Playlists_TreeView.BeginInit()
-                    }catch{
-                      write-ezlogs "An exception occurred calling Playlists_TreeView.BeginInit()" -catcherror $_
+                    write-ezlogs "No changes were found while refreshing playlists"
+                  }
+                  #Hacky way to force UI to refresh properly for all TreeView's that are bound together. Mostly needed for treeview within videoview content (airspace issue)
+                  if($UpdateNodes){
+                    if($synchash.TrayPlayer_TreeView){
+                      $refreshView = $syncHash.TrayPlayer_TreeView.GetType().GetMethod("RefreshView", [System.Reflection.BindingFlags]::Instance -bor [System.Reflection.BindingFlags]::NonPublic)
+                      if($refreshView){
+                        write-ezlogs "| Invoking RefreshView for TrayPlayer_TreeView" -Dev_mode
+                        $refreshView.Invoke($syncHash.TrayPlayer_TreeView,$Null)
+                      }
                     }
-                    try{
-                      if($syncHash.Playlists_TreeView.Nodes.count -gt 0 -and $syncHash.Playlists_TreeView.Nodes -is [System.IDisposable]){
-                        $syncHash.Playlists_TreeView.SelectedItem = $Null
-                        $syncHash.Playlists_TreeView.ItemsSource = $null
-                        #$syncHash.Playlists_TreeView.Nodes.dispose()
+                    if($synchash.LocalMedia_TreeView){
+                      $refreshView = $syncHash.LocalMedia_TreeView.GetType().GetMethod("RefreshView", [System.Reflection.BindingFlags]::Instance -bor [System.Reflection.BindingFlags]::NonPublic)
+                      if($refreshView){
+                        write-ezlogs "| Invoking RefreshView for LocalMedia_TreeView" -Dev_mode
+                        $refreshView.Invoke($syncHash.LocalMedia_TreeView,$Null)
                       }
-                      if($syncHash.TrayPlayer_TreeView.Nodes.count -gt 0 -and $syncHash.TrayPlayer_TreeView.Nodes -is [System.IDisposable]){
-                        $syncHash.TrayPlayer_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemsProperty)
-                        $syncHash.TrayPlayer_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemProperty)
-                        #$syncHash.TrayPlayer_TreeView.Nodes.dispose()
-                      }
-                      if($syncHash.LocalMedia_TreeView.Nodes.count -gt 0 -and $syncHash.LocalMedia_TreeView.Nodes -is [System.IDisposable]){
-                        $syncHash.LocalMedia_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemsProperty)
-                        $syncHash.LocalMedia_TreeView.ClearValue([Syncfusion.UI.Xaml.TreeView.SfTreeView]::SelectedItemProperty)
-                        #$syncHash.LocalMedia_TreeView.Nodes.dispose()
-                      }
-                      write-ezlogs ">>>> Binding new all_playlists_View to Playlists_TreeView.Itemssource" -LogLevel 0 -Verboselog:$verboselog
-                      if($Synchash.all_playlists_View -and $syncHash.Playlists_TreeView.Itemssource.IsInUse){
-                        [void]$syncHash.Playlists_TreeView.Itemssource.DetachFromSourceCollection()
-                      }
-                    }catch{
-                      write-ezlogs "An exception occurred clearing data from treeviews" -catcherror $_
-                    }
-                    try{
-                      [void][System.Windows.Data.BindingOperations]::EnableCollectionSynchronization($synchash.All_Playlists,$synchash.all_playlists_ListLock)
-                      $Binding = [System.Windows.Data.Binding]::new()
-                      $Binding.Source = $synchash.All_Playlists
-                      $Binding.NotifyOnSourceUpdated = $true
-                      [void][System.Windows.Data.BindingOperations]::SetBinding($syncHash.Playlists_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::ItemsSourceProperty, $Binding)     
-                    }catch{
-                      write-ezlogs "An exception occurred binding All_Playlists to Playlists_TreeView" -catcherror $_
-                    }
-                    try{
-                      $syncHash.Playlists_TreeView.EndInit()
-                    }catch{
-                      write-ezlogs "An exception occurred calling Playlists_TreeView.EndInit()" -catcherror $_
-                    }
-                    try{
-                      if($synchash.TrayPlayer_TreeView){
-                        [void][System.Windows.Data.BindingOperations]::ClearAllBindings($syncHash.TrayPlayer_TreeView)
-                        $Binding = [System.Windows.Data.Binding]::new()
-                        $Binding.Source = $syncHash.Playlists_TreeView
-                        $Binding.Path = "Nodes"
-                        $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-                        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.TrayPlayer_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::NodesProperty, $Binding)
-                      }
-                    }catch{
-                      write-ezlogs "An exception occurred binding Playlists_TreeView and TrayPlayer_TreeView nodes" -catcherror $_
-                    }
-                    try{
-                      if($synchash.LocalMedia_TreeView){
-                        [void][System.Windows.Data.BindingOperations]::ClearAllBindings($syncHash.LocalMedia_TreeView)
-                        $Binding = [System.Windows.Data.Binding]::new()
-                        $Binding.Source = $syncHash.Playlists_TreeView
-                        $Binding.Path = "Nodes"
-                        $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-                        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.LocalMedia_TreeView,[Syncfusion.UI.Xaml.TreeView.SfTreeView]::NodesProperty, $Binding)
-                      }
-                    }catch{
-                      write-ezlogs "An exception occurred binding Playlists_TreeView and LocalMedia_TreeView nodes" -catcherror $_
                     }
                   }
                 }else{
-                  write-ezlogs "No changes were found while refreshing playlists"
+                  write-ezlogs "No Playlists_Treeview UI is available" -warning
                 }
-                #Hacky way to force UI to refresh properly for all TreeView's that are bound together. Mostly needed for treeview within videoview content (airspace issue)
-                if($UpdateNodes){
-                  if($synchash.TrayPlayer_TreeView){
-                    $refreshView = $syncHash.TrayPlayer_TreeView.GetType().GetMethod("RefreshView", [System.Reflection.BindingFlags]::Instance -bor [System.Reflection.BindingFlags]::NonPublic)
-                    if($refreshView){
-                      write-ezlogs "| Invoking RefreshView for TrayPlayer_TreeView" -Dev_mode
-                      $refreshView.Invoke($syncHash.TrayPlayer_TreeView,$Null)
-                    }
-                  }
-                  if($synchash.LocalMedia_TreeView){
-                    $refreshView = $syncHash.LocalMedia_TreeView.GetType().GetMethod("RefreshView", [System.Reflection.BindingFlags]::Instance -bor [System.Reflection.BindingFlags]::NonPublic)
-                    if($refreshView){
-                      write-ezlogs "| Invoking RefreshView for LocalMedia_TreeView" -Dev_mode
-                      $refreshView.Invoke($syncHash.LocalMedia_TreeView,$Null)
-                    }
-                  }
-                }
-              }else{
-                write-ezlogs "No Playlists_Treeview UI is available" -warning
-              }              
+              }
             }else{
               $this.Stop()
             }
@@ -210,20 +237,31 @@ function Update-Playlists {
             $this.Stop()
           }finally{
             #$this.Stop()
+            if(!$Object.GetPlaylists){
+              $synchash.Get_Playlists_Changes = 0
+              Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'Playlists_Progress_Ring' -Property 'IsActive' -value $false
+            }
             $object = $Null
-            $synchash.Get_Playlists_Changes = 0
-            Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'Playlists_Progress_Ring' -Property 'IsActive' -value $false
             [void][ScriptBlock].GetMethod('ClearScriptBlockCache', [System.Reflection.BindingFlags]'Static,NonPublic').Invoke($Null, $Null)
           }
       })
-    }elseif($itemssource -or $UpdateItemssource){
+    }elseif($GetPlaylists -or $itemssource -or $UpdateItemssource){
       [void]$synchash.Playlists_UpdateQueue.Enqueue([PSCustomObject]::new(@{
             'Itemssource' = $itemssource
+            'startup' = $Startup
             'UpdateItemssource' = $UpdateItemssource
+            'GetPlaylists' = $GetPlaylists
+            'use_Runspace' = $use_Runspace
             'test' = $test
+            'synchash' = $synchash
             'Full_Refresh' = $Full_Refresh
             'Quick_Refresh' = $Quick_Refresh
             'Import_Playlists_Cache' = $Import_Playlists_Cache
+            'Group' = $Group
+            'SortBy' = $SortBy
+            'Filter' = $Filter
+            'SortDirection' = $SortDirection
+            'SortItems' = $SortItems
       }))
       if(!$synchash.Playlists_Update_Timer.isEnabled){
         $synchash.Playlists_Update_Timer.start()
@@ -269,7 +307,7 @@ function Update-Playlist
     [string]$Media_Profile_Directory,
     [string]$Playlist_Profile_Directory = $thisApp.config.Playlist_Profile_Directory,
     $Group,
-    [System.Collections.Hashtable]$all_playlists,
+    $all_playlists,
     $thisScript,
     [switch]$Refresh_Spotify_Playlists,
     [switch]$Refresh_All_Playlists,
@@ -279,13 +317,18 @@ function Update-Playlist
     [switch]$SortItems
   )
   $synchashWeak = ([System.WeakReference]::new($synchash))
+  if($synchashweak.target.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+    $All_Playlists = $synchashweak.target.All_Playlists.items
+  }else{
+    $All_Playlists = $synchashweak.target.All_Playlists
+  }
   if($Playlist_ID){    
-    $pindex = $synchashWeak.Target.all_playlists.playlist_ID.indexof($Playlist_ID)
+    $pindex = $All_Playlists.playlist_ID.indexof($Playlist_ID)
   }elseif(!$RemoveFromAll -and $Playlist){
-    $pindex = $synchashWeak.Target.all_playlists.name.indexof($Playlist)
+    $pindex = $All_Playlists.name.indexof($Playlist)
   }  
   if($pindex -ne -1 -and $pindex -ne $null){
-    $playlist_to_modify = $synchashWeak.Target.all_playlists[$pindex]
+    $playlist_to_modify = $All_Playlists[$pindex]
     write-ezlogs ">>>> Updating playlist $($playlist_to_modify.name) - ID: $($playlist_to_modify.playlist_id)" -loglevel 2
   } 
   if($Clear -and $playlist_to_modify){
@@ -321,7 +364,12 @@ function Update-Playlist
         [switch]$SortItems = $SortItems,
         $MediaPropertyNames = $MediaPropertyNames
       )
-      try{   
+      try{
+        if($synchashweak.target.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+          $All_Playlists = $synchashweak.target.All_Playlists.items
+        }else{
+          $All_Playlists = $synchashweak.target.All_Playlists
+        }    
         if($Playlist -in 'Play Queue','Remove from Play Queue'){ 
           if($thisapp.config.Current_Playlist.values -contains $Media.id){
             write-ezlogs "[Update-Playlist] | Removing $($Media.id) from Play Queue" -showtime
@@ -351,10 +399,10 @@ function Update-Playlist
           }    
         }elseif($RemoveFromAll){
           try{     
-            if($synchashWeak.Target.all_playlists -and $synchashWeak.Target.all_playlists -isnot [System.Collections.Generic.List[Playlist]]){
-              $all_Playlists = $synchashWeak.Target.all_playlists | ConvertTo-Playlists -List
-            }elseif($synchashWeak.Target.all_playlists){
-              $all_Playlists = [System.Collections.Generic.List[Playlist]]::new($synchashWeak.Target.all_playlists)
+            if($All_Playlists -and $All_Playlists -isnot [System.Collections.Generic.List[Playlist]]){
+              $all_Playlists = $All_Playlists | ConvertTo-Playlists -List
+            }elseif($All_Playlists){
+              $all_Playlists = [System.Collections.Generic.List[Playlist]]::new($All_Playlists)
             }else{
               $all_Playlists = [System.Collections.Generic.List[Playlist]]::new()
             }
@@ -376,7 +424,11 @@ function Update-Playlist
               } 
             }
             if($removeCount -gt 0){
-              Export-SerializedXML -InputObject $all_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
+              if($all_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+                Export-SerializedXML -InputObject $all_Playlists.items -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
+              }else{
+                Export-SerializedXML -InputObject $all_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
+              }            
             }
             $Null = $all_Playlists.clear()
           }catch{
@@ -388,7 +440,8 @@ function Update-Playlist
           $synchashWeak.Target.Current_playing_media = $Null
         } 
         if(!$no_UIRefresh){
-          Get-Playlists -verboselog:$thisapp.Config.Verbose_logging -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace -Full_Refresh
+          #Get-Playlists -verboselog:$thisapp.Config.Verbose_logging -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace -Full_Refresh
+          Update-Playlists -synchash $synchashWeak.Target -thisApp $thisApp -use_Runspace -GetPlaylists -Full_Refresh
           Get-PlayQueue -verboselog:$false -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace   
         } 
       }catch{
@@ -426,7 +479,11 @@ function Update-Playlist
           }
         }
         if($SortItems -or $Track_To_Update){
-          Export-SerializedXML -InputObject $synchashWeak.Target.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist 
+          if($synchashWeak.Target.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+            Export-SerializedXML -InputObject $synchashWeak.Target.All_Playlists.items -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
+          }else{
+            Export-SerializedXML -InputObject $synchashWeak.Target.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
+          }
           if(!$no_UIRefresh){
             Get-Playlists -verboselog:$thisapp.Config.Verbose_logging -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace -Full_Refresh
           }
@@ -465,10 +522,15 @@ function Update-Playlist
         if($media -and $media -isnot [Media]){
           $media = Convertto-Media -InputObject $media
         }
-        if($synchashWeak.Target.all_playlists -and $lookupid -ne $Null){
-          $Playlists_to_update = $synchashWeak.Target.all_playlists.where({$_.Playlist_tracks.values.id -eq $lookupid})
-        }elseif($synchashWeak.Target.all_playlists){
-          $Playlists_to_update = $synchashWeak.Target.all_playlists
+        if($synchashweak.target.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+          $All_Playlists = $synchashweak.target.All_Playlists.items
+        }else{
+          $All_Playlists = $synchashweak.target.All_Playlists
+        }
+        if($All_Playlists -and $lookupid -ne $Null){
+          $Playlists_to_update = $All_Playlists.where({$_.Playlist_tracks.values.id -eq $lookupid})
+        }elseif($All_Playlists){
+          $Playlists_to_update = $All_Playlists
         }
         foreach($Playlist in $Playlists_to_update){
           if($Playlist.Playlist_id){
@@ -498,9 +560,14 @@ function Update-Playlist
           }                 
         }          
         write-ezlogs ">>>> Saving updated all playlists profile: $($thisApp.Config.Playlists_Profile_Path)"
-        Export-SerializedXML -InputObject $synchashWeak.Target.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
+        if($All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+          Export-SerializedXML -InputObject $All_Playlists.items -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
+        }else{
+          Export-SerializedXML -InputObject $All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
+        }
         if(!$no_UIRefresh){
-          Get-Playlists -verboselog:$thisapp.Config.Verbose_logging -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace -Full_Refresh
+          #Get-Playlists -verboselog:$thisapp.Config.Verbose_logging -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace -Full_Refresh
+          Update-Playlists -synchash $synchashWeak.Target -thisApp $thisApp -use_Runspace -GetPlaylists -Quick_Refresh #-Full_Refresh
         }
       }catch{
         write-ezlogs "An exception occurred updating all playlists" -showtime -catcherror $_
@@ -527,141 +594,145 @@ function Get-Playlists
 {
   [CmdletBinding()]
   param (
-    [switch]$Clear,
     [switch]$Startup,
     [switch]$use_Runspace,
     [switch]$Quick_Refresh,
     [switch]$Full_Refresh,
+    [switch]$Filter_Refresh,
     $synchashWeak,
     $thisApp,
-    [switch]$PlayLink_OnDrop,
-    [switch]$Update_Current_Playlist,
-    [string]$mediadirectory,
-    [string]$Media_Profile_Directory,
-    [string]$Playlist_Profile_Directory,
     $Group,
     [string]$SortBy,
+    [string]$Filter,
     [string]$SortDirection,
     [switch]$SortItems,
     [switch]$VerboseLog,
     [switch]$Import_Playlists_Cache,
-    [switch]$Test
+    [switch]$Test,
+    [switch]$Force
   ) 
   try{
     if($use_Runspace){
       try{
         $existing_Runspace = Stop-Runspace -thisApp $thisApp -runspace_name 'Get_Playlists_RUNSPACE' -check
-        if($existing_Runspace -or $synchashWeak.Target.Playlists_Update_Timer.isEnabled){
-          write-ezlogs "Get-Playlists runspace already exists: $($existing_Runspace) - or Playlists_Update_Timer is enabled: $($synchashWeak.Target.Playlists_Update_Timer.isEnabled), halting another execution to avoid a race condition" -warning #-Dev_mode
+        if($existing_Runspace -or $synchashWeak.Target.Playlists_Update_Timer.isEnabled -and !$Force){
+          write-ezlogs "Get-Playlists runspace already exists: $($existing_Runspace) - or Playlists_Update_Timer is enabled: $($synchashWeak.Target.Playlists_Update_Timer.isEnabled), halting another execution to avoid a race condition" -warning -Verboselog:$VerboseLog -LogLevel 0
           return
         }
       }catch{
         write-ezlogs " An exception occurred checking for existing runspace 'Get_Playlists_RUNSPACE'" -showtime -catcherror $_
       }
     }
+    #$SortItems = $true
+    if(!$Startup){
+      Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'PlayLists_Progress_Ring' -Property 'IsActive' -value $true
+      if($synchashWeak.Target.Playlists_TreeView){
+        Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'Playlists_TreeView' -Property 'AllowDrop' -value $false
+      }
+      if($synchashWeak.Target.LocalMedia_TreeView){
+        Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'LocalMedia_TreeView' -Property 'AllowDrop' -value $false
+      }
+      if($synchashWeak.TargetTrayPlayer_TreeView){
+        Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'TrayPlayer_TreeView' -Property 'AllowDrop' -value $false
+      }
+    }
+    if(-not [System.IO.File]::Exists($thisApp.config.Playlists_Profile_Path) -and [System.IO.File]::Exists("$($thisApp.config.Playlist_Profile_Directory)\All-Playlists-Cache.xml")){
+      try{
+        write-ezlogs ">>>> Converting older All-Playlists-Cache to new All_Playlists_Profile format" -warning
+        $synchashWeak.Target.all_playlists = [Management.Automation.PSSerializer]::Deserialize([System.IO.File]::ReadAllText("$($thisApp.config.Playlist_Profile_Directory)\All-Playlists-Cache.xml"))
+        Export-SerializedXML -InputObject $synchashWeak.Target.all_playlists -Path $thisApp.config.Playlists_Profile_Path -isPlaylist
+      }catch{
+        write-ezlogs "Converting playlists file '$($thisApp.config.Playlist_Profile_Directory)\All-Playlists-Cache.xml' to '$($thisApp.config.Playlists_Profile_Path)'" -CatchError $_
+      }
+    }
+    if(($startup) -and [System.IO.File]::Exists($thisApp.config.Playlists_Profile_Path)){
+      write-ezlogs "#### Updating Playlists from cache import" -loglevel 2
+      if($Verboselog){write-ezlogs ">>>> Importing All Playlists profile: $($thisApp.config.Playlists_Profile_Path)" -showtime}
+      try{
+        $synchashWeak.Target.All_Playlists = Import-SerializedXML -Path $thisApp.config.Playlists_Profile_Path -isPlaylist
+      }catch{
+        write-ezlogs "An exception occurred importing $($thisApp.config.Playlists_Profile_Path)" -showtime -catcherror $_
+      }
+    }elseif(!$synchashWeak.Target.all_playlists.Count -and !$synchashWeak.Target.all_playlists.items.Count){
+      write-ezlogs "Unable to find All playlists cache, generating new one" -showtime -warning
+      #$synchashWeak.Target.all_playlists = [System.Collections.ObjectModel.ObservableCollection[playlist]]::new()
+      $synchashWeak.Target.all_playlists = [MyToolkit.ObservableCollectionView[Playlist]]::new()
+    }elseif(($synchashWeak.Target.all_playlists.count -gt 0 -or $synchashWeak.Target.all_playlists.items.count -gt 0) -and ![System.IO.File]::Exists($thisApp.config.Playlists_Profile_Path)){
+      write-ezlogs ">>>> Saving new all playlists profile to: $($thisApp.Config.Playlists_Profile_Path)"
+      if($synchashWeak.Target.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+        Export-SerializedXML -InputObject $synchashWeak.Target.All_Playlists.items -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
+      }else{
+        Export-SerializedXML -InputObject $synchashWeak.Target.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
+      }            
+    }
+    if(($synchashWeak.Target.all_playlists.count -gt 0 -or $synchashWeak.Target.all_playlists.items.count -gt 0)){   
+      if($Startup -or $synchashWeak.Target.all_playlists -isnot [MyToolkit.ObservableCollectionView[Playlist]]){
+        write-ezlogs ">>>> Creating new ObservableCollection from all_playlists profile" -LogLevel 0 -Verboselog:$VerboseLog
+        $synchashWeak.Target.all_playlists = [MyToolkit.ObservableCollectionView[Playlist]]::new($synchashWeak.Target.all_playlists)
+        #$synchashWeak.Target.all_playlists = [System.Collections.ObjectModel.ObservableCollection[playlist]]::new($synchashWeak.Target.all_playlists)
+      }
+      $synchashWeak.Target.all_playlists.TrackItemChanges = $true
+      $synchashWeak.Target.Get_Playlists_Changes = 0
+      if(!$SortBy -and $thisApp.Config.Playlists_SortBy.Count -gt 0){
+        $SortBy = $thisApp.Config.Playlists_SortBy[0]
+      }
+      if($SortBy -and $SortBy -in $synchashWeak.Target.all_playlists[0].psobject.properties.name){       
+        $synchashWeak.Target.all_playlists.Ascending = ($SortDirection -eq 'Ascending' -or !$SortDirection)
+        write-ezlogs "| Sorting playlists by: $SortBy - Ascending: $($synchashWeak.Target.all_playlists.Ascending)"
+        $synchashWeak.Target.all_playlists.Order = $Null
+        $synchashWeak.Target.all_playlists.Order = {
+          param ($item) 
+          if($SortBy -eq 'playlist_date_added'){
+            $item."$SortBy" -as [Datetime]
+          }else{
+            $item."$SortBy"
+          }
+        }
+      }
+      if($Filter){
+        Write-ezlogs "| Filtering playlists by: $Filter"
+      }
+      $synchashWeak.Target.all_playlists.Filter = $Null
+      $synchashWeak.Target.all_playlists.Filter = {
+        param ($item) 
+        if(-not [string]::IsNullOrEmpty($Filter)){
+          $text = $(($Filter)).trim()
+        }
+        $SearchPattern = "$([regex]::Escape($text))"
+        $($item.name) -match $SearchPattern -or $($item.Title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.playlist_tracks.values.Display_Name) -match $SearchPattern -or $($item.playlist_tracks.values.Artist) -match $SearchPattern -or $($item.playlist_tracks.values.Channel_Name) -match $SearchPattern -or $($item.playlist_tracks.values.Album) -match $SearchPattern -or $($item.playlist_tracks.values.title) -match $SearchPattern
+      }
+      if($synchashWeak.Target.all_playlists.IsTracking){
+        $synchashWeak.Target.all_playlists.IsTracking = $false
+      }
+    }
     if(!$synchashWeak.Target.Get_Playlists_ScriptBlock){
       $synchashWeak.Target.Get_Playlists_ScriptBlock = {
         param (
-          [switch]$Clear,
           [switch]$Startup,
           [switch]$use_Runspace,
           [switch]$Quick_Refresh,
           [switch]$Full_Refresh,
+          [switch]$Filter_Refresh,
           $synchashWeak,
           $thisApp,
-          [switch]$PlayLink_OnDrop,
-          [switch]$Update_Current_Playlist,
-          [string]$mediadirectory,
-          [string]$Media_Profile_Directory,
-          [string]$Playlist_Profile_Directory,
           $Group,
           [string]$SortBy,
+          [string]$Filter,
           [string]$SortDirection,
           [switch]$SortItems,
           [switch]$VerboseLog,
           [switch]$Import_Playlists_Cache,
-          [switch]$Test
+          [switch]$Test,
+          [switch]$Force
         )
         try{
-          $Get_Playlists_Measure = [system.diagnostics.stopwatch]::StartNew()
-          #$SortItems = $true
-          if(!$Startup){
-            Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'PlayLists_Progress_Ring' -Property 'IsActive' -value $true
-            if($synchashWeak.Target.Playlists_TreeView){
-              Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'Playlists_TreeView' -Property 'AllowDrop' -value $false
-            }
-            if($synchashWeak.Target.LocalMedia_TreeView){
-              Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'LocalMedia_TreeView' -Property 'AllowDrop' -value $false
-            }
-            if($synchashWeak.TargetTrayPlayer_TreeView){
-              Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'TrayPlayer_TreeView' -Property 'AllowDrop' -value $false
-            }
+          if($VerboseLog -or $thisApp.Config.Dev_mode){
+            $Get_Playlists_Measure = [system.diagnostics.stopwatch]::StartNew()
           }
-          if(-not [System.IO.File]::Exists($thisApp.config.Playlists_Profile_Path) -and [System.IO.File]::Exists("$($thisApp.config.Playlist_Profile_Directory)\All-Playlists-Cache.xml")){
-            try{
-              write-ezlogs ">>>> Converting older All-Playlists-Cache to new All_Playlists_Profile format" -warning
-              $synchashWeak.Target.all_playlists = [Management.Automation.PSSerializer]::Deserialize([System.IO.File]::ReadAllText("$($thisApp.config.Playlist_Profile_Directory)\All-Playlists-Cache.xml"))
-              Export-SerializedXML -InputObject $synchashWeak.Target.all_playlists -Path $thisApp.config.Playlists_Profile_Path -isPlaylist
-            }catch{
-              write-ezlogs "Converting playlists file '$($thisApp.config.Playlist_Profile_Directory)\All-Playlists-Cache.xml' to '$($thisApp.config.Playlists_Profile_Path)'" -CatchError $_
-            }
-          }
-          if(($startup) -and [System.IO.File]::Exists($thisApp.config.Playlists_Profile_Path)){
-            write-ezlogs "#### Updating Playlists from cache import" -loglevel 2
-            if($Verboselog){write-ezlogs ">>>> Importing All Playlists profile: $($thisApp.config.Playlists_Profile_Path)" -showtime}
-            try{
-              $synchashWeak.Target.All_Playlists = Import-SerializedXML -Path $thisApp.config.Playlists_Profile_Path -isPlaylist
-            }catch{
-              write-ezlogs "An exception occurred importing $($thisApp.config.Playlists_Profile_Path)" -showtime -catcherror $_
-            }
-          }elseif(!$synchashWeak.Target.all_playlists.Count){
-            write-ezlogs "Unable to find All playlists cache, generating new one" -showtime -warning
-            $synchashWeak.Target.all_playlists = [System.Collections.ObjectModel.ObservableCollection[playlist]]::new()
-          }elseif($synchashWeak.Target.all_playlists.count -gt 0 -and ![System.IO.File]::Exists($thisApp.config.Playlists_Profile_Path)){
-            write-ezlogs ">>>> Saving new all playlists profile to: $($thisApp.Config.Playlists_Profile_Path)"
-            Export-SerializedXML -InputObject $synchashWeak.Target.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
-          }
-          if($synchashWeak.Target.all_playlists.count -gt 0){
-            $Process_Playlists_Measure = [system.diagnostics.stopwatch]::StartNew()
-            $synchashWeak.Target.Get_Playlists_Changes = 0
-            if($Startup -or $synchashWeak.Target.all_playlists -isnot [System.Collections.ObjectModel.ObservableCollection[playlist]]){
-              write-ezlogs ">>>> Creating new ObservableCollection from all_playlists profile" -LogLevel 0 -Verboselog:$VerboseLog
-              $synchashWeak.Target.all_playlists = [System.Collections.ObjectModel.ObservableCollection[playlist]]::new($synchashWeak.Target.all_playlists)
-              #$synchashWeak.Target.all_playlists = [System.Windows.Data.CollectionViewSource]::GetDefaultView($synchashWeak.Target.all_playlists)
-            }
-            if(!$SortBy -and $thisApp.Config.Playlists_SortBy.Count -gt 0){
-              $SortBy = $thisApp.Config.Playlists_SortBy[0]
-            }
-            if($SortBy -and $SortBy -in $synchashWeak.Target.all_playlists[0].psobject.properties.name){
-              write-ezlogs "| Sorting playlists by: $SortBy - SortDirection: $SortDirection"
-              if($SortBy -eq 'playlist_date_added'){
-                [System.Collections.ObjectModel.ObservableCollection[playlist]]$synchashWeak.Target.all_playlists = ($synchashWeak.Target.all_playlists | Sort-Object -Property @{Expression = {$_."$SortBy" -as [Datetime]}; Ascending = $($SortDirection -eq 'Ascending')})
-              }else{
-                [System.Collections.ObjectModel.ObservableCollection[playlist]]$synchashWeak.Target.all_playlists = ($synchashWeak.Target.all_playlists | Sort-Object -Property $SortBy -Descending:$($SortDirection -eq 'Descending'))
-              }
-              <#              if(!$SortDirection){
-                  $SortDirection = 'Ascending'
-                  }
-                  if($synchashWeak.Target.all_playlists.CanSort){
-                  $sortdescription = [System.ComponentModel.SortDescription]::new($SortBy,$SortDirection)
-                  if($synchashWeak.Target.all_playlists.SortDescriptions.count -gt 0){
-                  Update-MainWindow -thisApp $thisApp -synchash $synchashWeak.Target -Control 'all_playlists' -Property 'SortDescriptions' -Method 'Clear'
-                  }
-                  Update-MainWindow -thisApp $thisApp -synchash $synchashWeak.Target -Control 'all_playlists' -Property 'SortDescriptions' -Method 'Add' -Method_Value $sortdescription
-                  }else{
-                  write-ezlogs "| All_playlists cannot be sorted -- $($synchashWeak.Target.all_playlists)" -Warning
-              }#>
-
-            }
-            <#            $synchashWeak.Target.all_playlists.Filter = {
-                param ($item) 
-                if(-not [string]::IsNullOrEmpty('Pigeons')){
-                $text = $(('Pigeons')).trim()
-                }
-                $SearchPattern = "$([regex]::Escape($text))"
-                $($item.name) -match $SearchPattern -or $($item.Title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.Artist) -match $SearchPattern -or $($item.Album) -match $SearchPattern -or $($item.playlist_tracks.values.title) -match $SearchPattern
-            }#>
-
+          if(($synchashWeak.Target.all_playlists.count -gt 0 -or $synchashWeak.Target.all_playlists.items.count -gt 0)){
+            if($VerboseLog -or $thisApp.Config.Dev_mode){
+              $Process_Playlists_Measure = [system.diagnostics.stopwatch]::StartNew()
+            }          
             <#            $MediaPropertyNames = ([Media].GetProperties()).Name
                 if($SortItems){
                 $synchashWeak.Target.All_Playlists | & { process {
@@ -687,8 +758,13 @@ function Get-Playlists
             $YoutubeTVIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\Material-Youtubetv.png"
             $TorIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\Material-Pirate.png"
             $SoundcloudIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\Material-Soundcloud.png"
+            if($synchashWeak.Target.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){              
+              $All_Playlists = $synchashWeak.Target.All_Playlists.items
+            }else{
+              $All_Playlists = $synchashWeak.Target.All_Playlists
+            }
             Lock-Object -InputObject $synchashWeak.Target.all_playlists_ListLock -ScriptBlock {
-              $synchashWeak.Target.All_Playlists | & { process {
+              $All_Playlists | & { process {
                   try{
                     if($verboseLog){write-ezlogs ">>>> Adding Playlist $($_.name)" -showtime -color cyan}
                     $Playlist_ID = $_.playlist_id
@@ -952,6 +1028,11 @@ function Get-Playlists
                               }else{
                                 $icon_path = $YoutubeIcon
                               }                            
+                            }elseif($Track.MediaType -eq 'Movie'){        
+                              $Title = "$($Track.Title)"
+                              $artist = $null
+                              if($verboselog){write-ezlogs "| Found Track of type Movie with Title: $($Title) " -showtime -LogLevel 0 -Verboselog:$Verboselog}
+                              $icon_path = $HardDiskIcon
                             }elseif($Track.Artist -and $Track.Title){        
                               $Title = "$($Track.Title)"
                               if($Track.Artist){
@@ -1134,19 +1215,8 @@ function Get-Playlists
             if($Process_Playlists_Measure){
               $Process_Playlists_Measure.stop()
             }
-            if($use_Runspace){
-              if($Startup -or $Full_Refresh){
-                Update-Playlists -synchash $synchashWeak.Target -thisApp $thisApp -UpdateItemssource -Full_Refresh:$Full_Refresh -Quick_Refresh:$Quick_Refresh
-              }
-            }elseif(!$test -and $Full_Refresh){
-              if($synchashWeak.Target.Playlists_TreeView){
-                if($synchashWeak.Target.Playlists_TreeView.Nodes -is [System.IDisposable]){
-                  $synchashWeak.Target.Playlists_TreeView.Nodes.dispose()
-                }
-                $synchashWeak.Target.Playlists_TreeView.itemssource = $synchashWeak.Target.All_Playlists
-              }else{
-                write-ezlogs "No Playlists_Treeview UI is available" -warning
-              }
+            if($Startup -or $Full_Refresh -or $Filter_Refresh){
+              Update-Playlists -synchash $synchashWeak.Target -thisApp $thisApp -UpdateItemssource -Full_Refresh:$Full_Refresh -Quick_Refresh:$($Quick_Refresh -or $Filter_Refresh)
             }
           }elseif($synchashWeak.Target.PlayLists_Progress_Ring){
             Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'PlayLists_Progress_Ring' -Property 'IsActive' -value $false
@@ -1166,6 +1236,9 @@ function Get-Playlists
           if($synchashWeak.TargetTrayPlayer_TreeView){
             Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'TrayPlayer_TreeView' -Property 'AllowDrop' -value $true
           }
+          if($synchashWeak.Target.all_playlists -is [MyToolkit.ObservableCollectionView[Playlist]]){
+            Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'all_playlists' -Property 'IsTracking' -value $true
+          }
           if($Get_Playlists_Measure){
             $Get_Playlists_Measure.stop()
             write-ezlogs "Get-Playlists Measure" -Perf -PerfTimer $Get_Playlists_Measure
@@ -1184,7 +1257,7 @@ function Get-Playlists
       Start-Runspace -scriptblock $synchashWeak.Target.Get_Playlists_ScriptBlock -StartRunspaceJobHandler -arguments $PSBoundParameters -runspace_name $RunspaceName -thisApp $thisApp -synchash $synchashWeak.Target -ApartmentState STA -RestrictedRunspace -function_list write-ezlogs,Update-MainWindow,Update-Playlists,Import-SerializedXML,Export-SerializedXML,Lock-Object
     }else{
       $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant" -and $_.Name -in $PSBoundParameters.keys){$_}}}
-      Invoke-Command -ScriptBlock $synchashWeak.Target.Get_Playlists_ScriptBlock -ArgumentList $Variable_list.value
+      Invoke-Command -ScriptBlock $synchashWeak.Target.Get_Playlists_ScriptBlock -ArgumentList $Startup,$use_Runspace,$Quick_Refresh,$Full_Refresh,$synchashWeak,$thisApp,$Group,$SortBy,$Filter,$SortDirection,$SortItems,$VerboseLog,$Import_Playlists_Cache,$Test,$Force
     } 
   }catch{
     write-ezlogs "An exception occurred in Get-Playlists" -catcherror $_

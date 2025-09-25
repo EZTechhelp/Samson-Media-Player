@@ -140,7 +140,7 @@ function Start-FileWatcher{
             if($isFile -and $path -match $media_pattern){
               #delay first!
               #[void][System.Threading.WaitHandle]::WaitAny($waithandle.Runspace.AsyncWaitHandle,50)
-              Start-sleep -Milliseconds 50
+              [System.Threading.Thread]::Sleep(50)
               write-ezlogs "#### File $($changetype): $($path)" -linesbefore 1
               $Media = Get-MediaProfile -synchash $synchash -thisApp $thisApp -Media_URL $path
               if($Media){ 
@@ -174,7 +174,7 @@ function Start-FileWatcher{
                     $sourceDirectory = $directory
                   }
                   #Sleep first - file may be still copying
-                  Start-sleep 1
+                  [System.Threading.Thread]::Sleep(1000)
                   write-ezlogs "| Add new media path $path to local media profile - length: $($mediainfo.Length)"
                   [void]$synchash.ProfileManager_Queue.Enqueue([PSCustomObject]@{
                       'FullName' = $mediainfo.FullName
@@ -213,14 +213,14 @@ function Start-FileWatcher{
           $thisApp.LocalMedia_Monitor_Enabled = $true
         }      
       }catch{
-        write-ezlogs "An exception occurred in MediaTransportControls_scriptblock" -showtime -catcherror $_
+        write-ezlogs "An exception occurred in filewatcher_ScriptBlock" -showtime -catcherror $_
       } 
       try{
         while(($Changedfilewatcher.EnableRaisingEvents -or $filewatcher.EnableRaisingEvents) -and $thisApp.LocalMedia_Monitor_Enabled -and $waithandle.IsAlive){
           if($waithandle.target.runspace.AsyncWaitHandle){
             [void]$waithandle.target.runspace.AsyncWaitHandle.WaitOne(50)
           }else{
-            start-sleep -Milliseconds 50
+            [System.Threading.Thread]::Sleep(50)
           }
           #[void][System.Threading.WaitHandle]::WaitAny($waithandle.Runspace.AsyncWaitHandle,10)
         }
@@ -260,7 +260,7 @@ function Start-FileWatcher{
     Get-ProfileManager -thisApp $thisApp -synchash $synchash -Startup
   }
   if($use_Runspace){ 
-    Start-Runspace $filewatcher_ScriptBlock -StartRunspaceJobHandler -thisApp $thisApp -synchash $synchash -runspace_name "filewatcher_Runspace_$Runspace_Guid" -Variable_list $PSBoundParameters -RestrictedRunspace -function_list 'write-ezlogs','Get-MediaProfile'
+    Start-Runspace $filewatcher_ScriptBlock -StartRunspaceJobHandler -thisApp $thisApp -synchash $synchash -runspace_name "filewatcher_Runspace_$Runspace_Guid" -Variable_list $PSBoundParameters -RestrictedRunspace -function_list 'write-ezlogs','Get-MediaProfile' -modules_list 'Microsoft.PowerShell.Utility'
   }else{
     Invoke-Command -ScriptBlock $filewatcher_ScriptBlock
   }

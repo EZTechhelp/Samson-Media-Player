@@ -84,25 +84,30 @@ function Get-MediaProfile
       $Ids = $Media_ID
       $Property = 'id'
     }
+    if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+      $All_Playlists = $synchash.All_Playlists.items
+    }else{
+      $All_Playlists = $synchash.All_Playlists
+    }
     $Ids | & { process {
         try{
           #Is it in a custom playlist
-          if(!$track -and $synchash.all_playlists.Playlist_tracks.values.$Property){
+          if(!$track -and $All_Playlists.Playlist_tracks.values.$Property){
             try{
               $track = lock-object -InputObject $synchash.all_playlists_ListLock -ScriptBlock {
-                if($synchash.all_playlists.Playlist_tracks){
-                  $index = $synchash.all_playlists.Playlist_tracks.values.$Property.IndexOf($_)
+                if($All_Playlists.Playlist_tracks){
+                  $index = $All_Playlists.Playlist_tracks.values.$Property.IndexOf($_)
                   if($index -ne -1){
-                    $synchash.all_playlists.Playlist_tracks.values[$index]
+                    $All_Playlists.Playlist_tracks.values[$index]
                   }
                 }
               }
               if(!$track -and $Property -eq 'title'){               
                 $track = lock-object -InputObject $synchash.all_playlists_ListLock -ScriptBlock {
-                  if($synchash.all_playlists.Playlist_tracks){
-                    $index = $synchash.all_playlists.Playlist_tracks.values.'channel_name'.IndexOf($_)
+                  if($All_Playlists.Playlist_tracks){
+                    $index = $All_Playlists.Playlist_tracks.values.'channel_name'.IndexOf($_)
                     if($index -ne -1){
-                      $synchash.all_playlists.Playlist_tracks.values[$index]
+                      $All_Playlists.Playlist_tracks.values[$index]
                     }
                   }
                 }
@@ -123,7 +128,7 @@ function Get-MediaProfile
             }
             if($track.count -gt 1){
               write-ezlogs "[Get-MediaProfile] Found duplicate track $($track.id) in All local Media -- removing" -warning
-              $remove = $track | Select-Object -last 1
+              $remove = [System.Linq.Enumerable]::Last($track)
               $null = $synchash.All_local_Media.Remove($remove)
               Export-SerializedXML -InputObject $synchash.All_local_Media -path $AllLocal_Profile_File_Path
             }elseif(!$track -and $Property -eq 'url' -and [system.io.path]::HasExtension($_)){
@@ -149,7 +154,7 @@ function Get-MediaProfile
             }
             if($track.count -gt 1){
               write-ezlogs "[Get-MediaProfile] Found duplicate track $($track.id) in All Spotify Media -- removing" -warning
-              $remove = $track | Select-Object -last 1
+              $remove = [System.Linq.Enumerable]::Last($track)
               $null = $synchash.All_Spotify_Media.Remove($remove)
               Export-SerializedXML -InputObject $synchash.All_Spotify_Media -Path $AllSpotify_Profile_File_Path
             }
@@ -184,7 +189,7 @@ function Get-MediaProfile
             }
             if($track.count -gt 1){
               write-ezlogs "[Get-MediaProfile] Found duplicate track $($track.id) in All Twitch Media -- removing" -warning
-              $remove = $track | Select-Object -last 1
+              $remove = [System.Linq.Enumerable]::Last($track)
               $null = $synchash.All_Twitch_Media.Remove($remove)
               Export-SerializedXML -InputObject $synchash.All_Twitch_Media -path $AllTwitch_Profile_File_Path
             }
@@ -218,7 +223,7 @@ function Get-MediaProfile
             }
             if($track.count -gt 1){
               write-ezlogs "Found duplicate track $($track.id) in All Youtube Media -- removing" -warning
-              $remove = $track | Select-Object -last 1
+              $remove = [System.Linq.Enumerable]::Last($track)
               $null = $synchash.All_Youtube_Media.Remove($remove)
               Export-SerializedXML -InputObject $synchash.All_Youtube_Media -path $AllYoutube_Profile_File_Path
             }
@@ -347,7 +352,7 @@ function Get-ProfileManager{
             $object = $Null
             $ProcessMessage = $Null
           }catch{
-            Start-Sleep -Milliseconds 500
+            [System.Threading.Thread]::Sleep(500)
             write-ezlogs "[Get-ProfileManager] An exception occurred in ProfileManager_ScriptBlock while loop" -catcherror $_
           }finally{
             [void]$waithandle.runspace.AsyncWaitHandle.WaitOne(100,$false)
@@ -361,7 +366,7 @@ function Get-ProfileManager{
     Start-Runspace $ProfileManager_ScriptBlock -Variable_list $PSBoundParameters -StartRunspaceJobHandler -synchash $synchash -runspace_name "ProfileManager_Runspace" -thisApp $thisapp -CheckforExisting -RestrictedRunspace -function_list 'write-ezlogs' -PSProviders 'Function','Registry','Environment','FileSystem','Variable'
     if($StartupWait){
       while(!$synchash.ProfileManager_Queue -or !$thisApp.ProfileManagerEnabled){
-        start-sleep -Milliseconds 100
+        [System.Threading.Thread]::Sleep(100)
       }
     }
     $Variable_list = $Null
@@ -370,7 +375,7 @@ function Get-ProfileManager{
       $WaitTimer = 0
       while(!$synchash.ProfileManager_Queue.IsEmpty -and $WaitTimer -lt 60){
         $WaitTimer++
-        start-sleep 1
+        [System.Threading.Thread]::Sleep(1000)
       }
       if($WaitTimer -ge 60){
         write-ezlogs "[Get-ProfileManager] Shutdown for ProfileManager timedout -- ProfileManager_Queue is still not empty - Count: $($synchash.ProfileManager_Queue.count) -- will now be forced stopped!" -warning

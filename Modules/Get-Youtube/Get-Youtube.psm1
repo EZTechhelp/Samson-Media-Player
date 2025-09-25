@@ -659,6 +659,11 @@ function Add-YoutubePlaylist
       write-ezlogs "Unable to determine action to perform or was not passed a valid playlist name, cannot continue!" -warning -logtype Youtube
       return
     }
+    if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+      $All_Playlists = $synchash.All_Playlists.items
+    }else{
+      $All_Playlists = $synchash.All_Playlists
+    }
     if($Media.type -match 'Youtube' -or $Media.url -match 'youtube\.com' -or $Media.Source -eq 'Youtube'){   
       #$source_playlist = $synchash.SpotifyTable.Itemssource.SourceCollection | where {$_.PlayList_tracks.id -eq $Media.id}    
       #$synchash.All_Youtube_Media | where {$_.id -eq $Media.id} | select Playlist_ID,Playlist,Playlist_Url -Unique
@@ -706,8 +711,8 @@ function Add-YoutubePlaylist
                 $Playlist_Profile.Source = 'Youtube'
                 Export-Clixml -InputObject $Playlist_Profile -path $Playlist_Profile_path -Force -Encoding Default
                 try{
-                  if($synchash.all_playlists){
-                    foreach($customplaylist in $synchash.all_playlists){
+                  if($All_Playlists){
+                    foreach($customplaylist in $All_Playlists){
                       $custom_playlists = $playlist_Profile.PlayList_tracks.values | Where-Object {$_.Playlist_URL -match 'youtu\.be' -or $_ -match 'youtube\.com'}
                       foreach($item in $custom_playlists){      
                         $customplaylist_Name = $Null       
@@ -726,7 +731,7 @@ function Add-YoutubePlaylist
                     }
                     if($PlaylistUpdate){
                       write-ezlogs ">>>> Saving all_playlists library to: $($thisApp.Config.Playlists_Profile_Path)" -logtype Youtube
-                      Export-SerializedXML -InputObject $synchash.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
+                      Export-SerializedXML -InputObject $All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
                     }
                   }
                 }catch{
@@ -757,8 +762,8 @@ function Add-YoutubePlaylist
                 $existing_CustomPlaylist = [System.IO.Directory]::EnumerateFiles($thisApp.config.Playlist_Profile_Directory,'*','AllDirectories') | where {$_ -match $CustomPlaylist_pattern} 
             }#>
             try{
-              if($synchash.all_playlists){
-                foreach($customplaylist in $synchash.all_playlists){
+              if($All_Playlists){
+                foreach($customplaylist in $All_Playlists){
                   $custom_playlists = $playlist_Profile.PlayList_tracks.values | Where-Object {$_.Playlist_URL -match 'youtu\.be' -or $_ -match 'youtube\.com'}
                   foreach($item in $custom_playlists){      
                     $customplaylist_Name = $Null       
@@ -777,7 +782,7 @@ function Add-YoutubePlaylist
                 }
                 if($PlaylistUpdate){
                   write-ezlogs ">>>> Saving all_playlists library to: $($thisApp.Config.Playlists_Profile_Path)" -logtype Youtube
-                  Export-SerializedXML -InputObject $synchash.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
+                  Export-SerializedXML -InputObject $All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
                 }
               }
             }catch{
@@ -1186,8 +1191,13 @@ function Get-YoutubeStatus
             } 
             #Custom/Imported Playlists
             try{
-              if($synchash.all_playlists){
-                foreach($customplaylist in $synchash.all_playlists){
+              if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+                $All_Playlists = $synchash.All_Playlists.items
+              }else{
+                $All_Playlists = $synchash.All_Playlists
+              }
+              if($All_Playlists){
+                foreach($customplaylist in $All_Playlists){
                   #$custom_playlists = $playlist_Profile.PlayList_tracks.values | where {$_.Playlist_URL -match 'youtu\.be' -or $_ -match 'youtube\.com'}
                   foreach($list in $customplaylist){      
                     $customplaylist_Name = $Null
@@ -1203,7 +1213,7 @@ function Get-YoutubeStatus
                 }
                 if($PlaylistUpdate){
                   write-ezlogs ">>>> Saving all_playlists library to: $($thisApp.Config.Playlists_Profile_Path)" -logtype Youtube
-                  Export-SerializedXML -InputObject $synchash.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
+                  Export-SerializedXML -InputObject $All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
                 }
               }
             }catch{
@@ -1422,11 +1432,12 @@ function Get-YoutubeURL
         $youtube_id = [regex]::matches($URL, "youtu\.be\/(?<value>.*)") | & { process { $_.groups[1].value}}
       }elseif($URL -match "\/embed\/"){
         $youtube_id = ($($URL) -split('\/embed\/'))[1].trim()
-      }elseif($URL -match '\/channel\/'){
+      }
+      if($URL -match '\/channel\/'){
         if($URL -match '\/videos'){
           $playlist = $playlist -replace '\/videos'
         }
-        if($playlist){
+        if($playlist -and !$youtube_id){
           $youtube_id = ($($playlist) -split('\/channel\/'))[1].trim()
         }
         $youtube_type = 'YoutubeChannel' 
@@ -1569,11 +1580,16 @@ function Update-YoutubeMedia
           [void][System.IO.Directory]::CreateDirectory($AllYoutube_Profile_Directory_Path)
         } 
         if($media_to_Update){
-          if($UpdatePlaylists -and $synchash.all_playlists){
+          if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+            $All_Playlists = $synchash.All_Playlists.items
+          }else{
+            $All_Playlists = $synchash.All_Playlists
+          }
+          if($UpdatePlaylists -and $All_Playlists){
             if($synchash.all_playlists -isnot [System.Collections.Generic.List[Playlist]]){
-              $all_Playlists = $synchash.all_playlists | ConvertTo-Playlists -List
+              $all_Playlists = $All_Playlists | ConvertTo-Playlists -List
             }else{
-              $all_Playlists = [System.Collections.Generic.List[Playlist]]::new($synchash.all_playlists)
+              $all_Playlists = [System.Collections.Generic.List[Playlist]]::new($All_Playlists)
             }
             $media_to_Update | & { process {
                 if($_.url){
@@ -1628,7 +1644,8 @@ function Update-YoutubeMedia
           if($UpdatePlaylists -and $all_Playlists){
             Export-SerializedXML -InputObject $all_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
             Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\Get-Playlists\Get-Playlists.psm1" -NoClobber -DisableNameChecking -Scope Local
-            Get-Playlists -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -use_Runspace -Import_Playlists_Cache -Quick_Refresh
+            Update-Playlists -synchash $synchash -thisApp $thisapp -use_Runspace -Import_Playlists_Cache -Quick_Refresh -GetPlaylists
+            #Get-Playlists -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -use_Runspace -Import_Playlists_Cache -Quick_Refresh
             [void]$all_Playlists.clear()
             $all_Playlists = $Null
           }

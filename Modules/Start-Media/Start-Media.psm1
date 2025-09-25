@@ -688,9 +688,14 @@ function Start-Media{
                 return
               }
             }
-            if($synchashWeak.Target.all_playlists){
-              $Playlist_profile = Get-IndexesOf $synchashWeak.Target.all_playlists.Playlist_Tracks.values.id -Value $media.id | & { process {
-                  $synchashWeak.Target.all_playlists.Playlist_Tracks.values[$_]
+            if($synchashweak.target.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+              $All_Playlists = $synchashweak.target.All_Playlists.items
+            }else{
+              $All_Playlists = $synchashweak.target.All_Playlists
+            }
+            if($All_Playlists){
+              $Playlist_profile = Get-IndexesOf $All_Playlists.Playlist_Tracks.values.id -Value $media.id | & { process {
+                  $All_Playlists.Playlist_Tracks.values[$_]
               }}
             }
             foreach($track in $Playlist_profile.Playlist_tracks.values){
@@ -1094,31 +1099,7 @@ function Start-Media{
         [Uri]$vlcurl = $($media_link)
         $duration = $null
         $title = $media.title
-        write-ezlogs "| Unknown media type -- Title: $title" -showtime
-        if($synchashWeak.Target.MiniPlayer_Viewer.isLoaded){
-          try{
-            if($thisApp.Config.Installed_AppID){
-              $appid = $thisApp.Config.Installed_AppID
-            }else{
-              $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
-              if($appid){
-                $thisapp.config.Installed_AppID = $appid
-              }else{
-                $appid = (Get-AllStartApps -Name 'Powershell').AppID
-              }
-            }
-            $Toast = @{
-              AppID = $appid
-              Text = "Cannot load unknown media or path is not available!`nURL: $vlcurl`nTitle: $title"
-              AppLogo = "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"
-            }
-            Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -Toast $Toast
-          }catch{
-            write-ezlogs "An exception occurred attempting to generate the notification balloon - appid: $($appid)" -showtime -catcherror $_
-          }
-        }else{
-          Update-Notifications -Level 'ERROR' -Message "Unknown media or path is not available: $vlcurl" -VerboseLog -thisApp $thisApp -synchash $synchashWeak.Target -Open_Flyout
-        }
+        write-ezlogs "Cannot load unknown media or path is not available!`nURL: $($media.url)`nTitle: $title" -showtime -AlertUI
         $synchashWeak.Target.Stop_media_timer.start()
         return
       }
@@ -1282,7 +1263,7 @@ function Start-Media{
                 }catch{
                   write-ezlogs "An exception occurred relaunching Start-Media" -showtime -catcherror $_
                 }
-              }elseif(($play_timeout -eq 20 -or $play_timeout -eq 25) -and $State -ne 'Opening'){
+              }elseif(($play_timeout -eq 20 -or $play_timeout -eq 25 -or $play_timeout -eq 30) -and $State -ne 'Opening'){
                 write-ezlogs "| Playback still hasnt starting, attempting to execute Update-MainPlayer again for vlc media: $($synchashWeak.Target.vlc.media.mrl)" -showtime -warning
                 Update-MainPlayer -synchash $synchashWeak.Target -thisApp $thisApp -Now_Playing_Label "PLAYING" -Now_Playing_Artist "$($Artist)" -Add_VideoView -New_MediaPlayer -video_url $video_url -vlcurl $vlcurl -media_link $media_link -audio_url $audio_url -Saved_Media_Progress $Saved_Media_Progress -start_Paused:$start_Paused -EnableCasting:$EnableCasting -Live_stream:$Live_stream
               }
@@ -1751,6 +1732,7 @@ function Start-Media{
     'Get-YouTubePlaylistInfo'
     'verboselog' = $verboselog
     'ApartmentState' = 'STA'
+    'modules_list' = 'Microsoft.PowerShell.Utility'
   }
   Start-Runspace @Runspace_Args
   $Variable_list = $Null

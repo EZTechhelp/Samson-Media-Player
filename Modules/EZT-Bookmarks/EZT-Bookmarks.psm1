@@ -55,7 +55,7 @@ function Get-Bookmarks
         write-ezlogs "An exception occurred importing Bookmarks cache" -showtime -catcherror $_
       }
     }
-    $synchash.All_Bookmark_Groups = $synchash.All_Bookmarks.Group_Name | select -Unique | sort
+    $synchash.All_Bookmark_Groups = $synchash.All_Bookmarks.Group_Name | Select-Object -Unique | Sort-Object
     $groupdescription = [System.Windows.Data.PropertyGroupDescription]::new()
     $groupdescription.PropertyName = 'Group_Name'
     $Null = $synchash.All_Bookmarks.GroupDescriptions.Add($groupdescription)
@@ -337,7 +337,7 @@ function Update-Bookmarks
   )
  
   try{
-    $Update_PlayQueue_ScriptBlock ={
+    $Update_Bookmarks_ScriptBlock ={
       param
       (
         $thisApp = $thisApp,
@@ -348,61 +348,18 @@ function Update-Bookmarks
         $Clear = $Clear
       )
       try{
-        if($Remove -and $thisApp.config.Current_Playlist.values -contains $id){
-          try{
-            $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator() | where {$_.value -eq $id} | select * -ExpandProperty key 
-            if(($index_toremove).count -gt 1){
-              write-ezlogs " | Found multiple items in Play Queue matching id $($id) - $($index_toremove | out-string)" -showtime -warning -LogLevel 2
-              foreach($index in $index_toremove){
-                $null = $thisApp.config.Current_Playlist.Remove($index) 
-              }  
-            }else{
-              write-ezlogs " | Removing $($id) from Play Queue" -showtime -LogLevel 2
-              $null = $thisApp.config.Current_Playlist.Remove($index_toremove)
-            }                              
-          }catch{
-            write-ezlogs "An exception occurred updating current config queue playlist" -showtime -catcherror $_
-          }                          
-        }
-        if($UpdateHistory){ 
-          #Update History Playlist
-          if($thisApp.config.History_Playlist){
-            if(($thisApp.config.History_Playlist.GetType()).name -notmatch 'OrderedDictionary'){
-              if($thisApp.Config.Verbose_logging){write-ezlogs "History_Playlist not orderedictionary $(($thisApp.config.History_Playlist.GetType()).name) - converting"  -showtime -warning}
-              $thisApp.config.History_Playlist = ConvertTo-OrderedDictionary -hash ($thisApp.config.History_Playlist)
-            } 
-          }else{
-            Add-Member -InputObject $thisApp.config -Name 'History_Playlist' -Value ([System.Collections.Specialized.OrderedDictionary]::new()) -MemberType NoteProperty -Force 
-          }           
-          if($thisApp.config.History_Playlist.values -notcontains $id){
-            $historycount = ($thisApp.config.History_Playlist.keys | measure -Maximum).Count
-            if($historycount -ge 10){
-              write-ezlogs " | History playlist at over maximum clearing all history" -LogLevel 2 -warning
-              $null = $thisApp.config.History_Playlist.clear()
-            }elseif($historycount -ge 5){
-              $historyindex_toremove = $thisapp.config.History_Playlist.GetEnumerator() | select -last 1
-              write-ezlogs " | History playlist at maximum, dropping oldest index $($historyindex_toremove.value)" -LogLevel 2
-              $null = $thisapp.config.History_Playlist.Remove($historyindex_toremove.key) 
-            }
-            $historyindex = ($thisApp.config.History_Playlist.keys | measure -Maximum).Maximum
-            $historyindex++
-            write-ezlogs " | Adding $($id) to Play history" -showtime
-            $null = $thisApp.config.History_Playlist.add($historyindex,$id)              
-          } 
-        }
-        Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
-        #Export-Clixml -InputObject $thisapp.config -path $thisapp.Config.Config_Path -Force -Encoding UTF8
+
       }catch{
-        write-ezlogs "An exception occurred in Update_PlayQueue_ScriptBlock" -catcherror $_
+        write-ezlogs "An exception occurred in Update_Bookmarks_ScriptBlock" -catcherror $_
       }
     }
     if($use_Runspace){
-      $Variable_list = Get-Variable | where {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"} 
-      Start-Runspace -scriptblock $Update_PlayQueue_ScriptBlock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'Update_PlayQueue_RUNSPACE' -thisApp $thisApp -synchash $synchash
+      $Variable_list = Get-Variable | Where-Object {$_.Options -notmatch "ReadOnly" -and $_.Options -notmatch "Constant"} 
+      Start-Runspace -scriptblock $Update_Bookmarks_ScriptBlock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'Update_Bookmarks_RUNSPACE' -thisApp $thisApp -synchash $synchash
       Remove-Variable Variable_list
     }else{
-      Invoke-Command -ScriptBlock $Update_PlayQueue_ScriptBlock
-      Remove-Variable Update_PlayQueue_ScriptBlock
+      Invoke-Command -ScriptBlock $Update_Bookmarks_ScriptBlock
+      Remove-Variable Update_Bookmarks_ScriptBlock
     }  
   }catch{
     write-ezlogs "An exception occurred in Update-Bookmarks" -showtime -catcherror $_
@@ -446,7 +403,7 @@ function Add-Bookmarks
   }
   if($Update -and $synchash.All_Bookmarks.Bookmark_ID -contains $Bookmark_ID){
     write-ezlogs ">>>> Updating existing bookmark $($Name) with ID $($Bookmark_ID)"
-    $Bookmarks_Profile = $synchash.All_Bookmarks | where {$_.Bookmark_ID -eq $Bookmark_ID}
+    $Bookmarks_Profile = $synchash.All_Bookmarks | Where-Object {$_.Bookmark_ID -eq $Bookmark_ID}
     $Bookmark_encodedID = $Null  
     $Bookmark_encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$Bookmark_URL-$Group_Name")
     $Bookmark_encodedID = [System.Convert]::ToBase64String($Bookmark_encodedBytes)  
@@ -481,7 +438,7 @@ function Add-Bookmarks
         $null = $synchash.All_Bookmarks.AddNewItem($Bookmarks_Profile)
       }else{
         write-ezlogs "A bookmark with name ($($Name)) and ID ($($Bookmark_encodedID)) already exists, updating existing" -warning -loglevel 2
-        $existingProfile = $synchash.All_Bookmarks | where {$_.Bookmark_ID -eq $Bookmark_encodedID}
+        $existingProfile = $synchash.All_Bookmarks | Where-Object {$_.Bookmark_ID -eq $Bookmark_encodedID}
         $existingProfile.Group_Name = $Group_Name
         $existingProfile.Bookmark_Name = $Name
         $existingProfile.Bookmark_ID = $Bookmark_encodedID
@@ -531,13 +488,13 @@ function Remove-Bookmarks
     $Null = New-Item -Path $thisApp.config.Bookmarks_Profile_Directory -ItemType directory -Force
   }
   if($Group_Name){
-    $BookmarksToRemove = $synchash.All_Bookmarks | where {$_.Group_name -eq $Group_Name}
+    $BookmarksToRemove = $synchash.All_Bookmarks | Where-Object {$_.Group_name -eq $Group_Name}
   }else{
-    $BookmarksToRemove = $synchash.All_Bookmarks | where {$_.Bookmark_ID -eq $Bookmark_ID}
+    $BookmarksToRemove = $synchash.All_Bookmarks | Where-Object {$_.Bookmark_ID -eq $Bookmark_ID}
   } 
   if($synchash.All_Bookmarks.CanRemove){
     if($RemoveFromAllGroups){
-      $BookmarksToRemove = $synchash.All_Bookmarks | where {$_.Bookmark_URL -in $BookmarksToRemove.Bookmark_URL}
+      $BookmarksToRemove = $synchash.All_Bookmarks | Where-Object {$_.Bookmark_URL -in $BookmarksToRemove.Bookmark_URL}
     }
     foreach($Bookmark in $BookmarksToRemove){
       if($synchash.All_Bookmarks.Bookmark_ID -contains $Bookmark.Bookmark_ID){

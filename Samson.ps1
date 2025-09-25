@@ -3,7 +3,7 @@
     Samson
 
     .Version
-    1.0.5
+    1.0.6
 
     .Build
     PUBLIC
@@ -1313,9 +1313,14 @@ $synchash.Timer.add_tick({
 $synchash.Update_Playing_Playlist_Timer = [System.Windows.Threading.DispatcherTimer]::New([System.Windows.Threading.DispatcherPriority]::Background)
 $synchash.Update_Playing_Playlist_Timer.add_tick({
     try{
-      if($synchash.All_Playlists.Playlist_Tracks){
-        $current_Playing_Playlist = Get-IndexesOf -Array $synchash.All_Playlists.Playlist_Tracks.values.id -Value $this.tag.id | & { process {
-            $synchash.All_Playlists.Playlist_Tracks.values[$_]
+      if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+        $All_Playlists = $synchash.All_Playlists.items
+      }else{
+        $All_Playlists = $synchash.All_Playlists
+      }
+      if($All_Playlists.Playlist_Tracks){
+        $current_Playing_Playlist = Get-IndexesOf -Array $All_Playlists.Playlist_Tracks.values.id -Value $this.tag.id | & { process {
+            $All_Playlists.Playlist_Tracks.values[$_]
         }}
       }elseif($synchash.Playlists_TreeView.Nodes.ChildNodes.Content.id){
         $current_Playing_Playlist = Get-IndexesOf -Array $synchash.Playlists_TreeView.Nodes.ChildNodes.Content.id -Value $this.tag.id | & { process {
@@ -5030,6 +5035,11 @@ $synchash.PreviewDrop_command = {
     write-ezlogs -text ">>>> d.data $($d.Data.GetDataPresent([Windows.Forms.DataFormats]::Text) | out-string)" -showtime -Dev_mode
     write-ezlogs -text ">>>> d.data GetFormats $($($d.Data.GetData('Records')) | out-string)" -showtime -Dev_mode
     write-ezlogs -text ">>>> d $($d | out-string)" -showtime -Dev_mode
+    if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+      $All_Playlists = $synchash.All_Playlists.items
+    }else{
+      $All_Playlists = $synchash.All_Playlists
+    }
     if($d.Data.GetDataPresent([Windows.Forms.DataFormats]::Text)){
       try{
         $LinkDrop = $d.data.GetData([Windows.Forms.DataFormats]::Text)
@@ -5159,7 +5169,7 @@ $synchash.PreviewDrop_command = {
       }
       write-ezlogs -text "[DragDrop] item $($item | out-string)" -Dev_mode
       $media = $item.tag.Media
-      if($item.Name -eq 'Playlist'){
+      if($item.Name -eq 'Playlist' -or $item.Type -eq 'CustomPlaylist'){
         $From_Playlist_Name = $item.title
         if($synchash.Playlists_TreeView.Items){
           $media = ($synchash.Playlists_TreeView.Items | Where-Object -FilterScript {$_.Title -eq $From_Playlist_Name}).items.tag.media
@@ -5222,11 +5232,11 @@ $synchash.PreviewDrop_command = {
           $d.Effects = [System.Windows.DragDropEffects]::Copy
           $d.Handled = $false
           write-ezlogs -text "[Drag/Drop] >>>> Adding $($media.title) to playlist $($to_Playlist_Name)" -showtime
-          $Playlist_To_Add = Get-IndexesOf -Array $synchash.all_playlists.name -Value $to_Playlist_Name | & { process {
-              if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-                $synchash.all_playlists.GetItemAt($_)
+          $Playlist_To_Add = Get-IndexesOf -Array $All_Playlists.name -Value $to_Playlist_Name | & { process {
+              if($All_Playlists -is [System.Windows.Data.CollectionView]){
+                $All_Playlists.GetItemAt($_)
               }else{
-                $synchash.all_playlists[$_]
+                $All_Playlists[$_]
               }
           }}
           if($Playlist_To_Add){
@@ -5238,7 +5248,7 @@ $synchash.PreviewDrop_command = {
           write-ezlogs -text "An exception occurred adding $($media.id) from $($media.source) to Playlist $to_Playlist_Name" -showtime -CatchError $_
           $error.clear()
         }
-      }elseif($synchash.all_playlists -and $to_Playlist_Name -and $to_Playlist_Name -ne $From_Playlist_Name){
+      }elseif($All_Playlists -and $to_Playlist_Name -and $to_Playlist_Name -ne $From_Playlist_Name){
         try{
           $d.Effects = [System.Windows.DragDropEffects]::Move
           foreach($m in $media){
@@ -5257,27 +5267,20 @@ $synchash.PreviewDrop_command = {
         try{
           $d.Effects = [System.Windows.DragDropEffects]::Move
           $d.Handled = $false
-          #write-ezlogs ">>>> Reordering track $($Media.title) in playlist $($From_Playlist_Name)" -showtime
           if($synchash.Playlists_TreeView.itemssource.SourceCollection){
             $Playlist_items = Get-IndexesOf -Array $synchash.Playlists_TreeView.itemssource.SourceCollection.Title -Value $From_Playlist_Name | & { process {
                 $synchash.Playlists_TreeView.itemssource.SourceCollection[$_].items
             }}
-            #$Playlist_items = ($syncHash.Playlists_TreeView.itemssource.SourceCollection | Where-Object {$_.Title -eq $From_Playlist_Name}).items
           }else{
             $Playlist_items = Get-IndexesOf -Array $synchash.Playlists_TreeView.itemssource.Title -Value $From_Playlist_Name | & { process {
                 $synchash.Playlists_TreeView.itemssource[$_]
             }}
-            #$Playlist_items = ($syncHash.Playlists_TreeView.itemssource | Where-Object {$_.Title -eq $From_Playlist_Name})
           }
-          $Playlist_To_Update = $synchash.all_playlists | Where-Object -FilterScript {$_.Playlist_tracks.values.id -eq $media.id -and $_.Name -eq $From_Playlist_Name}
-          <#          if($Playlist_To_Update){
-              if(($Playlist_To_Update.PlayList_tracks.GetType()).name -notmatch 'OrderedDictionary'){$Playlist_To_Update.PlayList_tracks = ConvertTo-OrderedDictionary -hash ($Playlist_To_Update.PlayList_tracks)}
-          }#>
+          $Playlist_To_Update = $All_Playlists | Where-Object -FilterScript {$_.Playlist_tracks.values.id -eq $media.id -and $_.Name -eq $From_Playlist_Name}
           write-ezlogs -text "Playlist_To_Update: $($Playlist_To_Update | out-string)" -Dev_mode
           $Playlist_update_timer = [System.Windows.Threading.DispatcherTimer]::new()
           $Playlist_update_timer.add_tick({
               try{
-                #write-ezlogs "Playlist to update before: $($Playlist_To_Update.Playlist_tracks.Title | out-string)"
                 if($Playlist_To_Update.Playlist_tracks.values -and $Playlist_items.tag.media){
                   $Playlist_To_Update.PlayList_tracks.clear()
                   $indextoAdd = 0
@@ -5287,7 +5290,6 @@ $synchash.PreviewDrop_command = {
                       [Void]$Playlist_To_Update.PlayList_tracks.add($indextoAdd,$item)
                       $indextoAdd++
                     }
-                    #[Void]$Updated_Playlist.add($item)
                   }
                   $d.Handled = $false
                 }else{
@@ -5302,7 +5304,6 @@ $synchash.PreviewDrop_command = {
           })
           $Playlist_update_timer.start()
           Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace
-          #$syncHash.Playlists_TreeView.itemssource.refresh()
           return
         }catch{
           $d.Handled = $true
@@ -5336,10 +5337,10 @@ $synchash.TreeViewDropped_command = {
     }elseif($e.DraggingNodes.Content){
       $Nodes = $e.DraggingNodes.Content
     }
-    if($e.DropPosition -eq [Syncfusion.UI.Xaml.TreeView.DropPosition]::DropAsChild -and $e.TargetNode.Content.Name -ne 'Playlist'){
-      write-ezlogs -text "[TreeViewDropped] Cannot drop item as child as target is not playlist -- Target Name: $($e.TargetNode.Content.Name)" -Warning
+    if($e.DropPosition -eq [Syncfusion.UI.Xaml.TreeView.DropPosition]::DropAsChild -and $e.TargetNode.Content.Type -ne 'CustomPlaylist'){
+      write-ezlogs -text "[TreeViewDropped] Cannot drop item as child as target is not playlist -- Target Name: $($e.TargetNode.Content.Name) -- Target Type: $($e.TargetNode.Content.Type)" -Warning
       return
-    }elseif($e.TargetNode.Content.Name -eq 'Playlist' -and $Nodes.ID){
+    }elseif($e.TargetNode.Content.Type -eq 'CustomPlaylist' -and $Nodes.ID){
       write-ezlogs -text "[TreeViewDropped] >>>> New dragdrop for node ID: $($Nodes.ID) -- from playlist: $($e.TargetNode.Content.title) -- To playlist: $($Target_PlaylistNode.Content.Title) -- DropPosition: $($e.DropPosition)" -showtime
       Add-Playlist -Media $Nodes.ID -Playlist $e.TargetNode.Content.title -thisApp $thisApp -synchash $synchash -verboselog:$thisApp.Config.Verbose_logging -Use_RunSpace -Export_PlaylistsCache -Update_UI
       return
@@ -5373,7 +5374,7 @@ $synchash.TreeViewDropping_command = {
     [Syncfusion.UI.Xaml.TreeView.TreeViewItemDroppingEventArgs]$e
   )
   try{
-    if($e.TargetNode.Content.Name -eq 'Playlist'){
+    if($e.TargetNode.Content.Name -eq 'Playlist' -or $e.TargetNode.Content.Type -eq 'CustomPlaylist'){
       $Target_PlaylistNode = $e.TargetNode
     }else{
       $Target_PlaylistNode = $e.TargetNode.ParentNode
@@ -5384,9 +5385,9 @@ $synchash.TreeViewDropping_command = {
     }else{
       $SourceNode = $e.data.GetData('Records')
     }
-    if($e.DropPosition -eq [Syncfusion.UI.Xaml.TreeView.DropPosition]::DropAsChild -and $Target_PlaylistNode.Content.Name -ne 'Playlist' -and !$e.Data.GetDataPresent([Windows.Forms.DataFormats]::Text)){
+    if($e.DropPosition -eq [Syncfusion.UI.Xaml.TreeView.DropPosition]::DropAsChild -and ($Target_PlaylistNode.Content.Name -ne 'Playlist' -and $Target_PlaylistNode.Content.Type -ne 'CustomPlaylist') -and !$e.Data.GetDataPresent([Windows.Forms.DataFormats]::Text)){
       $e.Handled = $true
-      write-ezlogs -text "[TreeViewDropping] Cannot drop item as child as target is not playlist -- Target Name: $($e.TargetNode.Content.Name)" -Warning
+      write-ezlogs -text "[TreeViewDropping] Cannot drop item as child as target is not playlist -- Target Name: $($e.TargetNode.Content.Name) -- Target Type: $($e.TargetNode.Content.Type)" -Warning
       return
     }elseif($SourceDataGrid -and $SourceNode.ID -and $e.DropPosition -ne [Syncfusion.UI.Xaml.TreeView.DropPosition]::None){
       if($SourceNode.Playlist_ID -and ('Track' -in $SourceNode.Name -or 'Playlist' -in $SourceNode.Name)){
@@ -5449,8 +5450,8 @@ $synchash.TreeViewDragStarting_command = {
     [Syncfusion.UI.Xaml.TreeView.TreeViewItemDragStartingEventArgs]$e
   )
   try{
-    if('Playlist' -in $e.DraggingNodes.Content.Name){
-      write-ezlogs -text "[TreeViewDragStarting] Cannot drag item as it is a playlist -- Title: $($e.DraggingNodes.Content.Title)" -Warning
+    if('Playlist' -in $e.DraggingNodes.Content.Name -or 'CustomPlaylist' -in $e.DraggingNodes.Content.Type){
+      write-ezlogs -text "[TreeViewDragStarting] Cannot drag item as it is a playlist -- Title: $($e.DraggingNodes.Content.Title) -- Type: $($e.DraggingNodes.Content.Type)" -Warning
       $e.Cancel = $true
       return
     }
@@ -5587,6 +5588,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     }elseif($sender.datacontext.content.id){
       $media = $sender.datacontext.content
     }
+    if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+      $All_Playlists = $synchash.All_Playlists.items
+    }else{
+      $All_Playlists = $synchash.All_Playlists
+    }
     if($sender.parent.header -eq 'Add Artist to...' -and $media.Artist){
       $Selected_Media = foreach($artist in $media.Artist){
         Get-IndexesOf -Array $synchash.All_local_Media.artist -Value $artist | & { process {
@@ -5650,14 +5656,14 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       $Selected_Media = $sender.datacontext
       write-ezlogs -text "Found $($Selected_Media.count) media from sender.datacontext"
     }elseif($sender.header -in 'Add Playlist to Play Queue','Add to Play Queue','Play','Play Queue'){
-      if($PlaylistID  -and $synchash.all_playlists.Playlist_ID){
+      if($PlaylistID  -and $All_Playlists.Playlist_ID){
         $Selected_Media = lock-object -InputObject $synchash.all_playlists_ListLock -ScriptBlock {
-          $index = $synchash.all_playlists.Playlist_ID.IndexOf($PlaylistID )
+          $index = $All_Playlists.Playlist_ID.IndexOf($PlaylistID )
           if($index -ne -1){
-            if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-              $synchash.all_playlists.GetItemAt($index).PlayList_tracks.values
+            if($All_Playlists -is [System.Windows.Data.CollectionView]){
+              $All_Playlists.GetItemAt($index).PlayList_tracks.values
             }else{
-              $synchash.all_playlists[$index].PlayList_tracks.values
+              $All_Playlists[$index].PlayList_tracks.values
             }
           }
         }
@@ -5698,13 +5704,18 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   if(!$mediaid){
     $mediaid = $sender.tag.Source.Selecteditem.id
   }
-  if(!$media.url -and $Playlist_ID -and $synchash.all_playlists.Playlist_ID){
-    $pindex = $synchash.all_playlists.Playlist_ID.IndexOf($Playlist_ID)
+  if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+    $All_Playlists = $synchash.All_Playlists.items
+  }else{
+    $All_Playlists = $synchash.All_Playlists
+  }
+  if(!$media.url -and $Playlist_ID -and $All_Playlists.Playlist_ID){
+    $pindex = $All_Playlists.Playlist_ID.IndexOf($Playlist_ID)
     if($pindex -ne -1){
-      if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-        $playlist_lookup = $synchash.all_playlists.GetItemAt($pindex)
+      if($All_Playlists -is [System.Windows.Data.CollectionView]){
+        $playlist_lookup = $All_Playlists.GetItemAt($pindex)
       }else{
-        $playlist_lookup = $synchash.all_playlists[$pindex]
+        $playlist_lookup = $All_Playlists[$pindex]
       }
     }
     if($mediaid -and $playlist_lookup.playlist_tracks.values.id){
@@ -5756,15 +5767,15 @@ $synchash.Add_to_Playlist_timer.add_Tick({
         }elseif($sender.tag.datacontext.Playlist_ID){
           $Playlist_ID = $sender.tag.datacontext.Playlist_ID
         }
-        if($Playlist_ID -and $synchash.all_playlists.Playlist_ID){
+        if($Playlist_ID -and $All_Playlists.Playlist_ID){
           $Playlist_items = lock-object -InputObject $synchash.all_playlists_ListLock -ScriptBlock {
-            if($synchash.all_playlists.Playlist_ID){
-              $index = $synchash.all_playlists.Playlist_ID.IndexOf($Playlist_ID)
+            if($All_Playlists.Playlist_ID){
+              $index = $All_Playlists.Playlist_ID.IndexOf($Playlist_ID)
               if($index -ne -1){
-                if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-                  $Playlist = $synchash.all_playlists.GetItemAt($index).PlayList_tracks.values
+                if($All_Playlists -is [System.Windows.Data.CollectionView]){
+                  $Playlist = $All_Playlists.GetItemAt($index).PlayList_tracks.values
                 }else{
-                  $Playlist = $synchash.all_playlists[$index].PlayList_tracks.values
+                  $Playlist = $All_Playlists[$index].PlayList_tracks.values
                 }
               }
             }
@@ -5852,11 +5863,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
         }elseif($sender.tag.datacontext.Playlist_ID){
           $Playlist_ID = $sender.tag.datacontext.Playlist_ID
         }
-        $sourceplaylist = Get-IndexesOf -Array $synchash.All_playlists.playlist_id -Value $Playlist_ID | & { process {
-            if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-              $synchash.all_playlists.GetItemAt($_)
+        $sourceplaylist = Get-IndexesOf -Array $All_Playlists.playlist_id -Value $Playlist_ID | & { process {
+            if($All_Playlists -is [System.Windows.Data.CollectionView]){
+              $All_Playlists.GetItemAt($_)
             }else{
-              $synchash.All_Playlists[$_]
+              $All_Playlists[$_]
             }
         }}
         if($result -eq $sourceplaylist.Name){
@@ -5916,14 +5927,18 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       $Playlist = $sender.datacontext.content.title
       $PlaylistID = $sender.datacontext.content.Playlist_ID
     }
-
-    if($synchash.all_playlists.playlist_ID){
-      $pindex = $synchash.all_playlists.playlist_ID.indexof($PlaylistID)
+    if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+      $All_Playlists = $synchash.All_Playlists.items
+    }else{
+      $All_Playlists = $synchash.All_Playlists
+    }
+    if($All_Playlists.playlist_ID){
+      $pindex = $All_Playlists.playlist_ID.indexof($PlaylistID)
       if($pindex -ne -1){
-        if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-          $Playlist_to_Export = $synchash.all_playlists.GetItemAt($pindex)
+        if($All_Playlists -is [System.Windows.Data.CollectionView]){
+          $Playlist_to_Export = $All_Playlists.GetItemAt($pindex)
         }else{
-          $Playlist_to_Export = $synchash.all_playlists[$pindex]
+          $Playlist_to_Export = $All_Playlists[$pindex]
         }
       }
     }
@@ -5958,9 +5973,14 @@ $synchash.Add_to_Playlist_timer.add_Tick({
 [System.Windows.RoutedEventHandler]$synchash.Export_AllPlaylists_Command = {
   param($sender)
   try{
-    if(($synchash.all_playlists.count -lt 1)){
+    if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+      $All_Playlists = $synchash.All_Playlists.items
+    }else{
+      $All_Playlists = $synchash.All_Playlists
+    }
+    if(($All_Playlists.count -lt 1)){
       write-ezlogs -text 'Cant find playlists from all_playlists cache, looking for any playlist profiles' -showtime -Warning
-      $synchash.all_playlists = [System.Collections.Generic.List[Object]]::new()
+      $All_Playlists = [System.Collections.Generic.List[Object]]::new()
       $playlist_pattern = [regex]::new('$(?<=((?i)Playlist.xml))')
       [System.IO.Directory]::EnumerateFiles($thisApp.config.Playlist_Profile_Directory,'*','AllDirectories').where({$_ -match $playlist_pattern}) | & { process {
           $profile_path = $null
@@ -5975,9 +5995,9 @@ $synchash.Add_to_Playlist_timer.add_Tick({
               write-ezlogs -text "An exception occurred importing Playlist profile path ($profile_path)" -showtime -CatchError $_
             }
             $Playlist_encodedTitle = $Playlist_profile.Playlist_ID
-            if($Playlist_encodedTitle -and $synchash.all_playlists.Playlist_ID -notcontains $Playlist_encodedTitle){
+            if($Playlist_encodedTitle -and $All_Playlists.Playlist_ID -notcontains $Playlist_encodedTitle){
               try{
-                [Void]$synchash.all_playlists.Add($Playlist_profile)
+                [Void]$All_Playlists.Add($Playlist_profile)
               }catch{
                 write-ezlogs -text "An exception occurred adding playlist ($Playlist_encodedTitle) from path $profile_path" -showtime -CatchError $_
               }
@@ -5985,11 +6005,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
           }
       }}
     }
-    if($synchash.all_playlists.count -gt 0){
+    if($All_Playlists.count -gt 0){
       $folder = Open-FolderDialog -Title 'Select the directory where all playlists will exported to'
       if([System.IO.Directory]::Exists($folder)){
         write-ezlogs -text ">>>> Exporting All Playlists to path $folder" -showtime
-        $synchash.all_playlists | & { process {
+        $All_Playlists | & { process {
             try{
               write-ezlogs -text "| Exporting Playlist $($_.name) to $($folder)\$($_.name)"
               Export-Clixml -InputObject $_ -Path "$($folder)\$($_.name).xml" -Force -Encoding UTF8
@@ -6037,6 +6057,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
         write-ezlogs -text 'User did not wish to overwrite any existing playlists found' -showtime
       }
     }
+    if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+      $All_Playlists = $synchash.All_Playlists.items
+    }else{
+      $All_Playlists = $synchash.All_Playlists
+    }
     $results | & { process {
         if([system.io.file]::Exists($_)){
           write-ezlogs -text ">>>> Importing playlist profile to $_" -showtime
@@ -6049,13 +6074,13 @@ $synchash.Add_to_Playlist_timer.add_Tick({
             $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
             $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid Playlist!',"The file ($($_)) does not appear to be a valid playlist profile that can be imported",$okandCancel,$Button_Settings)
             return
-          }elseif($synchash.All_Playlists.id -contains $Playlist_profile.Playlist_ID -and !$Overwrite_All){
+          }elseif($All_Playlists.id -contains $Playlist_profile.Playlist_ID -and !$Overwrite_All){
             $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Ok'
             $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
             $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Playlist Already Exists!',"The playlist ($($Playlist_profile.Name)) already exists with id $($($Playlist_profile.ID))",$okandCancel,$Button_Settings)
             return
-          }elseif($synchash.All_Playlists.Name -contains $Playlist_profile.Name -and !$Overwrite_All){
+          }elseif($All_Playlists.Name -contains $Playlist_profile.Name -and !$Overwrite_All){
             $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Yes'
             $Button_Settings.NegativeButtonText = 'No'
@@ -6106,7 +6131,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   param($sender)
   try{
     write-ezlogs -text '>>>> Manually refreshing all playlists' -showtime
-    Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -Quick_Refresh
+    Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -Full_Refresh
   }catch{
     write-ezlogs -text 'An exception occurred in Refresh_PlaylistCommand' -showtime -CatchError $_
   }
@@ -6128,7 +6153,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
     }elseif($this.Header -in $thisApp.Config.Playlists_SortBy){
       [void]$thisApp.Config.Playlists_SortBy.Remove($this.Header)
     }
-    Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -Startup -use_Runspace -SortBy $this.Header
+    Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -SortBy $this.Header -Filter_Refresh
     $this.parent.items | & { process {
         if($_.Header -eq $this.Header){
           Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
@@ -6196,44 +6221,86 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   }
 }
 
-[System.Windows.RoutedEventHandler]$Sort_PlaylistItems_Command = {
-  Param($sender)
-  try{
-    if($sender.datacontext.Playlist_ID){
-      $PlaylistID = $sender.datacontext.Playlist_ID
-      $Playlist = $sender.datacontext.title
-    }elseif($sender.tag.Source.Selecteditem.Playlist_ID){
-      $Playlist = $sender.tag.Source.Selecteditem.title
-      $PlaylistID = $sender.tag.Source.Selecteditem.Playlist_ID
-    }elseif($sender.tag.datacontext.Playlist_ID){
-      $Playlist = $sender.tag.datacontext.title
-      $PlaylistID = $sender.tag.datacontext.Playlist_ID
-    }elseif($sender.datacontext.content.Playlist_ID){
-      $Playlist = $sender.datacontext.content.title
-      $PlaylistID = $sender.datacontext.content.Playlist_ID
-    }
-
-    if($synchash.all_playlists.playlist_ID){
-      $pindex = $synchash.all_playlists.playlist_ID.indexof($PlaylistID)
-      if($pindex -ne -1){
-        if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-          $Playlist_to_Update = $synchash.all_playlists.GetItemAt($pindex)
-        }else{
-          $Playlist_to_Update = $synchash.all_playlists[$pindex]
+if($thisApp.Config.Dev_mode){
+  [System.Windows.RoutedEventHandler]$Sort_PlaylistItems_Command = {
+    Param($sender)
+    try{
+      if($sender.datacontext.Playlist_ID){
+        $PlaylistID = $sender.datacontext.Playlist_ID
+        $Playlist = $sender.datacontext.title
+      }elseif($sender.tag.Source.Selecteditem.Playlist_ID){
+        $Playlist = $sender.tag.Source.Selecteditem.title
+        $PlaylistID = $sender.tag.Source.Selecteditem.Playlist_ID
+      }elseif($sender.tag.datacontext.Playlist_ID){
+        $Playlist = $sender.tag.datacontext.title
+        $PlaylistID = $sender.tag.datacontext.Playlist_ID
+      }elseif($sender.datacontext.content.Playlist_ID){
+        $Playlist = $sender.datacontext.content.title
+        $PlaylistID = $sender.datacontext.content.Playlist_ID
+      }
+      if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+        $All_Playlists = $synchash.All_Playlists.items
+      }else{
+        $All_Playlists = $synchash.All_Playlists
+      }
+      if($All_Playlists.playlist_ID){
+        $pindex = $All_Playlists.playlist_ID.indexof($PlaylistID)
+        if($pindex -ne -1){
+          if($All_Playlists -is [System.Windows.Data.CollectionView]){
+            $Playlist_to_Update = $All_Playlists.GetItemAt($pindex)
+          }else{
+            $Playlist_to_Update = $All_Playlists[$pindex]
+          }
         }
       }
+      if($Playlist_to_Update){
+        write-ezlogs ">>>> Updating Sortitems by to : $($Sender.Header) for Playlist: $($Playlist_to_Update.title)"
+        $Playlist_to_Update.SortItemsBy = $Sender.Header
+        #Update-Playlist -thisApp $thisApp -synchash $synchash -Playlist_ID $Playlist_to_Update.Playlist_ID -update -use_Runspace
+        Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -SortItems -Quick_Refresh -Filter_Refresh
+      }else{
+        write-ezlogs "Unable to find playlist to update!" -warning
+      }
+    }catch{
+      write-ezlogs -text "An exception occurred in Click event for menuitem: $($this.Header)" -CatchError $_
     }
-    if($Playlist_to_Update){
-      write-ezlogs ">>>> Updating Sortitems by to : $($Sender.Header) for Playlist: $($Playlist_to_Update.title)"
-      $Playlist_to_Update.SortItemsBy = $Sender.Header
-      #Update-Playlist -thisApp $thisApp -synchash $synchash -Playlist_ID $Playlist_to_Update.Playlist_ID -update -use_Runspace
-      Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -SortItems
-    }else{
-      write-ezlogs "Unable to find playlist to update!" -warning
+  }
+}
+
+$synchash.PlaylistFilter_timer = [System.Windows.Threading.DispatcherTimer]::New([System.Windows.Threading.DispatcherPriority]::DataBind)
+$synchash.PlaylistFilter_timer.add_Tick({
+    try{
+      if($synchash.all_playlists -is [MyToolkit.ObservableCollectionView[Playlist]]){
+        Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -Filter $this.tag -Filter_Refresh
+      }else{
+        write-ezlogs -text 'Cannot processing filter on all_playlists - is not a filterable type' -warning
+      }
+    }catch{
+      write-ezlogs -text "An exception occurred in PlaylistFilter_timer - attempted filter: $($this.tag)" -CatchError $_
+    }finally{
+      $this.tag = $null
+      $this.stop()
+    }
+})
+$Filter_PlaylistItems_Command = {
+  Param($sender)
+  try{
+    if(!$synchash.PlaylistFilter_timer.isEnabled){
+      $synchash.PlaylistFilter_timer.tag = $sender.text
+      $synchash.PlaylistFilter_timer.start()
     }
   }catch{
-    write-ezlogs -text "An exception occurred in Click event for menuitem: $($this.Header)" -CatchError $_
+    write-ezlogs -text 'An exception occurrred in VideoViewPlaylistFilterTextBox.Add_TextChanged event' -showtime -CatchError $_
   }
+}
+if($synchash.PlaylistFilterTextBox){
+  $synchash.PlaylistFilterTextBox.Add_TextChanged($Filter_PlaylistItems_Command)
+}
+if($synchash.VideoViewPlaylistFilterTextBox){
+  $synchash.VideoViewPlaylistFilterTextBox.Add_TextChanged($Filter_PlaylistItems_Command)
+}
+if($synchash.LibraryPlaylistFilterTextBox){
+  $synchash.LibraryPlaylistFilterTextBox.Add_TextChanged($Filter_PlaylistItems_Command)
 }
 #----------------------------------------------
 #endregion Sort Playlists
@@ -6258,6 +6325,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       $Playlist = $sender.DataContext.Content.Name
       $Playlist_ID = $sender.DataContext.Content.Playlist_ID
     }
+    if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+      $All_Playlists = $synchash.All_Playlists.items
+    }else{
+      $All_Playlists = $synchash.All_Playlists
+    }
     if($Playlist){
       write-ezlogs -text "[DeletePlaylist_Command] Prompting for to confirm playlist deletion for $Playlist..." -showtime
       $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
@@ -6267,39 +6339,39 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,"Delete Playlist $Playlist","Are you sure you wish to remove the $Playlist Playlist? This will not remove the media items in the playlist",$okandCancel,$Button_Settings)
       if($result -eq 'Affirmative'){
         if($Playlist_ID){
-          if($synchash.all_playlists.playlist_ID){
-            $index = $synchash.all_playlists.playlist_ID.indexof($Playlist_ID)
+          if($All_Playlists.playlist_ID){
+            $index = $All_Playlists.playlist_ID.indexof($Playlist_ID)
             if($index -ne -1){
-              if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-                $playlist_to_remove = $synchash.all_playlists.GetItemAt($index)
+              if($All_Playlists -is [System.Windows.Data.CollectionView]){
+                $playlist_to_remove = $All_Playlists.GetItemAt($index)
               }else{
-                $playlist_to_remove = $synchash.all_playlists[$index]
+                $playlist_to_remove = $All_Playlists[$index]
               }
             }
           }else{
-            $playlist_to_remove = Get-IndexesOf -Array $synchash.All_playlists.playlist_id -Value $Playlist_ID | & { process {
-                if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-                  $synchash.all_playlists.GetItemAt($_)
+            $playlist_to_remove = Get-IndexesOf -Array $All_Playlists.playlist_id -Value $Playlist_ID | & { process {
+                if($All_Playlists -is [System.Windows.Data.CollectionView]){
+                  $All_Playlists.GetItemAt($_)
                 }else{
-                  $synchash.All_Playlists[$_]
+                  $All_Playlists[$_]
                 }
             }}
           }
-        }elseif($Playlist -and $synchash.all_playlists.name){
-          $index = $synchash.all_playlists.name.indexof($Playlist)
+        }elseif($Playlist -and $All_Playlists.name){
+          $index = $All_Playlists.name.indexof($Playlist)
           if($index -ne -1){
-            if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-              $playlist_to_remove = $synchash.all_playlists.GetItemAt($index)
+            if($All_Playlists -is [System.Windows.Data.CollectionView]){
+              $playlist_to_remove = $All_Playlists.GetItemAt($index)
             }else{
-              $playlist_to_remove = $synchash.all_playlists[$index]
+              $playlist_to_remove = $All_Playlists[$index]
             }
           }
         }
         if($playlist_to_remove){
           write-ezlogs -text "Removing playlist $Playlist" -showtime -Warning
-          [Void]$synchash.all_playlists.Remove($playlist_to_remove)
+          [Void]$All_Playlists.Remove($playlist_to_remove)
           write-ezlogs -text "Saving updated playlist library to: $($thisApp.config.Playlist_Profile_Directory)\All-Playlists-Cache.xml" -showtime -Warning
-          Export-SerializedXML -InputObject $synchash.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
+          Export-SerializedXML -InputObject $All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
           Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -Full_Refresh -use_Runspace
         }else{
           write-ezlogs -text "Unable to find playlist to remove: $Playlist" -showtime -Warning -AlertUI
@@ -6390,7 +6462,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       Update-Playlist -Playlist $sender.header -media $media -synchash $synchash -thisApp $thisApp -RemoveFromAll -use_Runspace
       return
     }
-    if($sender.tag.Media.Name -eq 'Playlist'){
+    if($sender.tag.Media.Name -eq 'Playlist' -or $sender.tag.Media.Type -eq 'CustomPlaylist'){
       $Playlist = $sender.Tag.Media.Playlist_name
     }elseif($sender.tag.Source.Selecteditem.title){
       $Playlist = $sender.tag.Source.Selecteditem.title
@@ -6426,7 +6498,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       $Playlist = $sender.Tag.datacontext.title
       $PlaylistID = $sender.Tag.datacontext.Playlist_ID
     }
-    if(!$PlaylistID -and $sender.tag.Media.Name -eq 'Playlist'){
+    if(!$PlaylistID -and ($sender.tag.Media.Name -eq 'Playlist' -or $sender.tag.Media.Type -eq 'CustomPlaylist')){
       $PlaylistID = $sender.tag.Media.Playlist_ID
       $Playlist = $sender.Tag.Media.Playlist_name
     }
@@ -6562,20 +6634,24 @@ $synchash.Add_to_Playlist_timer.add_Tick({
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.OpenFolder_Command  = {
   param($sender)
-  $media = $_.OriginalSource.DataContext
-  if(!$media.url){$media = $sender.tag}
-  if(!$media.url){$media = $sender.tag.Media}
-  $path = $media.directory
-  if($thisApp.Config.Verbose_logging){write-ezlogs -text "Opening Directory path $($path)" -showtime}
-  if([System.IO.Directory]::Exists($path)){
-    Start-Process $path
-  }elseif([System.IO.Directory]::Exists([regex]::unescape($path))){
-    Start-Process -FilePath $([regex]::unescape($path))
-  }elseif([System.IO.Directory]::Exists([regex]::escape($path))){
-    Start-Process -FilePath $([regex]::escape($path))
-  }else{
-    write-ezlogs -text "Directory Path $($path) is invalid!" -showtime -Warning
-    Update-Notifications  -Level 'WARNING' -Message "Unable to find path $($path) to open!" -VerboseLog -Message_color 'Orange' -thisApp $thisApp -synchash $synchash -Open_Flyout -MessageFontWeight bold -LevelFontWeight Bold -No_runspace
+  try{
+    $media = $_.OriginalSource.DataContext
+    if(!$media.url){$media = $sender.tag}
+    if(!$media.url){$media = $sender.tag.Media}
+    $path = $media.directory
+    if($thisApp.Config.Verbose_logging){write-ezlogs -text "Opening Directory path $($path)" -showtime}
+    if([System.IO.Directory]::Exists($path)){
+      Start-Process $path
+    }elseif([System.IO.Directory]::Exists([regex]::escape($path))){
+      Start-Process -FilePath $([regex]::unescape($path))
+    }elseif([System.IO.Directory]::Exists([regex]::unescape($path))){
+      Start-Process -FilePath $([regex]::escape($path))
+    }else{
+      write-ezlogs -text "Directory Path $($path) is invalid!" -showtime -Warning
+      Update-Notifications  -Level 'WARNING' -Message "Unable to find path $($path) to open!" -VerboseLog -Message_color 'Orange' -thisApp $thisApp -synchash $synchash -Open_Flyout -MessageFontWeight bold -LevelFontWeight Bold -No_runspace
+    }
+  }catch{
+    write-ezlogs -text "An exception occurred in OpenFolder_Command" -CatchError $_
   }
 }
 #----------------------------------------------
@@ -6711,17 +6787,22 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   try{
     $playlistitem = $item.originalsource.DataContext
     if($sender.isMouseOver){
+      if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+        $All_Playlists = $synchash.All_Playlists.items
+      }else{
+        $All_Playlists = $synchash.All_Playlists
+      }
       if(!$playlistitem){
         $playlistitem = $item.node.content
       }
-      if($playlistitem.Playlist_ID -and $synchash.all_playlists.Playlist_ID){
-        if($synchash.all_playlists -is [System.Windows.Data.CollectionView]){
-          $pindex = $synchash.all_playlists.playlist_id.indexof($playlistitem.Playlist_ID)
+      if($playlistitem.Playlist_ID -and $All_Playlists.Playlist_ID){
+        if($All_Playlists -is [System.Windows.Data.CollectionView]){
+          $pindex = $All_Playlists.playlist_id.indexof($playlistitem.Playlist_ID)
           if($pindex -ne -1){
-            $Playlist = $synchash.all_playlists.GetItemAt($pindex)
+            $Playlist = $All_Playlists.GetItemAt($pindex)
           }
         }else{
-          $Playlist = $synchash.all_playlists.where({$_.Playlist_ID -eq $playlistitem.Playlist_ID})
+          $Playlist = $All_Playlists.where({$_.Playlist_ID -eq $playlistitem.Playlist_ID})
         }
       }
       if($item.node){
@@ -6868,9 +6949,14 @@ if($synchash.LocalMedia_TreeView){
             $Config_Twitch.Enable_LiveAlert = $Enable_liveAlert
           }
         }
-        if($synchash.all_playlists.Playlist_tracks.values.url){
-          $playlist_track = Get-IndexesOf -Array $synchash.all_playlists.Playlist_tracks.values.url -Value $media.url | & { process {
-              $playlist_track = $synchash.all_playlists.Playlist_tracks.values[$_]
+        if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+          $All_Playlists = $synchash.All_Playlists.items
+        }else{
+          $All_Playlists = $synchash.All_Playlists
+        }
+        if($All_Playlists.Playlist_tracks.values.url){
+          $playlist_track = Get-IndexesOf -Array $All_Playlists.Playlist_tracks.values.url -Value $media.url | & { process {
+              $playlist_track = $All_Playlists.Playlist_tracks.values[$_]
               if($playlist_track){
                 $playlist_track.Enable_LiveAlert = $Enable_liveAlert
                 $playlist_track
@@ -6944,31 +7030,45 @@ if($synchash.LocalMedia_TreeView){
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.FindYoutube_Command = {
   param($sender)
-  $datacontext = $_.OriginalSource.DataContext
-  $media = $_.OriginalSource.DataContext
-  if(!$media.url){$media = $sender.tag}
-  if(!$media.url){$media = $sender.tag.Media}
-  if([string]::IsNullOrEmpty($media.url)){$media = $sender.selecteditem.tag.Media}
-  write-ezlogs -text "[FindYoutube_Command] Media to find on Youtube: $($media | out-string)" -Dev_mode
+  if($_.OriginalSource.DataContext.id){
+    $media = $sender.OriginalSource.DataContext
+  }elseif($sender.tag.id){
+    $media = $sender.tag
+  }elseif($sender.tag.Media.id){
+    $media = $sender.tag.Media
+  }elseif($sender.datacontext.Record.id){
+    $media = $sender.datacontext.Record
+  }elseif($sender.datacontext.content.id){
+    $media = $sender.datacontext.content
+  }elseif($sender.selecteditem.tag.Media.id){
+    $media = $sender.selecteditem.tag.Media
+  }
+  write-ezlogs -text "[FindYoutube_Command] Media to browse: $($media.title)" -Dev_mode
   if($media.id -and ($media.title -or $media.name)){
     try{
-      if(!$media.title){
-        $query = "`"$($media.name)`""
-      }else{
-        $query = "`"$($media.title)`""
-      }
-      if($media.artist){
-        $query += " `"$($media.artist)`""
-      }elseif($media.artist_name){
-        $query += " `"$($media.artist_name)`""
-      }
       if($synchash.WebBrowserAnchorable){
         $synchash.WebBrowserAnchorable.isSelected = $true
       }
       if($synchash.MainGrid_Top_TabControl){
         $synchash.MainGrid_Top_TabControl.SelectedIndex = 1
       }
-      $url = "https://www.youtube.com/results?search_query=$([System.Web.HttpUtility]::UrlEncode($query))"
+      if($media.Type -eq 'Twitch' -or $media.url -match 'twitch\.tv'){
+        $url = "https://www.twitch.tv/$($Media.Channel_Name)/about"
+      }elseif($Sender.Header -eq 'Find on Youtube'){
+        if(!$media.title){
+          $query = "`"$($media.name)`""
+        }else{
+          $query = "`"$($media.title)`""
+        }
+        if($media.artist){
+          $query += " `"$($media.artist)`""
+        }elseif($media.artist_name){
+          $query += " `"$($media.artist_name)`""
+        }
+        $url = "https://www.youtube.com/results?search_query=$([System.Web.HttpUtility]::UrlEncode($query))"
+      }else{
+        $url = "https://www.youtube.com/channel/$($Media.Channel_ID)"
+      }
       $synchash.WebBrowser_url = $url
       if($synchash.MiniPlayer_Viewer.isVisible){
         if(!$synchash.WebBrowserAnchorable.isFloating){
@@ -6987,6 +7087,7 @@ if($synchash.LocalMedia_TreeView){
         }
         Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Open
       }
+      write-ezlogs -text ">>>> Navigating web browser to: $($url)"
       Start-WebNavigation -uri $url -synchash $synchash -WebView2 $synchash.WebBrowser -thisScript $thisScript -thisApp $thisApp
       $synchash.Webbrowseranchorable.isselected = $true
     }catch{
@@ -6998,6 +7099,55 @@ if($synchash.LocalMedia_TreeView){
 }
 #----------------------------------------------
 #endregion Find Youtube Command
+#----------------------------------------------
+
+#----------------------------------------------
+#region Get TMDB Command
+#----------------------------------------------
+[System.Windows.RoutedEventHandler]$synchash.GetTMDB_Command = {
+  param($sender)
+  try{
+    if($sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems.Content -and $sender.tag.source.TreeViewItemInfo.TreeView -is [Syncfusion.UI.Xaml.TreeView.SfTreeView]){
+      $media = $sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems.Content
+    }elseif($sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems.id){
+      $media = $sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems
+    }elseif($sender.tag.source.selecteditems.content.id){
+      $media = $sender.tag.source.selecteditems.content
+    }elseif($sender.tag.source.selecteditems.Record.id){
+      $media = $sender.tag.source.selecteditems.Record
+    }elseif($sender.tag.source.Name -eq 'YoutubeTable'){
+      $media = $synchash.YoutubeTable.selecteditems
+    }elseif($sender.tag.source.Name -eq 'SpotifyTable'){
+      $media = $synchash.SpotifyTable.selecteditems
+    }elseif($sender.tag.source.Name -eq 'MediaTable'){
+      $media = $synchash.MediaTable.selecteditems
+    }elseif($sender.tag.source.Name -eq 'TwitchTable'){
+      $media = $synchash.TwitchTable.selecteditems
+    }elseif($sender.datacontext.Record.id){
+      $media = $sender.datacontext.Record
+    }elseif($sender.datacontext.content.id){
+      $media = $sender.datacontext.content
+    }elseif($sender.tag.Media.id){
+      $media = $sender.tag.Media
+    }elseif($sender.tag.id){
+      $media = $sender.tag
+    }elseif($sender.tag.id){
+      $media = $sender.tag
+    }elseif($sender.selecteditem.tag.Media.id){
+      $media = $sender.selecteditem.tag.Media
+    }
+    if($media.id -and ($media.title -or $media.name) -and $media.directory){
+      write-ezlogs -text ">>>> Updating local media with lookup to TMDB for media: $($media.url)" -showtime
+      Update-LocalMedia -synchash $synchash -UpdateMedia $media -thisapp $thisApp -update_Library -use_runspace -TMDBLookup -UpdatePlaylists
+    }else{
+      write-ezlogs -text 'No valid Media was provided or found' -showtime -Warning
+    }
+  }catch{
+    write-ezlogs -text 'An exception occurred in GetTMDB_Command routed event' -showtime -CatchError $_
+  }
+}
+#----------------------------------------------
+#endregion Get TMDB Command
 #----------------------------------------------
 
 #----------------------------------------------
@@ -7051,12 +7201,17 @@ $synchash.Media_ContextMenu_ScriptBlock = {
     $OriginalSource = [System.WeakReference]::new($e.OriginalSource)
     $RemovefromQueue = $false
     if($OriginalSource.IsAlive){
+      if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+        $All_Playlists = $synchash.All_Playlists.items
+      }else{
+        $All_Playlists = $synchash.All_Playlists
+      }
       $media = $OriginalSource.target.datacontext
       if($OriginalSource.target.datacontext.Name -eq 'Track' -and $OriginalSource.target.datacontext.id){
         try{
-          $index = $synchash.All_playlists.playlist_tracks.values.id.IndexOf($OriginalSource.target.datacontext.id)
+          $index = $All_Playlists.playlist_tracks.values.id.IndexOf($OriginalSource.target.datacontext.id)
           if($index -ne -1){
-            $media = $synchash.All_playlists.playlist_tracks.values.Item($index)
+            $media = $All_Playlists.playlist_tracks.values.Item($index)
           }
         }catch{
           $media = $null
@@ -7072,8 +7227,9 @@ $synchash.Media_ContextMenu_ScriptBlock = {
       }
       #TODO: Test reduce sparse array
       $items = [System.Collections.Generic.List[object]]::new(30)
-      if(!$synchash.all_playlists -and [system.io.file]::Exists($thisApp.Config.Playlists_Profile_Path)){
+      if(!$All_Playlists -and [system.io.file]::Exists($thisApp.Config.Playlists_Profile_Path)){
         $synchash.all_playlists = Import-SerializedXML -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
+        $All_Playlists = $synchash.all_playlists
       }
       if(!$e.source){
         $source = [System.WeakReference]::new($sender)
@@ -7112,7 +7268,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           if($thisApp.Config.Dev_mode){write-ezlogs -text ">>>> Found selected treeview item via Get-VisualParentUp -- $($treeViewNode | out-string)" -Dev_mode}
         }
       }
-      if($treeviewitem.header.Name -eq 'Playlist' -and $treeviewitem.isMouseOver){
+      if(($treeviewitem.header.Name -eq 'Playlist' -or $treeviewitem.header.Type -eq 'CustomPlaylist') -and $treeviewitem.isMouseOver){
         $isPlaylist = $true
       }
       if($media.Name -in 'Track','Play_Queue' -and $media.id){
@@ -7290,6 +7446,18 @@ $synchash.Media_ContextMenu_ScriptBlock = {
               'Sub_items' = $Youtube_Sub_items
             }
             [Void]$items.Add($Youtube_Actions)
+            $BrowseYTChannel = @{
+              'Header'    = 'Browse Youtube Channel'
+              'Tooltip'  = 'Go to the Youtube Channel page using the in-app Web Browser'
+              'Command'   = $synchash.FindYoutube_Command
+              'Tag'       = $Media_Tag
+              'Enabled'   = $true
+              'IsCheckable' = $false
+              'Icon_Color' = '#FFFF0000'
+              'Icon_kind' = 'Youtube'
+              'Color'     = 'White'
+            }
+            [Void]$items.Add($BrowseYTChannel)
           }
         }
         if((($e.Source.Name -eq 'SpotifyTable' -or $media.source -eq 'Spotify') -or $media.url -match 'spotify\:')){
@@ -7433,7 +7601,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'Header'    = 'Find on Youtube'
             'ToolTip'   = 'Opens the in-app Web Browser to search Youtube.com for selected media'
             'Color'     = 'White'
-            'Icon_Color' = '#FFFF3737'
+            'Icon_Color' = '#FFFF0000'
             'Tag'       = $Media_Tag
             'Command'   = $synchash.FindYoutube_Command
             'Icon_kind' = 'Youtube'
@@ -7463,6 +7631,18 @@ $synchash.Media_ContextMenu_ScriptBlock = {
               $Config_Twitch = $thisApp.config.Twitch_Playlists[$Config_index]
             }
           }
+          $BrowseTwitchChannel = @{
+            'Header'    = 'Browse Twitch Channel'
+            'Tooltip'  = 'Go to the Twitch Channel page using the in-app Web Browser'
+            'Command'   = $synchash.FindYoutube_Command
+            'Tag'       = $Media_Tag
+            'Enabled'   = $true
+            'IsCheckable' = $false
+            'Icon_Color' = '#FFDA70D6'
+            'Icon_kind' = 'Twitch'
+            'Color'     = 'White'
+          }
+          [Void]$items.Add($BrowseTwitchChannel)
           $Twitch_Sub_items = [System.Collections.Generic.List[object]]::new()
           $CheckTwitch_Media = @{
             'Header'    = 'Refresh Status'
@@ -7523,8 +7703,34 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'IsCheckable' = $false
           }
           [Void]$items.Add($Open_MediaLocation)
+          $TMDBLookup = @{
+            'Header'    = 'Lookup on TMDB'
+            'ToolTip'   = 'Attempts to get metadata from TMDB'
+            'Color'     = 'White'
+            'Icon_Color' = 'LightGreen'
+            'Tag'       = $Media_Tag
+            'Command'   = $synchash.GetTMDB_Command
+            'Icon_kind' = 'SearchWeb'
+            'Enabled'   = $true
+            'IsCheckable' = $false
+          }
+          [Void]$items.Add($TMDBLookup)
         }
-        $Playlists = $synchash.all_playlists | & { process {
+        if($thisApp.config.Current_Playlist.values -notcontains $media.id){
+          $Add_to_PlayQueue = @{
+            'Header'   = 'Add to Play Queue'
+            'ToolTip'  = 'Add this media to the Play Queue'
+            'Color'    = 'White'
+            'Icon_Color' = 'LightGreen'
+            'Icon_kind' = 'AddToQueue'
+            'IconPack' = 'PackIconCoolicons'
+            'Enabled'  = $true
+            'Tag'      = $Media_Tag
+            'Command'  = $synchash.Add_to_PlaylistCommand
+          }
+          [Void]$items.Add($Add_to_PlayQueue)
+        }
+        $Playlists = $All_Playlists | & { process {
             if(-not [string]::IsNullOrEmpty($_.name) -and $_.Playlist_tracks.values.id -notcontains $media.ID){
               $_
             }
@@ -7609,9 +7815,9 @@ $synchash.Media_ContextMenu_ScriptBlock = {
         }
         #Remove from Playlist
         $Remove_Sub_items = [System.Collections.Generic.List[object]]::new()
-        if($media.ID -in $synchash.all_playlists.Playlist_tracks.values.id -or $media.artist -in $synchash.All_Playlists.Playlist_tracks.values.artist){
+        if($media.ID -in $All_Playlists.Playlist_tracks.values.id -or $media.artist -in $All_Playlists.Playlist_tracks.values.artist){
           $RemoveArtistFrom = $true
-          $RemoveFromPlaylists = $synchash.all_playlists | & { process {
+          $RemoveFromPlaylists = $All_Playlists | & { process {
               if(-not [string]::IsNullOrEmpty($_.name) -and $_.Playlist_tracks.values.id -contains $media.ID){
                 $_
               }
@@ -7755,7 +7961,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           'IsCheckable' = $false
         }
         [Void]$items.Add($Edit_Profile)
-      }elseif(($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right -and -not [string]::IsNullOrEmpty($OriginalSource.target.datacontext) -and ($OriginalSource.target.GetType()).Name -match 'Textblock' -and $e.Source.Name -ne 'PlayQueue_TreeView' -and (-not [string]::IsNullOrEmpty($e.OriginalSource.datacontext.title))) -or ($isPlaylist -and (!$media -or $media.Name -eq 'Playlist'))){
+      }elseif(($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right -and -not [string]::IsNullOrEmpty($OriginalSource.target.datacontext) -and ($OriginalSource.target.GetType()).Name -match 'Textblock' -and $e.Source.Name -ne 'PlayQueue_TreeView' -and (-not [string]::IsNullOrEmpty($e.OriginalSource.datacontext.title))) -or ($isPlaylist -and (!$media -or $media.Name -eq 'Playlist' -or $media.Type -eq 'CustomPlaylist'))){
         write-ezlogs -text " [ContextMenu] Creating context menu for a Playlist -- e.OriginalSource.datacontext: $($OriginalSource.target.datacontext)" -Dev_mode
         $e.Handled = $true
         $Playlist_PlayAll = @{
@@ -11979,8 +12185,13 @@ if($synchash.Window){
           write-ezlogs -text "| Saving config file to: $($thisApp.Config.Config_Path)"
           Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
         }
-        if($synchash.all_playlists){
-          Export-SerializedXML -InputObject $synchash.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
+        if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+          $All_Playlists = $synchash.All_Playlists.items
+        }else{
+          $All_Playlists = $synchash.All_Playlists
+        }
+        if($All_Playlists -and $thisApp.Config.Playlists_Profile_Path){
+          Export-SerializedXML -InputObject $All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
         }
         #Close thirdparty processes but only if they are ours
         if(-not ((get-process -Name *p*) | Where-Object -FilterScript {$_.MainWindowTitle -match "$($thisApp.Config.App_name) Media Player - $($thisApp.Config.App_version)" -or $_.MainWindowTitle -match "Video Player - $($thisApp.Config.App_name)"})){

@@ -139,7 +139,7 @@ function Set-AudioSessions
     try{
       $existing_Runspace = Stop-Runspace -thisApp $thisApp -runspace_name 'Set_AudioSessions_Runspace' -check
       if($existing_Runspace){
-        write-ezlogs "Set-AudioSessions runspace already exists, halting another execution to avoid a race condition" -warning
+        write-ezlogs "Set-AudioSessions runspace already exists, halting another execution to avoid a race condition" -warning -LogLevel 0 -Verboselog:$Verboselog
         return
       }
     }catch{
@@ -351,7 +351,7 @@ function Set-ApplicationAudioDevice
                 while(!$Processes -and $timeout -lt 600){
                   $timeout++
                   $processes = [System.Diagnostics.Process]::GetProcessesByName($ProcessName)
-                  start-sleep -Milliseconds 5
+                  [System.Threading.Thread]::Sleep(500)
                 }
                 if($timeout -eq 600){
                   write-ezlogs "[Set-ApplicationAudioDevice] Timed out waiting for process '$($ProcessName)' EQ will not be enabled" -warning -AlertUI -logtype Libvlc
@@ -383,7 +383,7 @@ function Set-ApplicationAudioDevice
                   $searcher = [System.Management.ManagementObjectSearcher]::new($query)
                   $AudioProcess = $searcher.get()
                   $searcher.Dispose()
-                  start-sleep -Milliseconds 5
+                  [System.Threading.Thread]::Sleep(1000)
                 }
                 if($timeout -eq 600 -and !$AudioProcess.ProcessID){
                   write-ezlogs "Timed out waiting for a webview2 process playing audio - using process name" -warning -logtype Libvlc
@@ -464,7 +464,7 @@ function Set-ApplicationAudioDevice
                   write-ezlogs "[Set-ApplicationAudioDevice] | VLC media is loaded but after ($vlctimeout) secs is not yet playing, executing play()" -Warning -logtype Libvlc
                   $synchash.vlc.play()
                 }
-                start-sleep 1
+                [System.Threading.Thread]::Sleep(1000)
               }
               if($vlctimeout -eq 20){
                 write-ezlogs "[Set-ApplicationAudioDevice] Timed out waiting for vlc playback to begin for Web EQ!" -warning -logtype Libvlc
@@ -479,7 +479,7 @@ function Set-ApplicationAudioDevice
 
             #TODO: Failed attempt to do audio routing manually with cscore and creating custom EQ - maybe revist
             if($capture_device -and -not [string]::IsNullOrEmpty($svlc_ouptput) -and $svlc_ouptput -notmatch 'No items found' -and $Use_Cscore){
-              write-ezlogs "[Set-ApplicationAudioDevice] >>> Starting capture of virtual audio device $($capture_device | out-string) -- svlc_ouptput: $($svlc_ouptput | out-string)" -logtype Libvlc
+              write-ezlogs "[Set-ApplicationAudioDevice] >>> Starting capture of virtual audio device $($capture_device) -- svlc_ouptput: $($svlc_ouptput)" -logtype Libvlc
               $synchash.current_Capture = [CSCore.SoundIn.WasapiLoopbackCapture]::new()
               $synchash.current_Capture.Device = $capture_device
               $synchash.current_Capture.Initialize()

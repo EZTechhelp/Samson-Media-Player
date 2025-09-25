@@ -67,6 +67,11 @@ function Skip-Media
       $synchash.Start_media_timer.stop()
     }  
     Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop    
+    if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+      $All_Playlists = $synchash.All_Playlists.items
+    }else{
+      $All_Playlists = $synchash.All_Playlists
+    }
     if($synchash.vlc.IsPlaying -or $synchash.Vlc.state -match 'Paused'){
       write-ezlogs ">>>> Stopping VLC Playback"
       $Null = $synchash.VLC.stop()
@@ -153,20 +158,20 @@ function Skip-Media
         write-ezlogs ">>>> No more media was found in the Queue, looking for next item in the current playlist: $($Synchash.Current_Playing_Playlist)" -showtime -LogLevel 2
         #Next Playlist Item
         #$current_Playing_Playlist = $synchash.Playlists_TreeView.itemssource.SourceCollection | where {$_.items.id -eq $last_played.mediaid} | select -Unique  
-        if(-not [string]::IsNullOrEmpty($Synchash.Current_Playing_Playlist) -and $synchash.all_playlists.playlist_id){
-          $pindex = $synchash.all_playlists.playlist_id.indexof($Synchash.Current_Playing_Playlist)
+        if(-not [string]::IsNullOrEmpty($Synchash.Current_Playing_Playlist) -and $All_Playlists.playlist_id){
+          $pindex = $All_Playlists.playlist_id.indexof($Synchash.Current_Playing_Playlist)
           if($pindex -ne -1){
-            $current_playlist = $synchash.all_playlists[$pindex]
+            $current_playlist = $All_Playlists[$pindex]
           }
         }else{
-          $current_playlist = $synchash.all_playlists | Where-Object {$_.playlist_tracks.values.id -eq $last_played.mediaid}
+          $current_playlist = $All_Playlists | Where-Object {$_.playlist_tracks.values.id -eq $last_played.mediaid}
         }             
         if($current_playlist){
           if(@($current_playlist).count -gt 1){
             write-ezlogs "Returned multiple playlists that contain media id $($last_played.mediaid): $($current_playlist.title | out-string)" -warning -showtime -LogLevel 2
             if(-not [string]::IsNullOrEmpty($Synchash.Current_Playing_Playlist)){
               write-ezlogs "| Looking up current playing playlist: $($Synchash.Current_Playing_Playlist)" -showtime -LogLevel 2
-              $current_playlist = $synchash.all_playlists | Where-Object {$_.playlist_id -eq $Synchash.Current_Playing_Playlist}
+              $current_playlist = $All_Playlists | Where-Object {$_.playlist_id -eq $Synchash.Current_Playing_Playlist}
             }else{
               write-ezlogs "| No current playing playlist value exists, cannot determine which playlist $($last_played.mediaid) belongs to...picking the last one" -showtime -Warning -LogLevel 2
               $current_playlist = $current_playlist | Select-Object -last 1
@@ -341,11 +346,11 @@ function Skip-Media
         #Look for in playlist cache
         if(!$next_selected.media){
           write-ezlogs "Unable to find media $($next_item) in libraries, checking playlist profiles" -showtime -warning -LogLevel 2
-          if(!$synchash.all_playlists -and [System.IO.File]::Exists($thisApp.Config.Playlists_Profile_Path)){
+          if(!$All_Playlists -and [System.IO.File]::Exists($thisApp.Config.Playlists_Profile_Path)){
             if($thisApp.Config.Verbose_logging){write-ezlogs "| Importing All Playlist Cache: $($thisApp.Config.Playlists_Profile_Path)" -showtime -enablelogs}
             $Available_Playlists = Import-SerializedXML -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
-          }elseif($synchash.all_playlists){
-            $Available_Playlists = [System.Collections.Generic.List[Playlist]]::new($synchash.all_playlists)
+          }elseif($All_Playlists){
+            $Available_Playlists = [System.Collections.Generic.List[Playlist]]::new($All_Playlists)
           }
           if($Available_Playlists.PlayList_tracks.values | where {$_.id -eq $next_item}){                     
             $next_selected.media = $Available_Playlists.PlayList_tracks.values.where({$_.id -eq $next_item}) | Select-Object -First 1

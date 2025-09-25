@@ -547,12 +547,12 @@
 										<TabItem.HeaderTemplate>
 											<DataTemplate>
 												<VirtualizingStackPanel IsVirtualizing="True" Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Transparent">
-												    <TextBlock Text="Playlists" FontWeight="Bold" Foreground="{DynamicResource MahApps.Brushes.AccentBase}" HorizontalAlignment="Center" FontSize="16" Effect="{StaticResource TextDropShadowBlur}"/>
+												    <TextBlock Text="Playlists" FontWeight="Bold" Foreground="{DynamicResource MahApps.Brushes.AccentBase}" HorizontalAlignment="Center" FontSize="16" />
 												</VirtualizingStackPanel>
 											</DataTemplate>
 										</TabItem.HeaderTemplate>
 										<Grid Background="Transparent" VerticalAlignment="Top" HorizontalAlignment="stretch" Margin="0,0,0,0" AllowDrop="true" MaxHeight="{Binding ElementName=PlayQueue_Flyout_Grid, Path=ActualHeight}" MinHeight="{Binding ElementName=PlayQueue_Flyout_Grid, Path=ActualHeight}" MaxWidth="{Binding ElementName=PlayQueue_Flyout_Grid, Path=ActualWidth}">	
-											<VirtualizingStackPanel ScrollUnit="Pixel" IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,3,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+											<VirtualizingStackPanel ScrollUnit="Pixel" IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,3,0,3" VerticalAlignment="Top" HorizontalAlignment="Left">
 												<Button Name='New_Playlist_Button' FontSize="12" ToolTip="New Playlist" FontWeight="Bold" Height="22" Style="{StaticResource FilterButtonStyle}" Background="Transparent" IsEnabled="true">
 													<VirtualizingStackPanel IsVirtualizing="True" Orientation="Horizontal">
 														<iconPacks:PackIconMaterial Kind="PlaylistPlus"
@@ -603,7 +603,8 @@
 																						VerticalAlignment="Center"/>
 														</VirtualizingStackPanel>
 													</mah:DropDownButton.Content>
-												</mah:DropDownButton>												
+												</mah:DropDownButton>
+												<TextBox Name="PlaylistFilterTextBox" mah:TextBoxHelper.ClearTextButton="True" mah:TextBoxHelper.Watermark="Search" HorizontalAlignment="Left" Height="22" UndoLimit="10" Text="" Width="110"/>												
 											</VirtualizingStackPanel>
 											<mah:ProgressRing Foreground="White" Name='PlayLists_Progress_Ring' HorizontalAlignment="Center" Margin="0,0,10,0" VerticalAlignment="Center"/>
 											<syncfusion:SfTreeView Name='Playlists_TreeView' Margin="0,30,5,50" VerticalAlignment="Top" HorizontalAlignment="stretch" ShowRootLines="True" ShowLines="True" LineStroke="{StaticResource MahApps.Brushes.Accent}" ChildPropertyName="Playlist_Tracks.values" FocusBorderColor="{StaticResource MahApps.Brushes.Accent}" FocusBorderThickness="1" AllowDragging="True" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="true" SelectionMode = "Extended" ScrollViewer.HorizontalScrollBarVisibility="Auto" IsAnimationEnabled="true" SelectionBackgroundColor="{StaticResource MahApps.Brushes.Accent}" 
@@ -623,7 +624,7 @@
 										<TabItem.HeaderTemplate>
 											<DataTemplate>
 												<VirtualizingStackPanel IsVirtualizing="True" Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Transparent">
-												    <TextBlock Text="Queue" FontWeight="Bold" Foreground="{DynamicResource MahApps.Brushes.AccentBase}" HorizontalAlignment="Center" FontSize="16" Effect="{StaticResource TextDropShadowBlur}"/>
+												    <TextBlock Text="Queue" FontWeight="Bold" Foreground="{DynamicResource MahApps.Brushes.AccentBase}" HorizontalAlignment="Center" FontSize="16" />
 												</VirtualizingStackPanel>
 											</DataTemplate>
 										</TabItem.HeaderTemplate>
@@ -1182,7 +1183,7 @@
 																				</DataTemplate>
 																			</TabItem.HeaderTemplate>
 																			<Grid Background="Transparent" Name="Playlist_Grid_TrayPlayer" AllowDrop="true" VerticalAlignment="stretch" HorizontalAlignment="Right" Margin="0,0,0,0" MinWidth="400" MinHeight="100">
-																				<VirtualizingStackPanel ScrollUnit="Pixel" IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling" Orientation="Horizontal" Margin="5,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left">
+																				<VirtualizingStackPanel ScrollUnit="Pixel" IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling" Orientation="Horizontal" Margin="5,0,0,3" VerticalAlignment="Top" HorizontalAlignment="Left">
 																					<Button Name='New_Playlist_VideoView_Button' FontSize="12" ToolTip="New Playlist" FontWeight="Bold" Height="22" Style="{StaticResource FilterButtonStyle}" Background="Transparent" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" IsEnabled="true">
 																						<VirtualizingStackPanel IsVirtualizing="True" Orientation="Horizontal">
 																							<iconPacks:PackIconMaterial Kind="PlaylistPlus"
@@ -1233,7 +1234,8 @@
 																															VerticalAlignment="Center"/>
 																							</VirtualizingStackPanel>
 																						</mah:DropDownButton.Content>
-																					</mah:DropDownButton>																					
+																					</mah:DropDownButton>
+																					<TextBox Name="VideoViewPlaylistFilterTextBox" mah:TextBoxHelper.ClearTextButton="True" mah:TextBoxHelper.Watermark="Search" Background="#FF2B2B2B" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" HorizontalAlignment="Left" Height="22" UndoLimit="10" Text="" Width="110"/>																					
 																				</VirtualizingStackPanel>										
 																				<mah:ProgressRing Foreground="White" Name='PlayLists_VideoView_Progress_Ring' HorizontalAlignment="Center" Margin="0,0,10,0" VerticalAlignment="Center"/>
 																					<syncfusion:SfTreeView Name='TrayPlayer_TreeView' Margin="0,25,0,5" VerticalAlignment="stretch" HorizontalAlignment="stretch" ShowRootLines="True" ShowLines="True" LineStroke="{StaticResource MahApps.Brushes.Accent}" ChildPropertyName="Playlist_Tracks.values" DragPreviewTemplate="{StaticResource dragPreviewTemplate}"
@@ -1847,7 +1849,7 @@
 														</DataTemplate>
 													</TabItem.HeaderTemplate>
 													<Grid Background="{StaticResource GridGradient}" Name="Playlist_Grid_Library" VerticalAlignment="Stretch" HorizontalAlignment="stretch" Margin="0,0,0,0" AllowDrop="true" MaxHeight="{Binding ElementName=MediaLibrary_Grid, Path=ActualHeight}">
-														<VirtualizingStackPanel ScrollUnit="Pixel" IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling" Orientation="Horizontal" Margin="5,3,0,0" VerticalAlignment="Top" HorizontalAlignment="Stretch" Background="Transparent">
+														<VirtualizingStackPanel ScrollUnit="Pixel" IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling" Orientation="Horizontal" Margin="5,3,0,3" VerticalAlignment="Top" HorizontalAlignment="Stretch" Background="Transparent">
 															<Button Name='New_Playlist_Button_Library' FontSize="12" ToolTip="New Playlist" FontWeight="Bold" Height="22" Style="{StaticResource FilterButtonStyle}" Background="Transparent" IsEnabled="true">
 																<VirtualizingStackPanel IsVirtualizing="True" Orientation="Horizontal">
 																	<iconPacks:PackIconMaterial Kind="PlaylistPlus"
@@ -1901,10 +1903,11 @@
 																									VerticalAlignment="Center"/>
 																	</VirtualizingStackPanel>
 																</mah:DropDownButton.Content>
-															</mah:DropDownButton>															
+															</mah:DropDownButton>
+															<TextBox Name="LibraryPlaylistFilterTextBox" mah:TextBoxHelper.ClearTextButton="True" mah:TextBoxHelper.Watermark="Search" HorizontalAlignment="Left" Height="22" UndoLimit="10" Text="" Width="110"/>																
 														</VirtualizingStackPanel>
 														<mah:ProgressRing Foreground="White" Name='PlayLists_Library_Progress_Ring' IsActive="{Binding ElementName=PlayLists_Progress_Ring, Path=IsActive}" HorizontalAlignment="Center" Margin="0,0,10,0" VerticalAlignment="Center"/>
-														<syncfusion:SfTreeView Name='LocalMedia_TreeView' Margin="0,25,5,0" VerticalAlignment="Top" HorizontalAlignment="stretch" ShowRootLines="True" ShowLines="True" LineStroke="{StaticResource MahApps.Brushes.Accent}" ChildPropertyName="Playlist_Tracks.values" IsAnimationEnabled="true" SelectionBackgroundColor="{StaticResource MahApps.Brushes.Accent}" Style="{x:Null}" AllowDragging="True" DragPreviewTemplate="{StaticResource dragPreviewTemplate}" FullRowSelect="True"
+														<syncfusion:SfTreeView Name='LocalMedia_TreeView' Margin="0,30,5,0" VerticalAlignment="Top" HorizontalAlignment="stretch" ShowRootLines="True" ShowLines="True" LineStroke="{StaticResource MahApps.Brushes.Accent}" ChildPropertyName="Playlist_Tracks.values" IsAnimationEnabled="true" SelectionBackgroundColor="{StaticResource MahApps.Brushes.Accent}" Style="{x:Null}" AllowDragging="True" DragPreviewTemplate="{StaticResource dragPreviewTemplate}" FullRowSelect="True"
 														 VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="true" SelectionMode = "Extended" ScrollViewer.HorizontalScrollBarVisibility="Auto" NodePopulationMode="Instant" ItemTemplate="{StaticResource PlaylistTreeTemplate}" NotificationSubscriptionMode="None">					
 														<syncfusion:SfTreeView.Resources>
 															<Style TargetType="ScrollViewer">
@@ -1922,11 +1925,11 @@
 														<DataTemplate>
 															<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Grid.Column="0" Grid.Row="0" Margin="0,2,0,0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Background="Black">
 																<iconPacks:PackIconMaterial Kind="FormatListNumbered" Margin="2 5 2 0" Width="24" Height="24" VerticalAlignment="Top"/>
-																<Label Name="Queue_Tab_Label_Library" Content="Queue" FontWeight="Bold" Foreground="{DynamicResource MahApps.Brushes.AccentBase}" HorizontalAlignment="Center" FontSize="16" Effect="{StaticResource TextDropShadowBlur}"/>
+																<Label Name="Queue_Tab_Label_Library" Content="Queue" FontWeight="Bold" Foreground="{DynamicResource MahApps.Brushes.AccentBase}" HorizontalAlignment="Center" FontSize="16" />
 															</VirtualizingStackPanel>
 														</DataTemplate>
 													</TabItem.HeaderTemplate>
-													<Grid Background="{StaticResource GridGradient}" Name="PlayQueue_Grid_Library" VerticalAlignment="Stretch" HorizontalAlignment="stretch" Margin="0,0,0,0" MaxHeight="{Binding ElementName=MediaLibrary_Grid, Path=ActualHeight}" AllowDrop="true">
+													<Grid Background="{StaticResource GridGradient}" Name="PlayQueue_Grid_Library" VerticalAlignment="Stretch" HorizontalAlignment="stretch" Margin="0,0,0,0" MaxHeight="{Binding ElementName=MediaLibrary_Grid, Path=ActualHeight}" AllowDrop="true" Width="{Binding ElementName=LibraryPlaylists_FlyoutControl, Path=ActualWidth}" >
 														<VirtualizingStackPanel ScrollUnit="Pixel" IsVirtualizing="True" VirtualizingPanel.IsVirtualizingWhenGrouping="True" VirtualizingPanel.VirtualizationMode="Recycling" Orientation="Horizontal" Margin="5,3,0,0" VerticalAlignment="Top" HorizontalAlignment="Stretch" Background="Transparent">
 															<Button Name='Clear_Queue_Button_Library' FontSize="12" Background="Transparent" ToolTip="Clear Queue" FontWeight="Bold" Margin="5,3,0,0" Height="22" Style="{StaticResource FilterButtonStyle}" VerticalAlignment="Top" HorizontalAlignment="Left" IsEnabled="true" Panel.ZIndex="2">
 																<VirtualizingStackPanel IsVirtualizing="True" Orientation="Horizontal">
@@ -2857,10 +2860,10 @@
 								<TextBlock Name="EQ_RightDB3_Text" Text="10+" Margin="0 3 0 0" FontSize="11" FontWeight="Bold" Foreground="#FF6F7373" VerticalAlignment="Center" HorizontalAlignment="Left"/>
 								<TextBlock Name="EQ_RightDB4_Text" Text="5+" Margin="0 4 0 0" FontSize="11" FontWeight="Bold" Foreground="#FF6F7373" VerticalAlignment="Center" HorizontalAlignment="Left"/>
 								<TextBlock Name="EQ_RightDB5_Text" Text="0" Margin="0 2 0 0" FontSize="11" FontWeight="Bold" Foreground="#FF6F7373" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-								<TextBlock Name="EQ_RightDB6_Text" Text="5+" Margin="0 3 0 0" FontSize="11" FontWeight="Bold" Foreground="#FF6F7373" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-								<TextBlock Name="EQ_RightDB7_Text" Text="10+" Margin="0 4 0 0" FontSize="11" FontWeight="Bold" Foreground="#FF6F7373" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-								<TextBlock Name="EQ_RightDB8_Text" Text="15+" Margin="0 2 0 0" FontSize="11" FontWeight="Bold" Foreground="#FF6F7373" VerticalAlignment="Center" HorizontalAlignment="Left"/>
-								<TextBlock Name="EQ_RightDB9_Text" Text="20+" Margin="0 4 0 0" FontSize="11" FontWeight="Bold" Foreground="#FF6F7373" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+								<TextBlock Name="EQ_RightDB6_Text" Text="5-" Margin="0 3 0 0" FontSize="11" FontWeight="Bold" Foreground="#FF6F7373" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+								<TextBlock Name="EQ_RightDB7_Text" Text="10-" Margin="0 4 0 0" FontSize="11" FontWeight="Bold" Foreground="#FF6F7373" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+								<TextBlock Name="EQ_RightDB8_Text" Text="15-" Margin="0 2 0 0" FontSize="11" FontWeight="Bold" Foreground="#FF6F7373" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+								<TextBlock Name="EQ_RightDB9_Text" Text="20-" Margin="0 4 0 0" FontSize="11" FontWeight="Bold" Foreground="#FF6F7373" VerticalAlignment="Center" HorizontalAlignment="Left"/>
 								<TextBlock Name="EQ_RightDB_Text" Text="dB" Margin="0 9 0 0" FontSize="11" FontWeight="Bold" Foreground="#FF6F7373" HorizontalAlignment="Left"/>
 							</VirtualizingStackPanel>
 						</VirtualizingStackPanel>

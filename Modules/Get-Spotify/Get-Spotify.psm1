@@ -937,8 +937,13 @@ function Get-SpotifyStatus
               }
             }
             #Custom/Imported Playlists
-            if($synchash.all_playlists){
-              foreach($custom_playlist_Profile in $synchash.all_playlists){
+            if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+              $All_Playlists = $synchash.All_Playlists.items
+            }else{
+              $All_Playlists = $synchash.All_Playlists
+            }
+            if($All_Playlists){
+              foreach($custom_playlist_Profile in $All_Playlists){
                 try{
                   if(($custom_playlist_Profile.gettype()).name -eq 'ArrayList'){
                     $custom_playlist_Profile = $custom_playlist_Profile | Select-Object *
@@ -955,7 +960,7 @@ function Get-SpotifyStatus
                         $Changes++
                       }
                       if($customplaylist_Name.id -and $customplaylist_Name.id -ne $list.Playlist_ID){
-                        if(($synchash.all_playlists.Playlist_ID.IndexOf($list.Playlist_ID)) -eq -1){
+                        if(($All_Playlists.Playlist_ID.IndexOf($list.Playlist_ID)) -eq -1){
                           write-ezlogs "| Updating Spotify playlist table playlist_id from: $($list.Playlist_ID) - to: $($customplaylist_Name.id)" -showtime -logtype Spotify
                           $list.Playlist_ID = $customplaylist_Name.id
                           $Changes++    
@@ -995,7 +1000,7 @@ function Get-SpotifyStatus
               }
               if($Changes -gt 0){            
                 write-ezlogs ">>>> Saving all_playlists library to: $($thisApp.Config.Playlists_Profile_Path)" -logtype Spotify
-                Export-SerializedXML -InputObject $synchash.All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
+                Export-SerializedXML -InputObject $All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
               }
             }
             #Check for playlists that no longer exist   
@@ -1256,11 +1261,16 @@ function Update-SpotifyMedia
           [void][System.IO.Directory]::CreateDirectory($AllSpotify_Profile_Directory_Path)
         } 
         if($media_to_Update){
-          if($UpdatePlaylists -and $synchash.all_playlists){
-            if($synchash.all_playlists -isnot [System.Collections.Generic.List[Playlist]]){
-              $all_Playlists = $synchash.all_playlists | ConvertTo-Playlists -List
+          if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+            $All_Playlists = $synchash.All_Playlists.items
+          }else{
+            $All_Playlists = $synchash.All_Playlists
+          }
+          if($UpdatePlaylists -and $All_Playlists){
+            if($All_Playlists -isnot [System.Collections.Generic.List[Playlist]]){
+              $all_Playlists = $All_Playlists | ConvertTo-Playlists -List
             }else{
-              $all_Playlists = [System.Collections.Generic.List[Playlist]]::new($synchash.all_playlists)
+              $all_Playlists = [System.Collections.Generic.List[Playlist]]::new($All_Playlists)
             }
             $media_to_Update | & { process {
                 if($_.url){
@@ -1315,7 +1325,8 @@ function Update-SpotifyMedia
           if($UpdatePlaylists -and $all_Playlists){
             Export-SerializedXML -InputObject $all_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist -Force
             Import-Module -Name "$($thisApp.Config.Current_Folder)\Modules\Get-Playlists\Get-Playlists.psm1" -NoClobber -DisableNameChecking -Scope Local
-            Get-Playlists -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -use_Runspace -Import_Playlists_Cache -Quick_Refresh
+            Update-Playlists -synchash $synchash -thisApp $thisapp -use_Runspace -Import_Playlists_Cache -Quick_Refresh -GetPlaylists
+            #Get-Playlists -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -use_Runspace -Import_Playlists_Cache -Quick_Refresh
             [void]$all_Playlists.clear()
             $all_Playlists = $Null
           }

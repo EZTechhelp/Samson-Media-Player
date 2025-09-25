@@ -1891,9 +1891,14 @@ function Show-ProfileEditor{
             write-ezlogs "Unable to find media to edit in library profiles, media may be orphaned!" -showtime -Warning
             $LibraryMediaProfile = $media_to_edit
           }   
-          if($synchash.all_Playlists.Playlist_tracks.values.url){
-            $playlist_track =  Get-IndexesOf -Array $synchash.all_Playlists.Playlist_tracks.values.url -Value $profile.url | & { process {
-                $synchash.all_Playlists.Playlist_tracks.values[$_]
+          if($synchash.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
+            $All_Playlists = $synchash.All_Playlists.items
+          }else{
+            $All_Playlists = $synchash.All_Playlists
+          }
+          if($All_Playlists.Playlist_tracks.values.url){
+            $playlist_track =  Get-IndexesOf -Array $All_Playlists.Playlist_tracks.values.url -Value $profile.url | & { process {
+                $All_Playlists.Playlist_tracks.values[$_]
             }}
           }       
           #Title        
@@ -2360,7 +2365,8 @@ function Show-ProfileEditor{
 
           #$synchash.Import_Playlists_Cache = $false
           #Update-Playlist -media $profile -media_lookupid $Lookup_id -synchash $synchash -thisApp $thisApp -Updateall
-          Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -Quick_Refresh
+          #Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -Quick_Refresh
+          Update-Playlists -synchash $synchash -thisApp $thisapp -use_Runspace -Quick_Refresh -GetPlaylists
           $synchash.update_status_timer.tag = $type             
           $synchash.update_status_timer.start()               
  

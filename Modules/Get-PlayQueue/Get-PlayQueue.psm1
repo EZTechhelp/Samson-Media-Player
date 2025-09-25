@@ -72,11 +72,6 @@ function Update-PlayQueue
       try{
         if($Startup){
           try{
-            <#            try{
-                $synchash.Queue_Pause_relaycommand = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.PauseMedia_Command -target $synchash.PlayQueue_TreeView
-                }catch{
-                write-ezlogs "An exception occurred updating playqueue_treeview" -showtime -catcherror $_
-            }#>
             #TODO: Finish for setting queue itemssource from another thread
             $synchash.PlayQueue_Update_Timer = [System.Windows.Threading.DispatcherTimer]::New([System.Windows.Threading.DispatcherPriority]::DataBind)
             $synchash.PlayQueue_Update_Timer.add_tick({
@@ -131,7 +126,7 @@ function Update-PlayQueue
                   $id = $m.id
                 }
                 if($thisApp.config.Current_Playlist.values -contains $id){
-                  $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator().where({$_.value -eq $id}) | Select-Object * -ExpandProperty key
+                  $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator().where({$_.value -eq $id}).key
                   if(($index_toremove).count -gt 1){
                     write-ezlogs "| Found multiple items in Play Queue to remove matching id $($id) - $($index_toremove)" -showtime -warning -LogLevel 2
                     foreach($index in $index_toremove){
@@ -159,7 +154,7 @@ function Update-PlayQueue
             }elseif($id){
               foreach($i in $id){
                 if($thisApp.config.Current_Playlist.values -contains $i){
-                  $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator().where({$_.value -eq $i}) | Select-Object * -ExpandProperty key
+                  $index_toremove = $thisApp.config.Current_Playlist.GetEnumerator().where({$_.value -eq $i}).key
                   if(($index_toremove).count -gt 1){
                     write-ezlogs "| Found multiple items to remove in Play Queue matching id $($i) - index_toremove: $($index_toremove)" -showtime -warning -LogLevel 2
                     foreach($index in $index_toremove){
@@ -203,7 +198,9 @@ function Update-PlayQueue
         }
         if($Add){
           try{
-            $Add_ToPlayQueue_Measure = [system.diagnostics.stopwatch]::StartNew()
+            if($VerboseLog -or $thisApp.Config.Dev_mode){
+              $Add_ToPlayQueue_Measure = [system.diagnostics.stopwatch]::StartNew()
+            }           
             Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'PlayQueue_Progress_Ring' -Property 'IsActive' -value $true
             Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'PlayQueue_TreeView' -Property 'AllowDrop' -value $false
             Update-MainWindow -synchash $synchash -thisApp $thisApp -control 'PlayQueue_TreeView_Library' -Property 'AllowDrop' -value $false
@@ -287,7 +284,7 @@ function Update-PlayQueue
               write-ezlogs "[Update-PlayQueue] >>>> Added $($id.count) items by id to play queue - last index: $($index)"
             }
             #TODO: This is terrible and hacky, real solution is to make Current_Playlist use OrderedDictionary (will need to be custom class to make it serializable)
-            if($thisapp.config.Current_Playlist.values -and ($thisapp.config.Current_Playlist.Keys | select-Object -First 1) -ne 0){
+            if($thisapp.config.Current_Playlist.values -and ([System.Linq.Enumerable]::First($thisapp.config.Current_Playlist.Keys)) -ne 0){
               write-ezlogs "[Update-PlayQueue] | Queue seems to be out of order, Re-sorting by key number" -warning
               $Sorted = [System.Collections.SortedList]::new($thisapp.config.Current_Playlist)
               [void]$thisApp.config.Current_Playlist.clear()
@@ -295,9 +292,11 @@ function Update-PlayQueue
                   [void]$thisapp.config.Current_Playlist.add($_,$($sorted.Item($_)))
               }}
             }
-            $Add_ToPlayQueue_Measure.stop()
-            write-ezlogs "Update-PlayQueue -Add Measure" -Perf -PerfTimer $Add_ToPlayQueue_Measure
-            $Add_ToPlayQueue_Measure = $Null
+            if($Add_ToPlayQueue_Measure){
+              $Add_ToPlayQueue_Measure.stop()
+              write-ezlogs "Update-PlayQueue -Add Measure" -Perf -PerfTimer $Add_ToPlayQueue_Measure
+              $Add_ToPlayQueue_Measure = $Null
+            }
           }catch{
             write-ezlogs "[Update-PlayQueue] An exception occurred adding item to play queue -- media.title: $($media.title) -- media.url: $($media.url) -- id: $($id) - index: $index" -showtime -catcherror $_
           }finally{
@@ -311,24 +310,23 @@ function Update-PlayQueue
           if($thisApp.config.History_Playlist -isnot [SerializableDictionary[int,string]]){
             $thisApp.Config.History_Playlist = [SerializableDictionary[int,string]]::new()
           }
-          $historymeasure = ($thisApp.config.History_Playlist.keys | Measure-Object -Maximum -Minimum)
           foreach($i in $id){
             if($thisApp.config.History_Playlist.ContainsValue($i)){
-              $CurrentIndex = (($thisApp.config.History_Playlist.GetEnumerator()) | Where-Object {$_.value -eq $i}).key
+              $CurrentIndex = (($thisApp.config.History_Playlist.GetEnumerator()) | & { process { if($_.value -eq $id){$_}} }).key
               if($CurrentIndex -ne $Null){
                 [void]$thisapp.config.History_Playlist.Remove($CurrentIndex)
               }
             }
             if($thisApp.config.History_Playlist.values -notcontains $i){
-              if($historymeasure.count -gt 10){
+              if($thisApp.config.History_Playlist.keys.count -gt 10){
                 write-ezlogs "[Update-PlayQueue] | History playlist at or over maximum clearing all history" -LogLevel 2 -warning
                 [void]$thisApp.config.History_Playlist.clear()
-              }elseif($historymeasure.count -eq 10){
-                $historyindex_toremove = $historymeasure.Minimum
+              }elseif($thisApp.config.History_Playlist.keys.count -eq 10){
+                $historyindex_toremove = [System.Linq.Enumerable]::Min($thisApp.config.History_Playlist.keys)
                 write-ezlogs "[Update-PlayQueue] | History playlist at maximum, dropping oldest index: $($historyindex_toremove)" -LogLevel 2
                 [void]$thisapp.config.History_Playlist.Remove($historyindex_toremove)
               }
-              $historyindex = $historymeasure.Maximum
+              $historyindex = [System.Linq.Enumerable]::Max($thisApp.config.History_Playlist.keys)
               $historyindex++
               write-ezlogs "[Update-PlayQueue] | Adding $($i) to Play history" -LogLevel 0 -Verboselog:$VerboseLog
               [void]$thisApp.config.History_Playlist.add($historyindex,$i)
@@ -434,7 +432,9 @@ function Get-PlayQueue
           [switch]$Import_Playlists_Cache
         )
         try{
-          $Get_PlayQueue_Measure = [system.diagnostics.stopwatch]::StartNew()
+          if($VerboseLog -or $thisApp.Config.Dev_mode){
+            $Get_PlayQueue_Measure = [system.diagnostics.stopwatch]::StartNew()
+          }          
           if($Export_Config){
             try{
               write-ezlogs ">>>> Exporting config to: $($thisapp.Config.Config_Path)" -showtime
@@ -463,7 +463,8 @@ function Get-PlayQueue
             }else{
               $WaitTimeout = 0
               write-ezlogs "[Get-PlayQueue] Get-Playlists is running, waiting briefly until it finishes..." -warning -LogLevel 0 -Verboselog:$VerboseLog
-              while(([bool]($synchashWeak.Target.all_playlists -isnot [System.Windows.Data.CollectionView] -and $synchashWeak.Target.All_Playlists -isnot [System.Collections.ObjectModel.ObservableCollection[playlist]])) -and $WaitTimeout -lt 100){
+              #[System.Collections.ObjectModel.ObservableCollection[playlist]]
+              while(([bool]($synchashWeak.Target.all_playlists -isnot [System.Windows.Data.CollectionView] -and $synchashWeak.Target.All_Playlists -isnot [MyToolkit.ObservableCollectionView[Playlist]])) -and $WaitTimeout -lt 100){
                 $WaitTimeout++
                 [System.Threading.Thread]::Sleep(100)
               }
@@ -564,7 +565,11 @@ function Get-PlayQueue
                             [void][System.IO.Directory]::CreateDirectory($thisApp.config.image_Cache_path)
                           }
                           $encodeduri = $Null
-                          $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$([System.Uri]::new($Track.profile_image_url).Segments | Select-Object -last 1)-Twitch")
+                          if([System.Uri]::new($Track.profile_image_url).Segment -ne $Null){
+                            $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$([System.Linq.Enumerable]::Last([System.Uri]::new($Track.profile_image_url).Segments))-Twitch")
+                          }else{
+                            $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($Track.profile_image_url)-Twitch")
+                          }
                           $encodeduri = [System.Convert]::ToBase64String($encodedBytes)
                           $image_Cache_path = [System.IO.Path]::Combine(($thisApp.config.image_Cache_path),"$($encodeduri).png")
                           if([System.IO.File]::Exists($image_Cache_path)){
@@ -683,6 +688,11 @@ function Get-PlayQueue
                         }else{
                           $icon_path = $YoutubeIcon
                         }
+                      }elseif($Track.MediaType -eq 'Movie'){        
+                        $Title = "$($Track.Title)"
+                        $artist = $null
+                        if($verboselog){write-ezlogs "| Found Track of type Movie with Title: $($Title) " -showtime -LogLevel 0 -Verboselog:$Verboselog}
+                        $icon_path = $HardDiskIcon
                       }elseif($Track.source -eq 'TOR'){
                         $Title = "$($Track.Title)"
                         if($Track.Artist){

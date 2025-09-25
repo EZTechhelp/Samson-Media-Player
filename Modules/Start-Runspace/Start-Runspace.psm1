@@ -586,6 +586,7 @@ function Start-Runspace
       if($Function_list){
         $function_list | & { process {
             #Pass to runspace
+            write-ezlogs "| Passing Function to Runspace: $_" -LogLevel 0 -Verboselog:$Verboselog
             $SessionStateFunctionEntry = [System.Management.Automation.Runspaces.SessionStateFunctionEntry]::new($_, [string]::Intern(($ExecutionContext.InvokeCommand.GetCommand($_, [System.Management.Automation.CommandTypes]::Function)).Definition))
             $null = $InitialSessionState.Commands.Add($SessionStateFunctionEntry)
         }}

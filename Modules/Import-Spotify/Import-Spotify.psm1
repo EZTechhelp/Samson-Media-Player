@@ -126,7 +126,7 @@ function Import-Spotify
     }
   }
   try{
-    Start-Runspace -scriptblock $import_SpotifyMedia_scriptblock -StartRunspaceJobHandler -arguments $PSBoundParameters -runspace_name 'Import_SpotifyMedia_Runspace' -thisApp $thisApp -synchash $synchash -RestrictedRunspace:$RestrictedRunspace -PSProviders 'Function','Registry','Environment','FileSystem','Variable' -Command_list 'Set-StrictMode'
+    Start-Runspace -scriptblock $import_SpotifyMedia_scriptblock -StartRunspaceJobHandler -arguments $PSBoundParameters -runspace_name 'Import_SpotifyMedia_Runspace' -thisApp $thisApp -synchash $synchash -RestrictedRunspace:$RestrictedRunspace -PSProviders 'Function','Registry','Environment','FileSystem','Variable' -Command_list 'Set-StrictMode' -modules_list 'Microsoft.PowerShell.Utility'
   }catch{
     write-ezlogs "An exception occurred executing Start-Runspace for runspace: Import_SpotifyMedia_Runspace" -CatchError $_
   }

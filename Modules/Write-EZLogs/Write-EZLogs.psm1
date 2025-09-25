@@ -820,6 +820,10 @@ Default Audio Device : $($default_output_Device.FriendlyName)
 |+ [Exception]: $($message.CatchError.Exception)
 
 |+ [PositionMessage]: $($message.CatchError.InvocationInfo.PositionMessage)
+$(if(-not [string]::IsNullOrEmpty(($message.CatchError.Exception.InnerException.Message))){"
+|+ [InnerException.Message]: $($message.CatchError.Exception.InnerException.Message)"})
+$(if(-not [string]::IsNullOrEmpty(($message.CatchError.Exception.InnerException.LoaderExceptions))){"
+|+ [InnerException.LoaderExceptions]: $($message.CatchError.Exception.InnerException.LoaderExceptions)"})
 $(if(-not [string]::IsNullOrEmpty(($message.CatchError.Exception.InnerException.Source))){"
 |+ [Source]: $($message.CatchError.Exception.InnerException.Source)`n"})
 |+ [ScriptStackTrace]: $($message.CatchError.ScriptStackTrace)
@@ -1001,10 +1005,9 @@ function Get-LogWriter{
           } while($thisApp.LogWriterEnabled)
           [System.IO.File]::AppendAllText($thisApp.Log_File, "[$([datetime]::Now)] [WARNING] LogWriter has ended!" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
         }catch{
-          Start-Sleep -Milliseconds 500
-          $runspace_error_text = "[ERROR] An exception occurred in log_Writer_scriptblock at: $($_ | out-string)`n"
-          $originalString = $message | out-string
-          [System.IO.File]::AppendAllText($thisApp.Log_File, "$runspace_error_text" + "Original string: $($originalString)" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
+          [System.Threading.Thread]::Sleep(500)
+          $runspace_error_text = "[ERROR] An exception occurred in log_Writer_scriptblock: $($_)`n"
+          [System.IO.File]::AppendAllText($thisApp.Log_File, "$runspace_error_text" + ([Environment]::NewLine),[System.Text.Encoding]::Unicode)
         }
       }
       Start-Runspace $log_Writer_ScriptBlock -Variable_list $PSBoundParameters -StartRunspaceJobHandler -logfile $Logfile -runspace_name "Log_Writer_Runspace" -thisApp $thisapp -verboselog:$Verboselog -cancel_runspace -RestrictedRunspace -function_list Write-LogMessage

@@ -1511,12 +1511,14 @@ function Update-MainPlayer {
       $synchash.MainPlayer_UpdateQueue = [System.Collections.Concurrent.ConcurrentQueue`1[object]]::New()
       $synchash.MainPlayer_Update_Timer = [System.Windows.Threading.DispatcherTimer]::new()
       $synchash.MainPlayer_Update_Timer.add_tick({
-          try{
-            $MainPlayer_Update_Measure =[system.diagnostics.stopwatch]::StartNew()
+          try{           
             $synchash = $synchash
             $thisApp = $thisApp
             $object = @{}
             $Process = $synchash.MainPlayer_UpdateQueue.TryDequeue([ref]$object)
+            if($object.verboselog -or $thisApp.Config.Debug_mode){
+              $MainPlayer_Update_Measure =[system.diagnostics.stopwatch]::StartNew()
+            }
             if($Process -and $object.ProcessObject){
               if($thisApp.Config.Dev_mode){write-ezlogs "[UPDATE-MAINPLAYER] >>>> Updating MainPlayer" -Dev_mode -logtype Libvlc}
               if(-not [string]::IsNullOrEmpty($object.Visibility)){
@@ -2291,6 +2293,9 @@ function Update-MainWindow {
           }
       })
     }else{
+      if($synchash.MainWindow_UpdateQueue -isnot [System.Collections.Concurrent.ConcurrentQueue`1[object]]){
+        $synchash.MainWindow_UpdateQueue = [System.Collections.Concurrent.ConcurrentQueue`1[object]]::New()
+      }
       [void]$synchash.MainWindow_UpdateQueue.Enqueue([PSCustomObject]::new(@{
             'Control' = $Control
             'ProcessObject' = $true
@@ -2510,7 +2515,9 @@ function Update-MediaState {
       $synchash.Update_MediaState_timer = [System.Windows.Threading.DispatcherTimer]::new([System.Windows.Threading.DispatcherPriority]::Background)
       $synchash.Update_MediaState_timer.add_tick({
           try{
-            $Update_MediaState_Measure = [system.diagnostics.stopwatch]::StartNew()
+            if($this.Tag.verboselog -or $thisApp.Config.Dev_mode){
+              $Update_MediaState_Measure = [system.diagnostics.stopwatch]::StartNew()
+            }
             $Background_cached_image = $this.Tag.Background_cached_image
             $Background_default_image = $this.Tag.Background_default_image
             if($synchash.VideoView_Mute_Icon){
@@ -2555,7 +2562,7 @@ function Update-MediaState {
               $Thumbnail = $Background_cached_image
             }else{
               if($Background_default_image){
-                write-ezlogs "[Update-MediaState] >>>> No Background image provided, setting to Background_default_image: $Background_default_image" -showtime -loglevel 2
+                write-ezlogs ">>>> No Background image provided, setting to Background_default_image: $Background_default_image" -showtime -loglevel 2
                 if($this.tag.DefaultSkin){
                   $syncHash.MainGrid_Background_Image_Source.Source = $Background_default_image
                   $syncHash.MainGrid_Background_Image_Source.Stretch = "Uniform"
@@ -2571,7 +2578,7 @@ function Update-MediaState {
                   }
                 }
               }else{
-                write-ezlogs "[Update-MediaState] >>>> No Background image provided, setting to default App image" -showtime -loglevel 2
+                write-ezlogs ">>>> No Background image provided, setting to default App image" -showtime -loglevel 2
                 if($this.tag.DefaultSkin){
                   $syncHash.MainGrid_Background_Image_Source.Source = $null
                 }
@@ -2645,9 +2652,9 @@ function Update-MediaState {
               $vlchasnovideo = $synchash.vlc.VideoTrackCount -le 0 -and $synchash.vlc.Role -notmatch 'Video'
             }
             if(($vlchasnovideo -and $synchash.Media_Current_Title -and !$synchash.Youtube_WebPlayer_URL -and !$thisApp.Config.Use_Visualizations -and !$synchash.Current_playing_media.hasvideo) -or ($synchash.Media_Current_Title -and $synchash.Spotify_Status -eq 'Playing')){
-              write-ezlogs "[Update-MediaState] >>>> Media has no video - VideoTrackCount: $($synchash.vlc.VideoTrackCount) - DecodedVideo: $($synchash.vlc.Media.DecodedVideo)" -showtime -LogLevel 2
+              write-ezlogs ">>>> Media has no video - VideoTrackCount: $($synchash.vlc.VideoTrackCount) - DecodedVideo: $($synchash.vlc.Media.DecodedVideo)" -showtime -LogLevel 2
               if($synchash.VideoButton_ToggleButton.isChecked -and $thisApp.Config.Open_VideoPlayer -and !$synchash.MediaViewAnchorable.isFloating){
-                write-ezlogs "[Update-MediaState] | Media has no video, Closing Video Player -- vlchasvideo: $($vlchasnovideo) -- Media_Current_Title: $($synchash.Media_Current_Title) -- Youtube_WebPlayer_URL: $($synchash.Youtube_WebPlayer_URL) -- Spotify_Status: $($synchash.Spotify_Status) -- Current_playing_media.hasvideo: $($synchash.Current_playing_media.hasvideo)" -showtime -LogLevel 2
+                write-ezlogs "| Media has no video, Closing Video Player -- vlchasvideo: $($vlchasnovideo) -- Media_Current_Title: $($synchash.Media_Current_Title) -- Youtube_WebPlayer_URL: $($synchash.Youtube_WebPlayer_URL) -- Spotify_Status: $($synchash.Spotify_Status) -- Current_playing_media.hasvideo: $($synchash.Current_playing_media.hasvideo)" -showtime -LogLevel 2
                 Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Close
               }
               $synchash.VLC_Grid_Row2.Height="*"
@@ -2670,7 +2677,7 @@ function Update-MediaState {
               }
               if(($synchash.vlc.VideoTrackCount -gt 0 -or $synchash.Current_playing_media.hasVideo) -or ($synchash.Current_playing_media -and $thisApp.Config.Use_Visualizations) -and (!$synchash.Youtube_WebPlayer_URL -and !$synchash.Spotify_WebPlayer_URL)){
                 if(($synchash.MiniPlayer_Viewer.isVisible -or ($thisApp.Config.Use_Visualizations -and $synchash.Window.AllowsTransparency)) -and !$synchash.MediaViewAnchorable.isFloating -and $thisApp.Config.Open_VideoPlayer){
-                  write-ezlogs "[Update-MediaState] >>>> Video view is not visible - MiniPlayer ivisible: $($synchash.MiniPlayer_Viewer.isVisible), Youtube webplayer not playing, undocking video player -- Use_Visualizations: $($thisApp.Config.Use_Visualizations) -- Window.AllowsTransparency: $($synchash.Window.AllowsTransparency)" -Warning
+                  write-ezlogs ">>>> Video view is not visible - MiniPlayer ivisible: $($synchash.MiniPlayer_Viewer.isVisible), Youtube webplayer not playing, undocking video player -- Use_Visualizations: $($thisApp.Config.Use_Visualizations) -- Window.AllowsTransparency: $($synchash.Window.AllowsTransparency)" -Warning
                   if($synchash.VideoViewFloat.Height){
                     $synchash.MediaViewAnchorable.FloatingHeight = $synchash.VideoViewFloat.Height
                   }else{
@@ -2678,13 +2685,13 @@ function Update-MediaState {
                   }
                   $synchash.MediaViewAnchorable.float()
                 }else{
-                  write-ezlogs "[Update-MediaState] >>>> Media has video, showing videoview" -showtime
+                  write-ezlogs ">>>> Media has video, showing videoview" -showtime
                 }
                 if($synchash.VideoView_Flyout -and $synchash.VideoView_Flyout.Visibility -ne 'Visible'){
                   $synchash.VideoView_Flyout.Visibility = 'Visible'
                 }
                 if($synchash.VLC_Grid.children.name -notcontains 'VideoView'){
-                  write-ezlogs "[Update-MediaState] | Adding VideoView to Vlc_Grid" -showtime
+                  write-ezlogs "| Adding VideoView to Vlc_Grid" -showtime -LogLevel 0 -Verboselog:$this.Tag.verboselog
                   $Null = $synchash.VLC_Grid.children.add($synchash.VideoView)
                 }
                 if($synchash.VideoView -and $synchash.VideoView.Visibility -ne 'Visible'){
@@ -2697,7 +2704,7 @@ function Update-MediaState {
                   $synchash.FullScreen_Player_Button.isEnabled = $true
                 }
                 if(!$synchash.VideoButton_ToggleButton.isChecked -and $thisApp.Config.Open_VideoPlayer -and !$synchash.MediaViewAnchorable.isFloating){
-                  if($thisApp.Config.Dev_mode){write-ezlogs "[Update-MediaState] | Mediaview is not floating, toggling VideoButton"  -dev_mode}
+                  write-ezlogs "| Mediaview is not floating, toggling VideoButton" -LogLevel 0 -Verboselog:$this.Tag.verboselog
                   Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Open
                   if($synchash.MediaViewAnchorable){
                     $synchash.MediaViewAnchorable.isSelected = $true
@@ -2705,11 +2712,11 @@ function Update-MediaState {
                 }
               }
               if($thisapp.config.Spotify_WebPlayer -and $synchash.Spotify_WebPlayer_URL -and $synchash.Spotify_WebPlayer_title){
-                if($thisApp.Config.Dev_mode){write-ezlogs "[Update-MediaState] >>>> Media is using Spotify Webplayer, hiding video view" -dev_mode}
+                write-ezlogs ">>>> Media is using Spotify Webplayer, hiding video view" -LogLevel 0 -Verboselog:$this.Tag.verboselog
                 $synchash.VLC_Grid_Row2.Height="*"
                 $synchash.VLC_Grid_Row0.Height="*"
               }else{
-                if($thisApp.Config.Dev_mode){write-ezlogs "[Update-MediaState] >>>> Resetting Media Image, text and VLC_Grid row height" -dev_mode}
+                write-ezlogs ">>>> Resetting Media Image, text and VLC_Grid row height" -LogLevel 0 -Verboselog:$this.Tag.verboselog
                 $synchash.VLC_Grid_Row0.Height="100*"
                 $synchash.VLC_Grid_Row2.Height="*"
                 $synchash.VLC_Grid_Row1.Height="*"
@@ -2745,10 +2752,11 @@ function Update-MediaState {
             'Background_cached_image' = $Background_cached_image
             'Background_default_image' = $Background_default_image
             'background_accent_color' = $background_accent_color
+            'verboselog' = $verboselog
         })
         $synchash.Update_MediaState_timer.start()
       }else{
-        write-ezlogs "[Update-MediaState] Update_MediaState_timer is already enabled, not executing start() again" -warning
+        write-ezlogs "Update_MediaState_timer is already enabled, not executing start() again" -warning
       }
     }
   }catch{

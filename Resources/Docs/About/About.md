@@ -20,6 +20,7 @@
 + Helped with testing nearly every build up to the latest
 + Helped in many other areas including graphic design (many skin components, including the awesome 'Speakers' and Splash Screen) and various core code 
 + Provided great ideas, feedback and motivation to keep this project going
++ Rest in peace my good friend
 
 ***
 

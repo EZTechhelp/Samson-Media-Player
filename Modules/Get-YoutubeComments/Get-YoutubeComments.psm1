@@ -83,6 +83,7 @@ function Get-YoutubeComments
             if($Get_comments_Measure){
               $Get_comments_Measure.stop()
             }
+            $Process_Comments_Measure = [system.diagnostics.stopwatch]::StartNew()
             if($comments -and $Comments -ne 'Not Found'){
               write-ezlogs "| Found $($comments.count) Youtube comments"
               $Comments | sort-object -property @{e={$_.snippet.topLevelComment.snippet.likeCount}} -Descending | & { process { 
@@ -113,17 +114,6 @@ function Get-YoutubeComments
                     'repliesCount' = $_.snippet.totalReplyCount
                     'updatedAt' = $RelativeTime
                   }
-                  <#                  $parentnode.Content = [PSCustomObject]::new(@{
-                      'textDisplay' = [string]$_.snippet.topLevelComment.snippet.textOriginal
-                      'authorProfileImage' = ''
-                      'authorDisplayName' = $_.snippet.topLevelComment.snippet.authorDisplayName
-                      'likeCount' = "$($_.snippet.topLevelComment.snippet.likeCount)"
-                      'videoId' = $_.snippet.topLevelComment.snippet.videoId
-                      'Id' = $_.id
-                      'MaxWidth' = '400'
-                      'repliesCount' = $_.snippet.totalReplyCount
-                      'updatedAt' = $RelativeTime
-                  })#>
                   if($_.replies.comments.snippet){
                     $_.replies.comments.snippet | & { process { 
                         if($_.updatedAt){
@@ -148,7 +138,6 @@ function Get-YoutubeComments
                           'authorDisplayName' = $_.authorDisplayName
                           'likeCount' = "$($_.likeCount)"
                           'videoId' = $_.videoId
-                          #'MaxWidth' = $Width
                           'Id' = $_.id
                           'updatedAt' = $RelativeTime
                         }

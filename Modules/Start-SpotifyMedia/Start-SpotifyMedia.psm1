@@ -966,6 +966,7 @@ function Start-SpotifyMedia{
       'Set-WindowState',
       'Update-LibVLC',
       'Set-SpotifyWebPlayerTimer'
+      'modules_list' = 'Microsoft.PowerShell.Utility'
     }
     Start-Runspace @Runspace_Args
   }catch{

@@ -41,7 +41,7 @@ function Update-MediaTimer{
   try{
     if($synchashWeak.Target.Timer.isEnabled -and (!$([string]$synchashWeak.Target.vlc.media.Mrl).StartsWith("dshow://") -or ($thisApp.Config.Use_Spicetify -and ($synchashWeak.Target.Spicetify.is_playing -or $synchashWeak.Target.Spicetify.is_paused))) -and !$([string]$synchashWeak.Target.vlc.media.Mrl).StartsWith("imem://")){
       $timer_maxretry = 0
-      if($thisApp.Config.Log_Level -ge 3){
+      if($Verboselog -or $thisApp.Config.Dev_mode){
         $Media_Timer_Measure = [system.diagnostics.stopwatch]::StartNew()
       }
       $Current_playlist_items = $synchashWeak.Target.PlayQueue_TreeView.Items 
@@ -50,12 +50,11 @@ function Update-MediaTimer{
         if($queue_index -ne -1){
           $Current_playing = $Current_playlist_items[$queue_index]
         }else{
-          $Current_playing = $Current_playlist_items.where({$_.id -eq $synchashWeak.Target.Current_playing_media.id}) | select -Unique
+          $Current_playing = $Current_playlist_items.where({$_.id -eq $synchashWeak.Target.Current_playing_media.id}) | Select-Object -Unique
         }
       }      
       if(!$Current_playing){
-        #write-ezlogs "Couldnt find current playing media using id (Title: $($synchashWeak.Target.Current_playing_media.title) | ID: $($synchashWeak.Target.Current_playing_media.id)" -showtime -warning
-        $Current_playing = $Current_playlist_items | where {$_.tag.Media.id -eq $synchashWeak.Target.Current_playing_media.id} | select -Unique
+        $Current_playing = $Current_playlist_items | Where-Object {$_.tag.Media.id -eq $synchashWeak.Target.Current_playing_media.id} | Select-Object -Unique
       }     
       if($synchashWeak.Target.VideoView_Mute_Icon){
         if(($synchashWeak.Target.vlc.mute -or $synchashWeak.Target.vlc.Volume -le 0)){
@@ -88,7 +87,7 @@ function Update-MediaTimer{
             if($queue_index -ne -1){
               $Current_playing = $Current_playlist_items[$queue_index]
             }else{
-              $Current_playing = $Current_playlist_items.where({$_.id -eq $synchashWeak.Target.Current_playing_media.id}) | select -Unique
+              $Current_playing = $Current_playlist_items.where({$_.id -eq $synchashWeak.Target.Current_playing_media.id}) | Select-Object -Unique
             }            
           }                               
           if(!$Current_playing){
@@ -106,7 +105,7 @@ function Update-MediaTimer{
               if($queue_index -ne -1){
                 $Current_playing = $Current_playlist_items[$queue_index]
               }else{
-                $Current_playing = $Current_playlist_items.where({$_.id -eq $synchashWeak.Target.Current_playing_media.id}) | select -Unique
+                $Current_playing = $Current_playlist_items.where({$_.id -eq $synchashWeak.Target.Current_playing_media.id}) | Select-Object -Unique
               }            
             }   
             if(!$Current_playing){
@@ -134,13 +133,11 @@ function Update-MediaTimer{
         #Must be spotify track
         $current_track = $synchashWeak.Target.current_track_playing
         if($thisapp.Config.Use_Spicetify){
-          #write-ezlogs "Spicetify current playing status: $($synchashWeak.Target.Spicetify | out-string)" -Dev_mode
           $Name = $synchashWeak.Target.Spicetify.title
           $Artist = $synchashWeak.Target.Spicetify.ARTIST
           try{
             if($synchashWeak.Target.Spicetify.POSITION -ne $null){
               $progress = [timespan]::ParseExact($synchashWeak.Target.Spicetify.POSITION, "%m\:%s",[System.Globalization.CultureInfo]::InvariantCulture).TotalMilliseconds
-              #$progress = [timespan]::Parse($synchashWeak.Target.Spicetify.POSITION).TotalMilliseconds
             }else{
               $progress = $($([timespan]::FromMilliseconds(0)).TotalMilliseconds)
             }
@@ -150,7 +147,7 @@ function Update-MediaTimer{
           $duration = $synchashWeak.Target.Spicetify.duration_ms
         }else{
           $Name = $current_track.item.name
-          $Artist = $current_track.item.artists.name
+          #$Artist = $current_track.item.artists.name
           $progress = $current_track.progress_ms
           $duration = $current_track.item.duration_ms
         }      
@@ -210,17 +207,10 @@ function Update-MediaTimer{
               if($synchashWeak.Target.VideoView_Progress_Slider){
                 $synchashWeak.Target.VideoView_Progress_Slider.ToolTip = $synchashWeak.Target.MediaPlayer_Slider.ToolTip
               }
-<#              if($synchashWeak.Target.Mini_Progress_Slider){
-                $synchashWeak.Target.Mini_Progress_Slider.ToolTip = $synchashWeak.Target.MediaPlayer_Slider.ToolTip
-              }#>
             }      
-          }
-          <#          if($synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.IsEnabled -and $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus -ne 'Playing'){
-              $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus = 'Playing'
-              $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
-          } #>               
+          }              
           if(@($Current_playing).count -gt 1){
-            $Current_playing = $Current_playing | select -first 1
+            $Current_playing = $Current_playing | Select-Object -first 1
           }  
           if(!$synchashWeak.Target.PlayButton_ToggleButton.isChecked){
             $synchashWeak.Target.PlayButton_ToggleButton.isChecked = $true
@@ -322,13 +312,6 @@ function Update-MediaTimer{
                 $synchashWeak.Target.Now_Playing_artist_Label.DataContext = ""
               }
             }
-            <#            if(-not [string]::IsNullOrEmpty($synchashWeak.Target.Current_playing_media.Bitrate)){
-                $synchashWeak.Target.DisplayPanel_Bitrate_TextBlock.text = "$($synchashWeak.Target.Current_playing_media.Bitrate) Kbps"
-                $synchashWeak.Target.DisplayPanel_Sep3_Label.Visibility = 'Visible'
-                }else{
-                $synchashWeak.Target.DisplayPanel_Bitrate_TextBlock.text = ""
-                $synchashWeak.Target.DisplayPanel_Sep3_Label.Visibility = 'Hidden'
-            }#>
           }
           #Chapters
           if($synchashWeak.Target.vlc.ChapterCount -gt 1){
@@ -338,7 +321,7 @@ function Update-MediaTimer{
               if($thisApp.Config.Libvlc_Version -eq '4'){
                 #TODO: LIBVLC 4
               }else{
-                $currentChapter_description = $synchashWeak.Target.vlc.ChapterDescription(0)| where {$_.id -eq $currentChapter}
+                $currentChapter_description = $synchashWeak.Target.vlc.ChapterDescription(0)| Where-Object {$_.id -eq $currentChapter}
                 $newtitle = "$($synchashWeak.Target.Current_playing_media.title) | Chapter $currentChapter`: $($currentChapter_description.Name)"
               }
               if($currentChapter_description.Name -and $synchashWeak.Target.Now_Playing_Title_Label.DataContext -ne $newtitle){
@@ -348,7 +331,6 @@ function Update-MediaTimer{
           }                 
           if($Current_playing -and $Current_playing.FontWeight -ne 'Bold'){
             if(-not [string]::IsNullOrEmpty($Current_playing.title)){
-              #$Current_playing.title = "---> $($Current_playing.title)"
               $Current_playing.FontWeight = 'Bold'
               #$Current_playing.BorderBrush = 'LightGreen'
               #$Current_playing.BorderThickness = '1'
@@ -382,8 +364,8 @@ function Update-MediaTimer{
               $current_playing.PlayIconButtonWidth = "25"
               $current_playing.NumberVisibility = "Hidden"
               $current_playing.NumberFontSize = [Double]'0.1'
-              $current_playing.PlayIconEnabled = $true      
-              if($thisApp.Config.Verbose_logging){write-ezlogs "Current : $($Current_playing | Select * | out-string)" -showtime}
+              $current_playing.PlayIconEnabled = $true
+              if($thisApp.Config.Verbose_logging){write-ezlogs "Current : $($Current_playing | Select-Object * | out-string)" -showtime}
             }
             if($synchashWeak.Target.PlayQueue_TreeView.itemssource){
               $synchashWeak.Target.PlayQueue_TreeView.itemssource.refresh()
@@ -400,18 +382,15 @@ function Update-MediaTimer{
         }  
       }elseif(($current_track.is_playing -or ($synchashWeak.Target.Spicetify.is_playing)) -and $progress -ne $null -and $Name -match $synchashWeak.Target.Last_Played_title -and $synchashWeak.Target.Spotify_Status -ne 'Stopped'){  
         try{         
-          #write-ezlogs "Found spotify track playing $($thisapp.config.Last_Played_title)"
           if(($synchashWeak.Target.Now_Playing_Title_Label.DataContext -in 'LOADING...','','OPENING...')){
             write-ezlogs "Updating Now Playing Title with Spotify track name: $($name)" -showtime
             $synchashWeak.Target.Now_Playing_Title_Label.DataContext = $Name
           }
           if(!$synchashWeak.Target.MediaPlayer_Slider.isEnabled){
             $synchashWeak.Target.MediaPlayer_Slider.isEnabled = $true
-            #$synchashWeak.Target.VLC_Grid_Row3.Height="40"
           }
           $maxduration = $([timespan]::FromMilliseconds($duration)).TotalSeconds
           if($synchashWeak.Target.MediaPlayer_Slider.Maximum -ne $maxduration){
-            #$synchashWeak.Target.MediaPlayer_Slider.Maximum = $([timespan]::FromMilliseconds($duration)).TotalSeconds
             $synchashWeak.Target.MediaPlayer_Slider.Maximum = $maxduration
           }
           [int]$hrs = $($([timespan]::FromMilliseconds($progress)).Hours)
@@ -420,7 +399,6 @@ function Update-MediaTimer{
           [int]$totalhrs = $([timespan]::FromMilliseconds($duration)).Hours
           [int]$totalmins = $([timespan]::FromMilliseconds($duration)).Minutes
           [int]$totalsecs = $([timespan]::FromMilliseconds($duration)).Seconds
-          #$total_time = "$totalhrs`:$totalmins`:$totalsecs"
           if($totalhrs -lt 1){
             $hrs = '0'
             $totalhrs = '0'
@@ -434,16 +412,13 @@ function Update-MediaTimer{
               $synchashWeak.Target.Main_TaskbarItemInfo.ProgressState = 'Normal'
             }
           }else{
-            #$synchashWeak.Target.MediaPlayer_Slider.ToolTip = $synchashWeak.Target.Media_Length_Label.content
             $synchashWeak.Target.MediaPlayer_Slider.ToolTip = $current_Length + ' / ' +  "$($total_time)"
             $synchashWeak.Target.VideoView_Progress_Slider.ToolTip = $synchashWeak.Target.MediaPlayer_Slider.ToolTip
-            #$synchashWeak.Target.Mini_Progress_Slider.ToolTip = $synchashWeak.Target.MediaPlayer_Slider.ToolTip
           }            
           if($thisApp.Config.Remember_Playback_Progress -and 'Current_Progress_Secs' -in $synchashWeak.Target.Current_playing_media.psobject.properties.name){
             $synchashWeak.Target.Current_playing_media.Current_Progress_Secs = $progress
             $thisApp.Config.Current_Playing_Media = $synchashWeak.Target.Current_playing_media
           }
-          #$synchashWeak.Target.Media_Length_Label.text = $current_Length + ' / ' +  "$($total_time)"
           if($synchashWeak.Target.VideoView_Current_Length_TextBox){
             $synchashWeak.Target.VideoView_Current_Length_TextBox.text = $current_Length
           }
@@ -458,11 +433,7 @@ function Update-MediaTimer{
           }
           if($synchashWeak.Target.MiniPlayer_Media_Length_Label){
             $synchashWeak.Target.MiniPlayer_Media_Length_Label.Content = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
-          }    
-<#          if($synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.IsEnabled -and $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus -ne 'Playing'){
-            $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.PlaybackStatus = 'Playing'
-            $synchashWeak.Target.systemmediaplayer.SystemMediaTransportControls.DisplayUpdater.Update()
-          }#>   
+          }   
           if(!$synchashWeak.Target.PlayButton_ToggleButton.isChecked){
             $synchashWeak.Target.PlayButton_ToggleButton.isChecked = $true
           }  
@@ -474,7 +445,7 @@ function Update-MediaTimer{
             if($queue_index -ne -1){
               $Current_playing = $Current_playlist_items[$queue_index]
             }else{
-              $Current_playing = $Current_playlist_items.where({$_.id -eq $synchashWeak.Target.Current_playing_media.id}) | select -Unique
+              $Current_playing = $Current_playlist_items.where({$_.id -eq $synchashWeak.Target.Current_playing_media.id}) | Select-Object -Unique
             }            
           }
           if($Current_playing -and $Current_playing.FontWeight -ne 'Bold'){
@@ -482,10 +453,8 @@ function Update-MediaTimer{
               $synchashWeak.Target.PlayQueue_TreeView.itemssource.refresh()
             }elseif($synchashWeak.Target.PlayQueue_TreeView.items.NeedsRefresh){
               $synchashWeak.Target.PlayQueue_TreeView.items.refresh()
-            }
-            #$Current_playing = $Current_playlist_items | where  {$_.id -eq $synchashWeak.Target.Current_playing_media.id} | select -Unique      
+            }  
             if(-not [string]::IsNullOrEmpty($Current_playing.title)){
-              #$Current_playing.title = "---> $($Current_playing.title)"
               $Current_playing.FontWeight = 'Bold'
               #$Current_playing.BorderBrush = 'LightGreen'
               #$Current_playing.BorderThickness = '1'
@@ -514,8 +483,6 @@ function Update-MediaTimer{
               if($synchashWeak.Target.PlayIcon1_Storyboard.Storyboard){
                 Get-WPFAnimation -thisApp $thisApp -synchash $synchashWeak.Target -Action Begin
               }                 
-            }elseif(-not [string]::IsNullOrEmpty($Current_playing.Header)){
-              #$Current_playing.Header = "---> $($Current_playing.Header)"
             }
             if($synchashWeak.Target.PlayQueue_TreeView.itemssource){
               $synchashWeak.Target.PlayQueue_TreeView.itemssource.refresh()
@@ -532,12 +499,12 @@ function Update-MediaTimer{
         }    
       }elseif((!$synchashWeak.Target.vlc.IsPlaying) -and ($synchashWeak.Target.vlc.media.State -notin 'Playing','Opening') -and $synchashWeak.Target.Spotify_Status -eq 'Stopped' -and !$synchashWeak.Target.Webview2.CoreWebView2.IsDocumentPlayingAudio -and !$synchashWeak.Target.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio){  
         write-ezlogs "Unable to find any media currently playing, cleaning up media timer and moving on -- vlc.IsPlaying: $($synchashWeak.Target.vlc.IsPlaying) -- libvlc_media.State: $($synchashWeak.Target.vlc.media.State)" -Warning
-        if($thisApp.Config.Dev_mode){
+        if($VerboseLog -or $thisApp.Config.Dev_mode){
           write-ezlogs "VLC: $($synchashWeak.Target.vlc | out-string)" -Warning -Dev_mode
           write-ezlogs "VLC Media: $($synchashWeak.Target.vlc.media | out-string)" -Warning -Dev_mode
         }
         if(Get-Process -Name 'Spotify*' -ErrorAction SilentlyContinue){
-          if($thisapp.config.Use_Spicetify -and ((NETSTAT.EXE -an) | where {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'})){
+          if($thisapp.config.Use_Spicetify -and ((NETSTAT.EXE -an) | Where-Object {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'})){
             try{
               #start-sleep 1
               write-ezlogs ">>>> Stopping Spotify playback with Invoke-RestMethod to 'http://127.0.0.1:8974/PAUSE'" -showtime -color cyan
@@ -549,7 +516,7 @@ function Update-MediaTimer{
           }else{
             try{
               $devices = Get-AvailableDevices -ApplicationName $thisapp.config.App_Name
-              $device = $devices | where {$_.is_active -eq $true}
+              $device = $devices | Where-Object {$_.is_active -eq $true}
               if($device -and $synchashWeak.Target.current_track_playing.is_playing){
                 write-ezlogs '>>>> Stopping Spotify playback with Suspend-Playback' -showtime
                 Suspend-Playback -ApplicationName $thisapp.config.App_Name -DeviceId $device.id
@@ -563,7 +530,7 @@ function Update-MediaTimer{
           }
         }       
         if($thisapp.config.Current_Playlist.values -contains $synchashWeak.Target.Current_playing_media.id){
-          $index_toremove = $thisapp.config.Current_Playlist.GetEnumerator() | where {$_.value -eq $synchashWeak.Target.Current_playing_media.id} | select * -ExpandProperty key
+          $index_toremove = $thisapp.config.Current_Playlist.GetEnumerator() | Where-Object {$_.value -eq $synchashWeak.Target.Current_playing_media.id} | Select-Object * -ExpandProperty key
           $null = $thisapp.config.Current_Playlist.Remove($index_toremove)                         
         }      
         try{
@@ -581,14 +548,11 @@ function Update-MediaTimer{
           }elseif($thisapp.config.Auto_Playback){
             Skip-Media -thisApp $thisApp -synchash $synchashWeak.Target
           }else{
-            Get-PlayQueue -verboselog:$false -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace
-            Get-Playlists -verboselog:$thisapp.Config.Verbose_logging -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace
+            Get-PlayQueue -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace
+            Get-Playlists -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace
             write-ezlogs '| No other media is queued to play due to Auto Playback disabled' -showtime
             if(Get-Process -Name 'Spotify*' -ErrorAction SilentlyContinue){Get-Process -Name 'Spotify*' | Stop-Process -Force -ErrorAction SilentlyContinue} 
             $synchashWeak.Target.Spotify_Status = 'Stopped'
-            <#            if($synchashWeak.Target.Media_Length_Label){
-                $synchashWeak.Target.Media_Length_Label.content = ''
-            }#>
             if($synchashWeak.Target.Media_Current_Length_TextBox){
               $synchashWeak.Target.Media_Current_Length_TextBox.DataContext = '00:00:00'
             }
