@@ -284,7 +284,7 @@ function Update-PlayQueue
               write-ezlogs "[Update-PlayQueue] >>>> Added $($id.count) items by id to play queue - last index: $($index)"
             }
             #TODO: This is terrible and hacky, real solution is to make Current_Playlist use OrderedDictionary (will need to be custom class to make it serializable)
-            if($thisapp.config.Current_Playlist.values -and ([System.Linq.Enumerable]::First($thisapp.config.Current_Playlist.Keys)) -ne 0){
+            if($thisapp.config.Current_Playlist.values -and $thisapp.config.Current_Playlist.Keys.count -ge 1 -and ([System.Linq.Enumerable]::First($thisapp.config.Current_Playlist.Keys)) -ne 0){
               write-ezlogs "[Update-PlayQueue] | Queue seems to be out of order, Re-sorting by key number" -warning
               $Sorted = [System.Collections.SortedList]::new($thisapp.config.Current_Playlist)
               [void]$thisApp.config.Current_Playlist.clear()
@@ -310,6 +310,11 @@ function Update-PlayQueue
           if($thisApp.config.History_Playlist -isnot [SerializableDictionary[int,string]]){
             $thisApp.Config.History_Playlist = [SerializableDictionary[int,string]]::new()
           }
+          if($thisApp.Config.HistoryMax -gt 0){
+            $HistoryMax = $thisApp.Config.HistoryMax
+          }else{
+            $HistoryMax = 10
+          }
           foreach($i in $id){
             if($thisApp.config.History_Playlist.ContainsValue($i)){
               $CurrentIndex = (($thisApp.config.History_Playlist.GetEnumerator()) | & { process { if($_.value -eq $id){$_}} }).key
@@ -318,15 +323,19 @@ function Update-PlayQueue
               }
             }
             if($thisApp.config.History_Playlist.values -notcontains $i){
-              if($thisApp.config.History_Playlist.keys.count -gt 10){
+              if($thisApp.config.History_Playlist.keys.count -gt $HistoryMax){
                 write-ezlogs "[Update-PlayQueue] | History playlist at or over maximum clearing all history" -LogLevel 2 -warning
                 [void]$thisApp.config.History_Playlist.clear()
-              }elseif($thisApp.config.History_Playlist.keys.count -eq 10){
+              }elseif($thisApp.config.History_Playlist.keys.count -eq $HistoryMax){
                 $historyindex_toremove = [System.Linq.Enumerable]::Min($thisApp.config.History_Playlist.keys)
                 write-ezlogs "[Update-PlayQueue] | History playlist at maximum, dropping oldest index: $($historyindex_toremove)" -LogLevel 2
                 [void]$thisapp.config.History_Playlist.Remove($historyindex_toremove)
               }
-              $historyindex = [System.Linq.Enumerable]::Max($thisApp.config.History_Playlist.keys)
+              if($thisApp.config.History_Playlist.keys.count -ge 1){
+                $historyindex = [System.Linq.Enumerable]::Max($thisApp.config.History_Playlist.keys)
+              }else{
+                $historyindex = 0
+              }              
               $historyindex++
               write-ezlogs "[Update-PlayQueue] | Adding $($i) to Play history" -LogLevel 0 -Verboselog:$VerboseLog
               [void]$thisApp.config.History_Playlist.add($historyindex,$i)

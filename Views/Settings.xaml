@@ -381,6 +381,15 @@
 										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
 									</Button>
 								</Grid>
+								<Grid Margin="0,0,0,0">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0">
+										<TextBox Name='HistoryMax_Label' Text="Max Playback History" Visibility="Visible" IsReadOnly="True" IsUndoEnabled="False" UndoLimit="0" Background="Transparent" VerticalAlignment="Top" Foreground="#ffffff" BorderBrush="Red" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
+										<TextBox Name='HistoryMax_textbox' Height="23" Text="" Margin="42,0,0,0" VerticalAlignment="Top" UndoLimit="0" Background="Transparent" TextWrapping="NoWrap" IsEnabled="True" Visibility="Visible" RenderTransformOrigin="0.502,0.52" MinWidth="50" MaxWidth="50" HorizontalAlignment="Left"/>
+									</VirtualizingStackPanel>
+									<Button Name="HistoryMax_HelpButton" Width="20" Height="20" Margin="0,3,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</Button>
+								</Grid>								
 								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,0,0,0">
 									<Button Name="Hotkeys_Button" Width="20" Height="20" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
 										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
@@ -433,7 +442,7 @@
 														   mah:TextBoxHelper.Watermark="Enter hot key"
 														   AreModifierKeysRequired="False" />			
 										</VirtualizingStackPanel>										
-								</VirtualizingStackPanel>									
+								</VirtualizingStackPanel>								
 							</VirtualizingStackPanel>
 						</Expander>
 						<Expander

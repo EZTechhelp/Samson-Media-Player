@@ -698,7 +698,7 @@ function Use-RunAs
   if ($Check) { return $IsAdmin }
   $ScriptPath = [System.IO.Path]::Combine($thisApp.Config.Current_folder,"$($thisApp.Config.App_Name).ps1")
   if(![System.IO.File]::Exists($ScriptPath)){
-    $ScriptPath = $((Get-PSCallStack).ScriptName | where {$_ -notmatch '.psm1'} | select -First 1)
+    $ScriptPath = $((Get-PSCallStack).ScriptName | Where-Object {$_ -notmatch '.psm1'} | Select-Object -First 1)
   }
   write-ezlogs "[USE-RUNAS] >>>> Checking if running as administrator"
   if([System.IO.File]::Exists($ScriptPath))
@@ -727,18 +727,18 @@ function Use-RunAs
         }
         if($RestartAsUser){
           $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine', 'Default')
-          $Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\").GetSubKeyNames() | foreach {
-            if($Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$_").GetValue('DisplayName') -match $($thisApp.Config.App_Name)){
-              $install_folder = $Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$_").GetValue('InstallLocation')
-            }
-          }
+          $install_folder = $Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\").GetSubKeyNames() | & { process {
+              if($Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$_").GetValue('DisplayName') -match $($thisApp.Config.App_Name)){
+                $Registry.OpenSubKey("SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\$_").GetValue('InstallLocation')
+              }
+          }}
           if(!$install_folder){
             $Registry = [Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser', 'Default')
-            $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\").GetSubKeyNames() | foreach {
-              if($Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$_").GetValue('DisplayName') -match $($thisApp.Config.App_Name)){
-                $install_folder = $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$_").GetValue('InstallLocation')
-              }
-            }
+            $install_folder = $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\").GetSubKeyNames() | & { process {
+                if($Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$_").GetValue('DisplayName') -match $($thisApp.Config.App_Name)){
+                  $Registry.OpenSubKey("SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$_").GetValue('InstallLocation')
+                }
+            }}
           }
           $null = $Registry.Dispose()
           $ExePath = [System.IO.Path]::Combine($install_folder,"$($thisApp.Config.App_Name).exe")
@@ -835,7 +835,7 @@ function confirm-requirements
           write-ezlogs "[Confirm-Requirements] Chocolatey is not installed, installing...." -showtime -warning
           Set-ExecutionPolicy Bypass -Scope Process -Force
           [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-          iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex *>&1 | write-ezlogs -CallBack:$false
+          Invoke-WebRequest https://chocolatey.org/install.ps1 -UseBasicParsing | Invoke-Expression *>&1 | write-ezlogs -CallBack:$false
           if([System.IO.File]::Exists("$env:ChocolateyInstall\redirects\Choco.exe")){
             write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey -- restarting app" -showtime -Success
             if(!$noRestart){
@@ -877,7 +877,7 @@ function confirm-requirements
       if($($PSVersionTable.PSVersion.Major) -lt 3)
       {
         $MinimumNet4Version = 378389
-        $Net4Version = (get-itemproperty "hklm:software\microsoft\net framework setup\ndp\v4\full" -ea silentlycontinue | Select -Expand Release -ea silentlycontinue)
+        $Net4Version = (get-itemproperty "hklm:software\microsoft\net framework setup\ndp\v4\full" -ea silentlycontinue | Select-Object -Expand Release -ea silentlycontinue)
         if ($Net4Version -lt $MinimumNet4Version)
         {
           write-ezlogs "[Confirm-Requirements] .NET Framework 4.5.2 or later required.  Use package named `"dotnet4.5` to upgrade. Your .NET Release is `"$MinimumNet4Version`" but needs to be at least `"$MinimumNet4Version`"." -warning -LogLevel 2
@@ -1071,7 +1071,7 @@ function confirm-requirements
                         write-ezlogs "[Confirm-Requirements] Chocolatey is not installed, installing...." -showtime -warning
                         Set-ExecutionPolicy Bypass -Scope Process -Force
                         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-                        iwr https://chocolatey.org/install.ps1 -UseBasicParsing | iex *>&1 | write-ezlogs -CallBack:$false
+                        Invoke-WebRequest https://chocolatey.org/install.ps1 -UseBasicParsing | Invoke-Expression *>&1 | write-ezlogs -CallBack:$false
                         if([System.IO.File]::Exists("$env:ChocolateyInstall\redirects\Choco.exe")){
                           write-ezlogs "[Confirm-Requirements] Successfully installed Chocolatey -- restarting app" -showtime -Success
                         }else{
@@ -1175,6 +1175,20 @@ function confirm-requirements
         }
       }
       #endregion install/update required apps
+
+      #ProjectM Presets
+      if([system.IO.File]::Exists("$($thisApp.Config.Current_folder)\Resources\Libvlc\Presets\presets_milkdrop.zip") -and ![system.IO.Directory]::Exists("$($thisApp.Config.Current_folder)\Resources\Libvlc\Presets\presets_milkdrop")){
+        try{
+          if($hash.window.isVisible){
+            Update-SplashScreen -hash $hash -SplashMessage "Extracting ProjectM presets..."
+          }
+          Write-EZLogs -text ">>>> Extracting ProjectM presets file presets_milkdrop.zip to: $($thisApp.Config.Current_folder)\Resources\Libvlc\Presets\"
+          Expand-Archive "$($thisApp.Config.Current_folder)\Resources\Libvlc\Presets\presets_milkdrop.zip" -DestinationPath "$($thisApp.Config.Current_folder)\Resources\Libvlc\Presets\" -Force
+          Remove-Item "$($thisApp.Config.Current_folder)\Resources\Libvlc\Presets\presets_milkdrop.zip" -Force
+        }catch{
+          Write-EZLogs -text 'An exception occurred expanding presets_milkdrop.zip' -CatchError $_
+        }    
+      }
     }catch{
       write-ezlogs "An exception occurred in Confirm-Requirements" -CatchError $_
     }
@@ -1298,7 +1312,7 @@ function Get-DDGSearchQuery {
   if(-not [string]::IsNullOrEmpty($Query)){
     try{
       Add-Type -AssemblyName System.Web # To get UrlEncode()
-      $QueryString = ($Query | %{ [Web.HttpUtility]::UrlEncode($_)}) -join '+'
+      $QueryString = ($Query | ForEach-Object{ [Web.HttpUtility]::UrlEncode($_)}) -join '+'
 
       # Return the query string
       $urlQuery =  "https://api.duckduckgo.com/?q=$QueryString&format=json"
@@ -1358,7 +1372,7 @@ function Optimize-Assemblies {
         }
         $ngen_path = $([Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory())
       }else{
-        $ngen_path = (get-childitem "$env:windir\Microsoft.NET\Framework64\*" -Filter 'ngen.exe' -Recurse).DirectoryName | select -last 1
+        $ngen_path = (get-childitem "$env:windir\Microsoft.NET\Framework64\*" -Filter 'ngen.exe' -Recurse).DirectoryName | Select-Object -last 1
       }
       write-ezlogs ">>>> Optimizing Powershell Assemblies and Native Images Cache..." -showtime -color cyan
       if($hash.window.isVisible){
@@ -1377,7 +1391,7 @@ function Optimize-Assemblies {
       $ngen_Measure = [system.diagnostics.stopwatch]::StartNew()
       $env:PATH += ";$ngen_path"
       $CurrentDomain_Assemblies = [AppDomain]::CurrentDomain.GetAssemblies()
-      $CurrentDomain_Assemblies | ForEach {
+      $CurrentDomain_Assemblies | ForEach-Object {
         $path = $_.Location
         if ([system.io.file]::Exists($path)) {
           $name = [system.io.path]::GetFileName($path)

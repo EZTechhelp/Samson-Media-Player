@@ -734,7 +734,7 @@ function Set-AvalonDock {
                 'Command' = $synchash.ChatView_Command
                 'Icon_kind' = $chaticon
                 'Binding' = $synchash.Chat_View_Button
-                'binding_property_path' = 'isEnabled'
+                'binding_property_path' = 'IsEnabled'
                 'binding_mode' = 'OneWay'
                 'binding_property' = 'IsEnabledProperty'
                 'IsCheckable' = $false
@@ -835,7 +835,7 @@ function Set-AvalonDock {
                   'Command' = $synchash.ChatView_Command
                   'Icon_kind' = $chaticon
                   'Binding' = $synchash.Chat_View_Button
-                  'binding_property_path' = 'isEnabled'
+                  'binding_property_path' = 'IsEnabled'
                   'binding_mode' = 'OneWay'
                   'binding_property' = 'IsEnabledProperty'
                   'IsCheckable' = $false
@@ -1084,7 +1084,7 @@ function Set-AvalonDock {
                     'Command' = $synchash.ChatView_Command
                     'Icon_kind' = $chaticon
                     'Binding' = $synchash.Chat_View_Button
-                    'binding_property_path' = 'isEnabled'
+                    'binding_property_path' = 'IsEnabled'
                     'binding_mode' = 'OneWay'
                     'binding_property' = 'IsEnabledProperty'
                     'IsCheckable' = $false

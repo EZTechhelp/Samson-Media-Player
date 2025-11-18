@@ -1352,6 +1352,12 @@ function Open-MiniPlayer
             Set-Window -WindowHandle $Window_Helper.Handle -X $($CurrentMonitor.Bounds.x + 10) -Y ($CurrentMonitor.WorkingArea.Top + 10)
           }
         }
+        if($synchash.Window){
+          if($synchash.Window.Left -ne $sender.left){
+            write-ezlogs ">>>> Moving main window to to mini-player location"
+            $synchash.Window.Left = $sender.left
+          }
+        }
         if($thisApp.Config.Mini_Always_On_Top -or $synchash.TempParam_Overlay){
           Set-WindowTopMost -thisApp $thisApp -Window $sender
           $Sender.Activate()

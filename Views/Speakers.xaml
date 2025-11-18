@@ -17,6 +17,7 @@
                  Width="313"
                  AllowsTransparency="true"
                  Height="500"
+				 Background="Transparent"
                  ShowTitleBar="false"
                  ResizeMode="NoResize"
                  IsWindowDraggable="True"
@@ -29,7 +30,7 @@
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml"/>
 				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml"/>
-			
+			    <ResourceDictionary Source="Views/Styles.xaml"/>
 			</ResourceDictionary.MergedDictionaries>
 			<DropShadowEffect x:Key="TextDropShadow" ShadowDepth="2" PresentationOptions:Freeze="True"/>
 			<DropShadowEffect x:Key="SplashProgressDropShadow" PresentationOptions:Freeze="True" BlurRadius="4" ShadowDepth="4" Opacity="0.5" Direction="260"/>	

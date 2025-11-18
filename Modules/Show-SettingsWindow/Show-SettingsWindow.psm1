@@ -3276,6 +3276,44 @@ function Show-SettingsWindow{
       #----------------------------------------------
 
       #----------------------------------------------
+      #region HistoryMax_textbox
+      #----------------------------------------------
+      $hashsetup.HistoryMax_textbox.add_textChanged({
+          Param($sender)
+          [double]$doubleref = [double]::NaN
+          try{
+            if(-not [string]::IsNullOrEmpty($sender.text) -and [double]::TryParse($sender.text,[ref]$doubleref) -and ($doubleref -ge 1 -and $doubleref -le 99)){
+              $hashsetup.HistoryMax_Label.BorderBrush = 'LightGreen'
+              $sender.ToolTip = ''
+              $thisapp.configTemp.HistoryMax = $sender.text
+            }else{
+              $hashsetup.HistoryMax_Label.BorderBrush = 'Red'
+              $sender.ToolTip = 'Current value is not valid. Must be a number with range of 1 - 99.'
+              $thisapp.configTemp.HistoryMax = $Null
+            }
+          }catch{
+            write-ezlogs "An exception occurred in HistoryMax_textbox.add_textChanged" -CatchError $_
+          }
+      })
+      #----------------------------------------------
+      #endregion HistoryMax_textbox
+      #----------------------------------------------
+
+      #----------------------------------------------
+      #region HistoryMax Help
+      #----------------------------------------------
+      $hashsetup.HistoryMax_HelpButton.add_Click({
+          try{
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\HistoryMax.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -header $hashsetup.HistoryMax_Label.text -open -clear
+          }catch{
+            write-ezlogs "An exception occurred in HistoryMax_Button.add_Click" -CatchError $_ -enablelogs
+          }
+      })
+      #----------------------------------------------
+      #endregion HistoryMax Help
+      #----------------------------------------------
+
+      #----------------------------------------------
       #region Auto_UpdateCheck Toggle
       #----------------------------------------------
       if($thisApp.Enable_Update_Features){
@@ -9168,6 +9206,18 @@ function Update-Settings {
             }
             #----------------------------------------------
             #endregion TODO:Media Control Hotkeys
+            #----------------------------------------------
+
+            #----------------------------------------------
+            #region HistoryMax
+            #----------------------------------------------
+            if($thisapp.config.HistoryMax -gt 0){
+              $hashsetup.HistoryMax_textbox.text = $thisapp.config.HistoryMax
+            }else{
+              $hashsetup.HistoryMax_textbox.text = 10
+            }
+            #----------------------------------------------
+            #endregion HistoryMax
             #----------------------------------------------
 
             #----------------------------------------------

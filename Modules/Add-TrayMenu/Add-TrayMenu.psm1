@@ -2,14 +2,14 @@
     .Name
     Add-TrayMenu
 
-    .Version 
+    .Version
     0.1.0
 
     .SYNOPSIS
     Creates and updates system tray context menus
 
     .DESCRIPTION
-       
+
     .Configurable Variables
 
     .Requirements
@@ -26,7 +26,7 @@
 
 #>
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Add-TrayMenu Function
 #----------------------------------------------
 function Add-TrayMenu
@@ -42,9 +42,9 @@ function Add-TrayMenu
     [switch]$addJumplist,
     [switch]$Verboselog
   )
- 
+
   try{
-  
+
     $DigitalDreams_Italic_Font = "$(([uri]"$($thisApp.Config.Current_Folder)\Resources\Fonts\digital-7 (italic).ttf").AbsoluteUri)#Digital-7"
     $DigitalDreams_Font = "$(([uri]"$($thisApp.Config.Current_Folder)\Resources\Fonts\digital-7.ttf").AbsoluteUri)#Digital-7"
     if($synchash.TrayPlayer){
@@ -65,7 +65,7 @@ function Add-TrayMenu
       }
       $Synchash.OpenTrayPopup_Command  = {
         param($sender)
-        try{    
+        try{
           #write-ezlogs "OpenTrayPopup_Command $($sender | out-string)" -showtime
           if($synchash.MiniPlayer_Viewer.isVisible){
             $synchash.MiniPlayer_Viewer.activate()
@@ -77,7 +77,7 @@ function Add-TrayMenu
       $OpenTrayPopup_Command = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.OpenTrayPopup_Command -target $synchash.TrayPlayer
       [System.Windows.RoutedEventHandler]$Synchash.OpenApp_Command  = {
         param($sender)
-        try{    
+        try{
           if($synchash.MiniPlayer_Viewer.isVisible){
             $synchash.MiniPlayer_Viewer.close()
           }
@@ -90,7 +90,7 @@ function Add-TrayMenu
           }
           if($synchash.MediaLibraryFloat.isVisible){
             $synchash.MediaLibraryFloat.Activate()
-          } 
+          }
           if($synchash.VideoViewFloat.isVisible){
             $synchash.VideoViewFloat.Activate()
           }
@@ -105,14 +105,14 @@ function Add-TrayMenu
       }
       [System.Windows.RoutedEventHandler]$Synchash.VideoView_Command = {
         param($sender)
-        try{       
+        try{
           if($synchash.MediaViewAnchorable.isFloating){
             $synchash.MediaViewAnchorable.dock()
             if($synchash.MiniPlayer_Viewer.isVisible){
               if($synchash.VideoButton_ToggleButton.isChecked){
                 Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Close
                 #$synchash.VideoButton_ToggleButton.isChecked = $false
-              }          
+              }
               if($synchash.VideoView.Visibility -notin 'Hidden','Collapsed'){
                 write-ezlogs ">>>> Video view is visible and MiniPlayer is visible, hiding video view" -Warning
                 $synchash.VideoView.Visibility = 'Collapsed'
@@ -133,7 +133,7 @@ function Add-TrayMenu
               write-ezlogs ">>>> Video view is not visible and MiniPlayer is visible, Youtube webplayer not playing, unhiding video view" -Warning
               $synchash.VideoView.Visibility = 'Visible'
             }
-            $synchash.MediaViewAnchorable.float()  
+            $synchash.MediaViewAnchorable.float()
           }
         }catch{
           write-ezlogs "An exception occurred in VideoView_Command routed event" -showtime -catcherror $_
@@ -141,7 +141,7 @@ function Add-TrayMenu
       }
       [System.Windows.RoutedEventHandler]$synchash.QuickSettings_Command = {
         param($sender)
-        try{       
+        try{
           switch($sender.Header)
           {
             'Start on Windows Login' {
@@ -506,6 +506,9 @@ function Add-TrayMenu
               }
               $thisApp.Config.Twitch_Quality = 'Best'
               Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Twitch_Quality' to: $($Sender.Header)"
+              if($synchash.current_playing_Media.Source -eq 'Twitch' -or $synchash.current_playing_Media.url -match 'twitch\.tv'){
+                Restart-Media -thisApp $thisApp -synchash $synchash
+              }
             }
             '1080p' {
               if($Sender.isChecked){
@@ -513,6 +516,9 @@ function Add-TrayMenu
               }
               $thisApp.Config.Twitch_Quality = '1080p'
               Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Twitch_Quality' to: $($Sender.Header)"
+              if($synchash.current_playing_Media.Source -eq 'Twitch' -or $synchash.current_playing_Media.url -match 'twitch\.tv'){
+                Restart-Media -thisApp $thisApp -synchash $synchash
+              }
             }
             '720p' {
               if($Sender.isChecked){
@@ -520,6 +526,9 @@ function Add-TrayMenu
               }
               $thisApp.Config.Twitch_Quality = '720p'
               Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Twitch_Quality' to: $($Sender.Header)"
+              if($synchash.current_playing_Media.Source -eq 'Twitch' -or $synchash.current_playing_Media.url -match 'twitch\.tv'){
+                Restart-Media -thisApp $thisApp -synchash $synchash
+              }
             }
             '480p' {
               if($Sender.isChecked){
@@ -527,6 +536,9 @@ function Add-TrayMenu
               }
               $thisApp.Config.Twitch_Quality = '480p'
               Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Twitch_Quality' to: $($Sender.Header)"
+              if($synchash.current_playing_Media.Source -eq 'Twitch' -or $synchash.current_playing_Media.url -match 'twitch\.tv'){
+                Restart-Media -thisApp $thisApp -synchash $synchash
+              }
             }
             'Worst' {
               if($Sender.isChecked){
@@ -534,6 +546,9 @@ function Add-TrayMenu
               }
               $thisApp.Config.Twitch_Quality = 'Worst'
               Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Twitch_Quality' to: $($Sender.Header)"
+              if($synchash.current_playing_Media.Source -eq 'Twitch' -or $synchash.current_playing_Media.url -match 'twitch\.tv'){
+                Restart-Media -thisApp $thisApp -synchash $synchash
+              }
             }
             'Audio_Only' {
               if($Sender.isChecked){
@@ -541,6 +556,9 @@ function Add-TrayMenu
               }
               $thisApp.Config.Twitch_Quality = 'Audio_Only'
               Write-EZLogs -text "[Quick Settings] >>>> Setting option 'Twitch_Quality' to: $($Sender.Header)"
+              if($synchash.current_playing_Media.Source -eq 'Twitch' -or $synchash.current_playing_Media.url -match 'twitch\.tv'){
+                Restart-Media -thisApp $thisApp -synchash $synchash
+              }
             }
           }
         }catch{
@@ -567,7 +585,7 @@ function Add-TrayMenu
       }
       if($synchash.TrayPlayer_Background_Left){
         try{
-          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\MiniPlayerSkin_Left.png") 
+          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\MiniPlayerSkin_Left.png")
           $image = [System.Windows.Media.Imaging.BitmapImage]::new()
           $image.BeginInit()
           $image.CacheOption = "OnLoad"
@@ -586,14 +604,14 @@ function Add-TrayMenu
       }
       if($synchash.TrayPlayer_Background_TileGrid){
         try{
-          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\MiniPlayerSkin_Tile.png") 
+          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\MiniPlayerSkin_Tile.png")
           $image = [System.Windows.Media.Imaging.BitmapImage]::new()
           $image.BeginInit();
           $image.CacheOption = "OnLoad"
           #$image.DecodePixelWidth = "2"
           #$image.DecodePixelHeight = "494"
           $image.StreamSource = $stream_image
-          $image.EndInit(); 
+          $image.EndInit();
           $stream_image.Close()
           $stream_image.Dispose()
           $stream_image = $Null
@@ -612,7 +630,7 @@ function Add-TrayMenu
       }
       if($synchash.TrayPlayer_Background_Right){
         try{
-          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\MiniPlayerSkin_Right.png") 
+          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\MiniPlayerSkin_Right.png")
           $image = [System.Windows.Media.Imaging.BitmapImage]::new()
           $image.BeginInit()
           $image.CacheOption = "OnLoad"
@@ -631,7 +649,7 @@ function Add-TrayMenu
       }
       if($synchash.MiniDisplayPanel_Background){
         try{
-          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\DisplayScreen.png") 
+          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\DisplayScreen.png")
           $image = [System.Windows.Media.Imaging.BitmapImage]::new()
           $image.BeginInit()
           $image.CacheOption = "OnLoad"
@@ -648,7 +666,7 @@ function Add-TrayMenu
       }
 
       if($synchash.ShowMainButton){
-        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Button1.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Button1.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -662,7 +680,7 @@ function Add-TrayMenu
         $null = $synchash.ShowMainButton_Button.AddHandler([Windows.Controls.Button]::ClickEvent,$Synchash.OpenApp_Command)
       }
       if($synchash.StayOnTopButton){
-        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Button2.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Button2.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -675,7 +693,7 @@ function Add-TrayMenu
         $synchash.StayOnTopButton.Source = $image
         $synchash.StayOnTopButton_ToggleButton.add_Click({
             Param($Sender)
-            try{         
+            try{
               if($Sender.isChecked){
                 if($synchash.MiniPlayer_Viewer.isVisible -and $synchash.StayOnTopButton_ToggleButton.ToolTip -eq 'Stay On Top'){
                   write-ezlogs ">>>> Enabling TopMost for Miniplayer window"
@@ -685,7 +703,7 @@ function Add-TrayMenu
                 }elseif($synchash.TrayPlayer.isVisible){
                   $synchash.TrayPlayer.CloseTrayPopup()
                   Open-MiniPlayer -thisApp $thisApp -synchash $synchash
-                } 
+                }
               }else{
                 if($synchash.MiniPlayer_Viewer.isVisible -and $synchash.StayOnTopButton_ToggleButton.ToolTip -eq 'Stay On Top'){
                   write-ezlogs ">>>> Disabling TopMost for Miniplayer window"
@@ -695,16 +713,16 @@ function Add-TrayMenu
                 }elseif($synchash.Window.isVisible -and $synchash.TrayPlayer.isVisible){
                   $synchash.TrayPlayer.CloseTrayPopup()
                   Open-MiniPlayer -thisApp $thisApp -synchash $synchash
-                }   
-              }     
+                }
+              }
             }catch{
               write-ezlogs "An exception occurred in StayOnTopButton_ToggleButton click event" -CatchError $_ -showtime
-            }      
+            }
         })
       }
 
       if($synchash.MiniBackButton){
-        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\BackButton.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\BackButton.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -721,7 +739,7 @@ function Add-TrayMenu
       }
 
       if($synchash.MiniStopButton){
-        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\StopButton.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\StopButton.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -737,7 +755,7 @@ function Add-TrayMenu
         $null = $synchash.MiniStopButton_Button.AddHandler([Windows.Controls.Button]::ClickEvent,[System.Windows.RoutedEventHandler]$Synchash.StopMedia_Command)
       }
       if($synchash.MiniPlayButton){
-        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Playbutton.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Playbutton.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -759,7 +777,7 @@ function Add-TrayMenu
         [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniPlayButton_ToggleButton,[Windows.Controls.Primitives.ToggleButton]::IsCheckedProperty, $MiniPlay_Binding)
       }
       if($synchash.MiniNextButton){
-        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\ForwardButton.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\ForwardButton.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -775,7 +793,7 @@ function Add-TrayMenu
         $null = $synchash.MiniNextButton_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,[System.Windows.RoutedEventHandler]$Synchash.NextMedia_Command)
       }
       if($synchash.MiniOpenButton){
-        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Openbutton.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Openbutton.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -792,15 +810,15 @@ function Add-TrayMenu
             try{
               $peer = [System.Windows.Automation.Peers.ButtonAutomationPeer]($syncHash.OpenButton_Button)
               $invokeProv = $peer.GetPattern([System.Windows.Automation.Peers.PatternInterface]::Invoke)
-              $invokeProv.Invoke()    
+              $invokeProv.Invoke()
             }catch{
               write-ezlogs "An exception occurred in MiniOpenButton_Button.add_Click" -CatchError $_ -showtime
-            } 
+            }
         })
       }
       if($synchash.MiniAutoPlay_ToggleButton){
         try{
-          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\ForwardButton.png") 
+          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\ForwardButton.png")
           $image = [System.Windows.Media.Imaging.BitmapImage]::new()
           $image.BeginInit()
           $image.CacheOption = "OnLoad"
@@ -838,10 +856,10 @@ function Add-TrayMenu
           write-ezlogs "An exception occurrerd initializing MiniShuffle_ToggleButton" -CatchError $_
         }
       }
-      #Mini Shuffle Toggle 
+      #Mini Shuffle Toggle
       if($synchash.MiniShuffle_ToggleButton){
         try{
-          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Openbutton.png") 
+          $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Openbutton.png")
           $image = [System.Windows.Media.Imaging.BitmapImage]::new()
           $image.BeginInit()
           $image.CacheOption = "OnLoad"
@@ -880,7 +898,7 @@ function Add-TrayMenu
         }
       }
       if($synchash.MiniCloseButton){
-        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\CloseButton.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\CloseButton.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -896,7 +914,7 @@ function Add-TrayMenu
         $null = $synchash.MiniCloseButton_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$Synchash.CloseApp_Command)
       }
       if($synchash.MiniMuteButton){
-        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Mutebutton.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\Mutebutton.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -920,11 +938,11 @@ function Add-TrayMenu
           [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniMuteButton_ToggleButton,[Windows.Controls.Primitives.ToggleButton]::IsCheckedProperty, $MiniMute_Binding)
           if($Synchash.Mute_Command){
             $null = $synchash.MiniMuteButton_ToggleButton.AddHandler([System.Windows.Controls.Button]::ClickEvent,$Synchash.Mute_Command)
-          } 
-        }  
+          }
+        }
       }
       if($synchash.MiniVolumeSlider_Background){
-        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\VolumeSlider_Back.png") 
+        $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\VolumeSlider_Back.png")
         $image = [System.Windows.Media.Imaging.BitmapImage]::new()
         $image.BeginInit()
         $image.CacheOption = "OnLoad"
@@ -945,14 +963,14 @@ function Add-TrayMenu
       $MiniPlayer_Media_Length_Label_Binding.Source = $synchash.MediaPlayer_Slider
       $MiniPlayer_Media_Length_Label_Binding.Path = "ToolTip"
       $MiniPlayer_Media_Length_Label_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniPlayer_Media_Length_Label,[System.Windows.Controls.Label]::ToolTipProperty, $MiniPlayer_Media_Length_Label_Binding) 
+      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniPlayer_Media_Length_Label,[System.Windows.Controls.Label]::ToolTipProperty, $MiniPlayer_Media_Length_Label_Binding)
 
 
       #Volume slider binding
       $synchash.Tray_Volume_Slider.uid = "$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\VolumeSlider_Thumb.png"
       $synchash.Tray_Volume_Slider.tag = "$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\VolumeSlider_Front.png"
       $synchash.Mini_Progress_Slider.tag = "$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\MiniProgressSlider_Front.png"
-      $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\MiniProgressSlider_Back.png") 
+      $stream_image = [System.IO.File]::OpenRead("$($thisApp.Config.current_folder)\Resources\Skins\MiniPlayer\MiniProgressSlider_Back.png")
       $image = [System.Windows.Media.Imaging.BitmapImage]::new()
       $image.BeginInit()
       $image.CacheOption = "OnLoad"
@@ -973,42 +991,42 @@ function Add-TrayMenu
       $MiniProgressSlider_Binding.Source = $synchash.MediaPlayer_Slider
       $MiniProgressSlider_Binding.Path = "Value"
       $MiniProgressSlider_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Mini_Progress_Slider,[System.Windows.Controls.Slider]::ValueProperty, $MiniProgressSlider_Binding) 
+      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Mini_Progress_Slider,[System.Windows.Controls.Slider]::ValueProperty, $MiniProgressSlider_Binding)
 
       #MiniProgressSlider Tooltip binding
       $MiniProgressSliderTooltip_Binding = [System.Windows.Data.Binding]::new()
       $MiniProgressSliderTooltip_Binding.Source = $synchash.MediaPlayer_Slider
       $MiniProgressSliderTooltip_Binding.Path = "ToolTip"
       $MiniProgressSliderTooltip_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Mini_Progress_Slider,[System.Windows.Controls.Slider]::ToolTipProperty, $MiniProgressSliderTooltip_Binding) 
+      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Mini_Progress_Slider,[System.Windows.Controls.Slider]::ToolTipProperty, $MiniProgressSliderTooltip_Binding)
 
       #MiniProgressSlider Tick binding
       $MiniProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
       $MiniProgressSliderTick_Binding.Source = $synchash.MediaPlayer_Slider
       $MiniProgressSliderTick_Binding.Path = "Ticks"
       $MiniProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Mini_Progress_Slider,[System.Windows.Controls.Slider]::TicksProperty, $MiniProgressSliderTick_Binding) 
+      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Mini_Progress_Slider,[System.Windows.Controls.Slider]::TicksProperty, $MiniProgressSliderTick_Binding)
 
       #MiniProgressSlider Maximimum binding
       $MiniProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
       $MiniProgressSliderTick_Binding.Source = $synchash.MediaPlayer_Slider
       $MiniProgressSliderTick_Binding.Path = "Maximum"
       $MiniProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Mini_Progress_Slider,[System.Windows.Controls.Slider]::MaximumProperty, $MiniProgressSliderTick_Binding) 
+      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Mini_Progress_Slider,[System.Windows.Controls.Slider]::MaximumProperty, $MiniProgressSliderTick_Binding)
 
       #MiniProgressSlider IsEnabled binding
       $MiniProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
       $MiniProgressSliderTick_Binding.Source = $synchash.MediaPlayer_Slider
       $MiniProgressSliderTick_Binding.Path = "IsEnabled"
       $MiniProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Mini_Progress_Slider,[System.Windows.Controls.Slider]::IsEnabledProperty, $MiniProgressSliderTick_Binding) 
+      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Mini_Progress_Slider,[System.Windows.Controls.Slider]::IsEnabledProperty, $MiniProgressSliderTick_Binding)
 
 
       $Volume_Slider_Icon_Binding = [System.Windows.Data.Binding]::new()
       $Volume_Slider_Icon_Binding.Source = $synchash.Volume_Slider
       $Volume_Slider_Icon_Binding.Path = "Value"
       $Volume_Slider_Icon_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Tray_Volume_Slider,[System.Windows.Controls.Slider]::ValueProperty, $Volume_Slider_Icon_Binding)  
+      [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Tray_Volume_Slider,[System.Windows.Controls.Slider]::ValueProperty, $Volume_Slider_Icon_Binding)
       if($synchash.MediaPlayer_Volume_SliderMouseUp_Command){
         $null = $synchash.Tray_Volume_Slider.AddHandler([System.Windows.Controls.Slider]::PreviewMouseUpEvent,$synchash.MediaPlayer_Volume_SliderMouseUp_Command)
       }
@@ -1019,7 +1037,7 @@ function Add-TrayMenu
         $MiniDisplayPanel_Binding.Source = $synchash.Now_Playing_Title_Label
         $MiniDisplayPanel_Binding.Path = "DataContext"
         $MiniDisplayPanel_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniDisplayPanel_Title_TextBlock,[System.Windows.Controls.TextBlock]::TextProperty, $MiniDisplayPanel_Binding) 
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniDisplayPanel_Title_TextBlock,[System.Windows.Controls.TextBlock]::TextProperty, $MiniDisplayPanel_Binding)
       }
       if($synchash.MiniDisplayPanel_Title_TextBlock2){
         $synchash.MiniDisplayPanel_Title_TextBlock2.FontFamily = $DigitalDreams_Font
@@ -1030,7 +1048,7 @@ function Add-TrayMenu
         $MiniDisplayPanel_Binding.NotifyOnTargetUpdated = $true
         $MiniDisplayPanel_Binding.NotifyOnSourceUpdated = $true
         $MiniDisplayPanel_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniDisplayPanel_Title_TextBlock2,[System.Windows.Controls.TextBlock]::TextProperty, $MiniDisplayPanel_Binding) 
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniDisplayPanel_Title_TextBlock2,[System.Windows.Controls.TextBlock]::TextProperty, $MiniDisplayPanel_Binding)
       }
       if($synchash.MiniDisplayPanel_Sep2_Label){
         $synchash.MiniDisplayPanel_Sep2_Label.FontFamily = $DigitalDreams_Font
@@ -1045,7 +1063,7 @@ function Add-TrayMenu
         $MiniDisplayPanelArtist_Binding.Source = $synchash.Now_Playing_Artist_Label
         $MiniDisplayPanelArtist_Binding.Path = "DataContext"
         $MiniDisplayPanelArtist_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniDisplayPanel_Artist_TextBlock,[System.Windows.Controls.TextBlock]::TextProperty, $MiniDisplayPanelArtist_Binding) 
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniDisplayPanel_Artist_TextBlock,[System.Windows.Controls.TextBlock]::TextProperty, $MiniDisplayPanelArtist_Binding)
         $synchash.MiniDisplayPanel_Artist_TextBlock.FontFamily = $DigitalDreams_Font
       }
 
@@ -1066,7 +1084,7 @@ function Add-TrayMenu
         $MiniDisplayPanelArtist_Binding.NotifyOnTargetUpdated = $true
         $MiniDisplayPanelArtist_Binding.NotifyOnSourceUpdated = $true
         $MiniDisplayPanelArtist_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniDisplayPanel_Sep2_Label,[System.Windows.Controls.TextBlock]::VisibilityProperty, $MiniDisplayPanelArtist_Binding) 
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniDisplayPanel_Sep2_Label,[System.Windows.Controls.TextBlock]::VisibilityProperty, $MiniDisplayPanelArtist_Binding)
         <#    $MiniDisplayPanelArtist_Binding = New-Object System.Windows.Data.Binding
             $MiniDisplayPanelArtist_Binding.Source = $synchash.DisplayPanel_Sep2_Label2
             $MiniDisplayPanelArtist_Binding.Path = "Visibility"
@@ -1088,7 +1106,7 @@ function Add-TrayMenu
         $MiniDisplayPanelBitrate_Binding.Source = $synchash.DisplayPanel_Bitrate_TextBlock
         $MiniDisplayPanelBitrate_Binding.Path = "Text"
         $MiniDisplayPanelBitrate_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniDisplayPanel_Bitrate_TextBlock,[System.Windows.Controls.TextBlock]::TextProperty, $MiniDisplayPanelBitrate_Binding) 
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniDisplayPanel_Bitrate_TextBlock,[System.Windows.Controls.TextBlock]::TextProperty, $MiniDisplayPanelBitrate_Binding)
         $synchash.MiniDisplayPanel_Bitrate_TextBlock.FontFamily = $DigitalDreams_Font
       }
 
@@ -1109,7 +1127,7 @@ function Add-TrayMenu
         $MiniDisplayPanelBitrate_Binding.NotifyOnTargetUpdated = $true
         $MiniDisplayPanelBitrate_Binding.NotifyOnSourceUpdated = $true
         $MiniDisplayPanelBitrate_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniDisplayPanel_Sep3_Label,[System.Windows.Controls.TextBlock]::VisibilityProperty, $MiniDisplayPanelBitrate_Binding) 
+        [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.MiniDisplayPanel_Sep3_Label,[System.Windows.Controls.TextBlock]::VisibilityProperty, $MiniDisplayPanelBitrate_Binding)
 
         $MiniDisplayPanelBitrate_Binding = [System.Windows.Data.Binding]::new()
         $MiniDisplayPanelBitrate_Binding.Source = $synchash.MiniDisplayPanel_Sep3_Label
@@ -1123,43 +1141,43 @@ function Add-TrayMenu
       $target = [System.Windows.Media.Animation.Storyboard]::GetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard)
       if(!$target){
         $null = [System.Windows.Media.Animation.Storyboard]::SetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard,$synchash.MiniDisplayPanel_Text_StackPanel)
-      } 
+      }
       $synchash.MiniDisplayPanel_Artist_TextBlock.Add_TargetUpdated({
           try{
             if(-not [string]::IsNullOrEmpty($synchash.MiniDisplayPanel_Artist_TextBlock.Text)){
               $synchash.MiniDisplayPanel_Sep2_Label.Visibility="Visible"
             }else{
               $synchash.MiniDisplayPanel_Sep2_Label.Visibility="Hidden"
-            }         
+            }
           }catch{
             write-ezlogs "An exception occurred in MiniDisplayPanel_Title_TextBlock.Add_TargetUpdated event" -CatchError $_ -showtime
-          }  
-      }) 
+          }
+      })
 
       $synchash.MiniDisplayPanel_Title_TextBlock.Add_SizeChanged({
           Param($Sender,[System.Windows.SizeChangedEventArgs]$e)
-          try{                   
+          try{
             $target = [System.Windows.Media.Animation.Storyboard]::GetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard)
             if(!$target){
               $null = [System.Windows.Media.Animation.Storyboard]::SetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard,$synchash.MiniDisplayPanel_Text_StackPanel)
-            } 
-            $synchash.MiniDisplayPanel_Slide_Storyboard.From = $($synchash.MiniSlideText_StackPanel.ActualWidth + 20)    
+            }
+            $synchash.MiniDisplayPanel_Slide_Storyboard.From = $($synchash.MiniSlideText_StackPanel.ActualWidth + 20)
             if($synchash.MiniSlideText_StackPanel2){
-              $synchash.MiniSlideText_StackPanel2.SetValue([System.Windows.Controls.Canvas]::LeftProperty,$(-($synchash.MiniSlideText_StackPanel.ActualWidth) -20)) 
-            }    
+              $synchash.MiniSlideText_StackPanel2.SetValue([System.Windows.Controls.Canvas]::LeftProperty,$(-($synchash.MiniSlideText_StackPanel.ActualWidth) -20))
+            }
           }catch{
             write-ezlogs "An exception occurred in MiniSlideText_StackPanel.Add_SizeChanged event" -CatchError $_ -showtime
-          }  
+          }
       })
       $synchash.MiniSlideText_StackPanel.Add_SizeChanged({
           try{
             $target = [System.Windows.Media.Animation.Storyboard]::GetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard)
             if(!$target){
               $null = [System.Windows.Media.Animation.Storyboard]::SetTarget($synchash.MiniDisplayPanel_Storyboard.Storyboard,$synchash.MiniDisplayPanel_Text_StackPanel)
-            }  
+            }
             $synchash.MiniDisplayPanel_Slide_Storyboard.From = $($synchash.MiniSlideText_StackPanel.ActualWidth + 20)
-            $synchash.MiniSlideText_StackPanel2.SetValue([System.Windows.Controls.Canvas]::LeftProperty,$(-($synchash.MiniSlideText_StackPanel.ActualWidth) -20))  
-            
+            $synchash.MiniSlideText_StackPanel2.SetValue([System.Windows.Controls.Canvas]::LeftProperty,$(-($synchash.MiniSlideText_StackPanel.ActualWidth) -20))
+
             $CurrentDisplayScreenWidth = $synchash.TrayPlayer_Background_TileGrid.ActualWidth + 327
             if($synchash.MiniDisplayPanel_Storyboard -and $synchash.MiniSlideText_StackPanel.ActualWidth -gt $CurrentDisplayScreenWidth){
               $synchash.MiniDisplayPanel_Storyboard.Storyboard.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::Forever
@@ -1172,17 +1190,17 @@ function Add-TrayMenu
               $synchash.MiniDisplayPanel_Storyboard.Storyboard.Begin()
             }elseif($synchash.MiniDisplayPanel_Storyboard){
               $synchash.MiniDisplayPanel_Storyboard.Storyboard.RepeatBehavior = '1x'
-              $synchash.MiniDisplayPanel_Storyboard.Storyboard.Stop()  
-              $synchash.MiniDisplayPanel_Slide_Storyboard.From = '0'               
+              $synchash.MiniDisplayPanel_Storyboard.Storyboard.Stop()
+              $synchash.MiniDisplayPanel_Slide_Storyboard.From = '0'
             }
           }catch{
             write-ezlogs "An exception occurred in SlideText_StackPanel.Add_SizeChanged event" -CatchError $_ -showtime
-          }  
+          }
       })
 
 
       $synchash.TrayPlayer.add_PreviewTrayPopupOpen({
-          try{   
+          try{
             if($synchash.MiniPlayer_Viewer.isVisible){
               $synchash.MiniPlayer_Viewer.activate()
             }
@@ -1198,7 +1216,7 @@ function Add-TrayMenu
                 $color = [System.Windows.Media.SolidColorBrush]::new($thisApp.Config.Current_Theme.PrimaryAccentColor.ToString())
               }else{
                 $color = $synchash.Window.TryFindResource('MahApps.Brushes.AccentBase')
-              }        
+              }
               $synchash.TrayPlayer_FlyoutControl.Tag = $color
               $color = $Null
             }else{
@@ -1207,8 +1225,8 @@ function Add-TrayMenu
               }
               if($synchash.TrayPlayerQueueFlyout.isOpen){
                 $synchash.TrayPlayerQueueFlyout.isOpen = $false
-              }      
-            }      
+              }
+            }
           }catch{
             write-ezlogs "An exception occurred in TrayPlayer.TrayPopup.add_IsVisibleChanged" -showtime -catcherror $_
           }
@@ -1569,8 +1587,8 @@ function Add-TrayMenu
           $separator = @{
             'Separator' = $true
             'Style' = 'SeparatorGradient'
-          }            
-          $null = $items.Add($separator) 
+          }
+          $null = $items.Add($separator)
           $Exit_App = @{
             'Header' = "Exit App"
             'Color' = 'White'
@@ -1602,11 +1620,11 @@ function Add-TrayMenu
     write-ezlogs "An exception occurred in Add-TrayMenu" -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Add-TrayMenu Function
 #----------------------------------------------
 
-#---------------------------------------------- 
+#----------------------------------------------
 #region Add-JumpList Function
 #----------------------------------------------
 function Add-JumpList
@@ -1630,27 +1648,40 @@ function Add-JumpList
       if($Window){
         $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($window)
         $Handle = $Window_Helper.EnsureHandle()
-      } 
+      }
       if($thisApp.Config.Installed_AppID){
         $appid = $thisApp.Config.Installed_AppID
       }else{
-        $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID 
+        $appid = (Get-AllStartApps -Name $thisApp.Config.App_name).AppID
         $thisApp.Config.Installed_AppID = $appid
-      } 
+      }
       if($appid -and -not [string]::IsNullOrEmpty($Handle) -and $Handle -ne 0){
         write-ezlogs ">>>> Creating new jumplist for window with handle: $($Handle)" -LogLevel 0 -Verboselog:$Verboselog
         $synchash.jumplist = [Microsoft.WindowsAPICodePack.Taskbar.JumpList]::CreateJumpListForIndividualWindow($appid,$Handle)
         #$synchash.jumplist.KnownCategoryToDisplay = [Microsoft.WindowsAPICodePack.Taskbar.JumpListKnownCategoryType]::Recent
         #$synchash.jumplist.KnownCategoryOrdinalPosition = 1
-        #ItemsRemoved Event
-        $synchash.jumplist.Add_JumpListItemsRemoved({
-            param($sender,[Microsoft.WindowsAPICodePack.Taskbar.UserRemovedJumpListItemsEventArgs]$e)
-            try{
-              write-ezlogs ">>>> Jumplist item removed by user: $($e | out-string) -- sender: $($sender | out-string)"
-            }catch{
-              write-ezlogs "An exception occured in jumplist.Add_JumpListItemsRemoved" -catcherror $_
+        #JumpListItemsRemoved Event
+        if($Verboselog -or $thisApp.Config.Dev_mode){
+          try{
+            $Registered_Events = Get-EventSubscriber -force
+            $JumpListItemsRemoved = $Registered_Events | Where-Object {$_.EventName -eq 'JumpListItemsRemoved'}
+            if($JumpListItemsRemoved){
+              write-ezlogs "Unregistering existing event: $($JumpListItemsRemoved.EventName)" -LogLevel 0 -Verboselog:$Verboselog
+              Unregister-Event -SourceIdentifier $JumpListItemsRemoved.SourceIdentifier -Force
             }
-        })
+            $Null = Register-ObjectEvent -InputObject $synchash.jumplist -EventName JumpListItemsRemoved -MessageData $synchash  -Action {
+              $synchash = $Event.MessageData
+              try{
+                write-ezlogs ">>>> Jumplist item removed by user - Event: $($Event | out-string) -- SourceEventArgs: $($Event.SourceEventArgs | out-string) -- sender: $($sender | out-string)"
+                [void]$synchash.jumplist.Refresh()
+              }catch{
+                write-ezlogs "An exception occurred in JumpListItemsRemoved event" -showtime -catcherror $_
+              }
+            }
+          }catch{
+            write-ezlogs "An exception occurred Registering an event" -showtime -catcherror $_
+          }
+        }
         try{
           [void]$synchash.jumplist.Refresh()
         }catch{
@@ -1735,14 +1766,18 @@ function Add-JumpList
                         $Last_played = $Null
                       }
                     }
-                  }                  
+                  }
                   if(!$Last_played){
                     write-ezlogs "Unable to find any valid items in playlist history with key: $($index_toget) - Type: $($index_toget.gettype())" -showtime -warning
                     $null = $History_items_toremove.add($index_toget)
                   }else{
                     $Track = Get-MediaProfile -thisApp $thisApp -synchash $synchash -Media_ID $Last_played
                     if(@($Track).count -eq 1){
-                      if(-not [string]::IsNullOrEmpty($Track.title)){
+                      if(-not [string]::IsNullOrEmpty($Track.Display_Name)){
+                        $title = $Track.Display_Name
+                      }elseif(-not [string]::IsNullOrEmpty($Track.artist) -and $Track.title -notmatch "$([regex]::Escape($Track.artist)) -|- $([regex]::Escape($Track.artist))"){
+                        $title = "$($Track.artist) - $($Track.title)"
+                      }elseif(-not [string]::IsNullOrEmpty($Track.title)){
                         $title = $Track.title
                       }elseif(-not [string]::IsNullOrEmpty($Track.SongInfo.title)){
                         $title = $Track.SongInfo.title
@@ -1760,13 +1795,12 @@ function Add-JumpList
                       }
                       if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Add recent media to jumplist: $($title) - Index: $index_toget - ID: $($Last_played)" -showtime -Dev_mode}
                       $jumprecent = [Microsoft.WindowsAPICodePack.Taskbar.JumpListLink]::new($($thisApp.Config.App_Exe_Path),$title)
-                      #$jumprecent = [Microsoft.WindowsAPICodePack.Taskbar.JumpListLink]::new("$($track.url)",$title)
                       $iconref = [Microsoft.WindowsAPICodePack.Shell.IconReference]::new($icon,0)
                       $jumprecent.IconReference = $iconref
                       $jumprecent.Arguments = "-PlayMedia `"$($Track.url)`""
                       $jumprecent.ShowCommand = 'Show'
                       $jumprecent.WorkingDirectory = $($thisApp.Config.Current_Folder)
-                      $null = $synchash.jumplist_categoryRecent.AddJumpListItems($jumprecent) 
+                      $null = $synchash.jumplist_categoryRecent.AddJumpListItems($jumprecent)
                     }elseif(@($Track).count -gt 1){
                       write-ezlogs "Found multiple ($(@($Track).count)) media when attempting to lookup previous played for id $($Last_played)" -warning
                     }else{
@@ -1793,7 +1827,7 @@ function Add-JumpList
         }
         if($History_items_toremove.count -gt 0){
           try{
-            lock-object -InputObject $thisApp.config.History_Playlist.SyncRoot -ScriptBlock { 
+            lock-object -InputObject $thisApp.config.History_Playlist.SyncRoot -ScriptBlock {
               $History_items_toremove | & { process {
                   [void]$thisApp.config.History_Playlist.Remove([double]$_)
                   write-ezlogs "Removed invalid or duplicate item index from history $($_)" -warning
@@ -1806,7 +1840,7 @@ function Add-JumpList
         $History_items_toremove = $Null
       }else{
         write-ezlogs "Unable to create Jumplist - missing jumplist: $($synchash.jumplist | out-string)" -warning
-      }      
+      }
     }catch{
       write-ezlogs "An exception occurred in Add-JumpList" -catcherror $_
     }finally{
@@ -1828,7 +1862,7 @@ function Add-JumpList
     $add_Jumplist_ScriptBlock = $null
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Add-JumpList Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Add-TrayMenu','Add-JumpList')

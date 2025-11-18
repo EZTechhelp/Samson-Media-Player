@@ -194,13 +194,14 @@ function Enable-Spicetify
       spicetify.exe backup
       write-ezlogs ">>>> Creating Backup of existing webnowplaying.js: $webnowplaying_file" -Color cyan -showtime
       $null = Copy-Item $webnowplaying_file -Destination ([System.IO.Path]::Combine("$Spicetify_Install_Dir\Extensions", 'backup_webnowplaying.js')) -Force -ErrorAction SilentlyContinue -Verbose:$thisapp.Config.Verbose_logging
-      #backup js file within directory
-      if(![System.IO.File]::Exists($webnowplaying_file_backup)){
-        $null = [system.io.file]::Move($webnowplaying_file,'webnowplaying.js.bak')
-      }
       write-ezlogs "| Adding patched webnowplaying to: $webnowplaying_file" -showtime 
       [system.io.file]::WriteAllText($webnowplaying_file,$custom_webnowplaying_content,[System.Text.Encoding]::Default)
-      Write-ezlogs 'Successfully patched webnowplaying.js' -showtime -Success                  
+      if([system.io.directory]::Exists("$Spicetify_Config_Dir\Extensions")){
+        $webnowplaying_file2 = "$Spicetify_Config_Dir\Extensions\webnowplaying.js"
+        write-ezlogs "| Adding patched webnowplaying to: $webnowplaying_file2" -showtime
+        [system.io.file]::WriteAllText($webnowplaying_file2,$custom_webnowplaying_content,[System.Text.Encoding]::Default)
+      }
+      Write-ezlogs 'Successfully patched webnowplaying.js' -showtime -Success
     }catch{
       write-ezlogs 'An error occurred while applying customized webnowplaying.js' -showtime -catcherror $_
     }
@@ -254,6 +255,7 @@ function Enable-Spicetify
               if($(Get-Job -State Running).count -eq 0){
                 write-ezlogs 'Ended due to job ending, loop once more then break'
                 $break = $true
+                break
               }
           }}
         }      

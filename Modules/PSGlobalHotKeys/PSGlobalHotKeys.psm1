@@ -147,7 +147,7 @@ function Get-GlobalHotKeys{
               Set-Mute -thisApp $thisApp -synchash $synchash
             }elseif($args -eq $synchash.Restarthotkey){
               write-ezlogs ">>>> Global Restarthotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)"
-              Restart-Media -thisApp $thisApp -synchash $synchash    
+              Restart-Media -thisApp $thisApp -synchash $synchash
             }elseif($args -eq $synchash.Overlayhotkey){
               write-ezlogs ">>>> Global Overlayhotkey pressed - Modifier: $($args.KeyModifier) + Key: $($args.Key)" 
               Open-MiniPlayer -thisApp $thisApp -synchash $synchash -Overlay         

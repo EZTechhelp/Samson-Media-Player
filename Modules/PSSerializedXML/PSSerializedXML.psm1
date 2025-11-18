@@ -591,6 +591,7 @@ public class Config
     public ArrayList Youtube_Playlists { get; set; }
     public SerializableDictionary<int, string> Current_Playlist { get; set; }
     public SerializableDictionary<int, string> History_Playlist { get; set; }
+    public int HistoryMax { get; set; }
     public string Snapshots_Path { get; set; }
     public string LocalMedia_ImportMode { get; set; }
     public bool Use_Twitch_TTVLOL { get; set; }
@@ -753,6 +754,10 @@ public class Config
     public int ProjectM_meshx { get; set; }
     public int ProjectM_meshy { get; set; }
     public int ProjectM_TextureSize { get; set; }
+    public bool LeftSpeakerOnTop { get; set; }
+    public bool LeftSpeakerInTaskBar { get; set; }
+    public bool RightSpeakerOnTop { get; set; }
+    public bool RightSpeakerInTaskBar { get; set; }
 }
 public class API
 {
@@ -841,6 +846,7 @@ public class Playlist : INotifyPropertyChanged
             RaisedOnPropertyChanged("Status");
         }
     }
+    public int Viewer_Count { get; set; }
     public string Playlist_ID { get; set; }
     public string Description { get; set; }
     public string Playlist_Path { get; set; }
@@ -1573,6 +1579,7 @@ function Export-SerializedXML {
         'Youtube_Playlists' = $InputObject.Youtube_Playlists
         'Current_Playlist' = $Current_Playlist
         'History_Playlist' = $History_Playlist
+        'HistoryMax' = $InputObject.HistoryMax
         'Snapshots_Path' = $InputObject.Snapshots_Path
         'LocalMedia_ImportMode' = $InputObject.LocalMedia_ImportMode
         'Use_Twitch_TTVLOL' = $InputObject.Use_Twitch_TTVLOL
@@ -1734,6 +1741,10 @@ function Export-SerializedXML {
         'ProjectM_meshx' = $InputObject.ProjectM_meshx
         'ProjectM_meshy' = $InputObject.ProjectM_meshy
         'ProjectM_TextureSize' = $inputObject.ProjectM_TextureSize
+        'LeftSpeakerOnTop' = $inputObject.LeftSpeakerOnTop
+        'LeftSpeakerInTaskBar' = $inputObject.LeftSpeakerInTaskBar
+        'RightSpeakerOnTop' = $inputObject.RightSpeakerOnTop
+        'RightSpeakerInTaskBar' = $inputObject.RightSpeakerInTaskBar
       }
     }elseif($isPlaylist){
       $output = $InputObject | ConvertTo-Playlists -List -Force:$Force

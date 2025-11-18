@@ -212,22 +212,42 @@ function Show-LeftSpeaker{
     try{        
       Update-Speakers -hash $hashSpeakerLeft -Startup -Speaker 'Left'
       $SpeakerLeft_Window_XML = "$($thisApp.Config.Current_Folder)\Views\Speakers.xaml"
-      [xml]$xaml = [System.IO.File]::ReadAllText($SpeakerLeft_Window_XML) 
-      $reader = [System.Xml.XmlNodeReader]::new($xaml)
-      $hashSpeakerLeft.window = [Windows.Markup.XamlReader]::Load($reader)                       
+      $SpeakerLeft_Window = [System.IO.File]::ReadAllText($SpeakerLeft_Window_XML) 
+      if($thisApp.Config.Current_Theme -ne $null -and $thisApp.Config.Current_Theme.PrimaryAccentColor){
+        $PrimaryAccentColor = [System.Windows.Media.SolidColorBrush]::new($thisApp.Config.Current_Theme.PrimaryAccentColor.ToString())
+      }else{
+        $PrimaryAccentColor = "{StaticResource MahApps.Brushes.Accent}"
+      }
+      $xaml = ($SpeakerLeft_Window).replace('Views/Styles.xaml',"$($thisApp.Config.Current_Folder)`\Views`\Styles.xaml").Replace("{StaticResource MahApps.Brushes.Accent}","$($PrimaryAccentColor)").Replace("{CURRENT_FOLDER}","$($thisApp.Config.Current_Folder)")
+      $reader = [XML.XMLReader]::Create([IO.StringReader]$XAML)
+      #$reader = [System.Xml.XmlNodeReader]::new($xaml)
+      #$hashSpeakerLeft.window = [Windows.Markup.XamlReader]::Load($reader)      
+      $hashSpeakerLeft.window = [Windows.Markup.XAMLReader]::Parse($XAML)   
+      
+      while ($reader.Read())
+      {
+        $name=$reader.GetAttribute('Name')
+        if(!$name){ 
+          $name=$reader.GetAttribute('x:Name')
+        }
+        if($name -and $hashSpeakerLeft.window -and !$hashSpeakerLeft."$($Name)"){
+          $hashSpeakerLeft."$($Name)" = $hashSpeakerLeft.window.FindName($name)
+        }
+      }
+      $reader.Dispose()               
     }catch{
       write-ezlogs "An exception occurred loading Show-LeftSpeaker XAML" -showtime -catcherror $_ 
     }
     try{
-      $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | & { process {$hashSpeakerLeft."$($_.Name)" = $hashSpeakerLeft.window.FindName($_.Name)}}
-      $reader.dispose() 
+      #$xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | & { process {$hashSpeakerLeft."$($_.Name)" = $hashSpeakerLeft.window.FindName($_.Name)}}
+      #$reader.dispose() 
       $hashSpeakerLeft.Window.icon = "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"  
       $hashSpeakerLeft.Window.icon.freeze()
       $hashSpeakerLeft.window.title =$SplashTitle    
       $hashSpeakerLeft.Beats.tag = [PSCustomObject]@{
-          'Source' = "$($thisApp.Config.Current_Folder)\Resources\Images\Samson_Speaker_Left_Small_Woofer.png" 
-          'Width' = "165"
-          'Height' = "164"
+        'Source' = "$($thisApp.Config.Current_Folder)\Resources\Images\Samson_Speaker_Left_Small_Woofer.png" 
+        'Width' = "165"
+        'Height' = "164"
       }
       $hashSpeakerLeft.Beats.Margin = "4.5,10,0,30.5"
 
@@ -260,6 +280,90 @@ function Show-LeftSpeaker{
         $hashSpeakerLeft.Background_Image.Height="547"
         $hashSpeakerLeft.Background_Image.Width="450"
       }
+
+
+      [System.Windows.RoutedEventHandler]$Window_Close_Command = {
+        param($sender)
+        try{
+          Update-Speakers -Speaker 'Left' -close
+        }catch{
+          write-ezlogs 'An exception occurred in Window_Close_Command event' -showtime -catcherror $_
+        }
+      }
+      [System.Windows.RoutedEventHandler]$TopMost_Command = {
+        param($sender)
+        try{
+          if($hashSpeakerLeft.Window.TopMost){
+            $hashSpeakerLeft.Window.TopMost = $false
+          }else{
+            $hashSpeakerLeft.Window.TopMost = $true
+          }
+          $thisApp.Config.LeftSpeakerOnTop = [bool]($hashSpeakerLeft.Window.TopMost)
+        }catch{
+          write-ezlogs 'An exception occurred in TopMost_Command' -showtime -catcherror $_
+        }
+      }
+      [System.Windows.RoutedEventHandler]$ShowinTaskbar_Command = {
+        param($sender)
+        try{
+          if($hashSpeakerLeft.Window.ShowInTaskbar){
+            $hashSpeakerLeft.Window.ShowInTaskbar = $false
+          }else{
+            $hashSpeakerLeft.Window.ShowInTaskbar = $true
+          }
+          $thisApp.Config.LeftSpeakerInTaskBar = [bool]($hashSpeakerLeft.Window.ShowInTaskbar)
+        }catch{
+          write-ezlogs 'An exception occurred in ShowinTaskbar_Command' -showtime -catcherror $_
+        }
+      }
+      $hashSpeakerLeft.Window.ContextMenu = $Null
+      $hashSpeakerLeft.Window.TopMost = [bool]($thisApp.Config.LeftSpeakerOnTop)
+      $hashSpeakerLeft.Window.ShowInTaskbar = [bool]($thisApp.Config.LeftSpeakerInTaskBar)
+      [System.Windows.RoutedEventHandler]$hashSpeakerLeft.ContextMenu = {
+        param($sender,$e)
+        if ($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right){
+          $items = [System.Collections.Generic.List[Object]]::new()
+          $StayOnTop = @{
+            'Header' = "Stay On Top"
+            'Color' = 'White'
+            'Icon_Color' = 'White'
+            'Command' = $TopMost_Command
+            'Binding' = $hashSpeakerLeft.Window
+            'binding_property_path' = 'TopMost'
+            'binding_mode' = [System.Windows.Data.BindingMode]::OneWay
+            'Icon_kind' = 'PinOutline'
+            'Enabled' = $true
+            'IsCheckable' = $true
+          }
+          [void]$items.Add($StayOnTop)
+          $ShowinTaskbar = @{
+            'Header' = "Show in Taskbar"
+            'Color' = 'White'
+            'Icon_Color' = 'White'
+            'Command' = $ShowinTaskbar_Command
+            'Binding' = $hashSpeakerLeft.Window
+            'binding_property_path' = 'ShowInTaskbar'
+            'binding_mode' = [System.Windows.Data.BindingMode]::OneWay
+            'Icon_kind' = 'PinOutline'
+            'Enabled' = $true
+            'IsCheckable' = $true
+          }
+          [void]$items.Add($ShowinTaskbar)
+          $Exit_App = @{
+            'Header' = "Close Speaker"
+            'Color' = 'White'
+            'Icon_Color' = 'White'
+            'Command' = $Window_Close_Command
+            'Icon_kind' = 'Close'
+            'Enabled' = $true
+            'IsCheckable' = $false
+          }
+          [void]$items.Add($Exit_App)
+          Add-WPFMenu -control $hashSpeakerLeft.Window -items $items -AddContextMenu -sourceWindow $hashSpeakerLeft
+        }
+      }
+      $null = $hashSpeakerLeft.Window.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$hashSpeakerLeft.ContextMenu)
+
       #$PrimaryMonitor = [System.Windows.Forms.Screen]::PrimaryScreen  
       $hashSpeakerLeft.IsVideoOpen = $Null
       $synchash.Window.Dispatcher.invoke([action]{
@@ -465,25 +569,45 @@ function Show-RightSpeaker{
     )
     try{ 
       Update-Speakers -hash $hashSpeakerRight -Startup -Speaker 'Right'
-      $SpeakerRight_Window_XML = "$($thisApp.Config.Current_Folder)\Views\Speakers.xaml"                   
-      [xml]$xaml = [System.IO.File]::ReadAllText($SpeakerRight_Window_XML) 
-      $reader = [System.Xml.XmlNodeReader]::new($xaml)
-      $hashSpeakerRight.window = [Windows.Markup.XamlReader]::Load($reader)                       
+      $SpeakerRight_Window_XML = "$($thisApp.Config.Current_Folder)\Views\Speakers.xaml"      
+      $SpeakerRight_Window = [System.IO.File]::ReadAllText($SpeakerRight_Window_XML) 
+      if($thisApp.Config.Current_Theme -ne $null -and $thisApp.Config.Current_Theme.PrimaryAccentColor){
+        $PrimaryAccentColor = [System.Windows.Media.SolidColorBrush]::new($thisApp.Config.Current_Theme.PrimaryAccentColor.ToString())
+      }else{
+        $PrimaryAccentColor = "{StaticResource MahApps.Brushes.Accent}"
+      }
+      $xaml = ($SpeakerRight_Window).replace('Views/Styles.xaml',"$($thisApp.Config.Current_Folder)`\Views`\Styles.xaml").Replace("{StaticResource MahApps.Brushes.Accent}","$($PrimaryAccentColor)").Replace("{CURRENT_FOLDER}","$($thisApp.Config.Current_Folder)")
+      $reader = [XML.XMLReader]::Create([IO.StringReader]$XAML)   
+      $hashSpeakerRight.window = [Windows.Markup.XAMLReader]::Parse($XAML)       
+      while ($reader.Read())
+      {
+        $name=$reader.GetAttribute('Name')
+        if(!$name){ 
+          $name=$reader.GetAttribute('x:Name')
+        }
+        if($name -and $hashSpeakerRight.window -and !$hashSpeakerRight."$($Name)"){
+          $hashSpeakerRight."$($Name)" = $hashSpeakerRight.window.FindName($name)
+        }
+      }
+      $reader.Dispose()             
+      #[xml]$xaml = [System.IO.File]::ReadAllText($SpeakerRight_Window_XML) 
+      #$reader = [System.Xml.XmlNodeReader]::new($xaml)
+      #$hashSpeakerRight.window = [Windows.Markup.XamlReader]::Load($reader)                       
     }catch{
       write-ezlogs "An exception occurred loading Show-LeftSpeaker XAML" -showtime -catcherror $_ 
     }
     try{
-      $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | & { process { $hashSpeakerRight."$($_.Name)" = $hashSpeakerRight.window.FindName($_.Name)}}
-      $reader.dispose() 
+      #$xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | & { process { $hashSpeakerRight."$($_.Name)" = $hashSpeakerRight.window.FindName($_.Name)}}
+      #$reader.dispose() 
       $hashSpeakerRight.Window.icon = "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"  
       $hashSpeakerRight.Window.icon.freeze()
       $hashSpeakerRight.window.title =$SplashTitle      
       $speakerimage = "$($thisApp.Config.Current_Folder)\Resources\Images\Bitty_Speaker_Right_Small.png"   
       $hashSpeakerRight.Background_Image.source = $speakerimage
       $hashSpeakerRight.Beats.tag = [PSCustomObject]@{
-          'Source' = "$($thisApp.Config.Current_Folder)\Resources\Images\Bitty_Speaker_Right_Small_Woofer.png" 
-          'Width' = "156"
-          'Height' = "155"
+        'Source' = "$($thisApp.Config.Current_Folder)\Resources\Images\Bitty_Speaker_Right_Small_Woofer.png" 
+        'Width' = "156"
+        'Height' = "155"
       }   
       $hashSpeakerRight.Beats.Margin = "1.5,0,0,35"
       $synchash.Window.Dispatcher.invokeAsync({        
@@ -502,6 +626,90 @@ function Show-RightSpeaker{
         $hashSpeakerRight.Background_Image.Height="733"
         $hashSpeakerRight.Background_Image.Width="450"
       }
+
+      [System.Windows.RoutedEventHandler]$Window_Close_Command = {
+        param($sender)
+        try{
+          Update-Speakers -Speaker 'Right' -close
+        }catch{
+          write-ezlogs 'An exception occurred in Window_Close_Command event' -showtime -catcherror $_
+        }
+      }
+      [System.Windows.RoutedEventHandler]$TopMost_Command = {
+        param($sender)
+        try{
+          if($hashSpeakerRight.Window.TopMost){
+            $hashSpeakerRight.Window.TopMost = $false
+          }else{
+            $hashSpeakerRight.Window.TopMost = $true
+          }
+          $thisApp.Config.RightSpeakerOnTop = [bool]($hashSpeakerRight.Window.TopMost)
+        }catch{
+          write-ezlogs 'An exception occurred in TopMost_Command' -showtime -catcherror $_
+        }
+      }
+      [System.Windows.RoutedEventHandler]$ShowinTaskbar_Command = {
+        param($sender)
+        try{
+          if($hashSpeakerRight.Window.ShowInTaskbar){
+            $hashSpeakerRight.Window.ShowInTaskbar = $false
+          }else{
+            $hashSpeakerRight.Window.ShowInTaskbar = $true
+          }
+          $thisApp.Config.RightSpeakerInTaskBar = [bool]($hashSpeakerRight.Window.ShowInTaskbar)
+        }catch{
+          write-ezlogs 'An exception occurred in ShowinTaskbar_Command' -showtime -catcherror $_
+        }
+      }
+      $hashSpeakerRight.Window.ContextMenu = $Null
+
+      $hashSpeakerRight.Window.TopMost = [bool]($thisApp.Config.RightSpeakerOnTop)
+      $hashSpeakerRight.Window.ShowInTaskbar = [bool]($thisApp.Config.RightSpeakerInTaskBar)
+
+      [System.Windows.RoutedEventHandler]$hashSpeakerRight.ContextMenu = {
+        param($sender,$e)
+        if ($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right){
+          $items = [System.Collections.Generic.List[Object]]::new()
+          $StayOnTop = @{
+            'Header' = "Stay On Top"
+            'Color' = 'White'
+            'Icon_Color' = 'White'
+            'Command' = $TopMost_Command
+            'Binding' = $hashSpeakerRight.Window
+            'binding_property_path' = 'TopMost'
+            'binding_mode' = [System.Windows.Data.BindingMode]::OneWay
+            'Icon_kind' = 'PinOutline'
+            'Enabled' = $true
+            'IsCheckable' = $true
+          }
+          [void]$items.Add($StayOnTop)
+          $ShowinTaskbar = @{
+            'Header' = "Show in Taskbar"
+            'Color' = 'White'
+            'Icon_Color' = 'White'
+            'Command' = $ShowinTaskbar_Command
+            'Binding' = $hashSpeakerRight.Window
+            'binding_property_path' = 'ShowInTaskbar'
+            'binding_mode' = [System.Windows.Data.BindingMode]::OneWay
+            'Icon_kind' = 'PinOutline'
+            'Enabled' = $true
+            'IsCheckable' = $true
+          }
+          [void]$items.Add($ShowinTaskbar)
+          $Exit_App = @{
+            'Header' = "Close Speaker"
+            'Color' = 'White'
+            'Icon_Color' = 'White'
+            'Command' = $Window_Close_Command
+            'Icon_kind' = 'Close'
+            'Enabled' = $true
+            'IsCheckable' = $false
+          }
+          [void]$items.Add($Exit_App)
+          Add-WPFMenu -control $hashSpeakerRight.Window -items $items -AddContextMenu -sourceWindow $hashSpeakerRight
+        }
+      }
+      $null = $hashSpeakerRight.Window.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$hashSpeakerRight.ContextMenu)
       $hashSpeakerRight.IsVideoOpen = $Null
       $synchash.Window.Dispatcher.invoke([action]{
           $translatepoint = $synchash.Window.TranslatePoint([system.windows.point]::new(0,0),$this)

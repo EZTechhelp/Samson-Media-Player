@@ -351,7 +351,7 @@ function Start-SpotifyMedia{
                   $Spotify_Process = Start-Process $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --uri=$playback_url --enable-developer-mode --show-console --remote-debugging-port=9222 --no-default-browser-check" -PassThru
                 }else{
                   #$Spotify_Process = Start $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --enable-developer-mode --show-console --remote-debugging-port=9222 --no-default-browser-check" -PassThru  
-                  $Spotify_Process = Start-Process $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --enable-developer-mode --remote-debugging-port=9222 --no-default-browser-check" -PassThru
+                  $Spotify_Process = Start-Process $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --uri=$playback_url --enable-developer-mode --remote-debugging-port=9222 --no-default-browser-check" -PassThru
                 }
               }
               $Spotify_Process = [System.Diagnostics.Process]::GetProcessesByName('Spotify')
@@ -485,7 +485,7 @@ function Start-SpotifyMedia{
                 write-ezlogs "| Waiting for Spotify Playback to begin...Spicetify: $($synchash.Spicetify | out-string)"
                 if($waittimer -eq 10 -and !(Get-Process Spotify*)){
                   write-ezlogs "Spotify should have started by now, lets restart Spotify" -warning
-                  $Spotify_Process = Start-Process $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --enable-developer-mode --show-console --remote-debugging-port=9222 --no-default-browser-check" -PassThru
+                  $Spotify_Process = Start-Process $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --uri=$playback_url --enable-developer-mode --show-console --remote-debugging-port=9222 --no-default-browser-check" -PassThru
                 }
                 if((Get-Process Spotify*) -and $waittimer -eq 5){
                   try{

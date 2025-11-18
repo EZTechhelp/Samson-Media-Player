@@ -2,6 +2,36 @@
 
 ## [Unreleased]
 
+## 1.0.7 - PUBLIC
+> - Branch: Samson
+
+### Added
++ Ability to select and remove multiple media in the play queue
++ Deno JS Runtime for upcoming requirement to keep `YT-DLP` working
+  + Reference `YT-DLP` Github issue 14404
++ Context menu for Speaker windows with options `Show in taskbar` and `Always on Top`
+  + Options for each speaker window are saved to main config
++ Option `Max Playback History` under Settings - General - Media Player Options
+  + Useful for tuning shuffle or just increasing amount of media remembered
+
+### Changes
++ Updated `YT-DLP` to latest stable version
++ Improved responsiveness and reliability of custom playlist filtering and sorting
++ Refactored and optimized disposal of Chat Webview2 instances
++ Reliability improvements for applying Spicetify and custom extensions to Spotify
++ ProjectM presets are now archived in a ZIP file that is only extracted if selected during Inno setup
++ When Miniplayer is opened the hidden main window now moves to that location
++ Jumplist now prioritizes Display Name field when listing media items
++ Various logging, code and comment cleanup and refactoring
+
+### Fixed
++ Mutltiple XAML binding errors found during .NET debugging
++ Installed folder path sometimes not detected properly
++ Some YT videos fail to play using Web Player when reporting YT Error 150
+
+### Comments
++ Will NOT trigger first time setup when upgrading
+
 ## 1.0.6 - PUBLIC
 > - Branch: Samson
 

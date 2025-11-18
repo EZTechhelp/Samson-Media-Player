@@ -682,10 +682,19 @@ function Get-Playlists
         $synchashWeak.Target.all_playlists.Order = $Null
         $synchashWeak.Target.all_playlists.Order = {
           param ($item) 
-          if($SortBy -eq 'playlist_date_added'){
-            $item."$SortBy" -as [Datetime]
-          }else{
-            $item."$SortBy"
+          if($SortBy){
+            if($SortBy -eq 'playlist_date_added'){
+              if([datetime]::TryParseExact($item."$SortBy",'MM-dd-yyyy hh:mm:ss:tt',[System.Globalization.CultureInfo]::InvariantCulture,[System.Globalization.DateTimeStyles]::None,[ref]([Datetime]::Now))){
+                $item."$SortBy" = [datetime]::ParseExact($item."$SortBy",'MM-dd-yyyy hh:mm:ss:tt',[System.Globalization.CultureInfo]::InvariantCulture).toString()
+                $item."$SortBy" -as [Datetime]
+              }else{
+                $item."$SortBy" -as [Datetime]
+              }             
+            }elseif($SortBy -eq 'Number'){
+              $item."$SortBy" -as [int]
+            }else{
+              $item."$SortBy"
+            }
           }
         }
       }

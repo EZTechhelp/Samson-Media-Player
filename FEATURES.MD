@@ -33,6 +33,7 @@
 
 ## Important Notes/Requirements
 
+- The main UI was designed for a minimum resolution of 1920 x 1080. The Mini-Player UI requires at least 1280 x 720
 - The app by default **runs under user context**, but requires running as admin in some cases (such as first time setup)
 - App includes help documentation for each setting in the settings/first run window. Also pay attention to any tool-tips (over buttons..etc)
   - (WIP) Some may be out of date, incomplete or have errors, but still highly recommended to review to get the most out of the app

@@ -3,7 +3,7 @@
     Samson
 
     .Version
-    1.0.6
+    1.0.7
 
     .Build
     PUBLIC
@@ -786,6 +786,7 @@ try{
       Spotify_WebPlayer           = $true
       Current_Playlist            = [SerializableDictionary[int,string]]::new()
       History_Playlist            = [SerializableDictionary[int,string]]::new()
+      HistoryMax                  = 10
       Custom_EQ_Presets           = [System.Collections.Generic.List[Custom_EQ_Preset]]::new()
       Twitch_Playlists            = [System.Collections.Generic.List[Twitch_Playlist]]::new()
       Webview2_Extensions         = [System.Collections.Generic.List[WebExtension]]::new()
@@ -6204,7 +6205,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
 [System.Windows.RoutedEventHandler]$synchash.Sort_Playlist_Loaded_Command = {
   param($sender)
   try{
-    'Name','Playlist_Date_Added' | & { process {
+    'Display_Name','Number','Playlist_Date_Added' | & { process {
         $Header = $_
         if($Header -and $sender.items.header -notcontains $Header){
           $MenuItem = [System.Windows.Controls.MenuItem]::new()
@@ -6285,7 +6286,7 @@ $synchash.PlaylistFilter_timer.add_Tick({
 $Filter_PlaylistItems_Command = {
   Param($sender)
   try{
-    if(!$synchash.PlaylistFilter_timer.isEnabled){
+    if($synchash.PlaylistFilter_timer){
       $synchash.PlaylistFilter_timer.tag = $sender.text
       $synchash.PlaylistFilter_timer.start()
     }
@@ -6410,6 +6411,9 @@ if($synchash.LibraryPlaylistFilterTextBox){
     }elseif($sender.tag.source.selecteditems.Record.id){
       $media = $sender.tag.source.selecteditems.Record
       write-ezlogs -text "Found $($media.count) media to remove from sender.tag.source.selecteditems.Record"
+    }elseif($sender.tag.source.selecteditems.id){
+      $media = $sender.tag.source.selecteditems
+      write-ezlogs -text "Found $($media.count) media to remove from sender.tag.source.selecteditems"
     }elseif($sender.tag.source.Name -eq 'YoutubeTable'){
       $media = $synchash.YoutubeTable.selecteditems
       write-ezlogs -text "Found $($media.count) media to remove from YoutubeTable.selecteditems"
@@ -7115,6 +7119,8 @@ if($synchash.LocalMedia_TreeView){
       $media = $sender.tag.source.selecteditems.content
     }elseif($sender.tag.source.selecteditems.Record.id){
       $media = $sender.tag.source.selecteditems.Record
+    }elseif($sender.tag.source.selecteditems.id){
+      $media = $sender.tag.source.selecteditems
     }elseif($sender.tag.source.Name -eq 'YoutubeTable'){
       $media = $synchash.YoutubeTable.selecteditems
     }elseif($sender.tag.source.Name -eq 'SpotifyTable'){
@@ -9128,7 +9134,7 @@ if($thisApp.Config.startup_perf_timer){
                 $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
                 $Button_Settings.AffirmativeButtonText = 'Ok'
                 $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-                $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid Media!',"The media file you provided is invalid or unsupported - $resultFiles",$okandCancel,$Button_Settings)
+                [void][MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid Media!',"The media file you provided is invalid or unsupported - $resultFiles",$okandCancel,$Button_Settings)
                 write-ezlogs -text "The media file provided is invalid or unsupported - $resultFiles" -showtime -Warning -LogLevel 2
                 return
               }
@@ -9144,7 +9150,7 @@ if($thisApp.Config.startup_perf_timer){
               $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
               $Button_Settings.AffirmativeButtonText = 'Ok'
               $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-              $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid Media!',"The media file you provided is invalid or unsupported - $resultFiles",$okandCancel,$Button_Settings)
+              [void][MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid Media!',"The media file you provided is invalid or unsupported - $resultFiles",$okandCancel,$Button_Settings)
             }
           }
         }elseif(-not [string]::IsNullOrEmpty($RemoteURL)){
@@ -9178,7 +9184,7 @@ if($thisApp.Config.startup_perf_timer){
               $Button_Settings.AffirmativeButtonText = 'Yes'
               $Button_Settings.NegativeButtonText = 'No'
               $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
-              $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Unknown URL!',"The URL you provided does not appear to be an officially supported media type. Playback might or might not work.`n`nDo you wish to continue? - $result",$okandCancel,$Button_Settings)
+              [void][MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Unknown URL!',"The URL you provided does not appear to be an officially supported media type. Playback might or might not work.`n`nDo you wish to continue? - $result",$okandCancel,$Button_Settings)
               $type = 'Other'
             }
             Start-NewMedia -synchash $synchash -thisApp $thisApp -Mediaurl $result -Use_Runspace -MediaType $type
@@ -9188,15 +9194,11 @@ if($thisApp.Config.startup_perf_timer){
             $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
             $Button_Settings.AffirmativeButtonText = 'Ok'
             $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-            $dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid URL!',"The URL you provided is invalid or unsupported - $result",$okandCancel,$Button_Settings)
+            [void][MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Invalid URL!',"The URL you provided is invalid or unsupported - $result",$okandCancel,$Button_Settings)
             return
           }
         }else{
           write-ezlogs -text 'No URL or file path was provided!' -showtime -Warning
-          #$Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
-          #$Button_Settings.AffirmativeButtonText = 'Ok'
-          #$okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::Affirmative
-          #$dialogresult = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($synchash.Window,'Did you forget something?','No URL or file path was provided!',$okandCancel,$Button_Settings)
           return
         }
         $this.Stop()
@@ -9213,121 +9215,6 @@ if($thisApp.Config.startup_perf_timer){
     }
     $synchash.CustomWindowResultTimer.add_tick($CustomWindowResultTimer_Event)
     $Result = Show-CustomWindow -thisApp $thisApp -synchash $synchash -WindowTitle 'Add/Open Media' -HeaderText 'Open Media Options' -Message "Provide the path to the media to be added or played" -Type Options -Options $Options -TopMost
-
-    return
-
-    if($synchash.CustomDialog -or $synchash.DialogWindow.IsVisible){
-      write-ezlogs -text "A custom dialog is already open, cannot create another -- args: $($args | out-string)" -Warning
-      return
-    }elseif($synchash.MiniPlayer_Viewer.isVisible -and $synchash.Window){
-      write-ezlogs -text 'Add/Open media request while MiniPlayer is open, temporarily unhiding main window to show dialog' -Warning
-      $synchash.window.Opacity = 1
-      $synchash.window.ShowActivated = $true
-      [Void]$synchash.Window.Show()
-      [Void]$synchash.Window.Activate()
-    }
-    $CustomDialog_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
-    $CustomDialog_Settings.ColorScheme = [MahApps.Metro.Controls.Dialogs.MetroDialogColorScheme]::Theme
-    $CustomDialog_Settings.OwnerCanCloseWithDialog = $true
-    $synchash.CustomDialog = [MahApps.Metro.Controls.Dialogs.CustomDialog]::new($synchash.Window)
-    [xml]$xaml = [System.IO.File]::ReadAllText("$($thisApp.Config.Current_folder)\Views\Dialog.xaml").replace('Views/Styles.xaml',"$($thisApp.Config.Current_folder)`\Views`\Styles.xaml")
-    $reader = ([System.Xml.XmlNodeReader]::new($xaml))
-    $synchash.DialogWindow = [Windows.Markup.XamlReader]::Load($reader)
-    $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | & { process {$synchash."$($_.Name)" = $synchash.DialogWindow.FindName($_.Name)}}
-    [Void]$reader.Dispose()
-    $xaml = $null
-    $reader = $null
-    $synchash.CustomDialog.AddChild($synchash.DialogWindow)
-    $synchash.DialogButtonClose.add_click({
-        try{
-          if($synchash.YoutubeWebview2_Visibility -and $synchash.YoutubeWebView2){
-            $synchash.YoutubeWebView2.Visibility = 'Visible'
-          }
-          if($synchash.VideoView_Visibility -and $synchash.VideoView){
-            $synchash.VideoView.Visibility = 'Visible'
-          }
-          if($synchash.chat_WebView2_Visibility -and $synchash.chat_WebView2){
-            $synchash.chat_WebView2.Visibility = 'Visible'
-          }
-          if($synchash.Comments_Grid_Visibility -and $synchash.Comments_Grid){
-            $synchash.Comments_Grid.Visibility = 'Visible'
-          }
-          if($synchash.WebView2_Visibility -and $synchash.WebView2){
-            $synchash.WebView2.Visibility = 'Visible'
-          }
-          $synchash.CustomDialog.RequestCloseAsync()
-          $synchash.CustomDialog = $null
-          $synchash.DialogWindow = $null
-          if($synchash.MiniPlayer_Viewer.isVisible -and $synchash.Window){
-            [Void]$synchash.Window.hide()
-          }
-        }catch{
-          write-ezlogs -text 'An exception occurred in Dialog_Remote_URL_Textbox.add_TextChanged' -CatchError $_
-        }
-    })
-    $synchash.Dialog_Remote_URL_Textbox.add_TextChanged({
-        try{
-          if(-not [string]::IsNullOrEmpty($synchash.Dialog_Remote_URL_Textbox.text)){
-            $synchash.Dialog_Local_File_Textbox.IsEnabled = $false
-          }else{
-            $synchash.Dialog_Local_File_Textbox.IsEnabled = $true
-          }
-        }catch{
-          write-ezlogs -text 'An exception occurred in Dialog_Remote_URL_Textbox.add_TextChanged' -CatchError $_
-        }
-    })
-    $synchash.Dialog_Local_File_Textbox.add_TextChanged({
-        try{
-          if(-not [string]::IsNullOrEmpty($synchash.Dialog_Local_File_Textbox.text)){
-            $synchash.Dialog_Remote_URL_Textbox.IsEnabled = $false
-          }else{
-            $synchash.Dialog_Remote_URL_Textbox.IsEnabled = $true
-          }
-        }catch{
-          write-ezlogs -text 'An exception occurred in Dialog_Local_File_Textbox.add_TextChanged' -CatchError $_
-        }
-    })
-    if($synchash.Dialog_StartPlayback_Toggle){
-      $synchash.Dialog_StartPlayback_Toggle.add_Toggled({
-          try{
-            if($synchash.Dialog_StartPlayback_Toggle.isOn){
-              $synchash.Dialog_Add_Button.Content = 'Open Media'
-            }else{
-              $synchash.Dialog_Add_Button.Content = 'Add Media'
-            }
-          }catch{
-            write-ezlogs -text 'An exception occurred in Dialog_Local_File_Textbox.add_TextChanged' -CatchError $_
-          }
-      })
-    }
-    $synchash.YoutubeWebview2_Visibility = $synchash.YoutubeWebView2.isVisible -and !$synchash.MediaViewAnchorable.isFloating
-    $synchash.VideoView_Visibility = $synchash.VideoView.isVisible -and !$synchash.MediaViewAnchorable.isFloating
-    $synchash.chat_WebView2_Visibility = ($synchash.chat_WebView2.isVisible) -and !$synchash.MediaViewAnchorable.isFloating
-    $synchash.Comments_Grid_Visibility = ($synchash.Comments_Grid.isVisible) -and !$synchash.MediaViewAnchorable.isFloating
-    $synchash.WebView2_Visibility = $synchash.WebView2.isVisible -and !$synchash.MediaViewAnchorable.isFloating
-
-    if($synchash.YoutubeWebview2_Visibility -and $synchash.YoutubeWebView2){
-      $synchash.YoutubeWebView2.Visibility = 'Collapsed'
-    }
-    if($synchash.VideoView_Visibility -and $synchash.VideoView){
-      $synchash.VideoView.Visibility = 'Collapsed'
-    }
-    if($synchash.chat_WebView2_Visibility -and $synchash.chat_WebView2){
-      $synchash.chat_WebView2.Visibility = 'Collapsed'
-    }
-    if($synchash.Comments_Grid_Visibility -and $synchash.Comments_Grid){
-      $synchash.Comments_Grid.Visibility = 'Collapsed'
-    }
-    if($synchash.WebView2_Visibility -and $synchash.WebView2){
-      $synchash.WebView2.Visibility = 'Collapsed'
-    }
-    $synchash.Dialog_Browse_Button.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.BrowseMedia_Command)
-    $synchash.Dialog_Browse_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.BrowseMedia_Command)
-    $synchash.Dialog_BrowseFolders_Button.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.BrowseMedia_Command)
-    $synchash.Dialog_BrowseFolders_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.BrowseMedia_Command)
-    $synchash.Dialog_Add_Button.RemoveHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.Add_Media_Apply_Command)
-    $synchash.Dialog_Add_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.Add_Media_Apply_Command)
-    [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowMetroDialogAsync($synchash.Window, $synchash.CustomDialog, $CustomDialog_Settings)
   }catch{
     write-ezlogs -text 'An exception occurred in Add_Media_Command click event' -showtime -CatchError $_
   }

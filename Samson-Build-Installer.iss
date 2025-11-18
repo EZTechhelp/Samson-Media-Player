@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Samson"
-#define MyAppVersion "1.0.6"
+#define MyAppVersion "1.0.7"
 #define MyAppBuild "PUBLIC"
 #define Arguments ""
 #define MyAppPublisher "EZTechhelp"
@@ -127,11 +127,13 @@ Source: .\Assembly\ToolkitWPF\Microsoft.Toolkit.Wpf.UI.XamlHost.dll; DestDir: {a
 
 Source: .\Modules\*; DestDir: {app}\Modules; Excludes: {#ResourceExclude}; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: .\Resources\*; DestDir: {app}\Resources; Excludes: {#ResourceExclude}; Flags: recursesubdirs createallsubdirs
-Source: .\Resources\libvlc\Presets\*; DestDir: {app}\Resources\libvlc\Presets;  Flags: recursesubdirs createallsubdirs; Components: ProjectM
+Source: .\Resources\libvlc\Presets\presets_milkdrop.zip; DestDir: {app}\Resources\libvlc\Presets;  Flags: recursesubdirs createallsubdirs deleteafterinstall; Components: ProjectM
 Source: .\Views\*; DestDir: {app}\Views; Excludes: {#ResourceExclude}; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: .\license.txt; DestDir: {app}; Flags: ignoreversion
 Source: ".\ngen\x86\ngen.exe"; DestDir: {tmp}; Flags: deleteafterinstall; Check: not Is64BitInstallMode; 
-Source: ".\ngen\x64\ngen.exe"; DestDir: {tmp}; Flags: deleteafterinstall; Check: Is64BitInstallMode; 
+Source: ".\ngen\x64\ngen.exe"; DestDir: {tmp}; Flags: deleteafterinstall; Check: Is64BitInstallMode;
+Source: ".\7zip\7z.exe"; DestDir: {tmp}; Flags: deleteafterinstall;
+Source: ".\7zip\7z.dll"; DestDir: {tmp}; Flags: deleteafterinstall; 
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Components]
@@ -155,6 +157,7 @@ Filename: {app}\{#MyAppUninstaller}; Parameters: "-Uninstall"; RunOnceId: {#MyAp
 
 [Run]
 Filename: {app}\{#MyAppExeName}; Description: {cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}; Parameters: {#Arguments}; Flags: shellexec postinstall runasoriginaluser
+Filename: {tmp}\7z.exe; Parameters: "x ""{app}\Resources\Libvlc\Presets\presets_milkdrop.zip"" -o""{app}\Resources\Libvlc\Presets\"" * -r -aoa"; Flags: runhidden runascurrentuser; StatusMsg: Extracting ProjectM Presets...; Components: ProjectM
 ;//runascurrentuser:
 Filename: {app}\Resources\WebView2\MicrosoftEdgeWebview2Setup.exe; Description: Install Microsoft WebView2 Runtime; Flags: runascurrentuser nowait; Components: webview2; Parameters: /silent /install; StatusMsg: Installing Microsoft WebView2 Runtime...
 Filename: {app}\Resources\Streamlink\streamlink-installer.exe; Description: Install Streamlink; Flags: runascurrentuser nowait; Components: Streamlink; Parameters: /S; StatusMsg: Installing Streamlink...

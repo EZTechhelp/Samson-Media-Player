@@ -2,14 +2,14 @@
     .Name
     Update-ChatView
 
-    .Version 
+    .Version
     0.1.0
 
     .SYNOPSIS
     Provides controls for opening, closing, intializing and other functions for Twitch Chat View
 
     .DESCRIPTION
-       
+
     .Configurable Variables
 
     .Requirements
@@ -25,7 +25,7 @@
     .NOTES
 
 #>
-#---------------------------------------------- 
+#----------------------------------------------
 #region Update-ChatView Function
 #----------------------------------------------
 function Update-ChatView
@@ -100,7 +100,7 @@ function Update-ChatView
           $synchash.chat_column.MinWidth="380"
           if($synchash.chat_column.ActualWidth -gt 0){
             $synchash.Comments_TreeView.Tag = $synchash.chat_column.ActualWidth - 50
-          }                
+          }
         }catch{
           write-ezlogs "An exception occurred in VideoViewstoryboard" -catcherror $_
         }finally{
@@ -124,29 +124,29 @@ function Update-ChatView
       $synchash.ChatView_UpdateQueue = [Collections.Concurrent.ConcurrentQueue`1[object]]::New()
       $synchash.ChatView_timer = [Windows.Threading.DispatcherTimer]::new([Windows.Threading.DispatcherPriority]::Normal)
       $synchash.ChatView_timer.add_tick({
-          try{ 
+          try{
             $synchash = $synchash
-            $thisApp = $thisApp 
+            $thisApp = $thisApp
             $object = @{}
             $Process = $synchash.ChatView_UpdateQueue.TryDequeue([ref]$object)
             if($Process -and $object){
               if($object.Navigate -and $object.Youtube_ID -and $thisApp.Config.Enable_YoutubeComments){
                 $synchash.Chat_View_Button.ToolTip="Comments View"
                 $synchash.Chat_Icon.Kind="Chat"
-                $synchash.Chat_View_Button.Opacity='1'           
+                $synchash.Chat_View_Button.Opacity='1'
                 $synchash.Chat_View_Button.IsEnabled = $true
                 Get-YoutubeComments -synchash $synchash -thisApp $thisApp -Youtube_VID $object.Youtube_ID -use_Runspace
               }elseif($object.Navigate -and $object.TwitchVOD_ID -and $thisApp.Config.Enable_YoutubeComments){
                 $synchash.Chat_View_Button.ToolTip="Comments View"
                 $synchash.Chat_Icon.Kind="Chat"
-                $synchash.Chat_View_Button.Opacity='1'           
+                $synchash.Chat_View_Button.Opacity='1'
                 $synchash.Chat_View_Button.IsEnabled = $true
                 if($synchash.Comments_Progress_Ring.IsActive){
                   $synchash.Comments_Progress_Ring.IsActive = $false
-                }                
+                }
                 Start-TwitchChatReplay -synchash $synchash -thisApp $thisApp -VideoID $object.TwitchVOD_ID -use_Runspace
               }elseif($object.Navigate -and (Test-URL $object.ChatView_URL)){
-                $synchash.Chat_View_Button.ToolTip="Chat View" 
+                $synchash.Chat_View_Button.ToolTip="Chat View"
                 $synchash.Chat_Icon.Kind="Chat"
                 $synchash.Chat_View_Button.Opacity='1'
                 $synchash.Chat_View_Button.IsEnabled = $true
@@ -156,7 +156,7 @@ function Update-ChatView
                 }
                 else{
                   Initialize-ChatView -synchash $synchash -thisApp $thisApp
-                }              
+                }
               }
               if($object.Show){
                 write-ezlogs "[ChatView_Timer] >>>> Showing Chat View"
@@ -166,7 +166,7 @@ function Update-ChatView
                   $synchash.ChatView_ShowAnimation.to = $synchash.Chat_Splitter_Value
                 }else{
                   $synchash.ChatView_ShowAnimation.to = "75*"
-                }              
+                }
                 $synchash.ChatView_ShowAnimation.Duration = '0:0:0.2'
                 $synchash.ChatView_ShowStoryboard.Remove_Completed([EventHandler]$synchash.ChatView_ShowStoryboard_Completed)
                 $synchash.ChatView_ShowStoryboard.Add_Completed([EventHandler]$synchash.ChatView_ShowStoryboard_Completed)
@@ -179,7 +179,7 @@ function Update-ChatView
                   $object.sender.Header = 'Close Chat View'
                   if($object.sender.icon.kind){
                     $object.sender.icon.kind = 'ChatRemove'
-                  }        
+                  }
                 }
                 $thisApp.Config.Chat_View = $true
                 if($object.ChatView_URL -and $synchash.chat_WebView2.Visibility -eq 'Hidden'){
@@ -191,20 +191,20 @@ function Update-ChatView
                   $synchash.Comments_Grid.Visibility = 'Visible'
                   if($synchash.chat_WebView2.Visibility -eq 'Visible'){
                     $synchash.chat_WebView2.Visibility = 'Hidden'
-                  }               
+                  }
                 }
               }
               if($object.Reload -and -not [string]::IsNullOrEmpty($synchash.chat_WebView2.CoreWebView2)){
                 if(-not [string]::IsNullOrEmpty($synchash.chat_WebView2.CoreWebView2)){
                   write-ezlogs "[ChatView_Timer] >>>> Reloading chat_WebView2.CoreWebView2" -logtype Webview2
-                  $synchash.chat_WebView2.Reload()                                                     
+                  $synchash.chat_WebView2.Reload()
                 }else{
                   write-ezlogs "[ChatView_Timer] Unable to Reload chat view, chat_webview2 is not initialized!" -warning
                 }
               }elseif($object.Reload -and -not [string]::IsNullOrEmpty($syncHash.Comments_TreeView.Nodes)){
                 write-ezlogs "[ChatView_Timer] [NOT_IMPLEMENTED]>>>> Reloading Comments_TreeView.Nodes" -logtype Webview2
-            
-              }            
+
+              }
               if($object.Hide){
                 write-ezlogs "[ChatView_Timer] >>>> Hiding Chat View"
                 $synchash.Chat_View_Button.isChecked = $false
@@ -222,7 +222,7 @@ function Update-ChatView
                   $object.sender.Header = 'Open Chat View'
                   if($object.sender.icon.kind){
                     $object.sender.icon.kind = 'Chat'
-                  }        
+                  }
                 }
                 if($synchash.Comments_Grid.Visibility -eq 'Visible'){
                   $synchash.Comments_Grid.Visibility = 'Collapsed'
@@ -234,7 +234,7 @@ function Update-ChatView
                 }else{
                   write-ezlogs "[ChatView_Timer] Chat_WebView2 is already Hidden" -warning -loglevel 0 -Verboselog:$object.Verboselog
                 }
-              }             
+              }
               if($object.Disable){
                 try{
                   write-ezlogs "[ChatView_Timer] >>>> Disabling Chat View" -loglevel 0 -Verboselog:$object.Verboselog
@@ -247,10 +247,8 @@ function Update-ChatView
                   $synchash.Chat_View_Button.Opacity='0.7'
                   $synchash.Chat_View_Button.ToolTip="Chat View Not Available"
                   if($syncHash.chat_WebView2 -ne $null -and $syncHash.chat_WebView2.CoreWebView2 -ne $null){
-                    write-ezlogs "[ChatView_Timer] >>>> Disposing Chat_Webview2 instance"
                     $synchash.chat_WebView2.Visibility = 'Hidden'
-                    $synchash.chat_WebView2.dispose()
-                    $synchash.chat_WebView2 = $Null
+                    Remove-ChatView -synchash $synchash
                   }
                   if($syncHash.Comments_TreeView){
                     try{
@@ -275,7 +273,7 @@ function Update-ChatView
                       }
                       $null = $synchash.Comments_TreeView.Nodes.dispose()
                       write-ezlogs "[ChatView_Timer] >>>> Disposed $($count) nodes in Comments_TreeView" -loglevel 0 -Verboselog:$object.Verboselog
-                    }            
+                    }
                     $synchash.Comments_Grid.Visibility = 'Collapsed'
                   }
                 }catch{
@@ -289,7 +287,7 @@ function Update-ChatView
             $this.Stop()
             write-ezlogs "An exception occurred in ChatView_timer.add_tick" -showtime -catcherror $_
           }
-      }) 
+      })
     }else{
       [void]$synchash.ChatView_UpdateQueue.Enqueue([PSCustomObject]::new(@{
             'ChatView_URL' = $ChatView_URL
@@ -311,7 +309,7 @@ function Update-ChatView
     write-ezlogs "An exception occurred in Update-ChatView" -showtime -catcherror $_
   }
 }
-#---------------------------------------------- 
+#----------------------------------------------
 #endregion Update-ChatView Function
 #----------------------------------------------
 Export-ModuleMember -Function @('Update-ChatView')

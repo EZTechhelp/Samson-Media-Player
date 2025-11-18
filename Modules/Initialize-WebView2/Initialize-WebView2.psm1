@@ -460,6 +460,59 @@ Function Remove-WebBrowser
 #----------------------------------------------
 
 #----------------------------------------------
+#region Remove-ChatView Function
+#----------------------------------------------
+Function Remove-ChatView
+{
+  [CmdletBinding()]
+  param (
+    $synchash
+  )
+  try{
+    if($synchash.chat_WebView2 -is [System.IDisposable]){
+      write-ezlogs ">>>> Disposing Chat View Webview2 instance" -showtime -Warning
+      if($synchash.chat_WebView2_NavigationCompleted_Scriptblock){
+        $synchash.chat_WebView2.Remove_NavigationCompleted($synchash.chat_WebView2_NavigationCompleted_Scriptblock)
+      }
+      if($synchash.chat_WebView2_NavigationStarting_Scriptblock){
+        $synchash.chat_WebView2.Remove_NavigationStarting($synchash.chat_WebView2_NavigationStarting_Scriptblock)
+      }
+      if($synchash.chat_WebView2_CoreWebView2InitializationCompleted_Scriptblock){
+        $synchash.chat_WebView2.Remove_CoreWebView2InitializationCompleted($synchash.chat_WebView2_CoreWebView2InitializationCompleted_Scriptblock)
+      }
+      if($synchash.chat_WebView2_WebMessageReceived){
+        $synchash.chat_WebView2.Remove_WebMessageReceived($synchash.chat_WebView2_WebMessageReceived)
+      }
+      if($synchash.chat_WebView2_CoreWebView2_ProcessFailed_ScriptBlock){
+        $synchash.chat_WebView2.CoreWebView2.Remove_ProcessFailed($synchash.chat_WebView2_CoreWebView2_ProcessFailed_ScriptBlock)
+      }
+      if($synchash.chat_WebView2_CoreWebView2_WebResourceRequested_ScriptBlock){
+        $synchash.chat_WebView2.CoreWebView2.Remove_WebResourceRequested($synchash.chat_WebView2_CoreWebView2_WebResourceRequested_ScriptBlock)
+      }
+      if($synchash.chat_WebView2_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock){
+        $synchash.chat_WebView2.CoreWebView2.Remove_IsDocumentPlayingAudioChanged($synchash.chat_WebView2_CoreWebView2_IsDocumentPlayingAudioChanged_ScriptBlock)
+      }
+      if($synchash.chat_WebView2_CoreWebView2_IsMutedChanged_ScriptBlock){
+        $synchash.chat_WebView2.CoreWebView2.Remove_IsMutedChanged($synchash.chat_WebView2_CoreWebView2_IsMutedChanged_ScriptBlock)
+      }
+      if($synchash.chat_WebView2_ContextMenuRequested_Scriptblock){
+        $synchash.chat_WebView2.CoreWebView2.Remove_ContextMenuRequested($synchash.chat_WebView2_ContextMenuRequested_Scriptblock)
+        $synchash.chat_WebView2_ContextMenuRequested_Scriptblock = $Null
+      }
+      $synchash.chat_WebView2.dispose()
+      $synchash.chat_WebView2 = $Null
+    }else{
+      write-ezlogs "No Chat Webview found to remove - cannot continue!" -Warning
+    }
+  }catch{
+    Write-EZLogs 'An exception occurred removing chat_WebView2 Enviroment' -showtime -catcherror $_
+  }
+}
+#----------------------------------------------
+#endregion Remove-ChatView Function
+#----------------------------------------------
+
+#----------------------------------------------
 #region New-WebContextMenuScriptBlock Function
 #----------------------------------------------
 function New-WebContextMenuScriptBlock {
@@ -2360,6 +2413,9 @@ try {
           write-ezlogs "| Youtube video is live, updating chatview with YT live chat url: $chatURL"
           Update-ChatView -synchash $synchash -thisApp $thisApp -Navigate -ChatView_URL $chatURL -show:$thisApp.Config.Chat_View
         }
+        if($null -ne "$($result.value.title)" -and $synchash.Youtube_WebPlayer_title -ne "$($result.value.title)"){
+          $synchash.Youtube_WebPlayer_title = "$($result.value.title)"
+        }
         #TODO: Gah this logic is horrible! Need to setup ONE reference to check and validate against if its videodata or playerlabel (YoutubeTV)
         if($result.value.title -and $synchash.Current_Playing_media.url -notmatch 'tv\.youtube\.com|accounts\.google\.com' -and ($synchash.Youtube_WebPlayer_title -ne "$($result.value.title)" -or $synchash.Now_Playing_title_Label.DataContext -ne "$($result.value.title)")){
           if($synchash.Youtube_WebPlayer_title -ne "$($result.value.title)"){
@@ -2910,6 +2966,19 @@ try {
       if($result.key -eq 'error'){
         if($result.value -eq '150' -or $result.value -eq '101'){
           Write-EZLogs '[YoutubeWebview2] Youtube ERROR 150, usually means this video is not allowed to be played outside of youtube.com, may not support embed' -showtime -Warning -logtype Webview2 -LogLevel 2
+          if($e.Source -match '\/embed\/'){
+            try{
+              if(!$synchash.start_media_timer.IsEnabled){
+                $synchash.Youtube_WebPlayer_retry = 'NoEmbed'
+                $synchash.Start_media = $synchash.Current_playing_media
+                Write-EZLogs '[YoutubeWebView2_WebMessageReceived] | Will retry without using embed' -showtime -warning -logtype Webview2 -LogLevel 2
+                $synchash.start_media_timer.start()
+              }
+            }catch{
+              Write-EZLogs '[YoutubeWebView2_WebMessageReceived] An exception occurred retrying playback without embed for Youtube' -showtime -catcherror $_
+            }
+            return
+          }
         }elseif($result.value -eq '100'){
           Write-EZLogs '[YoutubeWebview2] Youtube ERROR 100: The video requested was not found. This error occurs when a video has been removed (for any reason) or has been marked as private' -showtime -warning -logtype Webview2 -LogLevel 2 -AlertUI
         }elseif($result.value -eq '5'){
@@ -5136,7 +5205,7 @@ Function Initialize-ChatView
   )
   try{
     #chat_webview2
-    Write-EZLogs '>>>> Iinitializing new Chat Webview2 instance' -showtime -logtype Webview2
+    Write-EZLogs '>>>> Initializing new Chat Webview2 instance' -showtime -logtype Webview2
     $synchash.chat_WebView2 = [Microsoft.Web.WebView2.Wpf.WebView2]::new()
     $synchash.chat_WebView2.Name = 'chat_WebView2'
     $synchash.chat_WebView2.Visibility = 'hidden'
@@ -5169,95 +5238,95 @@ Function Initialize-ChatView
       }
     }
 
-    $synchash.chat_WebView2.Add_NavigationCompleted(
-      [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs]]{
-        $event = $args[1]
-        try{
-          Write-EZLogs '>>>> Chat_WebView2 CoreWebView2InitializationCompleted' -logtype Webview2
-          if($event.isSuccess){
-            if(!$synchash.Chat_Twitch_Emotes_Script){
-              $synchash.Chat_Twitch_Emotes_Script = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Twitch\twitch-bttv.js")
-            }
-            Write-EZLogs '| Executing Chat_Twitch_BTTV_Script' -showtime -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
-            $synchash.chat_WebView2.ExecuteScriptAsync(
-              $synchash.Chat_Twitch_Emotes_Script
-            )
-            Write-EZLogs "| Chat_WebView2.CoreWebView2.DocumentTitle: $($synchash.chat_WebView2.CoreWebView2.DocumentTitle)" -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
-            if($thisApp.Config.Dev_mode){
-              Write-EZLogs "chat_WebView2.CoreWebView2: $($synchash.chat_WebView2.CoreWebView2 | Select-Object * | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode
-              Write-EZLogs "chat_WebView2.CoreWebView2.Environment: $($synchash.chat_WebView2.CoreWebView2.Environment | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode
-              Write-EZLogs "chat_WebView2.CoreWebView2.Settings: $($synchash.chat_WebView2.CoreWebView2.Settings | Select-Object * | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode
-            }
-          }else{
-            Write-EZLogs "Chat_WebView2 Navigation Completed but without success --  WebErrorStatus: $($event.WebErrorStatus) -- HttpStatusCode: $($event.HttpStatusCode)" -showtime -warning -logtype Webview2
-          }
-        }catch{
-          Write-EZLogs 'An exception occurred in chat_WebView2.Add_NavigationCompleted' -showtime -catcherror $_
-        }
-      }
-    )
-
-    $synchash.chat_WebView2.Add_CoreWebView2InitializationCompleted(
-      [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs]]{
-        $event = $args[1]
+    $synchash.chat_WebView2_NavigationCompleted_Scriptblock = [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs]]{
+      param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs]$event)
+      try{
+        Write-EZLogs '>>>> Chat_WebView2 CoreWebView2InitializationCompleted' -logtype Webview2
         if($event.isSuccess){
-          try{
-            [Microsoft.Web.WebView2.Core.CoreWebView2Settings]$Settings = $synchash.chat_WebView2.CoreWebView2.Settings
-            $Settings.AreDefaultContextMenusEnabled  = $true
-            $Settings.AreDefaultScriptDialogsEnabled = $false
-            $Settings.AreDevToolsEnabled             = $true
-            $Settings.AreHostObjectsAllowed          = $true
-            $Settings.IsBuiltInErrorPageEnabled      = $true
-            $Settings.IsScriptEnabled                = $true
-            $Settings.IsStatusBarEnabled             = $false
-            $Settings.IsWebMessageEnabled            = $true
-            $Settings.IsZoomControlEnabled           = $false
-            $Settings.IsGeneralAutofillEnabled       = $false
-            $Settings.IsPasswordAutosaveEnabled      = $false
-            $Settings.AreBrowserAcceleratorKeysEnabled = $thisApp.Config.Dev_mode
-            $Settings.IsSwipeNavigationEnabled = $false
-            $synchash.chat_WebView2.CoreWebView2.AddWebResourceRequestedFilter('*', [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext]::All)
-            if($thisApp.Config.Chat_WebView2_Cookie){
-              $twilight_user_cookie = $synchash.chat_WebView2.CoreWebView2.CookieManager.CreateCookie('twilight-user', $thisApp.Config.Chat_WebView2_Cookie, '.twitch.tv', '/')
-              $twilight_user_cookie.IsSecure = $true
-              $synchash.chat_WebView2.CoreWebView2.CookieManager.AddOrUpdateCookie($twilight_user_cookie)
-            }
-          }catch{
-            Write-EZLogs 'An exception occurred in CoreWebView2InitializationCompleted Event' -showtime -catcherror $_
+          if(!$synchash.Chat_Twitch_Emotes_Script){
+            $synchash.Chat_Twitch_Emotes_Script = [system.io.file]::ReadAllText("$($thisApp.Config.Current_Folder)\Resources\Twitch\twitch-bttv.js")
           }
-          $synchash.chat_WebView2.CoreWebView2.add_WebResourceRequested({
-              [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceRequestedEventArgs]$e = $args[1]
-              try{
-                $Cookies = ($e.Request.Headers | Where-Object {$_.key -eq 'cookie'}).value
-                if($Cookies){
-                  $Cookies = $Cookies -split ';'
-                  $twilight_user = $Cookies.Where({$_ -match 'twilight-user=(?<value>.*)'})
-                  if($twilight_user){
-                    $existin_twilight_user = ([regex]::matches($twilight_user,  'twilight-user=(?<value>.*)') | & { process {$_.groups[1].value}})
-                    #TODO: This needs to be saved into secret vault
-                    $thisApp.Config.Chat_WebView2_Cookie = $existin_twilight_user
-                    if($thisApp.Config.Dev_mode){Write-EZLogs "Found and saving existing 'twilight_user' Twitch login token" -showtime -logtype Webview2 -Dev_mode}
-                  }
-                }
-              }catch{
-                Write-EZLogs 'An exception occurred in CoreWebView2 WebResourceRequested Event' -showtime -catcherror $_
-              }
-          })
-          try{
-            if(Test-URL $synchash.ChatView_URL){
-              Write-EZLogs ">>>> Navigating ChatView URL: $($synchash.ChatView_URL)" -logtype Webview2
-              $synchash.chat_WebView2.CoreWebView2.Navigate($synchash.ChatView_URL)
-            }
-            $synchash.chat_WebView2.CoreWebView2.MemoryUsageTargetLevel = 'Low'
-          }catch{
-            Write-EZLogs "An exception occurred navigating to: $($synchash.ChatView_UR)" -catcherror $_
+          Write-EZLogs '| Executing Chat_Twitch_BTTV_Script' -showtime -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
+          $synchash.chat_WebView2.ExecuteScriptAsync(
+            $synchash.Chat_Twitch_Emotes_Script
+          )
+          Write-EZLogs "| Chat_WebView2.CoreWebView2.DocumentTitle: $($synchash.chat_WebView2.CoreWebView2.DocumentTitle)" -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
+          if($thisApp.Config.Dev_mode){
+            Write-EZLogs "chat_WebView2.CoreWebView2: $($synchash.chat_WebView2.CoreWebView2 | Select-Object * | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode
+            Write-EZLogs "chat_WebView2.CoreWebView2.Environment: $($synchash.chat_WebView2.CoreWebView2.Environment | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode
+            Write-EZLogs "chat_WebView2.CoreWebView2.Settings: $($synchash.chat_WebView2.CoreWebView2.Settings | Select-Object * | Out-String)" -loglevel 2 -logtype Webview2 -Dev_mode
           }
         }else{
-          Write-EZLogs "WebBrowser chat_WebView2 Initialization Completed but without success - InitializationException: $($event.InitializationException.Message) - InnerException: $($event.InitializationException.InnerException)- StackTrace: $($event.InitializationException.StackTrace)" -warning -logtype Webview2
+          Write-EZLogs "Chat_WebView2 Navigation Completed but without success --  WebErrorStatus: $($event.WebErrorStatus) -- HttpStatusCode: $($event.HttpStatusCode)" -showtime -warning -logtype Webview2
+        }
+      }catch{
+        Write-EZLogs 'An exception occurred in chat_WebView2.Add_NavigationCompleted' -showtime -catcherror $_
+      }
+    }
+    $synchash.chat_WebView2.Add_NavigationCompleted($synchash.chat_WebView2_NavigationCompleted_Scriptblock)
+
+    $synchash.chat_WebView2_CoreWebView2InitializationCompleted_Scriptblock = [EventHandler[Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs]] {
+      Param($sender,[Microsoft.Web.WebView2.Core.CoreWebView2InitializationCompletedEventArgs]$event)
+      if($event.isSuccess){
+        try{
+          [Microsoft.Web.WebView2.Core.CoreWebView2Settings]$Settings = $synchash.chat_WebView2.CoreWebView2.Settings
+          $Settings.AreDefaultContextMenusEnabled  = $true
+          $Settings.AreDefaultScriptDialogsEnabled = $false
+          $Settings.AreDevToolsEnabled             = $true
+          $Settings.AreHostObjectsAllowed          = $true
+          $Settings.IsBuiltInErrorPageEnabled      = $true
+          $Settings.IsScriptEnabled                = $true
+          $Settings.IsStatusBarEnabled             = $false
+          $Settings.IsWebMessageEnabled            = $true
+          $Settings.IsZoomControlEnabled           = $false
+          $Settings.IsGeneralAutofillEnabled       = $false
+          $Settings.IsPasswordAutosaveEnabled      = $false
+          $Settings.AreBrowserAcceleratorKeysEnabled = $thisApp.Config.Dev_mode
+          $Settings.IsSwipeNavigationEnabled = $false
+          $synchash.chat_WebView2.CoreWebView2.AddWebResourceRequestedFilter('*', [Microsoft.Web.WebView2.Core.CoreWebView2WebResourceContext]::All)
+          if($thisApp.Config.Chat_WebView2_Cookie){
+            $twilight_user_cookie = $synchash.chat_WebView2.CoreWebView2.CookieManager.CreateCookie('twilight-user', $thisApp.Config.Chat_WebView2_Cookie, '.twitch.tv', '/')
+            $twilight_user_cookie.IsSecure = $true
+            $synchash.chat_WebView2.CoreWebView2.CookieManager.AddOrUpdateCookie($twilight_user_cookie)
+          }
+        }catch{
+          Write-EZLogs 'An exception occurred in CoreWebView2InitializationCompleted Event' -showtime -catcherror $_
         }
 
+        $synchash.chat_WebView2_CoreWebView2_WebResourceRequested_ScriptBlock = {
+          Param($Sender,[Microsoft.Web.WebView2.Core.CoreWebView2WebResourceRequestedEventArgs]$e)
+          $logtype = 'Webview2'
+          try{
+            $Cookies = ($e.Request.Headers | Where-Object {$_.key -eq 'cookie'}).value
+            if($Cookies){
+              $Cookies = $Cookies -split ';'
+              $twilight_user = $Cookies.Where({$_ -match 'twilight-user=(?<value>.*)'})
+              if($twilight_user){
+                $existin_twilight_user = ([regex]::matches($twilight_user,  'twilight-user=(?<value>.*)') | & { process {$_.groups[1].value}})
+                #TODO: This needs to be saved into secret vault
+                $thisApp.Config.Chat_WebView2_Cookie = $existin_twilight_user
+                if($thisApp.Config.Dev_mode){Write-EZLogs "Found and saving existing 'twilight_user' Twitch login token" -showtime -logtype Webview2 -Dev_mode}
+              }
+            }
+          }catch{
+            Write-EZLogs 'An exception occurred in CoreWebView2 WebResourceRequested Event' -showtime -catcherror $_
+          }
+        }
+        $synchash.chat_WebView2.CoreWebView2.add_WebResourceRequested($synchash.chat_WebView2_CoreWebView2_WebResourceRequested_ScriptBlock)
+        try{
+          if(Test-URL $synchash.ChatView_URL){
+            Write-EZLogs ">>>> Navigating ChatView URL: $($synchash.ChatView_URL)" -logtype Webview2
+            $synchash.chat_WebView2.CoreWebView2.Navigate($synchash.ChatView_URL)
+          }
+          $synchash.chat_WebView2.CoreWebView2.MemoryUsageTargetLevel = 'Low'
+        }catch{
+          Write-EZLogs "An exception occurred navigating to: $($synchash.ChatView_UR)" -catcherror $_
+        }
+      }else{
+        Write-EZLogs "WebBrowser chat_WebView2 Initialization Completed but without success - InitializationException: $($event.InitializationException.Message) - InnerException: $($event.InitializationException.InnerException)- StackTrace: $($event.InitializationException.StackTrace)" -warning -logtype Webview2
       }
-    )
+    }
+    $synchash.chat_WebView2.Add_CoreWebView2InitializationCompleted($synchash.chat_WebView2_CoreWebView2InitializationCompleted_Scriptblock)
   }catch{
     Write-EZLogs 'An exception occurred creating chatwebview2 Enviroment' -showtime -catcherror $_
   }
@@ -5547,4 +5616,5 @@ Export-ModuleMember -Function @('Initialize-WebPlayer',
   'Get-Webview2Extensions',
   'Remove-YoutubeWebPlayer',
   'Remove-WebBrowser',
+  'Remove-ChatView',
 'New-WebContextMenuScriptBlock')
