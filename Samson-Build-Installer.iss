@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Samson"
-#define MyAppVersion "1.0.7"
+#define MyAppVersion "1.0.8"
 #define MyAppBuild "PUBLIC"
 #define Arguments ""
 #define MyAppPublisher "EZTechhelp"
@@ -141,7 +141,7 @@ Name: main; Description: Main Files; Types: full compact custom; Flags: fixed
 Name: choco; Description: Chocolatey (Downloaded/Installed on first run if not already - Required); Types: full compact custom; Flags: fixed
 Name: webview2; Description: Webview2 Runtime (Installed after this Setup Wizard Completes - Required); Types: full compact custom; Flags: fixed disablenouninstallwarning
 Name: Streamlink; Description: Streamlink (Installed after this Setup Wizard Completes - Required); Types: full custom compact; Flags: fixed disablenouninstallwarning; ExtraDiskSpaceRequired: 48255498
-Name: ProjectM; Description: ProjectM Presets - Visualization plugin with Milkdrop presets; Types: full custom; Flags: checkablealone disablenouninstallwarning
+Name: ProjectM; Description: ProjectM Presets - Visualization plugin with Milkdrop presets; Types: full custom; Flags: checkablealone disablenouninstallwarning; ExtraDiskSpaceRequired: 116718915
 
 [Messages]
 WelcomeLabel1={#MyAppName} Media Player Setup Wizard%n(Version: {#MyAppVersion})

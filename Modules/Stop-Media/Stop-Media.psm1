@@ -54,6 +54,7 @@ function Stop-Media
       $synchashWeak.Target.Update_Playing_Playlist_Timer.stop()
     }          
     $synchashWeak.Target.VLC_PlaybackCancel = $true
+    $synchashWeak.Target.Spotify_PlaybackCancel = $true
     if($synchashWeak.Target.AudioRecorder.isRecording){
       $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()       
       $Button_Settings.AffirmativeButtonText = 'Yes'

@@ -3,7 +3,7 @@
     Samson
 
     .Version
-    1.0.7
+    1.0.8
 
     .Build
     PUBLIC
@@ -6147,56 +6147,126 @@ $synchash.Add_to_Playlist_timer.add_Tick({
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$Sort_Playlist_Click_Command = {
   try{
-    $thisApp.Config.Playlists_SortBy.clear()
-    if($this.isChecked){
-      Write-EZLogs -text ">>>> Adding $($this.Header) to Playlists_SortBy"
-      [void]$thisApp.Config.Playlists_SortBy.add($this.Header)
-    }elseif($this.Header -in $thisApp.Config.Playlists_SortBy){
-      [void]$thisApp.Config.Playlists_SortBy.Remove($this.Header)
-    }
-    Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -SortBy $this.Header -Filter_Refresh
-    $this.parent.items | & { process {
-        if($_.Header -eq $this.Header){
-          Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
-          $_.isChecked = $this.isChecked
-        }else{
-          Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
-          $_.isChecked = $false
-        }
-    }}
-    if($this.Name -ne $synchash.Sort_Playlist_Button.name){
-      $synchash.Sort_Playlist_Button.items | & { process {
-          if($_.Header -eq $this.Header){
-            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
-            $_.isChecked = $this.isChecked
-          }else{
-            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
-            $_.isChecked = $false
+    if($this.Header -in 'Sort: Z-A','Sort: A-Z'){
+      $this.parent.items | & { process {
+          if($_.Header -in 'Sort: Z-A','Sort: A-Z'){
+            if($_.Header -eq $this.Header){
+              Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
+              $_.isChecked = $this.isChecked
+            }elseif($_.isChecked){
+              Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
+              $_.isChecked = $false
+            }
           }
       }}
-    }
-    if($this.Name -ne $synchash.Sort_Playlist_VideoView_Button.name){
-      $synchash.Sort_Playlist_VideoView_Button.items | & { process {
-          if($_.Header -eq $this.Header){
-            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
-            $_.isChecked = $this.isChecked
-          }else{
-            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
-            $_.isChecked = $false
+      if($this.parent.name -ne $synchash.Sort_Playlist_Button.name){
+        $synchash.Sort_Playlist_Button.items | & { process {
+            if($_.Header -in 'Sort: Z-A','Sort: A-Z'){
+              if($_.Header -eq $this.Header){
+                Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
+                $_.isChecked = $this.isChecked
+              }elseif($_.isChecked){
+                Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
+                $_.isChecked = $false
+              }
+            }
+        }}
+      }
+      if($this.parent.Name -ne $synchash.Sort_Playlist_VideoView_Button.name){
+        $synchash.Sort_Playlist_VideoView_Button.items | & { process {
+            if($_.Header -in 'Sort: Z-A','Sort: A-Z'){
+              if($_.Header -eq $this.Header){
+                Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
+                $_.isChecked = $this.isChecked
+              }elseif($_.isChecked){
+                Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
+                $_.isChecked = $false
+              }
+            }
+        }}
+      }
+      if($this.parent.Name -ne $synchash.Sort_Playlist_Button_Library.name){
+        $synchash.Sort_Playlist_Button_Library.items | & { process {
+            if($_.Header -in 'Sort: Z-A','Sort: A-Z'){
+              if($_.Header -eq $this.Header){
+                Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
+                $_.isChecked = $this.isChecked
+              }elseif($_.isChecked){
+                Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
+                $_.isChecked = $false
+              }
+            }
+        }}
+      }
+      if($this.Header -eq 'Sort: A-Z'){
+        $SortDirection = 'Ascending'
+      }else{      
+        $SortDirection = 'Descending'
+      }
+      $thisApp.Config.Playlists_SortDirection = $SortDirection
+      $SortBy = $thisApp.Config.Playlists_SortBy
+    }else{
+      $thisApp.Config.Playlists_SortBy.clear()
+      if($this.isChecked){
+        Write-EZLogs -text ">>>> Adding $($this.Header) to Playlists_SortBy"
+        [void]$thisApp.Config.Playlists_SortBy.add($this.Header)
+      }elseif($this.Header -in $thisApp.Config.Playlists_SortBy){
+        [void]$thisApp.Config.Playlists_SortBy.Remove($this.Header)
+      }
+      $SortBy = $this.Header
+      $SortDirection = $thisApp.Config.Playlists_SortDirection
+      $this.parent.items | & { process {
+          if($_.Header -notin 'Sort: Z-A','Sort: A-Z'){
+            if($_.Header -eq $this.Header){
+              Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
+              $_.isChecked = $this.isChecked
+            }elseif($_.isChecked){
+              Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
+              $_.isChecked = $false
+            }
           }
       }}
+      if($this.Name -ne $synchash.Sort_Playlist_Button.name){
+        $synchash.Sort_Playlist_Button.items | & { process {
+            if($_.Header -notin 'Sort: Z-A','Sort: A-Z'){
+              if($_.Header -eq $this.Header){
+                Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
+                $_.isChecked = $this.isChecked
+              }elseif($_.isChecked){
+                Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
+                $_.isChecked = $false
+              }
+            }
+        }}
+      }
+      if($this.Name -ne $synchash.Sort_Playlist_VideoView_Button.name){
+        $synchash.Sort_Playlist_VideoView_Button.items | & { process {
+            if($_.Header -notin 'Sort: Z-A','Sort: A-Z'){
+              if($_.Header -eq $this.Header){
+                Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
+                $_.isChecked = $this.isChecked
+              }elseif($_.isChecked){
+                Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
+                $_.isChecked = $false
+              }
+            }
+        }}
+      }
+      if($this.Name -ne $synchash.Sort_Playlist_Button_Library.name){
+        $synchash.Sort_Playlist_Button_Library.items | & { process {
+            if($_.Header -notin 'Sort: Z-A','Sort: A-Z'){
+              if($_.Header -eq $this.Header){
+                Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
+                $_.isChecked = $this.isChecked
+              }elseif($_.isChecked){
+                Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
+                $_.isChecked = $false
+              }
+            }
+        }}
+      }
     }
-    if($this.Name -ne $synchash.Sort_Playlist_Button_Library.name){
-      $synchash.Sort_Playlist_Button_Library.items | & { process {
-          if($_.Header -eq $this.Header){
-            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked: $($this.isChecked)" -Warning -Dev_mode
-            $_.isChecked = $this.isChecked
-          }else{
-            Write-ezlogs -text "| $($_.Name) item: $($_.Header) - Setting isChecked to false" -Warning -Dev_mode
-            $_.isChecked = $false
-          }
-      }}
-    }
+    Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -SortBy $SortBy -Filter_Refresh -SortDirection $SortDirection
   }catch{
     write-ezlogs -text "An exception occurred in Click event for menuitem: $($this.Header)" -CatchError $_
   }
@@ -6205,6 +6275,11 @@ $synchash.Add_to_Playlist_timer.add_Tick({
 [System.Windows.RoutedEventHandler]$synchash.Sort_Playlist_Loaded_Command = {
   param($sender)
   try{
+    if($thisApp.Config.Playlists_SortDirection -eq 'Descending'){      
+      $SortDirection = 'Sort: Z-A'
+    }else{
+      $SortDirection = 'Sort: A-Z'
+    }
     'Display_Name','Number','Playlist_Date_Added' | & { process {
         $Header = $_
         if($Header -and $sender.items.header -notcontains $Header){
@@ -6212,11 +6287,45 @@ $synchash.Add_to_Playlist_timer.add_Tick({
           $MenuItem.IsCheckable = $true
           $MenuItem.Header = $Header
           $MenuItem.Name = $sender.Name
+          if($Sender.Name -eq 'Sort_Playlist_VideoView_Button'){
+            $menuItem.Style = $synchash.Window.TryFindResource("TrayDropDownMenuitemStyle")
+          }         
           $MenuItem.isChecked = [bool]($Header -in $thisApp.Config.Playlists_SortBy)
           [Void]$MenuItem.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Sort_Playlist_Click_Command)
           [Void]$sender.items.add($MenuItem)
         }
     }}
+    if($sender.items.Name -notcontains 'SortPSeparator'){
+      $menu_separator = [System.Windows.Controls.Separator]::new()
+      $menu_separator.Name = 'SortPSeparator'
+      $menu_separator.OpacityMask = $synchash.Window.TryFindResource('SeparatorGradient')
+      $menu_separator.BorderThickness = "0"
+      [Void]$sender.items.add($menu_separator)
+    }
+    if($sender.items.Header -notcontains 'Sort: A-Z'){
+      $MenuItem = [System.Windows.Controls.MenuItem]::new()
+      $MenuItem.IsCheckable = $true
+      $MenuItem.Header = 'Sort: A-Z'
+      $MenuItem.Name = 'SortAZ'
+      if($Sender.Name -eq 'Sort_Playlist_VideoView_Button'){
+        $menuItem.Style = $synchash.Window.TryFindResource("TrayDropDownMenuitemStyle")
+      }
+      $MenuItem.isChecked = [bool]($MenuItem.Header -eq $SortDirection -or !$SortDirection)
+      [Void]$MenuItem.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Sort_Playlist_Click_Command)
+      [Void]$sender.items.add($MenuItem)
+    }
+    if($sender.items.Header -notcontains 'Sort: Z-A'){
+      $MenuItem = [System.Windows.Controls.MenuItem]::new()
+      $MenuItem.IsCheckable = $true
+      $MenuItem.Header = 'Sort: Z-A'
+      $MenuItem.Name = 'SortZA'
+      if($Sender.Name -eq 'Sort_Playlist_VideoView_Button'){
+        $menuItem.Style = $synchash.Window.TryFindResource("TrayDropDownMenuitemStyle")
+      }
+      $MenuItem.isChecked = [bool]($MenuItem.Header -eq $SortDirection)
+      [Void]$MenuItem.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Sort_Playlist_Click_Command)
+      [Void]$sender.items.add($MenuItem)
+    }
   }catch{
     write-ezlogs -text "An exception occurred in $($sender.Name).add_Loaded" -CatchError $_
   }
@@ -6268,27 +6377,13 @@ if($thisApp.Config.Dev_mode){
   }
 }
 
-$synchash.PlaylistFilter_timer = [System.Windows.Threading.DispatcherTimer]::New([System.Windows.Threading.DispatcherPriority]::DataBind)
-$synchash.PlaylistFilter_timer.add_Tick({
-    try{
-      if($synchash.all_playlists -is [MyToolkit.ObservableCollectionView[Playlist]]){
-        Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -Filter $this.tag -Filter_Refresh
-      }else{
-        write-ezlogs -text 'Cannot processing filter on all_playlists - is not a filterable type' -warning
-      }
-    }catch{
-      write-ezlogs -text "An exception occurred in PlaylistFilter_timer - attempted filter: $($this.tag)" -CatchError $_
-    }finally{
-      $this.tag = $null
-      $this.stop()
-    }
-})
 $Filter_PlaylistItems_Command = {
   Param($sender)
   try{
-    if($synchash.PlaylistFilter_timer){
-      $synchash.PlaylistFilter_timer.tag = $sender.text
-      $synchash.PlaylistFilter_timer.start()
+    if($synchash.all_playlists -is [MyToolkit.ObservableCollectionView[Playlist]]){
+      Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -Filter $sender.text -Filter_Refresh -use_Runspace
+    }else{
+      write-ezlogs -text 'Cannot processing filter on all_playlists - is not a filterable type' -warning
     }
   }catch{
     write-ezlogs -text 'An exception occurrred in VideoViewPlaylistFilterTextBox.Add_TextChanged event' -showtime -CatchError $_
@@ -6492,19 +6587,24 @@ if($synchash.LibraryPlaylistFilterTextBox){
   try{
     #TODO: Cleanup
     $media = $sender.tag.Media
-    $Playlist = $sender.DataContext.title
-    $PlaylistID = $sender.DataContext.Playlist_ID
-    if(!$Playlist){
+    if($sender.DataContext.Content.title){
+      $Playlist = $sender.DataContext.Content.title
+      $PlaylistID = $sender.DataContext.Content.Playlist_ID
+    }elseif($sender.tag.DataContext.title){
+      $Playlist = $sender.tag.DataContext.title
+      $PlaylistID = $sender.tag.DataContext.Playlist_ID
+    }elseif($sender.tag.DataContext.Content.title){
+      $Playlist = $sender.tag.DataContext.Content.title
+      $PlaylistID = $sender.tag.DataContext.Content.Playlist_ID
+    }elseif($sender.tag.Source.Selecteditem.title){
       $Playlist = $sender.tag.Source.Selecteditem.title
       $PlaylistID = $sender.Tag.Source.Selecteditem.Playlist_ID
-    }
-    if(!$Playlist){
-      $Playlist = $sender.Tag.datacontext.title
-      $PlaylistID = $sender.Tag.datacontext.Playlist_ID
-    }
-    if(!$PlaylistID -and ($sender.tag.Media.Name -eq 'Playlist' -or $sender.tag.Media.Type -eq 'CustomPlaylist')){
+    }elseif($sender.tag.Media.Name -eq 'Playlist' -or $sender.tag.Media.Type -eq 'CustomPlaylist'){
       $PlaylistID = $sender.tag.Media.Playlist_ID
-      $Playlist = $sender.Tag.Media.Playlist_name
+      $Playlist = $sender.Tag.Media.Playlist_name  
+    }else{
+      $Playlist = $sender.DataContext.title
+      $PlaylistID = $sender.DataContext.Playlist_ID
     }
     if($PlaylistID){
       write-ezlogs -text ">>>> Prompting to confirm clear of playlist: $Playlist..." -showtime
@@ -6524,6 +6624,9 @@ if($synchash.LibraryPlaylistFilterTextBox){
       write-ezlogs -text "sender - $($sender | out-string)" -Warning
       write-ezlogs -text "sender.tag - $($sender.tag | out-string)" -Warning
       write-ezlogs -text "sender.DataContext - $($sender.DataContext | out-string)" -Warning
+      write-ezlogs -text "sender.Tag.DataContext - $($sender.Tag.DataContext | out-string)" -Warning
+      write-ezlogs -text "sender.Tag.DataContext.Content - $($sender.Tag.DataContext.Content | out-string)" -Warning
+      write-ezlogs -text "sender.DataContext.Content - $($sender.DataContext.Content | out-string)" -Warning
     }
   }catch{
     write-ezlogs -text "An exception occurred clearing playlist $($Playlist)" -showtime -CatchError $_
@@ -6586,20 +6689,15 @@ if($synchash.LibraryPlaylistFilterTextBox){
             if($youtube_id -match '\&pp='){
               $youtube_id = ($youtube_id -split '\&pp=')[0]
             }
-            #TODO: Expose custom invidious instance/url in settings
-            if($thisApp.Config.Use_invidious){
-              #$url = "https://yewtu.be/embed/$youtube_id`?&autoplay=1"
-              #$url = "https://invidious.nerdvpn.de/embed/$youtube_id`?&autoplay=1"
-              $url = "https://invidious.jing.rocks/embed/$youtube_id`?&autoplay=1"
+            if($thisApp.Config.Use_invidious -and (Test-ValidPath -Type URL $thisApp.Config.InvidiousURL)){
+              $url = "$($thisApp.Config.InvidiousURL)/embed/$youtube_id`?&autoplay=1"
             }else{
               $url = "https://www.youtube.com/embed/$youtube_id`?&autoplay=1"
             }
           }elseif($media.url -match 'list='){
             $Playlist_ID = ($($media.url) -split('list='))[1].trim()
-            if($thisApp.Config.Use_invidious){
-              #$url = "https://yewtu.be/embed/videoseries?list=$playlist_id`&autoplay=1"
-              #$url = "https://invidious.nerdvpn.de/embed/videoseries?list=$playlist_id`&autoplay=1"
-              $url = "https://invidious.jing.rocks/embed/videoseries?list=$Playlist_ID`&autoplay=1"
+            if($thisApp.Config.Use_invidious -and (Test-ValidPath -Type URL $thisApp.Config.InvidiousURL)){
+              $url = "$($thisApp.Config.InvidiousURL)/embed/videoseries?list=$Playlist_ID`&autoplay=1"
             }else{
               $url = "https://www.youtube.com/embed/videoseries?list=$youtube_id`&autoplay=1"
             }
@@ -7157,6 +7255,96 @@ if($synchash.LocalMedia_TreeView){
 #----------------------------------------------
 
 #----------------------------------------------
+#region Convert Meida Command
+#----------------------------------------------
+[System.Windows.RoutedEventHandler]$synchash.ConvertMedia_Command = {
+  param($sender)
+  try{
+    if($sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems.Content -and $sender.tag.source.TreeViewItemInfo.TreeView -is [Syncfusion.UI.Xaml.TreeView.SfTreeView]){
+      $media = $sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems.Content
+    }elseif($sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems.id){
+      $media = $sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems
+    }elseif($sender.tag.source.selecteditems.content.id){
+      $media = $sender.tag.source.selecteditems.content
+    }elseif($sender.tag.source.selecteditems.Record.id){
+      $media = $sender.tag.source.selecteditems.Record
+    }elseif($sender.tag.source.selecteditems.id){
+      $media = $sender.tag.source.selecteditems
+    }elseif($sender.tag.source.Name -eq 'YoutubeTable'){
+      $media = $synchash.YoutubeTable.selecteditems
+    }elseif($sender.tag.source.Name -eq 'SpotifyTable'){
+      $media = $synchash.SpotifyTable.selecteditems
+    }elseif($sender.tag.source.Name -eq 'MediaTable'){
+      $media = $synchash.MediaTable.selecteditems
+    }elseif($sender.tag.source.Name -eq 'TwitchTable'){
+      $media = $synchash.TwitchTable.selecteditems
+    }elseif($sender.datacontext.Record.id){
+      $media = $sender.datacontext.Record
+    }elseif($sender.datacontext.content.id){
+      $media = $sender.datacontext.content
+    }elseif($sender.tag.Media.id){
+      $media = $sender.tag.Media
+    }elseif($sender.tag.id){
+      $media = $sender.tag
+    }elseif($sender.tag.id){
+      $media = $sender.tag
+    }elseif($sender.selecteditem.tag.Media.id){
+      $media = $sender.selecteditem.tag.Media
+    }
+    if($media.id -and [system.io.File]::Exists($media.url)){
+      if($Sender.Header -eq 'FLAC'){
+        $OutputDirectory = [System.io.Path]::GetDirectoryName($media.url)
+        $OutputFileName = "$([System.io.Path]::GetFileNameWithoutExtension($media.url)).flac"
+      }elseif($Sender.Header -eq 'WAV'){
+        $OutputDirectory = [System.io.Path]::GetDirectoryName($media.url)
+        $OutputFileName = "$([System.io.Path]::GetFileNameWithoutExtension($media.url)).wav"
+      }elseif($Sender.Header -eq 'MP3'){
+        $OutputDirectory = [System.io.Path]::GetDirectoryName($media.url)
+        $OutputFileName = "$([System.io.Path]::GetFileNameWithoutExtension($media.url)).mp3"
+      }elseif($Sender.Header -eq 'Custom'){
+        $Options = [System.Collections.Generic.List[PSCustomObject]]::new()
+        $OptionPath = [PSCustomObject]@{
+          'Name' = 'FolderPath'
+          'Label' = 'Destination Folder'
+          'Type' = 'textbox'
+          'BrowseType' = 'SaveFolder'
+          'Value' = [System.io.Path]::GetDirectoryName($media.url)
+          'Output' = ''
+        }
+        [void]$Options.add($OptionPath)
+        $Option = [PSCustomObject]@{
+          'Name' = 'SaveFormatOptions'
+          'Label' = 'Convert to Format'
+          'Type' = 'Combobox'
+          'Value' = 'FLAC','WAV','MP3'
+          'Output' = ''
+        }
+        [void]$Options.add($Option)
+        $Result = Show-CustomWindow -thisApp $thisApp -WindowTitle 'Convert Media' -HeaderText 'Convert Media Options' -Message "Select the following options below to confirm converting of media:`n$($media.url)" -Type Options -Options $Options -WaitforOutput -TopMost
+        if($Result){
+          $OutputDirectory = $Result[0].Output
+          $FileNameExt = $Result[1].Output
+          $OutputFileName = "$([System.io.Path]::GetFileNameWithoutExtension($media.url)).$($FileNameExt)"
+        }
+      }
+      if([system.io.directory]::Exists($OutputDirectory) -and $OutputFileName){
+        Write-Ezlogs ">>>> Starting Convert of media from: ($($media.url)) -- To: $OutputFileName"
+        Convert-Media -synchash $synchash -thisApp $thisApp -use_Runspace -InputFile $media.url -OutputDirectory $OutputDirectory -OutputFileName $OutputFileName
+      }else{
+        write-ezlogs "No valid output directory or filename was provided to convert media: $($media.url)" -warning -AlertUI
+      }
+    }else{
+      write-ezlogs -text "No valid Media was provided or found for provided url: $($media.url)" -Warning -AlertUI
+    }
+  }catch{
+    write-ezlogs -text 'An exception occurred in ConvertMedia_Command routed event' -showtime -CatchError $_
+  }
+}
+#----------------------------------------------
+#endregion Convert Media Command
+#----------------------------------------------
+
+#----------------------------------------------
 #region Add to Youtube Playlist Command
 #----------------------------------------------
 [System.Windows.RoutedEventHandler]$synchash.Add_Youtube_Playlist_Command  = {
@@ -7285,6 +7473,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
         Datacontext = $OriginalSource.target.datacontext
         source      = $source.Target
       }
+      #$media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)avi|(?i)wmv|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mov|(?i)h264|(?i)mpeg|(?i)mpg4|(?i)movie|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))',[System.Text.RegularExpressions.RegexOptions]::Compiled)
       if (($e.ChangedButton -eq [System.Windows.Input.MouseButton]::Right) -and $media.ID) {
         if($thisApp.Config.Dev_mode){write-ezlogs -text " [ContextMenu] Creating context menu for a media item -- media: $($media | out-string)" -Dev_mode}
         if($media.ID -eq $synchash.Current_playing_media.id){
@@ -7721,6 +7910,63 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             'IsCheckable' = $false
           }
           [Void]$items.Add($TMDBLookup)
+          $Sub_items = [System.Collections.Generic.List[object]]::new()
+          if([system.io.path]::GetExtension($media.url) -notin '.flac'){
+            $ConverttoFlac = @{
+              'Header'    = 'FLAC'
+              'Tag'       = $Media_Tag
+              'Command'   = $synchash.ConvertMedia_Command
+              'Enabled'   = $true
+              'IsCheckable' = $false
+              'Color'     = 'White'
+            }
+            [Void]$Sub_items.Add($ConverttoFlac)
+          }
+          if([system.io.path]::GetExtension($media.url) -notin '.wav'){
+            $ConverttoFlac = @{
+              'Header'    = 'WAV'
+              'Tag'       = $Media_Tag
+              'Command'   = $synchash.ConvertMedia_Command
+              'Enabled'   = $true
+              'IsCheckable' = $false
+              'Color'     = 'White'
+            }
+            [Void]$Sub_items.Add($ConverttoFlac)
+          }
+          if([system.io.path]::GetExtension($media.url) -notin '.mp3'){
+            $ConverttoFlac = @{
+              'Header'    = 'MP3'
+              'Tag'       = $Media_Tag
+              'Command'   = $synchash.ConvertMedia_Command
+              'Enabled'   = $true
+              'IsCheckable' = $false
+              'Color'     = 'White'
+            }
+            [Void]$Sub_items.Add($ConverttoFlac)
+          }
+          $separator = @{
+            'Separator' = $true
+            'Style'   = 'SeparatorGradient'
+          }
+          [Void]$Sub_items.Add($separator)
+          $ConverttoCustom = @{
+            'Header'    = 'Custom'
+            'Tag'       = $Media_Tag
+            'Command'   = $synchash.ConvertMedia_Command
+            'Enabled'   = $true
+            'IsCheckable' = $false
+            'Color'     = 'White'
+          }
+          [Void]$Sub_items.Add($ConverttoCustom)
+          $ConvertMedia = @{
+            'Header'   = 'Convert to...'
+            'Color'    = 'White'
+            'Icon_Color' = 'White'
+            'Icon_kind' = 'Sync'
+            'Enabled'  = $true
+            'Sub_items' = $Sub_items
+          }
+          [Void]$items.Add($ConvertMedia)
         }
         if($thisApp.config.Current_Playlist.values -notcontains $media.id){
           $Add_to_PlayQueue = @{
@@ -8288,38 +8534,6 @@ if($get_playlists_Startup_Measure){
 if($thisApp.Config.startup_perf_timer){
   $Button_Event_Handler_Measure = [system.diagnostics.stopwatch]::StartNew()
 }
-
-#----------------------------------------------
-#region Test_ChatBot Button
-#TODO: From old OpenAI integration tests - to be removed
-#----------------------------------------------
-if(($dev_mode -or $debug_mode) -and $synchash.ChatBot_Button -and [system.io.file]::Exists("$($thisApp.Config.Current_Folder)\Resources\API\OPENAI-API-Config.xml")){
-  $synchash.ChatBot_Button.Visibility = 'Visible'
-  $synchash.ChatBot_Button.isEnabled = $true
-  $synchash.ChatBot_Button_Icon.Source = "$($thisApp.Config.Current_Folder)\Resources\Samson_Icon_NoText1.ico"
-  [System.Windows.RoutedEventHandler]$synchash.Test_Notification_Command  = {
-    param($sender)
-    try{
-      $sendername = 'OpenAI'
-      $WindowHash = Get-Variable -Name 'hashOpenAIWindow' -ValueOnly -ErrorAction SilentlyContinue
-      if($WindowHash.Window.isVisible){
-        write-ezlogs -text 'OpenAI Window is already open' -LogLevel 2
-        Update-ChildWindow -synchash $synchash -thisApp $thisApp -Control 'Window' -Method 'Activate' -sendername 'OpenAI'
-        Update-ChildWindow -synchash $synchash -thisApp $thisApp -sendername 'OpenAI'-NewDialog
-      }else{
-        $windowtitle = "Chat with Samson -  $($thisApp.Config.App_Name) Media Player - $($thisApp.Config.App_Version)"
-        Show-ChildWindow -synchash $synchash -thisApp $thisApp -WindowTitle $windowtitle -Logo "$($thisApp.Config.Current_Folder)\Resources\Skins\Samson_Logo_Title.png" -sendername $sendername -Message 'Ask me a question...' -Prompt
-      }
-    }catch{
-      write-ezlogs -text 'An exception occurred in Hell_button_Command click event' -showtime -CatchError $_
-    }
-  }
-  [Void]$synchash.ChatBot_Button.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.Test_Notification_Command)
-}
-#----------------------------------------------
-#endregion Test_ChatBot Button
-#----------------------------------------------
-
 #----------------------------------------------
 #region Hell Button
 #----------------------------------------------
@@ -8521,7 +8735,7 @@ if($synchash.ScreenShot_Button){
 #----------------------------------------------
 #region Show_Library_button Button
 #----------------------------------------------
-[System.Windows.RoutedEventHandler]$synchash.Show_Video_Button_CLick_Command = {
+[System.Windows.RoutedEventHandler]$synchash.Show_Video_Button_Click_Command = {
   param($sender)
   try{
     if($sender.isChecked){
@@ -8791,7 +9005,7 @@ if($synchash.ScreenShot_Button){
             $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
             write-ezlogs -text ">>>> Registering AudioOptions_Viewer window handle: $($Window_Helper.Handle) -- to appid: $appid" -Dev_mode
             $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)
-            Add-Member -InputObject $thisApp.config -Name 'Installed_AppID' -Value $appid -MemberType NoteProperty -Force
+            $thisApp.config.Installed_AppID = $appid
           }
         }catch{
           write-ezlogs -text 'An exception occurred in AudioOptions_Viewer.add_loaded' -CatchError $_
@@ -8862,14 +9076,6 @@ if($synchash.ScreenShot_Button){
           [Void](Get-EventHandlers -Element $Element -RoutedEvent ([MahApps.Metro.Controls.MetroWindow]::UnloadedEvent) -RemoveHandlers)
           $synchash.AudioOptions_UnLoaded_Event = $null
           $synchash.Remove('AudioOptions_UnLoaded_Event')
-          <#          $hashkeys = [System.Collections.ArrayList]::new($synchash.keys)
-              $hashkeys | & { process {
-              if($sender.FindName($_)){
-              if($thisApp.Config.Dev_mode){write-ezlogs -text ">>>> Unregistering AudioOptions_Viewer UI name: $_" -Dev_mode}
-              [void]$sender.UnRegisterName($_)
-              [void]$synchash.Remove($_)
-              }
-          }}#>
           [void][System.Windows.Data.BindingOperations]::ClearAllBindings($sender)
           write-ezlogs -text ">>>> AudioOptions_Viewer window $($sender.Name) has unloaded" -showtime -LogLevel 2 -GetMemoryUsage -forceCollection
           $sender = $null
@@ -9055,8 +9261,6 @@ if($thisApp.Config.startup_perf_timer){
 [System.Windows.RoutedEventHandler]$synchash.Add_Media_Command = {
   param($sender)
   try{
-
-
     $Options = [System.Collections.Generic.List[PSCustomObject]]::new()
     $OptionPath = [PSCustomObject]@{
       'Name' = 'RemoteURL'
@@ -9368,8 +9572,6 @@ if($thisApp.Config.startup_perf_timer){
       if($synchash.MiniPlayer_Media_Length_Label){
         $synchash.MiniPlayer_Media_Length_Label.Content = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
       }
-    }elseif($synchash.MediaPlayer_Slider.IsMouseOver -and !$synchash.vlc.IsPlaying -and $synchash.MediaPlayer_Slider.IsFocused){
-      #do nothing?
     }
     if([int]$synchash.MediaPlayer_Slider.Maximum -ne 0){
       $synchash.Main_TaskbarItemInfo.ProgressValue = [int]$synchash.MediaPlayer_Slider.Value / [int]$synchash.MediaPlayer_Slider.Maximum
@@ -9396,13 +9598,13 @@ if($thisApp.Config.startup_perf_timer){
         }elseif($synchash.Spotify_WebPlayer_State.current_track.id -and $synchash.Spotify_WebPlayer_State.playbackstate -ne 0){
           Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop
           $newvalue = $([timespan]::FromSeconds($($newvalue))).TotalMilliseconds
-          $synchash.Spotify_Webview2_SeekScript = @"
+          $Spotify_Webview2_SeekScript = @"
   console.log('Seeking Spotify Track to $($newvalue)');
   SpotifyWeb.player.seek($($newvalue));
    console.log('New Position',SpotifyWeb.currState.position);
 "@
           $synchash.WebView2.ExecuteScriptAsync(
-            $synchash.Spotify_Webview2_SeekScript
+            $Spotify_Webview2_SeekScript
           )
           $synchash.MediaPlayer_CurrentDuration = $newvalue
           Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -start
@@ -9431,7 +9633,7 @@ if($thisApp.Config.startup_perf_timer){
           $newvalue = $([timespan]::FromSeconds($($synchash.MediaPlayer_Slider.Value))).TotalSeconds
           write-ezlogs -text ">>>> Seeking Youtube webplayer to: $newvalue" -Dev_mode
           if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
-            $synchash.YoutubeWebView2_SeekScript = @"
+            $YoutubeWebView2_SeekScript = @"
 try {
   //var state = player.paused();
 if (state) {
@@ -9454,7 +9656,7 @@ if (state) {
 "@
           }else{
 
-            $synchash.YoutubeWebView2_SeekScript = @"
+            $YoutubeWebView2_SeekScript = @"
 try {
   var player = document.getElementById('movie_player');
   console.log('Seeking Youtube player to $newvalue');
@@ -9471,7 +9673,7 @@ try {
 
 "@
             $synchash.YoutubeWebView2.ExecuteScriptAsync(
-              $synchash.YoutubeWebView2_SeekScript
+              $YoutubeWebView2_SeekScript
             )
           }
           $synchash.MediaPlayer_CurrentDuration = $newvalue
@@ -9545,7 +9747,7 @@ if($synchash.Mini_Progress_Slider){
   param([Parameter(Mandatory)]$sender,[Parameter(Mandatory)][System.Windows.Input.MouseButtonEventArgs]$e)
   try{
     #When playing with Spotify Client, only update on mouse up
-    if ((Get-Process -Name Spotify*) -and $e.ChangedButton -eq [System.Windows.Input.MouseButton]::Left -and $e.ButtonState -eq [System.Windows.Input.MouseButtonState]::Released -and $thisApp.Config.Import_Spotify_Media -and -not [string]::IsNullOrEmpty($synchash.Spotify_Status) -and $synchash.Spotify_Status -ne 'Stopped'){
+    if ((Get-Process -Name Spotify*) -and $e.ChangedButton -eq [System.Windows.Input.MouseButton]::Left -and $e.ButtonState -eq [System.Windows.Input.MouseButtonState]::Released -and $thisApp.Config.Import_Spotify_Media -and -not [string]::IsNullOrEmpty($synchash.Spotify_Status) -and $synchash.Spotify_Status -ne 'Stopped' -and -not $([string]$synchash.vlc.media.Mrl).StartsWith("dshow://")){
       if($thisApp.config.Use_Spicetify -and ((NETSTAT.EXE -an) | Where-Object -FilterScript {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'})){
         Invoke-RestMethod -Uri "http://127.0.0.1:8974/SETVOLUME?$($synchash.Volume_Slider.Value)" -UseBasicParsing
       }else{
@@ -9584,7 +9786,7 @@ if($synchash.Mini_Progress_Slider){
         )
       }else{
         if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
-          $synchash.YoutubeWebView2_VolumeScript = @"
+          $YoutubeWebView2_VolumeScript = @"
         var volume = player.volume();
         console.log('Invidious volume',volume)
         if(volume !== $($newvalue / 100)){
@@ -9593,10 +9795,10 @@ if($synchash.Mini_Progress_Slider){
         }
 "@
           $synchash.YoutubeWebView2.ExecuteScriptAsync(
-            $synchash.YoutubeWebView2_VolumeScript
+            $YoutubeWebView2_VolumeScript
           )
         }elseif($synchash.Youtube_WebPlayer_URL -match 'youtube\.com' -or $synchash.Youtube_WebPlayer_URL -match 'youtu\.be' -or $synchash.WebBrowser_Youtube_URL -match 'youtube\.com' -or $synchash.WebBrowser_Youtube_URL -match 'youtu\.be'){
-          $synchash.YoutubeWebView2_VolumeScript = @"
+          $YoutubeWebView2_VolumeScript = @"
   var player = document.getElementById('movie_player');
   console.log('Setting volume',$($newvalue))
   player.setVolume($($newvalue));
@@ -9604,24 +9806,24 @@ if($synchash.Mini_Progress_Slider){
 
           if(($synchash.WebBrowser_Youtube_URL -match 'youtube\.com' -or $synchash.WebBrowser_Youtube_URL -match 'youtu\.be') -and $synchash.WebBrowser){
             $synchash.WebBrowser.ExecuteScriptAsync(
-              $synchash.YoutubeWebView2_VolumeScript
+              $YoutubeWebView2_VolumeScript
             )
           }
           if($synchash.YoutubeWebView2){
             $synchash.YoutubeWebView2.ExecuteScriptAsync(
-              $synchash.YoutubeWebView2_VolumeScript
+              $YoutubeWebView2_VolumeScript
             )
           }
         }
       }
     }elseif($($synchash.WebBrowser.CoreWebView2.IsDocumentPlayingAudio -or $synchash.WebBrowser.CoreWebView2.IsMuted -or -not [string]::IsNullOrEmpty($synchash.Youtube_webplayer_current_Media)) -and ($synchash.WebBrowser_Youtube_URL -match 'youtube\.com' -or $synchash.WebBrowser_Youtube_URL -match 'youtu\.be')){
-      $synchash.YoutubeWebView2_VolumeScript = @"
+      $YoutubeWebView2_VolumeScript = @"
   var player = document.getElementById('movie_player');
   console.log('Setting volume',$($newvalue))
   player.setVolume($($newvalue));
 "@
       $synchash.WebBrowser.ExecuteScriptAsync(
-        $synchash.YoutubeWebView2_VolumeScript
+        $YoutubeWebView2_VolumeScript
       )
     }
     if($sender.value -ge 75){
@@ -9997,152 +10199,152 @@ if($synchash.VideoView_Mute_Button){
 
 if($synchash.Volume_Slider -and $synchash.VideoView_Volume_Slider){
   #Volume slider binding
-  $VideoView_Volume_Slider_Binding = [System.Windows.Data.Binding]::new()
-  $VideoView_Volume_Slider_Binding.Source = $synchash.Volume_Slider
-  $VideoView_Volume_Slider_Binding.Path = 'Value'
-  $VideoView_Volume_Slider_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Volume_Slider,[System.Windows.Controls.Slider]::ValueProperty, $VideoView_Volume_Slider_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.Volume_Slider
+  $Binding.Path = 'Value'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Volume_Slider,[System.Windows.Controls.Slider]::ValueProperty, $Binding)
 
   #Volume slider tooltip binding
-  $VideoView_Volume_Slider_Binding = [System.Windows.Data.Binding]::new()
-  $VideoView_Volume_Slider_Binding.Source = $synchash.Volume_Slider
-  $VideoView_Volume_Slider_Binding.Path = 'ToolTip'
-  $VideoView_Volume_Slider_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Volume_Slider,[System.Windows.Controls.Slider]::ToolTipProperty, $VideoView_Volume_Slider_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.Volume_Slider
+  $Binding.Path = 'ToolTip'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Volume_Slider,[System.Windows.Controls.Slider]::ToolTipProperty, $Binding)
 }
 
 if($synchash.VideoView_Overlay_Grid){
   #VideoView_Overlay_Grid binding
-  $VideoView_Overlay_Grid_Binding = [System.Windows.Data.Binding]::new()
-  $VideoView_Overlay_Grid_Binding.Source = $synchash.VideoView
-  $VideoView_Overlay_Grid_Binding.Path = 'Visibility'
-  $VideoView_Overlay_Grid_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Overlay_Grid,[System.Windows.Controls.Grid]::VisibilityProperty, $VideoView_Overlay_Grid_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.VideoView
+  $Binding.Path = 'Visibility'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Overlay_Grid,[System.Windows.Controls.Grid]::VisibilityProperty, $Binding)
 }
 
 #Progress Slider binding
 if($synchash.VideoView_Progress_Slider){
   #VideoView_Progress_Slider Value binding
-  $ProgressSlider_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSlider_Binding.Source = $synchash.MediaPlayer_Slider
-  $ProgressSlider_Binding.Path = 'Value'
-  $ProgressSlider_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::ValueProperty, $ProgressSlider_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.MediaPlayer_Slider
+  $Binding.Path = 'Value'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::ValueProperty, $Binding)
 
   #VideoView_Progress_Slider Tooltip binding
-  $ProgressSliderTooltip_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTooltip_Binding.Source = $synchash.MediaPlayer_Slider
-  $ProgressSliderTooltip_Binding.Path = 'ToolTip'
-  $ProgressSliderTooltip_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::ToolTipProperty, $ProgressSliderTooltip_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.MediaPlayer_Slider
+  $Binding.Path = 'ToolTip'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::ToolTipProperty, $Binding)
 
   #MediaPlayer_Slider Ticks binding
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.MediaPlayer_Slider
-  $ProgressSliderTick_Binding.Path = 'Ticks'
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::TicksProperty, $ProgressSliderTick_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.MediaPlayer_Slider
+  $Binding.Path = 'Ticks'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::TicksProperty, $Binding)
 
   #MediaPlayer_Slider Maximum binding
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.MediaPlayer_Slider
-  $ProgressSliderTick_Binding.Path = 'Maximum'
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::MaximumProperty, $ProgressSliderTick_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.MediaPlayer_Slider
+  $Binding.Path = 'Maximum'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::MaximumProperty, $Binding)
 
   #VideoView_Grid ActualWidth binding
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.VideoView_Grid
-  $ProgressSliderTick_Binding.Path = 'ActualWidth'
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::WidthProperty, $ProgressSliderTick_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.VideoView_Grid
+  $Binding.Path = 'ActualWidth'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::WidthProperty, $Binding)
 
   #MediaPlayer_Slider IsEnabled binding
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.MediaPlayer_Slider
-  $ProgressSliderTick_Binding.Path = 'IsEnabled'
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::IsEnabledProperty, $ProgressSliderTick_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.MediaPlayer_Slider
+  $Binding.Path = 'IsEnabled'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Progress_Slider,[System.Windows.Controls.Slider]::IsEnabledProperty, $Binding)
 }
 if($synchash.Volume_Slider_Toolip){
   #Volume_Slider Value binding
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.Volume_Slider
-  $ProgressSliderTick_Binding.Path = 'Value'
-  $ProgressSliderTick_Binding.Converter = $synchash.Window.TryFindResource('valueTextConverter')
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Volume_Slider_Toolip,[System.Windows.Controls.ToolTip]::ContentProperty, $ProgressSliderTick_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.Volume_Slider
+  $Binding.Path = 'Value'
+  $Binding.Converter = $synchash.Window.TryFindResource('valueTextConverter')
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Volume_Slider_Toolip,[System.Windows.Controls.ToolTip]::ContentProperty, $Binding)
 }
 if($synchash.VideoView_Playlists_Button -and $synchash.TrayPlayerQueueFlyout){
   #VideoView_Playlists_Button IsChecked binding
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.VideoView_Playlists_Button
-  $ProgressSliderTick_Binding.Path = 'IsChecked'
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.TrayPlayerQueueFlyout,[MahApps.Metro.Controls.Flyout]::IsOpenProperty, $ProgressSliderTick_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.VideoView_Playlists_Button
+  $Binding.Path = 'IsChecked'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.TrayPlayerQueueFlyout,[MahApps.Metro.Controls.Flyout]::IsOpenProperty, $Binding)
 
   if($synchash.Overlay_Playlists_Button){
-    $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-    $ProgressSliderTick_Binding.Source = $synchash.VideoView_Playlists_Button
-    $ProgressSliderTick_Binding.Path = 'IsChecked'
-    $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
-    [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Overlay_Playlists_Button,[Windows.Controls.Primitives.ToggleButton]::IsCheckedProperty, $ProgressSliderTick_Binding)
+    $Binding = [System.Windows.Data.Binding]::new()
+    $Binding.Source = $synchash.VideoView_Playlists_Button
+    $Binding.Path = 'IsChecked'
+    $Binding.Mode = [System.Windows.Data.BindingMode]::TwoWay
+    [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.Overlay_Playlists_Button,[Windows.Controls.Primitives.ToggleButton]::IsCheckedProperty, $Binding)
   }
 
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.PlayQueue_TreeView
-  $ProgressSliderTick_Binding.Path = 'Items'
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Queue,[System.Windows.Controls.DataGrid]::ItemsSourceProperty, $ProgressSliderTick_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.PlayQueue_TreeView
+  $Binding.Path = 'Items'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Queue,[System.Windows.Controls.DataGrid]::ItemsSourceProperty, $Binding)
 
-  $MinWidth_Binding = [System.Windows.Data.Binding]::new()
-  $MinWidth_Binding.Source = $synchash.Playlist_Grid_TrayPlayer
-  $MinWidth_Binding.Path = 'ActualWidth'
-  $MinWidth_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.PlayQueue_Grid_TrayPlayer,[System.Windows.Controls.Grid]::MinWidthProperty, $MinWidth_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.Playlist_Grid_TrayPlayer
+  $Binding.Path = 'ActualWidth'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.PlayQueue_Grid_TrayPlayer,[System.Windows.Controls.Grid]::MinWidthProperty, $Binding)
 
 }
 
 if($synchash.PlayLists_VideoView_Progress_Ring){
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.PlayLists_Progress_Ring
-  $ProgressSliderTick_Binding.Path = 'IsActive'
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.PlayLists_VideoView_Progress_Ring,[MahApps.Metro.Controls.ProgressRing]::IsActiveProperty, $ProgressSliderTick_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.PlayLists_Progress_Ring
+  $Binding.Path = 'IsActive'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.PlayLists_VideoView_Progress_Ring,[MahApps.Metro.Controls.ProgressRing]::IsActiveProperty, $Binding)
 }
 if($synchash.PlayQueue_VideoView_Progress_Ring){
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.PlayQueue_Progress_Ring
-  $ProgressSliderTick_Binding.Path = 'IsActive'
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.PlayQueue_VideoView_Progress_Ring,[MahApps.Metro.Controls.ProgressRing]::IsActiveProperty, $ProgressSliderTick_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.PlayQueue_Progress_Ring
+  $Binding.Path = 'IsActive'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.PlayQueue_VideoView_Progress_Ring,[MahApps.Metro.Controls.ProgressRing]::IsActiveProperty, $Binding)
 }
 
 if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
-  #ProgressSlider Visibility binding
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.Now_Playing_Title_Label
-  $ProgressSliderTick_Binding.Path = 'DataContext'
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Title_Label,[System.Windows.Controls.TextBlock]::TextProperty, $ProgressSliderTick_Binding)
+  #VideoView_Title binding
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.Now_Playing_Title_Label
+  $Binding.Path = 'DataContext'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Title_Label,[System.Windows.Controls.TextBlock]::TextProperty, $Binding)
 
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.Now_Playing_Artist_Label
-  $ProgressSliderTick_Binding.Path = 'DataContext'
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Artist_Label,[System.Windows.Controls.TextBlock]::TextProperty, $ProgressSliderTick_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.Now_Playing_Artist_Label
+  $Binding.Path = 'DataContext'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Artist_Label,[System.Windows.Controls.TextBlock]::TextProperty, $Binding)
 
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.DisplayPanel_Sep2_Label
-  $ProgressSliderTick_Binding.Path = 'Visibility'
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Sep2_Label,[System.Windows.Controls.TextBox]::VisibilityProperty, $ProgressSliderTick_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.DisplayPanel_Sep2_Label
+  $Binding.Path = 'Visibility'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Sep2_Label,[System.Windows.Controls.TextBox]::VisibilityProperty, $Binding)
 
-  $ProgressSliderTick_Binding = [System.Windows.Data.Binding]::new()
-  $ProgressSliderTick_Binding.Source = $synchash.VideoView_ViewCount_Label
-  $ProgressSliderTick_Binding.Path = 'Visibility'
-  $ProgressSliderTick_Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
-  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Sep3_Label,[System.Windows.Controls.TextBox]::VisibilityProperty, $ProgressSliderTick_Binding)
+  $Binding = [System.Windows.Data.Binding]::new()
+  $Binding.Source = $synchash.VideoView_ViewCount_Label
+  $Binding.Path = 'Visibility'
+  $Binding.Mode = [System.Windows.Data.BindingMode]::OneWay
+  [void][System.Windows.Data.BindingOperations]::SetBinding($synchash.VideoView_Sep3_Label,[System.Windows.Controls.TextBox]::VisibilityProperty, $Binding)
 }
 
 #VideoView Cast Events
@@ -10183,7 +10385,6 @@ if($synchash.VideoView_Title_Label -and $synchash.VideoView_Artist_Label){
 [System.Windows.RoutedEventHandler]$synchash.ScanMediaRenderers_Command  = {
   param($sender)
   try{
-
     if($thisApp.Config.Use_MediaCasting -and $synchash.VideoView_Cast_Button.IsExpanded){
       if($synchash.MediaRenderStatus_TextBox){
         $synchash.MediaRenderStatus_TextBox.Header = 'Scanning..........'
@@ -10781,8 +10982,7 @@ if($thisApp.Config.startup_perf_timer){
 #----------------------------------------------
 if($synchash.Volumeknob){
   $synchash.Volumeknob.add_MouseEnter({
-      $sender = $args[0]
-      [System.Windows.Input.MouseEventArgs]$e = $args[1]
+      Param($Sender,[System.Windows.Input.MouseEventArgs]$e)
       try{
         $e.handled = $true
         $synchash.VerticalSlider_Storyboard.Storyboard.Begin()
@@ -10791,8 +10991,7 @@ if($synchash.Volumeknob){
       }
   })
   $synchash.Volumeknob.add_MouseLeave({
-      $sender = $args[0]
-      [System.Windows.Input.MouseEventArgs]$e = $args[1]
+      Param($Sender,[System.Windows.Input.MouseEventArgs]$e)
       try{
         $e.handled = $true
         $synchash.VerticalSlider_StoryboardLeave.Storyboard.Begin()
@@ -10941,11 +11140,9 @@ if($synchash.Volumeknob){
     write-ezlogs -text 'An exception occurred in FloatFullScreen_Command' -showtime -CatchError $_
   }
 }
-
 if($synchash.VideoView_LargePlayer_Button){
   [Void]$synchash.VideoView_LargePlayer_Button.AddHandler([Windows.Controls.Button]::ClickEvent,$synchash.FloatFullScreen_Command)
 }
-
 if($synchash.VideoView_Dock_Button){
   [Void]$synchash.VideoView_Dock_Button.AddHandler([Windows.Controls.Button]::ClickEvent,$synchash.Float_Command)
 }
@@ -11005,8 +11202,6 @@ if($synchash.Chat_GridSplitter){
         }elseif($synchash.chat_column.Width -is [int] -or $synchash.chat_column.Width -is [double]){
           $synchash.Chat_Splitter_Value = $synchash.chat_column.Width
         }
-        #$synchash.Chat_Splitter_Value = $synchash.chat_column.Width
-        #$e.Handled = $true
         write-ezlogs -text "Chat_GridSplitter HorizontalChange: $($e.HorizontalChange) - chat_column.Width: $($synchash.chat_column.Width) -  Change: $($Change) - Chat_Splitter_Value: $($synchash.Chat_Splitter_Value)" -Warning -Dev_mode
       }catch{
         write-ezlogs -text 'An exception occurred in PowerButton_ToggleButton.add_Checked  event' -CatchError $_ -showtime
@@ -11105,7 +11300,7 @@ $synchash.pode_server_scriptblock = {
           $thisApp = $using:thisApp
           $synchash = $using:synchash
           $synchash.Spicetify = $spicetify
-          #write-ezlogs ">>>> Spotify Playing: $($synchash.Spicetify)" -showtime -logtype Spotify -LogLevel 3
+          write-ezlogs ">>>> Spotify Playing: $($synchash.Spicetify)" -showtime -logtype Spotify -LogLevel 3
         }catch{
           write-ezlogs -text "An exception occurred in PodeSignalRoute '/'" -showtime -CatchError $_
         }
@@ -11433,7 +11628,6 @@ if($synchash.SlideText_StackPanel){
             $synchash.DisplayPanel_Storyboard.Storyboard.SetValue([System.Windows.Media.MediaTimeline]::DesiredFrameRateProperty,$null)
           }
           $synchash.DisplayPanel_Storyboard.Storyboard.Begin($synchash.DisplayPanel_Text_StackPanel,[System.Windows.Media.Animation.HandoffBehavior]::SnapshotAndReplace,$true)
-          #$synchash.DisplayPanel_Storyboard.Storyboard.Begin()
         }elseif($synchash.DisplayPanel_Storyboard){
           $synchash.SlideText_StackPanel2.Visibility = 'Hidden'
           $synchash.DisplayPanel_Storyboard.Storyboard.RepeatBehavior = [System.Windows.Media.Animation.RepeatBehavior]::new(0)
@@ -11745,7 +11939,6 @@ if($synchash.TorBrowserAnchorable -and $synchash.TorTable -and $synchash.Tor_Sea
     }
   }
   [Void]$synchash.TorTable.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Tor_ContextMenu)
-  #[Void]$syncHash.TorTable.AddHandler([System.Windows.Controls.Button]::ClickEvent,$synchash.PlayMedia_Command)
   $synchash.Tor_Search_Go_Button.Add_Click({
       try{
         if(-not [string]::IsNullOrEmpty($synchash.Tor_Search_Textbox.text)){
@@ -11795,29 +11988,6 @@ if($synchash.Media_Length_Label){
 }
 if($synchash.Media_Current_Length_TextBox){
   $synchash.Media_Current_Length_TextBox.FontFamily = $DigitalDreams_Italic_Font
-  <#  $Media_Current_LengthDataContext = {
-      Param($Sender)
-      try{
-      if($Sender.DataContext -eq '' -or $synchash.Media_Total_Length_TextBox.DataContext -eq '00:00:00' -or $synchash.Media_Total_Length_TextBox.DataContext -eq ''){
-      $synchash.Media_Length_Sep.Text = ''
-      if($synchash.Media_Total_Length_TextBox.DataContext){
-      $synchash.Media_Total_Length_TextBox.DataContext = ''
-      }
-      #$synchash.Media_Current_Length_TextBox.MinWidth = 0
-      #$synchash.Media_Current_Length_TextBox.MaxWidth = $synchash.Media_Length_Stackpanel.ActualWidth
-      }else{
-      $synchash.Media_Length_Sep.Text = ' / '
-      $Width = $synchash.Media_Total_Length_TextBox.ActualWidth + 6
-      if($synchash.Media_Current_Length_TextBox.MinWidth -ne $Width){
-      $synchash.Media_Current_Length_TextBox.MinWidth = $Width
-      $synchash.Media_Current_Length_TextBox.MaxWidth = $Width
-      }
-      }
-      }catch{
-      write-ezlogs "An exception occurred in $($Sender.Name).Add_DataContextChanged event" -CatchError $_ -showtime
-      }
-      }
-  $synchash.Media_Current_Length_TextBox.Add_DataContextChanged($Media_Current_LengthDataContext)#>
 }
 if($synchash.Media_Length_Sep){
   $synchash.Media_Length_Sep.FontFamily = $DigitalDreams_Italic_Font

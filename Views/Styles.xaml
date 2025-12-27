@@ -4200,7 +4200,7 @@
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="{x:Type ContextMenu}">
-					<Border Name="Border" Background="#FF252525" CornerRadius="2.5, 3, 2.5, 3" BorderBrush="{StaticResource MahApps.Brushes.Accent}" BorderThickness="1" Opacity="1" >	
+					<Border Name="Border" Background="#FF252525" CornerRadius="2.5, 3, 2.5, 3" BorderBrush="{StaticResource MahApps.Brushes.Accent}" BorderThickness="1" Opacity="1" >
 						<ScrollViewer CanContentScroll="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
 							<VirtualizingStackPanel IsVirtualizing="True" ClipToBounds="True" Orientation="Vertical" IsItemsHost="True" Margin="5,4,5,4" KeyboardNavigation.DirectionalNavigation="Cycle"/>
 						</ScrollViewer>	

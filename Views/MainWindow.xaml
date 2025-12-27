@@ -809,6 +809,38 @@
 																							 RenderAtScale="2" 
 																							 SnapsToDevicePixels="True"  />
 																			</WpfExtensions:OutlinedTextBlock.CacheMode>							   
+																		</WpfExtensions:OutlinedTextBlock>
+																		<WpfExtensions:OutlinedTextBlock Text="{Binding Path=Viewer_Count, StringFormat={}{0} Viewers}"
+																										 FontStyle="Normal"
+																										 Stroke="Black"
+																										 TextOptions.TextFormattingMode="Display"
+																										 TextOptions.TextHintingMode="Fixed"
+																										 VerticalAlignment="Center"
+																										 Fill="Gray"
+																										 FontWeight="Bold"
+																										 StrokeThickness="2"
+																										 FontSize="12"
+																										 Margin="4,2,0,0">
+																			<WpfExtensions:OutlinedTextBlock.CacheMode>
+																				<BitmapCache EnableClearType="False"
+																							 RenderAtScale="2"
+																							 SnapsToDevicePixels="True"/>
+																			</WpfExtensions:OutlinedTextBlock.CacheMode>
+																			<WpfExtensions:OutlinedTextBlock.Style>
+																				<Style TargetType="WpfExtensions:OutlinedTextBlock">
+																					<Setter Property="Visibility" Value="Visible"/>
+																					<Style.Triggers>
+																						<Trigger Property="Text"
+																								 Value="0 Viewers">
+																							<Setter Property="Visibility" Value="Collapsed"/>
+																						</Trigger>
+																						<Trigger Property="Text"
+																								 Value=" Viewers">
+																							<Setter Property="Visibility" Value="Collapsed"/>
+																						</Trigger>																						
+																					</Style.Triggers>
+																				</Style>
+																			</WpfExtensions:OutlinedTextBlock.Style>					
 																		</WpfExtensions:OutlinedTextBlock>																		
 <!-- 																		<TextBlock 
 																			Text="{Binding Path=Status_Msg}" 
@@ -1224,7 +1256,7 @@
 																							<TextBlock Text="Refresh" Margin="2 0 2 0" VerticalAlignment="Center" TextOptions.TextRenderingMode="Auto" TextOptions.TextFormattingMode="Display"/>
 																						</VirtualizingStackPanel>
 																					</Button>
-																					<mah:DropDownButton Name='Sort_Playlist_VideoView_Button' FontSize="12" ToolTip="Sort By" FontWeight="Bold" HorizontalAlignment="Left" Height="22" ArrowVisibility="Collapsed" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" BorderBrush="Transparent" ButtonStyle="{StaticResource FilterButtonStyle}" Background="Transparent" BorderThickness="0" Orientation="Vertical" RenderTransformOrigin="0.5,0.5">		
+																					<mah:DropDownButton Name='Sort_Playlist_VideoView_Button' FontSize="12" ToolTip="Sort By" FontWeight="Bold" HorizontalAlignment="Left" Height="22" ArrowVisibility="Collapsed" Foreground="{StaticResource MahApps.Brushes.IdealForeground}" BorderBrush="Transparent" ButtonStyle="{StaticResource FilterButtonStyle}" MenuStyle="{StaticResource TrayDropDownMenuStyle}" Style="{StaticResource DropDownStyle}" Background="Transparent" BorderThickness="0" Orientation="Vertical" RenderTransformOrigin="0.5,0.5">		
 																						<mah:DropDownButton.Content>
 																							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
 																								<iconPacks:PackIconMaterial Kind="Sort"
@@ -1440,6 +1472,38 @@
 																							 SnapsToDevicePixels="True"  />
 																			</WpfExtensions:OutlinedTextBlock.CacheMode>							   
 																		</WpfExtensions:OutlinedTextBlock>
+																		<WpfExtensions:OutlinedTextBlock Text="{Binding Path=Viewer_Count, StringFormat={}{0} Viewers}"
+																										 FontStyle="Normal"
+																										 Stroke="Black"
+																										 TextOptions.TextFormattingMode="Display"
+																										 TextOptions.TextHintingMode="Fixed"
+																										 VerticalAlignment="Center"
+																										 Fill="Gray"
+																										 FontWeight="Bold"
+																										 StrokeThickness="2"
+																										 FontSize="12"
+																										 Margin="4,2,0,0">
+																			<WpfExtensions:OutlinedTextBlock.CacheMode>
+																				<BitmapCache EnableClearType="False"
+																							 RenderAtScale="2"
+																							 SnapsToDevicePixels="True"/>
+																			</WpfExtensions:OutlinedTextBlock.CacheMode>
+																			<WpfExtensions:OutlinedTextBlock.Style>
+																				<Style TargetType="WpfExtensions:OutlinedTextBlock">
+																					<Setter Property="Visibility" Value="Visible"/>
+																					<Style.Triggers>
+																						<Trigger Property="Text"
+																								 Value="0 Viewers">
+																							<Setter Property="Visibility" Value="Collapsed"/>
+																						</Trigger>
+																						<Trigger Property="Text"
+																								 Value=" Viewers">
+																							<Setter Property="Visibility" Value="Collapsed"/>
+																						</Trigger>																						
+																					</Style.Triggers>
+																				</Style>
+																			</WpfExtensions:OutlinedTextBlock.Style>					
+																		</WpfExtensions:OutlinedTextBlock>																		
 																										</VirtualizingStackPanel>
 																									</Border>
 																								</DataTemplate>
@@ -2043,16 +2107,98 @@
 																						</Grid>
 																					<!-- </Button> -->
 																					<Image Source="{Binding Path=Image}" Height="18" Width="18" Stretch="Uniform" />
-																					<TextBlock Text="{Binding Path=Display_Name}" FontSize="{Binding Path=FontSize}" FontWeight="{Binding Path=FontWeight}" ToolTip="{Binding Path=ToolTip}" Margin="5,3,0,0"/>
-																					<TextBlock Text="{Binding Path=Status}" FontStyle="{Binding Path=FontStyle}" Foreground="{Binding Path=FontColor}" FontWeight="{Binding Path=FontWeight}" FontSize="{Binding Path=FontSize}" Margin="5,3,0,0"/>
-																					<TextBlock 
+<!-- 																					<TextBlock Text="{Binding Path=Display_Name}" FontSize="{Binding Path=FontSize}" FontWeight="{Binding Path=FontWeight}" ToolTip="{Binding Path=ToolTip}" Margin="5,3,0,0"/> -->
+																					<WpfExtensions:OutlinedTextBlock Text="{Binding Path=Display_Name}"
+																						   Stroke="Black"
+																						   FontWeight="Bold"
+																						   TextOptions.TextFormattingMode="Display"
+																						   TextOptions.TextHintingMode="Fixed"
+																						   TextWrapping="Wrap"
+																						   VerticalAlignment="Center"
+																						   Fill="White"
+																						   StrokeThickness="2"						   
+																						   Margin="4,2,0,0">
+																					<WpfExtensions:OutlinedTextBlock.CacheMode>
+																						<BitmapCache EnableClearType="False" 
+																									 RenderAtScale="2" 
+																									 SnapsToDevicePixels="True" />
+																					</WpfExtensions:OutlinedTextBlock.CacheMode>					   
+																				</WpfExtensions:OutlinedTextBlock>																					
+<!-- 																					<TextBlock Text="{Binding Path=Status}" FontStyle="{Binding Path=FontStyle}" Foreground="{Binding Path=FontColor}" FontWeight="{Binding Path=FontWeight}" FontSize="{Binding Path=FontSize}" Margin="5,3,0,0"/> -->
+																					<WpfExtensions:OutlinedTextBlock Text="{Binding Path=Status}"
+																							   FontStyle="{Binding Path=FontStyle, FallbackValue=Normal}"
+																							   Stroke="Black"
+																							   TextOptions.TextFormattingMode="Display"
+																							   TextOptions.TextHintingMode="Fixed"
+																							   VerticalAlignment="Center"
+																							   Fill="{Binding Path=FontColor, FallbackValue=White}"
+																							   FontWeight="Bold"
+																							   StrokeThickness="2"
+																							   FontSize="12"
+																							   Margin="4,2,0,0">
+																						<WpfExtensions:OutlinedTextBlock.CacheMode>
+																							<BitmapCache EnableClearType="False" 
+																										 RenderAtScale="2" 
+																										 SnapsToDevicePixels="True" />
+																						</WpfExtensions:OutlinedTextBlock.CacheMode>							   
+																					 </WpfExtensions:OutlinedTextBlock>																					
+<!-- 																					<TextBlock 
 																						Text="{Binding Path=Status_Msg}" 
 																						FontStyle="{Binding Path=Status_FontStyle}" 
 																						Foreground="{Binding Path=Status_FontColor}" 
 																						FontWeight="Normal"
 																						FontSize="12"
 																						Margin="2,2"
-																					/>
+																					/> -->
+																					<WpfExtensions:OutlinedTextBlock Text="{Binding Path=Status_Msg}"
+																							   FontStyle="{Binding Path=Status_FontStyle, FallbackValue=Normal}"
+																							   Stroke="Black"
+																							   TextOptions.TextFormattingMode="Display"
+																							   TextOptions.TextHintingMode="Fixed"
+																							   VerticalAlignment="Center"
+																							   Fill="{Binding Path=Status_FontColor, FallbackValue=White}"
+																							   FontWeight="Bold"
+																							   StrokeThickness="2"
+																							   FontSize="12"
+																							   Margin="4,2,0,0">
+																						<WpfExtensions:OutlinedTextBlock.CacheMode>
+																							<BitmapCache EnableClearType="False" 
+																										 RenderAtScale="2" 
+																										 SnapsToDevicePixels="True"  />
+																						</WpfExtensions:OutlinedTextBlock.CacheMode>							   
+																					</WpfExtensions:OutlinedTextBlock>																					
+																					<WpfExtensions:OutlinedTextBlock Text="{Binding Path=Viewer_Count, StringFormat={}{0} Viewers}"
+																													 FontStyle="Normal"
+																													 Stroke="Black"
+																													 TextOptions.TextFormattingMode="Display"
+																													 TextOptions.TextHintingMode="Fixed"
+																													 VerticalAlignment="Center"
+																													 Fill="Gray"
+																													 FontWeight="Bold"
+																													 StrokeThickness="2"
+																													 FontSize="12"
+																													 Margin="4,2,0,0">
+																						<WpfExtensions:OutlinedTextBlock.CacheMode>
+																							<BitmapCache EnableClearType="False"
+																										 RenderAtScale="2"
+																										 SnapsToDevicePixels="True"/>
+																						</WpfExtensions:OutlinedTextBlock.CacheMode>
+																						<WpfExtensions:OutlinedTextBlock.Style>
+																							<Style TargetType="WpfExtensions:OutlinedTextBlock">
+																								<Setter Property="Visibility" Value="Visible"/>
+																								<Style.Triggers>
+																									<Trigger Property="Text"
+																											 Value="0 Viewers">
+																										<Setter Property="Visibility" Value="Collapsed"/>
+																									</Trigger>
+																								<Trigger Property="Text"
+																										 Value=" Viewers">
+																									<Setter Property="Visibility" Value="Collapsed"/>
+																								</Trigger>																									
+																								</Style.Triggers>
+																							</Style>
+																						</WpfExtensions:OutlinedTextBlock.Style>					
+																					</WpfExtensions:OutlinedTextBlock>																					
 																				</VirtualizingStackPanel>
 																			</Border>
 																		</DataTemplate>

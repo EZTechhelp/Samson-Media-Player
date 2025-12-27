@@ -51,7 +51,8 @@ function Start-SpotifyMedia{
     #Clear various tracking variables  
     $synchash.Start_media = $null
     $synchash.Last_Played = $Null
-    $synchash.VLC_PlaybackCancel = $true     
+    $synchash.VLC_PlaybackCancel = $true
+    $synchash.Spotify_PlaybackCancel = $true
     $synchash.Youtube_WebPlayer_URL = $null
     $synchash.Youtube_WebPlayer_title = $null   
     $synchash.Spotify_WebPlayer_URL = $null
@@ -132,6 +133,7 @@ function Start-SpotifyMedia{
         )
         try{
           write-ezlogs ">>>> Selected Spotify Media to play $($Media.title)" -showtime
+          $synchash.Spotify_PlaybackCancel = $false
           if($thisApp.Config.Dev_mode){write-ezlogs "Media object: $($Media | out-string)" -showtime -Dev_mode}
           if(@($Media).count -gt 1){
             write-ezlogs "More than 1 media object was provided. Selecting first only to continue" -showtime -warning
@@ -481,7 +483,7 @@ function Start-SpotifyMedia{
               }catch{
                 write-ezlogs "An exception occurred in Start-Playback using Invoke-RestMethod for url http://127.0.0.1:8974/PLAYURI?$($playback_url)" -catcherror $_
               }                                          
-              while((!$synchash.Spicetify.is_playing -or $synchash.Spicetify.title -notmatch $media.title) -and $waittimer -lt 60){
+              while((!$synchash.Spicetify.is_playing -or $synchash.Spicetify.uri -ne $playback_url) -and $waittimer -lt 60 -and !$synchash.Spotify_PlaybackCancel){
                 write-ezlogs "| Waiting for Spotify Playback to begin...Spicetify: $($synchash.Spicetify | out-string)"
                 if($waittimer -eq 10 -and !(Get-Process Spotify*)){
                   write-ezlogs "Spotify should have started by now, lets restart Spotify" -warning
@@ -489,13 +491,17 @@ function Start-SpotifyMedia{
                 }
                 if((Get-Process Spotify*) -and $waittimer -eq 5){
                   try{
-                    Invoke-RestMethod -Uri "http://127.0.0.1:8974/PLAYURI?$($playback_url)" -UseBasicParsing                                         
+                    Invoke-RestMethod -Uri "http://127.0.0.1:8974/PLAYURI?$($playback_url)" -UseBasicParsing                             
                   }catch{
                     write-ezlogs "[Start-SpotifyMedia] An exception occurred in Start-Playback using Invoke-RestMethod for url http://127.0.0.1:8974/PLAYURI?$($playback_url)" -catcherror $_
                   }
                 }
                 $waittimer++
                 start-sleep 1
+              }
+              if($synchash.Spotify_PlaybackCancel){
+                write-ezlogs "Playback has been canceled, stopping any further processing" -warning
+                return
               }
               #Hiding again to make sure as its not always at this point
               if($Spotify_Process){
@@ -840,8 +846,13 @@ function Start-SpotifyMedia{
               } 
               if($thisapp.config.Use_Spicetify -and $synchash.Spicetify.is_playing -and $netstat){
                 write-ezlogs ">>>> Spotify with Spicetify is now playing: $($synchash.Spicetify.title) - $($synchash.Spicetify.ARTIST)"
-                write-ezlogs "| Setting playback volume (http://127.0.0.1:8974/SETVOLUME?$($thisApp.Config.Media_Volume)) for Spotify to $($thisApp.Config.Media_Volume)"        
-                Invoke-RestMethod -Uri "http://127.0.0.1:8974/SETVOLUME?$($thisApp.Config.Media_Volume)" -UseBasicParsing 
+                if(-not $([string]$synchash.vlc.media.Mrl).StartsWith("dshow://")){
+                  write-ezlogs "| Setting playback volume (http://127.0.0.1:8974/SETVOLUME?$($thisApp.Config.Media_Volume)) for Spotify to $($thisApp.Config.Media_Volume)"
+                  Invoke-RestMethod -Uri "http://127.0.0.1:8974/SETVOLUME?$($thisApp.Config.Media_Volume)" -UseBasicParsing 
+                }else{
+                  write-ezlogs "| Web EQ playing - setting spotify client playback volume to max (http://127.0.0.1:8974/SETVOLUME?100)"
+                  Invoke-RestMethod -Uri "http://127.0.0.1:8974/SETVOLUME?100" -UseBasicParsing 
+                }
                 if($synchash.Spicetify.is_paused){
                   write-ezlogs "Spotify is paused, Unpausing Spotify with command http://127.0.0.1:8974/PLAY" -showtime -warning
                   Invoke-RestMethod -Uri 'http://127.0.0.1:8974/PLAY' -UseBasicParsing  
@@ -861,13 +872,21 @@ function Start-SpotifyMedia{
             $progress = 1
             start-sleep 1   
             $synchash.Spotify_Status = 'Playing'
-            while(($synchash.Spotify_Status -ne 'Stopped') -and ($progress -ne $null) -and $media.title -match $Name -and  ($progress -ne 0)){
+            if($media.Duration){
+              try{
+                $MediaDuration = [timespan]::ParseExact($media.duration, "%h\:%m\:%s",[System.Globalization.CultureInfo]::InvariantCulture).TotalMilliseconds
+              }catch{
+                write-ezlogs "An exception occurred parsing media duration: $($media.duration)" -catcherror $_
+              }
+            }
+            while(($synchash.Spotify_Status -ne 'Stopped') -and ($progress -ne $null) -and ($synchash.Spicetify.URI -eq $media.url -or $media.title -eq $name) -and ($MediaDuration -ne $progress -and $MediaDuration -ne ($progress - 1000))){
               try{
                 if($thisApp.Config.Use_Spicetify){
                   $Name = $synchash.Spicetify.title
                   $status = $synchash.Spicetify.is_Playing
                   $pause = $synchash.Spicetify.is_paused
                   $Artist = $synchash.Spicetify.ARTIST
+                  #write-ezlogs "Spicetify output: $($synchash.Spicetify | out-string)" -Warning
                   try{
                     if($synchash.Spicetify.POSITION -ne $Null){
                       $progress = [timespan]::ParseExact($synchash.Spicetify.POSITION, "%m\:%s",[System.Globalization.CultureInfo]::InvariantCulture).TotalMilliseconds
@@ -878,14 +897,14 @@ function Start-SpotifyMedia{
                     write-ezlogs "An exception occurred parsing Spicetify position timespan" -catcherror $_
                   }                 
                 }else{
-                  $current_track = Get-CurrentTrack -ApplicationName $thisApp.config.App_Name  -DeviceId $device.id            
+                  $current_track = Get-CurrentTrack -ApplicationName $thisApp.config.App_Name  -DeviceId $device.id
                   $Name = $current_track.item.name
                   $Artist = $current_track.item.artists.name
                   $status = $current_track.is_Playing
                   $progress = $current_track.progress_ms
                   $synchash.current_track_playing = $current_track
                 } 
-                $synchash.Last_Played_title = $name    
+                $synchash.Last_Played_title = $name
                 if($thisApp.Config.Dev_mode){write-ezlogs "Track '$($Name)' (Should be Name: $($media.title)) is playing (Status: $status) - (Pause: $pause) - (State: $($synchash.Spicetify.state)) with progress $($progress)" -showtime -Dev_mode}
               }catch{
                 write-ezlogs "An exception occurred getting the current track" -catcherror $_
@@ -893,22 +912,28 @@ function Start-SpotifyMedia{
               }
               start-sleep -Milliseconds 250
             }
-            if($media.title -notmatch [regex]::Escape($Name)){
-              write-ezlogs ">>>> A different track is now playing (og: $($media.title)) - (Now: $Name)"
+            if($synchash.Spicetify){
+              write-ezlogs "Current playback from Spicetify is ended - Spicetify output: $($synchash.Spicetify | out-string)" -Warning
+            }
+            if($media.title -notmatch [regex]::Escape($Name) -or $synchash.Spicetify.URI -ne $media.url){
+              write-ezlogs "| A different track is now playing (og: $($media.title)) - (Now: $Name) - OG URL: $($media.url) - (Now: $($synchash.Spicetify.URI))"
             }
             if(!$progress){
               write-ezlogs ">>>> Progress is now null or 0: $progress"
             }
+            if(($MediaDuration -eq $progress -or $MediaDuration -eq ($progress - 1000))){
+              write-ezlogs "| Current progress equals media duration - Progress: $progress - Media Duration: $MediaDuration"
+            }
             if($synchash.Spotify_Status -eq 'Stopped'){
-              write-ezlogs ">>>> Spotify_Status is now 'Stopped'"
+              write-ezlogs "| Spotify_Status is now 'Stopped'"
             }
             if(!$synchash.Timer.isEnabled){
-              write-ezlogs ">>> Media timer isn't running, starting to make sure auto-advance or stop media occurs" -warning
+              write-ezlogs "| Media timer isn't running, starting to make sure auto-advance or stop media occurs" -warning
               $synchash.Timer.Start()
             } 
             $synchash.current_track_playing = $null
             $synchash.Spotify_Status = 'Stopped'
-            $synchash.current_track = $null          
+            $synchash.current_track = $null
             write-ezlogs ">>>> Playback of track '$($media.title)' finished"
             if($thisApp.config.Use_Spicetify -and $synchash.Spicetify){
               write-ezlogs "| Stopping Spotify playback with command http://127.0.0.1:8974/PAUSE"

@@ -241,7 +241,19 @@ public class Media : INotifyPropertyChanged
             RaisedOnPropertyChanged("Status");
         }
     }
-    public int Viewer_Count { get; set; }
+    private int viewer_count;
+    public int Viewer_Count
+    {
+        get
+        {
+            return viewer_count;
+        }
+        set
+        {
+            viewer_count = value;
+            RaisedOnPropertyChanged("Viewer_Count");
+        }
+    }
     public string Image { get; set; }
     private string fontstyle;
     public string FontStyle
@@ -587,6 +599,7 @@ public class Config
     public ArrayList Media_Directories { get; set; }
     public List<Custom_EQ_Preset> Custom_EQ_Presets { get; set; }
     public ArrayList Playlists_SortBy { get; set; }
+    public string Playlists_SortDirection { get; set; }
     public ArrayList Spotify_Playlists { get; set; }
     public ArrayList Youtube_Playlists { get; set; }
     public SerializableDictionary<int, string> Current_Playlist { get; set; }
@@ -1575,6 +1588,7 @@ function Export-SerializedXML {
         'Media_Directories' = $InputObject.Media_Directories
         'Custom_EQ_Presets' = $Custom_EQ_Presets
         'Playlists_SortBy' = $InputObject.Playlists_SortBy
+        'Playlists_SortDirection' = $InputObject.Playlists_SortDirection
         'Spotify_Playlists' = $InputObject.Spotify_Playlists
         'Youtube_Playlists' = $InputObject.Youtube_Playlists
         'Current_Playlist' = $Current_Playlist

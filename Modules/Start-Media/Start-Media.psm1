@@ -654,7 +654,6 @@ function Start-Media{
               $media.thumbnail = $thumbnail
               $media.Artist = "$($twitch_channel)"
               if($thisApp.Config.Skip_Twitch_Ads){
-                $twitch_disable_ads = '--twitch-disable-ads'
                 if(-not [string]::IsNullOrEmpty($thisApp.Config.Chat_WebView2_Cookie)){
                   try{
                     $Twitch_token = ([System.Web.HttpUtility]::UrlDecode($thisApp.Config.Chat_WebView2_Cookie) | convertfrom-json).authToken
@@ -668,8 +667,6 @@ function Start-Media{
                 }else{
                   $Twitch_oauth = ""
                 }
-              }else{
-                $twitch_disable_ads = ''
               }
               $streamlink_wait_timer = 1
               if(([system.io.file]::Exists("$Streamlinkpath\Streamlink.exe")) -and !$ForceUseYTDLP){
@@ -677,7 +674,7 @@ function Start-Media{
                   write-ezlogs "| Getting usable hls url from streamlink for url: $($media.url)" -showtime
                   $synchashWeak.Target.streamlink_HTTP_URL = Start-Streamlink -synchash $synchashWeak.Target -thisApp $thisApp -media $media -Use_Runspace -TwitchVOD -wait
                 }else{
-                  Start-Streamlink -synchash $synchashWeak.Target -thisApp $thisApp -twitch_disable_ads $twitch_disable_ads -Twitch_oauth $Twitch_oauth -media $media -Use_Runspace
+                  Start-Streamlink -synchash $synchashWeak.Target -thisApp $thisApp -Twitch_oauth $Twitch_oauth -media $media -Use_Runspace
                 }
                 write-ezlogs "| Streamlink http address to use: $($synchashWeak.Target.streamlink_HTTP_URL)"
               }else{
@@ -720,7 +717,7 @@ function Start-Media{
               write-ezlogs "| Waiting for streamlink process...." -showtime -logtype Twitch
               if($streamlink_wait_timer -eq 30){
                 write-ezlogs "Relaunching streamlink as it should have started by now" -showtime -logtype Twitch -warning
-                Start-Streamlink -synchash $synchashWeak.Target -thisApp $thisApp -twitch_disable_ads $twitch_disable_ads -Twitch_oauth $Twitch_oauth -media $media -Use_Runspace
+                Start-Streamlink -synchash $synchashWeak.Target -thisApp $thisApp -Twitch_oauth $Twitch_oauth -media $media -Use_Runspace
               }
               if($waithandle.target.runspace.AsyncWaitHandle){
                 [void]$waithandle.target.runspace.AsyncWaitHandle.WaitOne(200)
@@ -1228,12 +1225,12 @@ function Start-Media{
                   }
                   if(!([System.Diagnostics.Process]::GetProcessesByName('streamlink'))){
                     write-ezlogs "Streamlink process cannot be found or hasnt started yet" -warning
-                    Start-Streamlink -synchash $synchashWeak.Target -thisApp $thisApp -twitch_disable_ads $twitch_disable_ads -Twitch_oauth $Twitch_oauth -media $media -Use_Runspace
+                    Start-Streamlink -synchash $synchashWeak.Target -thisApp $thisApp -Twitch_oauth $Twitch_oauth -media $media -Use_Runspace
                     start-sleep -Seconds 1
                     continue
                   }elseif($streamlink_wait_timer -gt 12){
                     write-ezlogs "| Streamlink process is running, but seems to not be responding, attempting to restart" -showtime -warning
-                    Start-Streamlink -synchash $synchashWeak.Target -thisApp $thisApp -twitch_disable_ads $twitch_disable_ads -Twitch_oauth $Twitch_oauth -media $media -Use_Runspace
+                    Start-Streamlink -synchash $synchashWeak.Target -thisApp $thisApp -Twitch_oauth $Twitch_oauth -media $media -Use_Runspace
                     continue
                   }elseif($synchashWeak.Target.vlc.media.Mrl -match $($synchashWeak.Target.streamlink_HTTP_URL) -and $State -eq 'Ended'){
                     write-ezlogs "There may have been a delay between when streamlink and liblvlc were ready..executing Play on loaded meda" -warning
@@ -1243,12 +1240,12 @@ function Start-Media{
                   write-ezlogs "An execption occurred processsing streamlink log $($thisApp.Config.Streamlink_Log_File)" -showtime -catcherror $_
                 }
                 try{
-                  $streamlinkjson = streamlink $media.url "best,720p,480p" --loglevel $($thisApp.Config.Streamlink_Verbose_logging) --logfile $($thisApp.Config.Streamlink_Log_File) --retry-streams 1 --retry-max 10 --twitch-disable-ads --stream-segment-threads 2 --ringbuffer-size 32M --hls-segment-stream-data --twitch-low-latency --json
+                  $streamlinkjson = streamlink $media.url "best,720p,480p" --loglevel $($thisApp.Config.Streamlink_Verbose_logging) --logfile $($thisApp.Config.Streamlink_Log_File) --retry-streams 1 --retry-max 10 --stream-segment-threads 2 --ringbuffer-size 32M --hls-segment-stream-data --twitch-supported-codecs "h264,h265,av1" --twitch-low-latency --json
                   if($streamlinkjson){
                     $streamlinkinfo = $streamlinkjson | convertfrom-json
                     $synchashWeak.Target.streamlinkerror = $streamlinkinfo.error
                     write-ezlogs "| StreamlinkInfo: $($streamlinkinfo | out-string)" -loglevel 2
-                    #Start-Streamlink -synchash $synchashWeak.Target -thisApp $thisApp -twitch_disable_ads $twitch_disable_ads -Twitch_oauth $Twitch_oauth -media $media -Use_Runspace
+                    #Start-Streamlink -synchash $synchashWeak.Target -thisApp $thisApp -Twitch_oauth $Twitch_oauth -media $media -Use_Runspace
                     continue
                   }else{
                     write-ezlogs "No info returned when checking url $($media.url) from streamlink" -warning
@@ -1889,7 +1886,8 @@ function Start-Streamlink {
             }
           }
           if([system.io.file]::Exists("$env:APPDATA\Streamlink\Plugins\twitch.py")){
-            $twitch_disable_ads = '--twitch-disable-ads'
+            #Deprecated by streamlink in v8
+            #$twitch_disable_ads = '--twitch-disable-ads'
             if($thisApp.config.UseTwitchCustom -and $thisApp.Config.TwitchProxies.count -gt 0){
               [String[]]$proxies = ($thisApp.Config.TwitchProxies | & { process {
                     if($thisApp.Config.Dev_mode){write-ezlogs "| Adding custom Twitch Playlist Proxy URL for Streamlink: $($_)" -loglevel 2 -Dev_mode}
@@ -1912,16 +1910,13 @@ function Start-Streamlink {
             }
           }else{
             write-ezlogs "Unable to find twitch streamlink plugin at: $env:APPDATA\Streamlink\Plugins\twitch.py" -warning -logtype Twitch
-            $twitch_disable_ads = '--twitch-disable-ads'
             $TwitchProxies = $null
           }
-          write-ezlogs "| Streamlink Adblocking solutions to use: $twitch_disable_ads $TwitchProxies" -loglevel 2 -logtype Twitch
+          write-ezlogs "| Streamlink Adblocking solutions to use: $TwitchProxies" -loglevel 2 -logtype Twitch
         }elseif($thisapp.config.Skip_Twitch_Ads){
-          $twitch_disable_ads = '--twitch-disable-ads'
           $TwitchProxies = $null
           write-ezlogs "| Streamlink will attempt to skip ADs" -loglevel 2 -logtype Twitch
         }else{
-          $twitch_disable_ads = $null
           $TwitchProxies = $null
           write-ezlogs "| Streamlink will not attempt to block ADs" -loglevel 2 -logtype Twitch
         }
@@ -1932,7 +1927,8 @@ function Start-Streamlink {
           #Dont pass twitch token when using proxy playlists - ignored anyway
           $Twitch_oauth = $Null
         }
-        $StreamLinkCommand = "$($media.url) $qualities --player-external-http --player-external-http-port $Streamlink_Port --player-external-http-continuous 0 --loglevel $($thisApp.Config.Streamlink_Verbose_logging) --retry-streams 1 --hls-segment-queue-threshold 4 --hls-playlist-reload-attempts 4 --retry-max 10 $twitch_disable_ads $TwitchProxies --stream-segment-threads 3 --ringbuffer-size 128M --hls-segment-stream-data  --twitch-low-latency $Twitch_oauth $HTTP_Interface"
+        $TwitchSupportedCodecs = '--twitch-supported-codecs h264,h265,av1'
+        $StreamLinkCommand = "$($media.url) $qualities --player-external-http --player-external-http-port $Streamlink_Port --player-external-http-continuous 0 --loglevel $($thisApp.Config.Streamlink_Verbose_logging) --retry-streams 1 --hls-segment-queue-threshold 4 --hls-playlist-reload-attempts 4 --retry-max 10 $TwitchSupportedCodecs $TwitchProxies --stream-segment-threads 3 --ringbuffer-size 128M --hls-segment-stream-data  --twitch-low-latency $Twitch_oauth $HTTP_Interface"
         write-ezlogs ">>>> Starting streamlink at path: $streamlinkpath -- Command: $StreamLinkCommand" -showtime -logtype Twitch
         Write-EZLogs "############## [STREAMLINK MONITOR START] ##############" -logtype Twitch -loglevel 2
         $qualitypattern = '\[cli\]\[info\] Opening stream:(?<value>.*)'
@@ -2044,8 +2040,8 @@ function Start-Streamlink {
           }
         }
         Write-EZLogs "############## [STREAMLINK MONITOR END] ##############" -logtype Twitch -loglevel 2
-        #$streamlink = streamlink $media.url $qualities --player-external-http --player-external-http-port $Streamlink_Port --player-external-http-continuous 0 --loglevel $($thisApp.Config.Streamlink_Verbose_logging) --logfile $($thisApp.Config.Streamlink_Log_File) --retry-streams 1 --retry-max 10 $twitch_disable_ads $twitch_ttvlol --stream-segment-threads 2 --ringbuffer-size 32M --hls-segment-stream-data --twitch-api-header="Client-Id=ue6666qo983tsx6so1t0vnawi233wa" --twitch-low-latency $Twitch_oauth $HTTP_Interface
-        #$streamlink = streamlink $media.url $qualities --player-external-http --player-external-http-port $Streamlink_Port --player-external-http-continuous 0 --loglevel $($thisApp.Config.Streamlink_Verbose_logging) --logfile $($thisApp.Config.Streamlink_Log_File) --retry-streams 1 --retry-max 10 --twitch-disable-ads --stream-segment-threads 2 --ringbuffer-size 32M --hls-segment-stream-data --twitch-api-header="Client-Id=ue6666qo983tsx6so1t0vnawi233wa" --twitch-low-latency
+        #$streamlink = streamlink $media.url $qualities --player-external-http --player-external-http-port $Streamlink_Port --player-external-http-continuous 0 --loglevel $($thisApp.Config.Streamlink_Verbose_logging) --logfile $($thisApp.Config.Streamlink_Log_File) --retry-streams 1 --retry-max 10 $twitch_ttvlol --stream-segment-threads 2 --ringbuffer-size 32M --hls-segment-stream-data --twitch-api-header="Client-Id=ue6666qo983tsx6so1t0vnawi233wa" --twitch-low-latency $Twitch_oauth $HTTP_Interface
+        #$streamlink = streamlink $media.url $qualities --player-external-http --player-external-http-port $Streamlink_Port --player-external-http-continuous 0 --loglevel $($thisApp.Config.Streamlink_Verbose_logging) --logfile $($thisApp.Config.Streamlink_Log_File) --retry-streams 1 --retry-max 10 --stream-segment-threads 2 --ringbuffer-size 32M --hls-segment-stream-data --twitch-api-header="Client-Id=ue6666qo983tsx6so1t0vnawi233wa" --twitch-low-latency
       }elseif([system.io.file]::Exists($streamlinkpath) -and $Youtube){
         if($thisApp.Config.Youtube_Quality -in 'Best','Auto'){
           $qualities = "best,1080p60,1080p,720p60,720p,480p"

@@ -1353,9 +1353,19 @@ function Open-MiniPlayer
           }
         }
         if($synchash.Window){
-          if($synchash.Window.Left -ne $sender.left){
-            write-ezlogs ">>>> Moving main window to to mini-player location"
-            $synchash.Window.Left = $sender.left
+          $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($sender)
+          $MainWindow_Helper = [System.Windows.Interop.WindowInteropHelper]::new($synchash.Window)
+          $MiniplayerMonitor = [System.Windows.Forms.Screen]::FromHandle($Window_Helper.Handle)
+          $MainPlayerMonitor = [System.Windows.Forms.Screen]::FromHandle($MainWindow_Helper.Handle)
+          if($MiniplayerMonitor.DeviceName -ne $MainPlayerMonitor.DeviceName){
+            if($MiniplayerMonitor.workingarea.Width -le 1920){
+              $X = ($MiniplayerMonitor.workingarea.Left + 100)
+            }else{
+              $X = ($MiniplayerMonitor.workingarea.Left + 460)
+            }
+            write-ezlogs "[ContentRendered] >>>> Moving main window to same monitor as mini-player - X location: $X - Miniplayer Device: $($MiniplayerMonitor.DeviceName) - MainPlayerMonitor Device: $($MainPlayerMonitor.DeviceName)"
+            #$synchash.Window.Left = $X
+            Set-Window -WindowHandle $MainWindow_Helper.Handle -X $X -Y ($MiniplayerMonitor.WorkingArea.Bottom / 2)
           }
         }
         if($thisApp.Config.Mini_Always_On_Top -or $synchash.TempParam_Overlay){
@@ -1373,6 +1383,31 @@ function Open-MiniPlayer
         $synchash.TempParam_Overlay = $null
       }
     }
+
+    $synchash.MiniPlayer_LocationChangedScriptblock = {
+      Param($sender,$e)
+      try{
+        if($synchash.Window){
+          $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($sender)
+          $MainWindow_Helper = [System.Windows.Interop.WindowInteropHelper]::new($synchash.Window)
+          $MiniplayerMonitor = [System.Windows.Forms.Screen]::FromHandle($Window_Helper.Handle)
+          $MainPlayerMonitor = [System.Windows.Forms.Screen]::FromHandle($MainWindow_Helper.Handle)
+          if($MiniplayerMonitor.DeviceName -ne $MainPlayerMonitor.DeviceName){
+            if($MiniplayerMonitor.workingarea.Width -le 1920){
+              $X = ($MiniplayerMonitor.workingarea.Left + 100)
+            }else{
+              $X = ($MiniplayerMonitor.workingarea.Left + 460)
+            }
+            write-ezlogs "[LocationChanged] >>>> Moving main window to same monitor as mini-player - X location: $X - Miniplayer Device: $($MiniplayerMonitor.DeviceName) - MainPlayerMonitor Device: $($MainPlayerMonitor.DeviceName)"
+            #$synchash.Window.Left = $X
+            Set-Window -WindowHandle $MainWindow_Helper.Handle -X $X -Y ($MiniplayerMonitor.WorkingArea.Bottom / 2)
+          }
+        }
+      }catch{
+        write-ezlogs "An exception occurred in $($sender.name) LocationChanged event" -showtime -catcherror $_
+      }
+    }
+
     if(!$Synchash.MiniPlayer_UnLoadedScriptblock){
       $Synchash.MiniPlayer_UnLoadedScriptblock = {
         param($sender)
@@ -1392,6 +1427,9 @@ function Open-MiniPlayer
           $synchash.MiniPlayer_Viewer.Remove_closing($Synchash.MiniPlayer_ClosingScriptblock)
           $synchash.MiniPlayer_Viewer.Remove_closed($Synchash.MiniPlayer_ClosedScriptblock)
           $synchash.MiniPlayer_Viewer.Remove_ContentRendered($Synchash.MiniPlayer_ContentRenderedScriptblock)
+          if($synchash.MiniPlayer_LocationChangedScriptblock){
+            $synchash.MiniPlayer_Viewer.Remove_LocationChanged($synchash.MiniPlayer_LocationChangedScriptblock)
+          }
           if($synchash.Window.isVisible -and $synchash.VideoView.Visibility -in 'Hidden','Collapsed' -and (!$synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio) -and $synchash.WebPlayer_State -eq 0 -and !$synchash.Youtube_WebPlayer_title -and ($synchash.VideoButton_ToggleButton.isChecked -or $synchash.MediaViewAnchorable.isFloating)){
             write-ezlogs ">>>> Video view is hidden, Youtube webplayer not playing, unhiding video view" -Warning
             $synchash.VideoView.Visibility = 'Visible'
@@ -1407,7 +1445,7 @@ function Open-MiniPlayer
         }
       }
     }
-
+    $synchash.MiniPlayer_Viewer.add_LocationChanged($synchash.MiniPlayer_LocationChangedScriptblock)
     $synchash.MiniPlayer_Viewer.add_UnLoaded($Synchash.MiniPlayer_UnLoadedScriptblock)
     $synchash.MiniPlayer_Viewer.add_closing($Synchash.MiniPlayer_ClosingScriptblock)
     $synchash.MiniPlayer_Viewer.add_closed($Synchash.MiniPlayer_ClosedScriptblock)

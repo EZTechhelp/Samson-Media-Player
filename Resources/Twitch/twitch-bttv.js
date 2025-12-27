@@ -20,8 +20,22 @@ if (window.trustedTypes && window.trustedTypes.createPolicy) { // Feature testin
         createScript: string => string, // warning: this is unsafe!
     });
 }
+function fixCSP () {
+  const cspMetaElement = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+  if (!!cspMetaElement) return;
+  
+  const cspContent = "script-src 'unsafe-eval' 'self' 'unsafe-inline' https://cdn.betterttv.net https://www.google.com https://apis.google.com https://ssl.gstatic.com https://www.gstatic.com https://www.googletagmanager.com https://www.google-analytics.com https://*.youtube.com https://*.google.com https://*.gstatic.com https://youtube.com https://www.youtube.com https://google.com https://*.doubleclick.net https://*.googleapis.com https://www.googleadservices.com https://tpc.googlesyndication.com https://www.youtubekids.com https://www.youtube-nocookie.com https://www.youtubeeducation.com https://www-onepick-opensocial.googleusercontent.com";
 
-(function betterttv() {
+  const metaElement = document.createElement('meta');
+  metaElement.httpEquiv = "Content-Security-Policy";
+  metaElement.content = cspContent;
+  
+  // To add this element to the document's head:
+  document.head.appendChild(metaElement);
+}
+
+(function betterttv() {	
+    //fixCSP();
     var script = document.createElement('script');
     script.type = 'text/javascript';
     script.src = 'https://cdn.betterttv.net/betterttv.js';

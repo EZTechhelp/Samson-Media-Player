@@ -10,7 +10,7 @@
         setTimeout(WebNowPlaying, 500);
         return;
     }
-
+    console.log("Loading WebNowPlaying custom extension for Samson Media Player");
     let currentMusicInfo;
     let ws;
     let currState = 0;

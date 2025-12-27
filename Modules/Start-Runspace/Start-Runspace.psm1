@@ -314,7 +314,7 @@ function Start-RunspaceJobHandler {
                             $e_index++
                             write-ezlogs "[Warning $e_index Message:$($_.powershell.runspace.name)] =========================================================================`n$($e.toString())" -logtype Error -Warning
                           }
-                          if($thisApp.Config.Dev_mode -or $thisApp.Config.Log_Level -ge 3){
+                          if($thisApp.Config.Dev_mode -or $thisApp.Config.Debug_mode){
                             $e_index = 0
                             foreach ($e in $_.powershell.Streams.Information) {
                               $e_index++
@@ -698,7 +698,7 @@ function Start-Runspace
                   [System.IO.File]::AppendAllText($logfile, "[$([datetime]::Now.ToString())] [$((Get-PSCallStack)[1].Command):$((Get-PSCallStack)[1].InvocationInfo.ScriptLineNumber):$($RunSpaceName)] [ERROR] An exception occurred restarting the log writer: $($_)",[System.Text.Encoding]::Unicode)
                 }
               }
-              if($thisApp.Config.Dev_mode -or $thisApp.Config.Log_Level -ge 3){
+              if($thisApp.Config.Dev_mode -or $thisApp.Config.Debug_mode){
                 $e_index = 0
                 if($ps.Streams.Information){
                   write-ezlogs "[========= RUNSPACE $($RunSpaceName) Information =========]" -logtype Threading

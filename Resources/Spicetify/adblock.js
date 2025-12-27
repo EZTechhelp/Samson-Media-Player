@@ -50,17 +50,30 @@
     };
 
     async function delayAds() {
-        if(Spicetify.Platform?.UserAPI?._product_state.putOverridesValues) {
-            await Spicetify.Platform.UserAPI._product_state.putOverridesValues({ pairs: { ads: "0", catalogue: "premium", product: "premium", type: "premium" } });
+		try {
+			if(Spicetify.Platform?.UserAPI?._product_state.putOverridesValues) {
+				await Spicetify.Platform.UserAPI._product_state.putOverridesValues({ pairs: { ads: "0", catalogue: "premium", product: "premium", type: "premium" } });
+			}
+		} catch (e) {
+            console.log("An exception occurred in delayAds:" + e);
         }
-
-        Spicetify.Platform.AdManagers.audio.audioApi.cosmosConnector.increaseStreamTime(-100000000000);
-        Spicetify.Platform.AdManagers.billboard.billboardApi.cosmosConnector.increaseStreamTime(-100000000000);
-        await Spicetify.Platform.AdManagers.audio.disable();
-        await Spicetify.Platform.AdManagers.billboard.disable();
-        await Spicetify.Platform.AdManagers.leaderboard.disableLeaderboard();
-        await Spicetify.Platform.AdManagers.sponsoredPlaylist.disable();
-        
+		try {
+			if(Spicetify.Platform?.UserAPI?._product_state_service.putOverridesValues) {
+				await Spicetify.Platform.UserAPI._product_state_service.putOverridesValues({ pairs: { ads: "0", catalogue: "premium", product: "premium", type: "premium" } });
+			}
+		} catch (e) {
+            console.log("An exception occurred in delayAds:" + e);
+        }
+		try {
+			Spicetify.Platform.AdManagers.audio.audioApi.cosmosConnector.increaseStreamTime(-100000000000);
+			Spicetify.Platform.AdManagers.billboard.billboardApi.cosmosConnector.increaseStreamTime(-100000000000);
+			await Spicetify.Platform.AdManagers.audio.disable();
+			await Spicetify.Platform.AdManagers.billboard.disable();
+			await Spicetify.Platform.AdManagers.leaderboard.disableLeaderboard();
+			await Spicetify.Platform.AdManagers.sponsoredPlaylist.disable();
+		} catch (e) {
+            console.log("An exception occurred in delayAds:" + e);
+        }
         console.log("[Adblock] Ads disabled", Spicetify.Platform.AdManagers);
     };
 

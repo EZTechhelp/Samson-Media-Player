@@ -655,7 +655,6 @@ function Get-Playlists
       }
     }elseif(!$synchashWeak.Target.all_playlists.Count -and !$synchashWeak.Target.all_playlists.items.Count){
       write-ezlogs "Unable to find All playlists cache, generating new one" -showtime -warning
-      #$synchashWeak.Target.all_playlists = [System.Collections.ObjectModel.ObservableCollection[playlist]]::new()
       $synchashWeak.Target.all_playlists = [MyToolkit.ObservableCollectionView[Playlist]]::new()
     }elseif(($synchashWeak.Target.all_playlists.count -gt 0 -or $synchashWeak.Target.all_playlists.items.count -gt 0) -and ![System.IO.File]::Exists($thisApp.config.Playlists_Profile_Path)){
       write-ezlogs ">>>> Saving new all playlists profile to: $($thisApp.Config.Playlists_Profile_Path)"
@@ -669,9 +668,9 @@ function Get-Playlists
       if($Startup -or $synchashWeak.Target.all_playlists -isnot [MyToolkit.ObservableCollectionView[Playlist]]){
         write-ezlogs ">>>> Creating new ObservableCollection from all_playlists profile" -LogLevel 0 -Verboselog:$VerboseLog
         $synchashWeak.Target.all_playlists = [MyToolkit.ObservableCollectionView[Playlist]]::new($synchashWeak.Target.all_playlists)
-        #$synchashWeak.Target.all_playlists = [System.Collections.ObjectModel.ObservableCollection[playlist]]::new($synchashWeak.Target.all_playlists)
       }
       $synchashWeak.Target.all_playlists.TrackItemChanges = $true
+      $synchashWeak.Target.all_playlists.isTracking = $true
       $synchashWeak.Target.Get_Playlists_Changes = 0
       if(!$SortBy -and $thisApp.Config.Playlists_SortBy.Count -gt 0){
         $SortBy = $thisApp.Config.Playlists_SortBy[0]
@@ -704,14 +703,20 @@ function Get-Playlists
       $synchashWeak.Target.all_playlists.Filter = $Null
       $synchashWeak.Target.all_playlists.Filter = {
         param ($item) 
-        if(-not [string]::IsNullOrEmpty($Filter)){
-          $text = $(($Filter)).trim()
+        try{
+          if(-not [string]::IsNullOrEmpty($Filter)){
+            $text = $(($Filter)).trim()
+          }else{
+            $text = ''
+          }
+          $SearchPattern = "$([regex]::Escape($text))"
+          $($item.name) -match $SearchPattern -or $($item.Title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.playlist_tracks.values.Display_Name) -match $SearchPattern -or $($item.playlist_tracks.values.Artist) -match $SearchPattern -or $($item.playlist_tracks.values.Channel_Name) -match $SearchPattern -or $($item.playlist_tracks.values.Album) -match $SearchPattern -or $($item.playlist_tracks.values.title) -match $SearchPattern
+        }catch{
+          Write-EZLogs -text "An exception occurred in all_playlists filter using filter: $Filter" -CatchError $_
         }
-        $SearchPattern = "$([regex]::Escape($text))"
-        $($item.name) -match $SearchPattern -or $($item.Title) -match $SearchPattern -or $($item.Display_Name) -match $SearchPattern -or $($item.playlist_tracks.values.Display_Name) -match $SearchPattern -or $($item.playlist_tracks.values.Artist) -match $SearchPattern -or $($item.playlist_tracks.values.Channel_Name) -match $SearchPattern -or $($item.playlist_tracks.values.Album) -match $SearchPattern -or $($item.playlist_tracks.values.title) -match $SearchPattern
       }
-      if($synchashWeak.Target.all_playlists.IsTracking){
-        $synchashWeak.Target.all_playlists.IsTracking = $false
+      if($Startup -or !$Filter -or !$Filter_Refresh){
+        $synchashWeak.Target.all_playlists.isTracking = $false
       }
     }
     if(!$synchashWeak.Target.Get_Playlists_ScriptBlock){
@@ -767,7 +772,7 @@ function Get-Playlists
             $YoutubeTVIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\Material-Youtubetv.png"
             $TorIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\Material-Pirate.png"
             $SoundcloudIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\Material-Soundcloud.png"
-            if($synchashWeak.Target.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){              
+            if($synchashWeak.Target.All_Playlists.items -is [System.Collections.Generic.List[Playlist]]){
               $All_Playlists = $synchashWeak.Target.All_Playlists.items
             }else{
               $All_Playlists = $synchashWeak.Target.All_Playlists

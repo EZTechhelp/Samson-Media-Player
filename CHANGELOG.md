@@ -2,6 +2,44 @@
 
 ## [Unreleased]
 
+## 1.0.8 - PUBLIC
+> - Branch: Samson
+
+### Added
++ First iteration of ability to convert local media to other formats (WIP)
+  + Currently only supports converting to FLAC/WAV/MP3, more options planned
+  + Access via right-click menu, quick convert to format or use custom menu
++ Ability to set sort direction for custom playlists in sort drop down menus
+
+### Changes
++ Spotify client volume now defaults to max if Web EQ is enabled when playing with Spicetify integration
+  + Volume is then controlled via the Libvlc engine, which helps normalizes volume levels
++ Modified Youtube JS Webplayer behaviour so new Youtube player UI controls work properly
+  + Programmatically setting fullscreen no longer prevents some YT player controls from working
+  + Changed height of Samson playlists overlay so its possible to access native YT playlist Button
+  + Naturally YT had to move their button directly under mine so will need to make further adjustments
++ Twitch viewer count in custom playlists now updates properly without a manual refresh
++ Twitch media in the play queue now diplays viewer count
++ More adjustments to improve reliability of Spotify playback using Spicetify
+  + This is still considered experimental and a PITA, needs a complete redo
++ Updated included uBlock Origin extension to latest version (private builds only)
++ Updated xaml styles for play queue template to match playlists
++ Updated styles for playlist sort drop down menus to match theme styles
++ Updated streamlink and streamlink-ttvlol plugin to latest stable version 8.0
+  + Removed now deprecated `twitch-disable-ads` command
+  + Added `twitch-supported-codecs` command for streams supporting higher bitrate
++ Various logging, code and comment cleanup and refactoring  
+
+### Fixed
++ Fixed #400: Big player comes back off the screen
++ `Playlist ID not found` error sometimes occurs when selecting clear playlist option
++ Webview2 extensions are sometimes not detected properly
++ Youtube monitor not importing newly found playlists from API
++ Playlist filter doesnt reset if search returns no matches
+
+### Comments
++ Will NOT trigger first time setup when upgrading
+
 ## 1.0.7 - PUBLIC
 > - Branch: Samson
 
@@ -25,7 +63,7 @@
 + Various logging, code and comment cleanup and refactoring
 
 ### Fixed
-+ Mutltiple XAML binding errors found during .NET debugging
++ Multiple XAML binding errors found during .NET debugging
 + Installed folder path sometimes not detected properly
 + Some YT videos fail to play using Web Player when reporting YT Error 150
 

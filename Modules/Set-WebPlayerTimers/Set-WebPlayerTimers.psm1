@@ -140,20 +140,43 @@ if(lastUpdated !== time && time <= video_data.length_seconds - 15) {
       //var isFullScreen = player.isFullscreen();
          if(state == 1 && !document.fullscreen && !videourl.match('tv.youtube.com')){
            console.log('Requesting FullScreen',state);
-           player.requestFullscreen();
+           //player.requestFullscreen();
+           player.toggleFullscreen();
            FullScreenSet = true;
          }else if (state == 2 && !document.fullscreen && !videourl.match('tv.youtube.com')){
            console.log('Requesting FullScreen',state);
-           player.requestFullscreen();
+           //player.requestFullscreen();
+           player.toggleFullscreen();
            FullScreenSet = true;
          }
       } catch (e) {
          console.log('Exception occurred executing player.isFullscreen()',e);
      }
-
+		    try {
+			    var isFullScreen = player.isFullscreen();
+		    } catch (e) {
+			    console.log('Exception occurred getting fullscreen state', e);
+		    }
+		    try {
+			    if (!isFullScreen && !videourl.match('tv.youtube.com') && state != 0) {
+				    console.log('Requesting FullScreen');
+            player.requestFullscreen();
+            console.log('Requesting setAppFullscreen');
+            player.setAppFullscreen();
+            console.log('Requesting toggleFullscreen');
+            player.toggleFullscreen();
+			    }
+		    } catch (e) {
+			    console.log('Exception occurred Requesting FullScreen', e);
+		    }
         if (!FullScreenButtonSet) {
           try {
            var fullscreen_button = document.getElementsByClassName("ytp-fullscreen-button");
+           if (fullscreen_button) { 
+            const clonedButton = fullscreen_button[0].cloneNode(true);
+            fullscreen_button[0].parentNode.replaceChild(clonedButton, fullscreen_button[0]); 
+            console.log('Cloned Fullscreen button to remove all event handlers');
+           }
           } catch (e) {
            console.log('Exception occurred getting fullscreen button elements', e);
           }
@@ -172,7 +195,8 @@ if(lastUpdated !== time && time <= video_data.length_seconds - 15) {
 					        console.log('isFullScreen', isFullScreen);
 				        } else {
 					        console.log('Requesting FullScreen');
-					        player.requestFullscreen();
+                  player.toggleFullscreen();
+					        //player.requestFullscreen();
 				        }
 				        var fullscreenbuttonObject = {
 					        Key: 'fullscreenbutton',
@@ -871,7 +895,7 @@ function Set-YoutubeWebPlayerTimer
             $synchash.VideoViewTransparentBackground.MaxHeight = [Double]::PositiveInfinity
           }else{
             write-ezlogs ">>>> $($Sender.name) is closed, setting VideoViewTransparentBackground Maxheight and MaxWidth to 50" -LogLevel 0 -Verboselog:$thisApp.Config.Dev_Mode
-            $synchash.VideoViewTransparentBackground.MaxHeight = 50
+            $synchash.VideoViewTransparentBackground.MaxHeight = 30
           }
           $VideoViewAirControl = Get-VisualParentUp -source $synchash.VideoViewAirControl.front -type ([System.Windows.Window])
           if($VideoViewAirControl){
@@ -954,7 +978,7 @@ function Set-YoutubeWebPlayerTimer
                   $synchash.VideoViewTransparentBackground.MaxHeight = [Double]::PositiveInfinity
                 }else{
                   write-ezlogs "| TrayPlayerQueueFlyout is closed, setting VideoViewTransparentBackground Maxheight to 50" -LogLevel 0 -Verboselog:$this.tag.Verboselog
-                  $synchash.VideoViewTransparentBackground.MaxHeight = 50
+                  $synchash.VideoViewTransparentBackground.MaxHeight = 30
                 }
                 if($synchash.VideoViewAirControl.front.parent.parent -is [System.Windows.Window]){
                   $synchash.VideoViewAirControl.front.parent.parent.MinHeight = 1

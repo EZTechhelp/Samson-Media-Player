@@ -67,8 +67,10 @@ Function Get-Webview2Extensions{
         $Icon = $Null
         if($json.Name -and $json.Name -notlike '__MSG*__'){
           $name = $json.Name
-        }else{
+        }elseif($json.short_name){
           $name = $json.short_name
+        }elseif($json.action.default_title){
+          $name = $json.action.default_title
         }
         $name = ([Regex]::Replace($name, $pattern, '')).trim()
         if('Webview2_Extensions' -in $thisApp.Config.psobject.properties.name -and $Path -notin $thisApp.Config.Webview2_Extensions.path){
@@ -94,9 +96,20 @@ Function Get-Webview2Extensions{
           $index = $thisApp.Config.Webview2_Extensions.name.IndexOf($name)
           if($index -ne -1){
             $Extension = $thisApp.Config.Webview2_Extensions[$index]
+          }elseif($index -eq -1){
+            $index = $thisApp.Config.Webview2_Extensions.path.IndexOf($Path)
+            if($index -ne -1){
+              $Extension = $thisApp.Config.Webview2_Extensions[$index]
+            }            
+          }
+          if($Extension){            
             if($Extension.path -ne $Path){
               write-ezlogs ">>>> Updating extension ($($Extension.Name)) with new path: $Path" -logtype Webview2
               $Extension.path = $Path
+            }
+            if($Extension.Name -ne $Name){
+              write-ezlogs ">>>> Updating extension ($($Extension.Name)) with new name: $Name" -logtype Webview2
+              $Extension.Name = $Name
             }
             $Size = '16'
             if($json.icons.$Size){
@@ -1440,7 +1453,9 @@ try {
 				console.log('isFullScreen', isFullScreen);
 			} else if (!videourl.match('tv.youtube.com') && state != 0) {
 				console.log('Requesting FullScreen');
+        //player.setAppFullscreen();
 				player.requestFullscreen();
+        //player.toggleFullscreen();
 			}
 		} catch (e) {
 			console.log('Exception occurred Requesting FullScreen', e);
@@ -1519,6 +1534,11 @@ try {
  var fullscreen_button = document.getElementsByClassName("ytp-fullscreen-button");
  var cinema_button = document.getElementsByClassName("ytp-size-button");
  var YTTV_fullscreen_button = document.getElementsByClassName("yib-button style-scope ytu-icon-button");
+ if (fullscreen_button) { 
+  const clonedButton = fullscreen_button[0].cloneNode(true);
+  fullscreen_button[0].parentNode.replaceChild(clonedButton, fullscreen_button[0]); 
+  console.log('Cloned Fullscreen button to remove all event handlers');
+ }
 } catch (e) {
  console.log('Exception occurred getting fullscreen button elements', e);
 }
@@ -1539,7 +1559,8 @@ if (fullscreen_button.length > 0 && !FullScreenButtonSet) {
 					console.log('isFullScreen', isFullScreen);
 				} else {
 					console.log('Requesting FullScreen');
-					player.requestFullscreen();
+					//player.requestFullscreen();
+          player.toggleFullscreen();
 				}
 				var fullscreenbuttonObject = {
 					Key: 'fullscreenbutton',
@@ -1627,8 +1648,15 @@ try {
 	if (isFullScreen) {
 		console.log('isFullScreen', isFullScreen);
 	} else if (!videourl.match('tv.youtube.com') && state != 0) {
-		console.log('Requesting FullScreen');
-		player.requestFullscreen();
+		console.log('Toggle FullScreen');    
+    player.toggleFullscreen();
+    var isFullScreen = player.isFullscreen();
+	  if (isFullScreen) {
+		  console.log('| isFullScreen', isFullScreen);
+	  } else {
+      console.log('Toggle didnt work - Requesting FullScreen'); 
+      player.requestFullscreen();
+    }
 	}
 } catch (e) {
 	console.log('Exception occurred Requesting FullScreen', e);
