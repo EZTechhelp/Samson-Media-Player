@@ -34,7 +34,9 @@ function Add-YoutubePlayback
   Param (
     $thisApp,
     $synchash,
+    $Media,
     [switch]$PlayOnly,
+    [switch]$PlayChannel,
     [switch]$StartPlayback,
     [switch]$AddtoQueue,
     [string]$youtube_id,
@@ -44,123 +46,215 @@ function Add-YoutubePlayback
     [switch]$Startup,
     [string]$PlaylistPosition,
     $PlaylistPositionTargetMedia,
+    [switch]$use_Runspace,
     [switch]$Verboselog
   )
-  if(!$youtube_id -and $LinkUri){
-    try{
-      $youtube = Get-YoutubeURL -thisApp $thisApp -URL $LinkUri -APILookup
-      if($youtube.id){
-        $youtube_id = $youtube.id
-      }
-      if($youtube.url){
-        $LinkUri = $youtube.url
-      }
-      if($youtube.playlist_id){
-        $playlist_id = $youtube.playlist_id
-      }
-    }catch{
-      write-ezlogs "An exception occurred parsing youtube id form link $linkuri" -showtime -catcherror $_
-    }
-  }
-  if($youtube_id -and $LinkUri){
-    if(!$PlayOnly){
-      try{
-        $video_info = Get-YouTubeVideo -Id $youtube_id
-      }catch{
-        write-ezlogs "An exception occurred executing Get-YoutubeVideo" -showtime -catcherror $_
-      } 
-    }
-    $url = [uri]$LinkUri
-    if($video_info){
-      if($video_info.snippet.title){
-        $title = $video_info.snippet.title
-      }elseif($video_info.localizations.en.title){
-        $title = $video_info.localizations.en.title
-      }                                
-      $description = $video_info.snippet.description
-      $channel_id = $video_info.snippet.channelId
-      $channel_title = $video_info.snippet.channelTitle                 
-      $images = $video_info.snippet.thumbnails
-      $thumbnail = $video_info.snippet.thumbnails.medium.url
-      if($video_info.contentDetails.duration){
+  try{
+    $Add_YoutubePlayback_ScriptBlock = {
+      Param (
+        $thisApp,
+        $synchash,
+        $Media,
+        [switch]$PlayOnly,
+        [switch]$PlayChannel,
+        [switch]$StartPlayback,
+        [switch]$AddtoQueue,
+        [string]$youtube_id,
+        [string]$AddtoPlaylist,
+        [string]$LinkUri,
+        [string]$linktext,
+        [switch]$Startup,
+        [string]$PlaylistPosition,
+        $PlaylistPositionTargetMedia,
+        [switch]$use_Runspace,
+        [switch]$Verboselog
+      )
+      if(!$youtube_id -and $LinkUri){
         try{
-          $TimeValues = $video_info.contentDetails.duration
-          if($TimeValues){
-            try{      
-              $TimeSpan =[TimeSpan]::FromHours((Convert-TimespanToInt -Timespan $TimeValues))
-              if($TimeSpan){
-                $duration = "$(([string]$TimeSpan.hours).PadLeft(2,'0')):$(([string]$TimeSpan.Minutes).PadLeft(2,'0')):$(([string]$TimeSpan.Seconds).PadLeft(2,'0'))"  
-              }                               
-            }catch{
-              write-ezlogs "An exception occurred parsing duration for $($title)" -showtime -catcherror $_
-            }
+          $youtube = Get-YoutubeURL -thisApp $thisApp -URL $LinkUri -APILookup
+          if($youtube.id){
+            $youtube_id = $youtube.id
+          }
+          if($youtube.url){
+            $LinkUri = $youtube.url
+          }
+          if($youtube.playlist_id){
+            $playlist_id = $youtube.playlist_id
           }
         }catch{
-          write-ezlogs "An exception occurred parsing duration $($video_info.contentDetails.duration)" -showtime -catcherror $_
+          write-ezlogs "An exception occurred parsing youtube id form link $linkuri" -showtime -catcherror $_
         }
-      }           
-    }elseif(!$title -and $linktext){
-      $title = $linktext
-    }else{
-      $title = "Youtube Video - $youtube_id"
-    }
-    if($url -match '\/tv\.youtube\.com\/'){
-      $type = 'YoutubeTV'
-    }elseif($playlist_id){
-      $type = 'YoutubePlaylistItem'
-    }else{
-      $type = 'YoutubeVideo'
-    }
-    #$Group = 'Youtube'
-    if($PlayOnly){
-      $live_status = 'Temporary'
-    }else{
-      $live_status = $null
-    }
-    if(-not [string]::IsNullOrEmpty($thisApp.Config.YoutubeMedia_Display_Syntax)){
-      $DisplayName = $thisApp.Config.YoutubeMedia_Display_Syntax -replace '%artist%',$channel_title -replace '%title%',$title -replace '%track%','' -replace '%playlist%',''
-    }else{
-      $DisplayName = $Null
-    }
-    $media = [Media]@{
-      'title' =  $title
-      'Artist' = $channel_title
-      'Channel_Name' = $channel_title
-      'Display_Name' = $DisplayName
-      'description' = $description
-      'channel_id' = $channel_id
-      'id' = $youtube_id
-      'duration' = $duration
-      'url' = $url
-      'thumbnail' = $thumbnail
-      'type' = $type
-      'image' = $images
-      #'live_status' = $live_status
-      'Playlist_url' = ''
-      'playlist_id' = $youtube_id
-      'Profile_Date_Added' = [DateTime]::Now.ToString()
-      'Source' = 'Youtube'
-      #'Group' = 'WebBrowser'
-    }
-    if($AddtoQueue){
-      if(!$synchash.Temporary_Media){
-        $synchash.Temporary_Media = [System.Collections.Generic.List[Object]]::new()
       }
-      if($synchash.Temporary_Media.id -notcontains $media.id){
-        write-ezlogs "| Adding track '$title' to temporary media queue"
-        $Null = $synchash.Temporary_Media.add($media)
+      if($youtube_id -and $LinkUri){
+        $url = [uri]$LinkUri
+        if(!$PlayOnly -or ($PlayChannel -and !$Media.Channel_ID)){
+          try{
+            $video_info = Get-YouTubeVideo -Id $youtube_id
+          }catch{
+            write-ezlogs "An exception occurred executing Get-YoutubeVideo" -showtime -catcherror $_
+          } 
+        }
+        if($Media.Channel_ID){
+          $channel_id = $Media.Channel_ID
+        }elseif($video_info.snippet.channelId){
+          $channel_id = $video_info.snippet.channelId
+        }
+        if($PlayChannel -and $channel_id){
+          $ChannelActivity = Get-YouTubeActivity -ChannelId $channel_id
+          if($ChannelActivity.count -gt 0){
+            try{
+              $History = [System.Collections.Generic.List[string]]::new()
+              $thisApp.config.History_Playlist.values | & { process {
+                  if($_ -notin $History){
+                    [void]$History.add($_)
+                  }
+              }}
+              if($thisApp.Config.SaveYoutube_History){
+                $thisApp.Config.YoutubeHistory | & { process {
+                    if($_ -notin $History){
+                      [void]$History.add($_)
+                    }
+                }}
+              }
+              if($thisApp.Config.Shuffle_Playback){
+                $video_info = $ChannelActivity | Where-Object {$_.contentDetails.upload.videoId -notin $History -and $_.contentDetails.playlistItem.resourceId.videoId -notin $History} | Get-Random -Count 1
+                if(!$video_info){
+                  $video_info = $ChannelActivity | Get-Random -Count 1
+                }
+              }else{
+                $video_info = $ChannelActivity | Where-Object {$_.contentDetails.upload.videoId -notin $History -and $_.contentDetails.playlistItem.resourceId.videoId -notin $History} | Select-Object -First 1
+                if(!$video_info){
+                  $video_info = $ChannelActivity | Select-Object -First 1
+                }
+              }
+              if($video_info.contentDetails.upload.videoId){
+                $youtube_id = $video_info.contentDetails.upload.videoId
+                [uri]$url = "https://www.youtube.com/watch?v=$youtube_id"
+              }elseif($video_info.contentDetails.playlistItem.resourceId.videoId){
+                $youtube_id = $video_info.contentDetails.playlistItem.resourceId.videoId
+                [uri]$url = "https://www.youtube.com/watch?v=$youtube_id"  
+              }else{
+                write-ezlogs "Couldn't find a video id from channel: $channel_id - video_info: $($video_info.contentDetails | out-string)" -Warning
+                return
+              }
+            }catch{
+              write-ezlogs "An exception occurred executing Get-YouTubeActivity" -showtime -catcherror $_
+            }
+          }else{
+            write-ezlogs "No videos found for channel $channel_id!" -Warning -AlertUI
+            return
+          }
+        }   
+        if($video_info){
+          if($video_info.snippet.title){
+            $title = $video_info.snippet.title
+          }elseif($video_info.localizations.en.title){
+            $title = $video_info.localizations.en.title
+          }
+          $description = $video_info.snippet.description
+          $channel_id = $video_info.snippet.channelId
+          $channel_title = $video_info.snippet.channelTitle
+          $images = $video_info.snippet.thumbnails
+          $thumbnail = $video_info.snippet.thumbnails.medium.url
+          if($video_info.contentDetails.duration){
+            try{
+              $TimeValues = $video_info.contentDetails.duration
+              if($TimeValues){
+                try{      
+                  $TimeSpan =[TimeSpan]::FromHours((Convert-TimespanToInt -Timespan $TimeValues))
+                  if($TimeSpan){
+                    $duration = "$(([string]$TimeSpan.hours).PadLeft(2,'0')):$(([string]$TimeSpan.Minutes).PadLeft(2,'0')):$(([string]$TimeSpan.Seconds).PadLeft(2,'0'))"  
+                  }                               
+                }catch{
+                  write-ezlogs "An exception occurred parsing duration for $($title)" -showtime -catcherror $_
+                }
+              }
+            }catch{
+              write-ezlogs "An exception occurred parsing duration $($video_info.contentDetails.duration)" -showtime -catcherror $_
+            }
+          }           
+        }elseif($media.title){
+          $title = $media.title
+          $Channel_id = $media.Channel_ID
+        }elseif(!$title -and $linktext){
+          $title = $linktext
+        }else{
+          $title = "Youtube Video - $youtube_id"
+        }
+        if($url -match '\/tv\.youtube\.com\/'){
+          $type = 'YoutubeTV'
+        }elseif($playlist_id){
+          $type = 'YoutubePlaylistItem'
+        }else{
+          $type = 'YoutubeVideo'
+        }
+        #$Group = 'Youtube'
+        if($PlayOnly){
+          $live_status = 'Temporary'
+        }else{
+          $live_status = $null
+        }
+        if(-not [string]::IsNullOrEmpty($thisApp.Config.YoutubeMedia_Display_Syntax)){
+          $DisplayName = $thisApp.Config.YoutubeMedia_Display_Syntax -replace '%artist%',$channel_title -replace '%title%',$title -replace '%track%','' -replace '%playlist%',''
+        }else{
+          $DisplayName = $Null
+        }
+        $media = [Media]@{
+          'title' =  $title
+          'Artist' = $channel_title
+          'Channel_Name' = $channel_title
+          'Display_Name' = $DisplayName
+          'description' = $description
+          'channel_id' = $channel_id
+          'id' = $youtube_id
+          'duration' = $duration
+          'url' = $url
+          'thumbnail' = $thumbnail
+          'type' = $type
+          'image' = $images
+          #'live_status' = $live_status
+          'Playlist_url' = ''
+          'playlist_id' = $youtube_id
+          'Profile_Date_Added' = [DateTime]::Now.ToString()
+          'Source' = 'Youtube'
+          #'Group' = 'WebBrowser'
+        }
+        if($AddtoQueue){
+          if(!$synchash.Temporary_Media){
+            $synchash.Temporary_Media = [System.Collections.Generic.List[Object]]::new()
+          }
+          if($synchash.Temporary_Media.id -notcontains $media.id){
+            write-ezlogs "| Adding track '$title' to temporary media queue"
+            $Null = $synchash.Temporary_Media.add($media)
+          }
+          if($thisApp.Config.SaveYoutube_History -and $thisApp.Config.YoutubeHistory -notcontains $youtube_id){
+            write-ezlogs "| Adding track '$title' with id '$youtube_id' to Youtube history"
+            $Null = $thisApp.Config.YoutubeHistory.add($youtube_id)
+          }
+          Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -media @($media) -Use_RunSpace -RefreshQueue
+        }elseif($AddtoPlaylist -and $media){
+          Add-Playlist -Media $media -Playlist $AddtoPlaylist -thisApp $thisapp -synchash $synchash -verboselog:$thisapp.Config.Verbose_logging -Use_RunSpace -Update_UI -position $PlaylistPosition -PositionTargetMedia $PlaylistPositionTargetMedia
+        }
+        if($media -and $StartPlayback){
+          $synchash.Temporary_Playback_Media = $media
+          if($PlayChannel){
+            Write-ezlogs ">>>> Starting Youtube channel playback of video: $($media.title) - URL: $($media.url) - Channel: $($channel_title) - Channel_ID: $($channel_id)"
+            $synchash.Current_Playing_Playlist_Source = 'YTChannel'
+          }
+          Start-Media -Media $media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification -use_WebPlayer:$thisapp.config.Youtube_WebPlayer
+        }
+      }else{
+        write-ezlogs "Can't start youtube media, missing youtube_id $($youtube_id) or LinkUri $($LinkUri)" -warning
+        Update-Notifications  -Level 'WARNING' -Message "Can't start youtube media, missing youtube_id $($youtube_id) or LinkUri $($LinkUri)" -VerboseLog -Message_color 'Orange' -thisApp $thisapp -synchash $synchash -Open_Flyout -MessageFontWeight bold -LevelFontWeight Bold
       }
-      Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -media @($media) -Use_RunSpace -RefreshQueue
-    }elseif($AddtoPlaylist -and $media){
-      Add-Playlist -Media $media -Playlist $AddtoPlaylist -thisApp $thisapp -synchash $synchash -verboselog:$thisapp.Config.Verbose_logging -Use_RunSpace -Update_UI -position $PlaylistPosition -PositionTargetMedia $PlaylistPositionTargetMedia
     }
-    if($media -and $StartPlayback){
-      $synchash.Temporary_Playback_Media = $media
-      Start-Media -Media $media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification -use_WebPlayer:$thisapp.config.Youtube_WebPlayer  
-    }               
-  }else{
-    write-ezlogs "Can't start youtube media, missing youtube_id $($youtube_id) or LinkUri $($LinkUri)" -warning
-    Update-Notifications  -Level 'WARNING' -Message "Can't start youtube media, missing youtube_id $($youtube_id) or LinkUri $($LinkUri)" -VerboseLog -Message_color 'Orange' -thisApp $thisapp -synchash $synchash -Open_Flyout -MessageFontWeight bold -LevelFontWeight Bold
+    if($use_Runspace){
+      Start-Runspace -scriptblock $Add_YoutubePlayback_ScriptBlock -StartRunspaceJobHandler -arguments $PSBoundParameters -runspace_name "Add_YoutubePlayback_RUNSPACE" -thisApp $thisApp -synchash $synchash -ApartmentState STA
+    }else{
+      Invoke-Command -ScriptBlock $Add_YoutubePlayback_ScriptBlock -ArgumentList $thisApp,$synchash,$Media,$PlayOnly,$PlayChannel,$StartPlayback,$AddtoQueue,$youtube_id,$AddtoPlaylist,$LinkUri,$linktext,$Startup,$PlaylistPosition,$PlaylistPositionTargetMedia,$use_Runspace,$Verboselog
+    }
+  }catch{
+    write-ezlogs "An exception occurred in Add-YoutubePlayback" -catcherror $_
   }
 }
 #---------------------------------------------- 

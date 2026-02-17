@@ -681,6 +681,8 @@ public class Config
     public bool Spotify_Update { get; set; }
     public string Spotify_Update_Interval { get; set; }
     public bool Youtube_WebPlayer { get; set; }
+    public bool SaveYoutube_History { get; set; }
+    public List<string> YoutubeHistory { get; set; }
     public string Youtube_Update_Interval { get; set; }
     public bool Enable_Sponsorblock { get; set; }
     public string Youtube_Quality { get; set; }
@@ -1669,6 +1671,8 @@ function Export-SerializedXML {
         'Spotify_Update' = $InputObject.Spotify_Update
         'Spotify_Update_Interval' = $InputObject.Spotify_Update_Interval
         'Youtube_WebPlayer' = $InputObject.Youtube_WebPlayer
+        'SaveYoutube_History' = $InputObject.SaveYoutube_History
+        'YoutubeHistory' = $InputObject.YoutubeHistory
         'Youtube_Update_Interval' = $InputObject.Youtube_Update_Interval
         'Enable_Sponsorblock' = $InputObject.Enable_Sponsorblock
         'Youtube_Quality' = $InputObject.Youtube_Quality

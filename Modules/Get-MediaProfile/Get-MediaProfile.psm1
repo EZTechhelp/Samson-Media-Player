@@ -241,6 +241,23 @@ function Get-MediaProfile
               }
             }
           }
+          #Is it Youtube history?
+          #TODO: Dont really want to be calling an API for this every time, may just need to store more properties in history
+<#          if(!$track -and $thisApp.Config.YoutubeHistory.count -gt 0){
+            $Youtube_id = lock-object -InputObject $thisApp.Config.YoutubeHistory.SyncRoot -ScriptBlock {
+              $index = Get-IndexesOf $thisApp.Config.YoutubeHistory -Value $_
+              if($index -ne $Null -and $index -ne -1){
+                $thisApp.Config.YoutubeHistory[$index]
+              }
+            }
+            if($youtube_id){
+              try{
+                $video_info = Get-YouTubeVideo -Id $youtube_id
+              }catch{
+                write-ezlogs "An exception occurred executing Get-YoutubeVideo" -showtime -catcherror $_
+              } 
+            }
+          }#>
           #Is it TOR
           if(!$track -and $synchash.All_Tor_Results.$Property){
             $track = lock-object -InputObject $synchash.All_Tor_Results.SyncRoot -ScriptBlock {

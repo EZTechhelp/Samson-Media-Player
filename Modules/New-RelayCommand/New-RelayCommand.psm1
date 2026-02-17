@@ -46,12 +46,21 @@ function New-RelayCommand
         # requery with [System.Windows.Input.CommandManager]::InvalidateRequerySuggested() on ui thread dispatcher
         # on open, these add a requery event to each button and on close, remove the event
 
-        add_CanExecuteChanged([EventHandler] $value) {
+<#        add_CanExecuteChanged([EventHandler] $value) {
           #[System.Windows.Input.CommandManager]::add_RequerySuggested($value)
         }
 
         remove_CanExecuteChanged([EventHandler] $value) {
           #[System.Windows.Input.CommandManager]::remove_RequerySuggested($value)
+        }#>
+
+        [System.EventHandler]$InternalCanExecuteChanged
+        add_CanExecuteChanged([EventHandler] $value) {
+          $this.InternalCanExecuteChanged = [Delegate]::Combine($this.InternalCanExecuteChanged, $value)
+        }
+
+        remove_CanExecuteChanged([EventHandler] $value) {
+          $this.InternalCanExecuteChanged = [Delegate]::Remove($this.InternalCanExecuteChanged, $value)
         }
 
         hidden [ScriptBlock] $_execute
@@ -98,10 +107,8 @@ function New-RelayCommand
             [bool] $result = $this._canExecute.Invoke($this._self, $parameter)
             if ($result) {
               if($this.verboselog){write-ezlogs "Can execute script was run and can execute" -showtime}
-              #Write-Verbose -Message "Can execute script was run and can execute" -Verbose
             }else {
               if($this.verboselog){write-ezlogs "Can execute script was run and cannot execute" -showtime}
-              #Write-Verbose -Message "Can execute script was run and cannot execute" -Verbose
             }
             return $result
           }

@@ -587,6 +587,10 @@ function Update-MediaTimer{
       }else{
         write-ezlogs '| Unsure what to do! Looping...' -showtime -warning
         write-ezlogs "| Spotify_Status: $($synchashWeak.Target.Spotify_Status) - Spicetify.is_playing: $($synchashWeak.Target.Spicetify.is_playing) - Vlc status: $($synchashWeak.Target.vlc.isPlaying) - Vlc media state: $($synchashWeak.Target.vlc.media.State) -- current_track.is_playing: $($current_track.is_playing) - Progress: $progress - Name: $Name - Last_Played_title: $($synchashWeak.Target.Last_Played_title)" -showtime
+        if($thisApp.Config.Use_Spicetify -and !$synchashWeak.Target.Spicetify.is_playing -and !$synchashWeak.Target.Spicetify.is_paused){
+          write-ezlogs "| Spicetify does not appear to be playing anymore, setting Spotify_Status to Stopped" -Warning
+          $synchashWeak.Target.Spotify_Status = 'Stopped'
+        }
       }   
     }elseif($([string]$synchashWeak.Target.vlc.media.Mrl).StartsWith("dshow://")){
       write-ezlogs "Vlc is currently playing dshow which is for webplayers, stopping this timer" -showtime -warning

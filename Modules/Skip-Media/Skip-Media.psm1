@@ -153,7 +153,7 @@ function Skip-Media
       if(!$next_item){
         write-ezlogs "Attempting to get next item from current_playlist using select -first 1" -showtime -warning -LogLevel 3
         $next_item = $thisApp.config.Current_Playlist.values | Select-Object -first 1
-      }  
+      }
       if(!$next_item -and $Synchash.Current_Playing_Playlist_Source -eq 'Playlist'){
         write-ezlogs ">>>> No more media was found in the Queue, looking for next item in the current playlist: $($Synchash.Current_Playing_Playlist)" -showtime -LogLevel 2
         #Next Playlist Item
@@ -335,7 +335,16 @@ function Skip-Media
             write-ezlogs "Unable to find any more media within media library playlist $($current_Playing_Library_Playlist)!" -showtime -warning -LogLevel 2
           }
         }       
-      }                                   
+      }
+      if(!$next_item -and $Synchash.Current_Playing_Playlist_Source -eq 'YTChannel' -and $last_played.media){
+        try{
+          write-ezlogs ">>>> No more media was found in the Queue, last played was Youtube channel, attempting to get another video for channel $($last_played.media.channel_id)" -showtime
+          Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $last_played.media.url -linktext $last_played.media.title -media $last_played.media -PlayOnly -StartPlayback -PlayChannel
+          return
+        }catch{
+          write-ezlogs -text 'An exception occurred executing Add-YoutubePlayback' -showtime -CatchError $_
+        }
+      }
       if($next_item){
         if(-not [string]::IsNullOrEmpty($next_item.id)){
           $next_selected.media = $next_item
@@ -417,7 +426,7 @@ function Skip-Media
     }  
     if(!$next_selected.media){
       write-ezlogs "Unable to get media information about next item $next_item!" -showtime -warning -LogLevel 2 -AlertUI   
-      $synchash.Stop_media_timer.start()       
+      $synchash.Stop_media_timer.start()
       return
     }else{
       #Look up media profile if we have one then play
@@ -437,7 +446,7 @@ function Skip-Media
           write-ezlogs "Spotify is running, closing it" -showtime -warning -LogLevel 2
           Get-Process -Name 'Spotify*' | Stop-Process -Force -ErrorAction SilentlyContinue
         }
-        Start-Media -Media $Media -thisApp $thisapp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification
+        Start-Media -Media $Media -thisApp $thisapp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification -use_WebPlayer:$thisapp.config.Youtube_WebPlayer
       }else{
         write-ezlogs "Unable to determine the type of the next media to play: $($Media | out-string)" -warning
       }

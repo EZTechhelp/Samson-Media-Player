@@ -657,7 +657,7 @@ function New-WebContextMenuScriptBlock {
                   }
               })
             }
-            $menulist.Insert(2, $synchashWeak.Target."$($Webview2)_AddMediaCommand")
+            $menulist.Insert(3, $synchashWeak.Target."$($Webview2)_AddMediaCommand")
 
             #Play Media
             if(!$synchashWeak.Target."$($Webview2)_PlayMediaCommand"){
@@ -681,11 +681,30 @@ function New-WebContextMenuScriptBlock {
                       Write-EZLogs "[$Webview2] The provided URL is not valid or was not provided! -- $LinkUri" -showtime -warning -logtype Youtube
                     }
                   }catch{
-                    Write-EZLogs '[$Webview2] An exception occurred in CustomItemSelected.Add_Click' -showtime -catcherror $_
+                    Write-EZLogs "[$Webview2] An exception occurred in CustomItemSelected.Add_Click" -showtime -catcherror $_
                   }
               })
             }
             $menulist.Insert(0, $synchashWeak.Target."$($Webview2)_PlayMediaCommand")
+
+            #Play Youtube Channel
+            if(!$synchashWeak.Target."$($Webview2)_PlayYTChannelCommand"){
+              [Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItem]$synchashWeak.Target."$($Webview2)_PlayYTChannelCommand" = $synchashWeak.Target.$Webview2.CoreWebView2.Environment.CreateContextMenuItem('Play Youtube Channel',$synchashWeak.Target."$($Webview2)_YoutubeIcon_StreamImage",[Microsoft.Web.WebView2.Core.CoreWebView2ContextMenuItemKind]::Command)
+              $synchashWeak.Target."$($Webview2)_PlayYTChannelCommand".add_CustomItemSelected({
+                  $LinkUri = $synchash.WebView2_ContextMenuLink
+                  $linktext = $synchash.WebView2_ContextMenuText
+                  try{
+                    if(-not [string]::IsNullOrEmpty($LinkUri) -and (Test-URL $LinkUri)){
+                      Add-YoutubePlayback -synchash $synchashWeak.Target -thisApp $thisApp -LinkUri $LinkUri -linktext $linktext -PlayOnly -StartPlayback -PlayChannel -use_Runspace
+                    }else{
+                      Write-EZLogs "[$Webview2] The provided URL is not valid or was not provided! -- $LinkUri" -showtime -warning -logtype Youtube
+                    }
+                  }catch{
+                    Write-EZLogs "[$Webview2] An exception occurred in PlayYTChannelCommand.Add_Click" -showtime -catcherror $_
+                  }
+              })
+            }
+            $menulist.Insert(1, $synchashWeak.Target."$($Webview2)_PlayYTChannelCommand")
 
             #Add to play queue
             if(!$synchashWeak.Target."$($Webview2)_AddMediaQueueCommand"){
@@ -709,7 +728,7 @@ function New-WebContextMenuScriptBlock {
                   }
               })
             }
-            $menulist.Insert(1, $synchashWeak.Target."$($Webview2)_AddMediaQueueCommand")
+            $menulist.Insert(2, $synchashWeak.Target."$($Webview2)_AddMediaQueueCommand")
 
             #Add to playlists
             if(!$synchashWeak.Target."$($Webview2)_AddPlaylistSubCommand"){
@@ -1839,6 +1858,16 @@ try {
           Write-EZLogs '>>>> Injecting custom Youtube Adblock script' -logtype $logtype -LogLevel 0 -Verboselog:$Verboselog
           $synchash.YoutubeWebView2.ExecuteScriptAsync(
             $synchash.YoutubeWebView2_Adblock_Script
+          )
+        }
+        $disable_PageVisibility = "$($thisApp.Config.Current_Folder)\Resources\Ad Blocking\disable_PageVisibility.js"
+        if([system.io.file]::Exists($disable_PageVisibility)){
+          if(!$synchash.disable_PageVisibility_Script -or $thisApp.Config.Dev_mode){
+            $synchash.disable_PageVisibility_Script = [system.io.file]::ReadAllText($disable_PageVisibility)
+          }
+          Write-EZLogs '>>>> Injecting custom disable_PageVisibility script' -logtype $logtype -LogLevel 0 -Verboselog:$Verboselog
+          $synchash.YoutubeWebView2.ExecuteScriptAsync(
+            $synchash.disable_PageVisibility_Script
           )
         }
         Write-EZLogs '| Executing YoutubeWebView2_Script' -showtime -logtype $logtype -Dev_mode
@@ -4309,6 +4338,16 @@ if(player){
                 $synchash.YoutubeWebView2_Adblock_Script
               )
             }
+            $disable_PageVisibility = "$($thisApp.Config.Current_Folder)\Resources\Ad Blocking\disable_PageVisibility.js"
+            if([system.io.file]::Exists($disable_PageVisibility)){
+              if(!$synchash.disable_PageVisibility_Script -or $thisApp.Config.Dev_mode){
+                $synchash.disable_PageVisibility_Script = [system.io.file]::ReadAllText($disable_PageVisibility)
+              }
+              Write-EZLogs '>>>> Injecting custom disable_PageVisibility script' -logtype Webview2 -LogLevel 0 -Verboselog:$Verboselog
+              $sender.ExecuteScriptAsync(
+                $synchash.disable_PageVisibility_Script
+              )
+            }
           }
 
           #TODO: Test intercept all click events
@@ -5402,9 +5441,6 @@ Function Start-WebNavigation{
         }
         if($Youtube.playlist_id){
           if(($thisApp.Config.Use_invidious -and (Test-ValidPath -Type URL $thisApp.Config.InvidiousURL))){
-            #$uri = "https://yewtu.be/embed/videoseries?list=$($Youtube.playlist_id)`&autoplay=1"
-            #$uri = "https://invidious.nerdvpn.de/embed/videoseries?list=$($Youtube.playlist_id)`&autoplay=1"
-            #$uri = "https://invidious.jing.rocks/embed/videoseries?list=$($Youtube.playlist_id)`&$AutoPlay"
             $uri = "$($thisApp.Config.InvidiousURL)/embed/videoseries?list=$($Youtube.playlist_id)`&$AutoPlay"
             $synchash.Use_invidious_url = $uri
           }else{
@@ -5436,9 +5472,6 @@ Function Start-WebNavigation{
           }
         }elseif($Youtube.id){
           if(($thisApp.Config.Use_invidious -and (Test-ValidPath -Type URL $thisApp.Config.InvidiousURL)) -and $uri -notmatch 'tv\.youtube\.com'){
-            #$uri = "https://yewtu.be/embed/$($Youtube.id)`&autoplay=1"
-            #$uri = "https://invidious.nerdvpn.de/embed/$($Youtube.id)`&autoplay=1"
-            #$uri = "https://invidious.jing.rocks/embed/$($Youtube.id)`&$AutoPlay"
             $uri = "$($thisApp.Config.InvidiousURL)/embed/$($Youtube.id)`&$AutoPlay"
             $synchash.Use_invidious_url = $uri
           }elseif($uri -notmatch 'tv\.youtube\.com'){

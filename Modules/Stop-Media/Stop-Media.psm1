@@ -106,6 +106,7 @@ function Stop-Media
     }
     $synchashWeak.Target.Current_playing_media = $Null
     $synchashWeak.Target.Current_playing_Media_Chapter = $Null
+    $synchashWeak.Target.Current_Playing_Playlist_Source = $Null
     $synchashWeak.Target.Current_Video_Quality = $Null
     $synchashWeak.Target.Current_Audio_Quality = $Null
     $synchashWeak.Target.Youtube_webplayer_current_Media = $Null

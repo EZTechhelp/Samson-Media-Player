@@ -3,7 +3,7 @@
     Samson
 
     .Version
-    1.0.8
+    1.0.9
 
     .Build
     PUBLIC
@@ -7025,21 +7025,22 @@ if($synchash.LocalMedia_TreeView){
       }else{
         $Enable_liveAlert = $true
       }
-      if($sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems.Content.id){
-        $MediaItems = $sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems.Content
-      }elseif($sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems.id){
-        $MediaItems = $sender.tag.source.TreeViewItemInfo.TreeView.SelectedItems
-      }elseif($media.Source -eq 'Local' -and $synchash.MediaTable.isVisible -and $synchash.MediaTable.selecteditems){
-        $MediaItems = $synchash.MediaTable.selecteditems
-      }elseif($media.Source -eq 'Spotify' -and $synchash.SpotifyTable.isVisible -and $synchash.SpotifyTable.selecteditems){
-        $MediaItems = $synchash.SpotifyTable.selecteditems
-      }elseif($media.Source -eq 'Youtube' -and $synchash.YoutubeTable.isVisible -and $synchash.YoutubeTable.selecteditems){
-        $MediaItems = $synchash.YoutubeTable.selecteditems
-      }elseif($media.Source -eq 'Twitch' -and $synchash.TwitchTable.isVisible -and $synchash.TwitchTable.selecteditems){
-        $MediaItems = $synchash.TwitchTable.selecteditems
+      if($synchash.All_Twitch_Media.count -gt 0){
+        try{
+          $index = $synchash.All_Twitch_Media.url.IndexOf($media.url)
+          if($index -eq -1){
+            $index = $synchash.All_Twitch_Media.User_id.IndexOf($media.id)
+          }
+        }catch{
+          $index = -1
+        }
+        if($index -ne -1){
+          $MediaItems = $synchash.All_Twitch_Media[$index]
+        }
       }
       if($MediaItems.count -eq 1 -and $media.Enable_LiveAlert -ne $Enable_liveAlert){
         $media.Enable_LiveAlert = $Enable_liveAlert
+        $MediaItems.Enable_LiveAlert = $Enable_liveAlert
         if($thisapp.config.Twitch_Playlists.id){
           $Config_index = $thisapp.config.Twitch_Playlists.id.indexof($media.id)
           if($Config_index -ne -1){
@@ -7169,7 +7170,15 @@ if($synchash.LocalMedia_TreeView){
         }
         $url = "https://www.youtube.com/results?search_query=$([System.Web.HttpUtility]::UrlEncode($query))"
       }else{
-        $url = "https://www.youtube.com/channel/$($Media.Channel_ID)"
+        if($Media.Channel_ID){
+          $url = "https://www.youtube.com/channel/$($Media.Channel_ID)"
+        }elseif($thisApp.Config.Import_Youtube_Media){
+          $video = Get-YoutubeURL -thisApp $thisApp -url $media.url -APILookup
+          if($video.Channel){
+            $url = "https://www.youtube.com/channel/$($video.Channel)"
+            $Media.Channel_ID = $video.Channel
+          }
+        }  
       }
       $synchash.WebBrowser_url = $url
       if($synchash.MiniPlayer_Viewer.isVisible){
@@ -7201,6 +7210,39 @@ if($synchash.LocalMedia_TreeView){
 }
 #----------------------------------------------
 #endregion Find Youtube Command
+#----------------------------------------------
+
+#----------------------------------------------
+#region Play Youtube Command
+#----------------------------------------------
+[System.Windows.RoutedEventHandler]$synchash.PlayYTChannel_Command = {
+  param($sender)
+  if($_.OriginalSource.DataContext.id){
+    $media = $sender.OriginalSource.DataContext
+  }elseif($sender.tag.id){
+    $media = $sender.tag
+  }elseif($sender.tag.Media.id){
+    $media = $sender.tag.Media
+  }elseif($sender.datacontext.Record.id){
+    $media = $sender.datacontext.Record
+  }elseif($sender.datacontext.content.id){
+    $media = $sender.datacontext.content
+  }elseif($sender.selecteditem.tag.Media.id){
+    $media = $sender.selecteditem.tag.Media
+  }
+  write-ezlogs -text "[PlayYTChannel_Command] Media to browse: $($media.title)" -Dev_mode
+  if($media.id -and ($media.title -or $media.name)){
+    try{
+      Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $media.url -linktext $media.title -media $media -PlayOnly -StartPlayback -PlayChannel -use_Runspace
+    }catch{
+      write-ezlogs -text 'An exception occurred in PlayYTChannel_Command routed event' -showtime -CatchError $_
+    }
+  }else{
+    write-ezlogs -text 'No valid Media was provided or found' -showtime -Warning
+  }
+}
+#----------------------------------------------
+#endregion Play Youtube Command
 #----------------------------------------------
 
 #----------------------------------------------
@@ -7320,18 +7362,40 @@ if($synchash.LocalMedia_TreeView){
           'Output' = ''
         }
         [void]$Options.add($Option)
-        $Result = Show-CustomWindow -thisApp $thisApp -WindowTitle 'Convert Media' -HeaderText 'Convert Media Options' -Message "Select the following options below to confirm converting of media:`n$($media.url)" -Type Options -Options $Options -WaitforOutput -TopMost
-        if($Result){
-          $OutputDirectory = $Result[0].Output
-          $FileNameExt = $Result[1].Output
-          $OutputFileName = "$([System.io.Path]::GetFileNameWithoutExtension($media.url)).$($FileNameExt)"
+        $Option = [PSCustomObject]@{
+          'Name' = 'Media'
+          'Type' = 'Hidden'
+          'Output' = $media
         }
-      }
-      if([system.io.directory]::Exists($OutputDirectory) -and $OutputFileName){
-        Write-Ezlogs ">>>> Starting Convert of media from: ($($media.url)) -- To: $OutputFileName"
-        Convert-Media -synchash $synchash -thisApp $thisApp -use_Runspace -InputFile $media.url -OutputDirectory $OutputDirectory -OutputFileName $OutputFileName
-      }else{
-        write-ezlogs "No valid output directory or filename was provided to convert media: $($media.url)" -warning -AlertUI
+        [void]$Options.add($Option)
+        $CustomWindowResultTimer = [System.Windows.Threading.DispatcherTimer]::new()
+        $CustomWindowResultTimer_Event = {
+          try{
+            if($this.tag){
+              $OutputDirectory = $this.tag[0].Output
+              $FileNameExt = $this.tag[1].Output
+              $Media = $this.tag[2].Output
+              $OutputFileName = "$([System.io.Path]::GetFileNameWithoutExtension($media.url)).$($FileNameExt)"
+            }
+            if([system.io.directory]::Exists($OutputDirectory) -and $OutputFileName){
+              Write-Ezlogs ">>>> Starting Convert of media from: ($($media.url)) -- To: $OutputFileName"
+              Convert-Media -synchash $synchash -thisApp $thisApp -use_Runspace -InputFile $media.url -OutputDirectory $OutputDirectory -OutputFileName $OutputFileName
+            }else{
+              write-ezlogs "No valid output directory or filename was provided to convert media: $($media.url)" -warning -AlertUI
+            }
+            $this.Stop()
+          }catch{
+            write-ezlogs -text 'An exception occurred in CustomWindowResultTimer' -showtime -CatchError $_
+          }finally{
+            $this.Stop()
+            $this.tag = $Null
+            $this.Remove_Tick($CustomWindowResultTimer_Event)
+            $CustomWindowResultTimer_Event = $null
+            $CustomWindowResultTimer = $null
+          }
+        }
+        $CustomWindowResultTimer.add_tick($CustomWindowResultTimer_Event)
+        $Result = Show-CustomWindow -thisApp $thisApp -WindowTitle 'Convert Media' -HeaderText 'Convert Media Options' -Message "Select the following options below to confirm converting of media:`n$($media.url)" -Type Options -Options $Options -TopMost -CustomWindowResultTimer $CustomWindowResultTimer -Verboselog
       }
     }else{
       write-ezlogs -text "No valid Media was provided or found for provided url: $($media.url)" -Warning -AlertUI
@@ -7653,6 +7717,18 @@ $synchash.Media_ContextMenu_ScriptBlock = {
               'Color'     = 'White'
             }
             [Void]$items.Add($BrowseYTChannel)
+            $PlayYTChannel = @{
+              'Header'    = 'Play Youtube Channel'
+              'Tooltip'  = 'Start playing videos from Youtube channel starting from latest or random if shuffle is enabled'
+              'Command'   = $synchash.PlayYTChannel_Command
+              'Tag'       = $Media_Tag
+              'Enabled'   = $true
+              'IsCheckable' = $false
+              'Icon_Color' = '#FFFF0000'
+              'Icon_kind' = 'Youtube'
+              'Color'     = 'White'
+            }
+            [Void]$items.Add($PlayYTChannel)
           }
         }
         if((($e.Source.Name -eq 'SpotifyTable' -or $media.source -eq 'Spotify') -or $media.url -match 'spotify\:')){
@@ -8424,6 +8500,326 @@ if($synchash.TwitchTable){
 }
 #----------------------------------------------
 #endregion ContextMenu Routed Event Handlers
+#----------------------------------------------
+
+#----------------------------------------------
+#region Window InputBindings
+#TODO: IN-PROGRESS - Consolidate event command calls into new seek function
+#----------------------------------------------
+if($synchash.Window){
+  $Synchash.LeftGesture_Command  = {
+    param($sender)
+    try{
+      write-ezlogs ">>>> Left Gesture_Command: $($sender.Name)" -Verboselog
+      if($synchash.MediaPlayer_Slider.value -le 5){
+        $newvalue = 0
+      }else{
+        $newvalue = $synchash.MediaPlayer_Slider.value - 5
+      } 
+      if($null -ne $newvalue){
+        #$e.Handled = $true
+        #$MediaPlayer_SliderMouseOver = ($synchash.MediaPlayer_Slider.IsMouseOver)
+        #$Mini_Progress_SliderMouseOver = ($synchash.Mini_Progress_Slider.IsMouseOver)
+        #$VideoView_Progress_SliderMouseOver = ($synchash.VideoView_Progress_Slider.IsMouseOver)
+        if(!$synchash.vlc.IsPlaying -or $([string]$synchash.vlc.media.Mrl).StartsWith('dshow://')){
+          write-ezlogs -text "| Seek to new value: $($newvalue)"
+          if($thisApp.config.Use_Spicetify -and $synchash.Spicetify -and $synchash.Spotify_Status -ne 'Stopped'){
+            $current_track = $synchash.Spicetify
+            $progress = [timespan]::Parse($synchash.Spicetify.POSITION).TotalSeconds
+          }elseif($synchash.Spotify_WebPlayer_State.current_track.id -and $synchash.Spotify_WebPlayer_State.playbackstate -ne 0){
+            Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop
+            $newvalue = $([timespan]::FromSeconds($($newvalue))).TotalMilliseconds
+            $Spotify_Webview2_SeekScript = @"
+  console.log('Seeking Spotify Track to $($newvalue)');
+  SpotifyWeb.player.seek($($newvalue));
+   console.log('New Position',SpotifyWeb.currState.position);
+"@
+            $synchash.WebView2.ExecuteScriptAsync(
+              $Spotify_Webview2_SeekScript
+            )
+            $synchash.MediaPlayer_CurrentDuration = $newvalue
+            Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -start
+          }elseif($synchash.Spotify_Status -ne 'Stopped' -and $synchash.current_playing_media.url -match 'spotify\:'){
+            $current_track = (Get-CurrentTrack -ApplicationName $thisApp.config.App_Name)
+            $progress = [timespan]::FromMilliseconds($current_track.progress_ms).TotalSeconds
+          }
+          if(!$synchash.Spotify_WebPlayer_State.current_track.id -and $current_track.is_playing -and $progress -ne $newvalue){
+            $synchash.MediaPlayer_Slider.Value = $newvalue
+            if($synchash.Main_TaskbarItemInfo.ProgressState -ne 'Normal'){
+              $synchash.Main_TaskbarItemInfo.ProgressState = 'Normal'
+            }
+            if($thisApp.config.Use_Spicetify -and ((NETSTAT.EXE -an) | Where-Object -FilterScript {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'})){
+              Invoke-RestMethod -Uri "http://127.0.0.1:8974/SETPOSITION?$($newvalue)" -UseBasicParsing
+            }else{
+              $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
+              $device = $devices | Where-Object -FilterScript {$_.is_active -eq $true}
+              if(!$device){
+                $device = $devices | Select-Object -Last 1
+              }
+              Invoke-SeekPositionCurrentTrack -PositionMs ($newvalue * 1000) -DeviceId $device.id -ApplicationName $thisApp.config.App_Name
+            }
+          }elseif($synchash.WebPlayer_State -ne 0 -and $synchash.Youtube_WebPlayer_title){
+            #TODO: Youtube webplayer seeking
+            Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop
+            $newvalue = $([timespan]::FromSeconds($($synchash.MediaPlayer_Slider.Value))).TotalSeconds
+            if($newvalue -le 5){
+              $newvalue = 0
+            }else{
+              $newvalue = $newvalue - 5
+            }
+            write-ezlogs -text ">>>> Seeking Youtube webplayer to: $newvalue" -Dev_mode
+            if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
+              $YoutubeWebView2_SeekScript = @"
+try {
+  //var state = player.paused();
+if (state) {
+  //console.log('Resuming');
+  //player.play();
+} else {
+   //console.log('Pausing');
+  // player.pause();
+}
+} catch (error) {
+  console.error('An exception occurred toggling player', error);
+  var ErrorObject =
+  {
+    Key: 'Error',
+    Value: Error
+  };
+  window.chrome.webview.postMessage(ErrorObject);
+}
+
+"@
+            }else{
+
+              $YoutubeWebView2_SeekScript = @"
+try {
+  var player = document.getElementById('movie_player');
+  console.log('Seeking Youtube player to $newvalue');
+  player.seekTo($newvalue);
+} catch (error) {
+  console.error('An exception occurred seeking player to $($newvalue)', error);
+  var ErrorObject =
+  {
+    Key: 'Error',
+    Value: Error
+  };
+  window.chrome.webview.postMessage(ErrorObject);
+}
+
+"@
+              $synchash.YoutubeWebView2.ExecuteScriptAsync(
+                $YoutubeWebView2_SeekScript
+              )
+            }
+            $synchash.MediaPlayer_CurrentDuration = $newvalue
+            Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -start
+            $synchash.MediaPlayer_Slider.Value = $newvalue
+            if($synchash.Main_TaskbarItemInfo.ProgressState -ne 'Normal'){
+              $synchash.Main_TaskbarItemInfo.ProgressState = 'Normal'
+            }
+          }
+        }elseif($synchash.vlc.IsPlaying -and $([timespan]::FromMilliseconds($synchash.VLC.Time)).TotalSeconds -ne $newvalue){
+          write-ezlogs -text "| Seek to new value: $($newvalue)"
+          if($thisApp.Config.Verbose_logging){write-ezlogs -text "Updating vlc time: $($synchash.MediaPlayer_Slider.Value * 1000)" -showtime}
+          if($thisApp.Config.Libvlc_Version -eq '4'){
+            $synchash.VLC.setTime($newvalue * 1000)
+          }else{
+            $synchash.VLC.Time = ($newvalue * 1000)
+            $synchash.VLC.SeekTo([timespan]::FromSeconds($newvalue))
+          }
+          $total_time = $synchash.MediaPlayer_CurrentDuration
+          [int]$b = [int]$newvalue
+          [int]$d = $b / 60
+          [int]$hrs = $($([timespan]::FromSeconds($b)).Hours)
+          [int]$mins = $($([timespan]::FromSeconds($b)).Minutes)
+          [int]$secs = $($([timespan]::FromSeconds($b)).Seconds)
+          if($hrs -ge 1){
+            $current_Length = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
+          }else{
+            $hrs = '0'
+            $current_Length = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
+          }
+          if($synchash.VideoView_Current_Length_TextBox){
+            $synchash.VideoView_Current_Length_TextBox.text = $current_Length
+          }
+          if($synchash.VideoView_Total_Length_TextBox -and $synchash.VideoView_Total_Length_TextBox.text -ne $total_time){
+            $synchash.VideoView_Total_Length_TextBox.text = $total_time
+          }
+          if($synchash.Media_Current_Length_TextBox){
+            $synchash.Media_Current_Length_TextBox.DataContext = $current_Length
+          }
+          if($synchash.Media_Total_Length_TextBox -and $synchash.Media_Total_Length_TextBox.text -ne $total_time){
+            $synchash.Media_Total_Length_TextBox.text = $total_time
+          }
+          if($synchash.MiniPlayer_Media_Length_Label){
+            $synchash.MiniPlayer_Media_Length_Label.Content = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
+          }
+        }    
+      }
+    }catch{
+      write-ezlogs "An exception occurred in EditProfile_Command routed event" -showtime -catcherror $_
+    }
+  }
+  $Synchash.RightGesture_Command  = {
+    param($sender)
+    try{
+      write-ezlogs ">>>> Right Gesture_Command: $($sender.Name)" -Verboselog
+      $newvalue = $synchash.MediaPlayer_Slider.value + 5
+      if($null -ne $newvalue){
+        #$e.Handled = $true
+        #$MediaPlayer_SliderMouseOver = ($synchash.MediaPlayer_Slider.IsMouseOver)
+        #$Mini_Progress_SliderMouseOver = ($synchash.Mini_Progress_Slider.IsMouseOver)
+        #$VideoView_Progress_SliderMouseOver = ($synchash.VideoView_Progress_Slider.IsMouseOver)
+        if(!$synchash.vlc.IsPlaying -or $([string]$synchash.vlc.media.Mrl).StartsWith('dshow://')){
+          write-ezlogs -text "| Seek to new value: $($newvalue)"
+          if($thisApp.config.Use_Spicetify -and $synchash.Spicetify -and $synchash.Spotify_Status -ne 'Stopped'){
+            $current_track = $synchash.Spicetify
+            $progress = [timespan]::Parse($synchash.Spicetify.POSITION).TotalSeconds
+          }elseif($synchash.Spotify_WebPlayer_State.current_track.id -and $synchash.Spotify_WebPlayer_State.playbackstate -ne 0){
+            Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop
+            $newvalue = $([timespan]::FromSeconds($($newvalue))).TotalMilliseconds
+            $Spotify_Webview2_SeekScript = @"
+  console.log('Seeking Spotify Track to $($newvalue)');
+  SpotifyWeb.player.seek($($newvalue));
+   console.log('New Position',SpotifyWeb.currState.position);
+"@
+            $synchash.WebView2.ExecuteScriptAsync(
+              $Spotify_Webview2_SeekScript
+            )
+            $synchash.MediaPlayer_CurrentDuration = $newvalue
+            Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -start
+          }elseif($synchash.Spotify_Status -ne 'Stopped' -and $synchash.current_playing_media.url -match 'spotify\:'){
+            $current_track = (Get-CurrentTrack -ApplicationName $thisApp.config.App_Name)
+            $progress = [timespan]::FromMilliseconds($current_track.progress_ms).TotalSeconds
+          }
+          if(!$synchash.Spotify_WebPlayer_State.current_track.id -and $current_track.is_playing -and $progress -ne $newvalue){
+            $synchash.MediaPlayer_Slider.Value = $newvalue
+            if($synchash.Main_TaskbarItemInfo.ProgressState -ne 'Normal'){
+              $synchash.Main_TaskbarItemInfo.ProgressState = 'Normal'
+            }
+            if($thisApp.config.Use_Spicetify -and ((NETSTAT.EXE -an) | Where-Object -FilterScript {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'})){
+              Invoke-RestMethod -Uri "http://127.0.0.1:8974/SETPOSITION?$($newvalue)" -UseBasicParsing
+            }else{
+              $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
+              $device = $devices | Where-Object -FilterScript {$_.is_active -eq $true}
+              if(!$device){
+                $device = $devices | Select-Object -Last 1
+              }
+              Invoke-SeekPositionCurrentTrack -PositionMs ($newvalue * 1000) -DeviceId $device.id -ApplicationName $thisApp.config.App_Name
+            }
+          }elseif($synchash.WebPlayer_State -ne 0 -and $synchash.Youtube_WebPlayer_title){
+            #TODO: Youtube webplayer seeking
+            Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop
+            $newvalue = $([timespan]::FromSeconds($($synchash.MediaPlayer_Slider.Value))).TotalSeconds + 5
+            write-ezlogs -text ">>>> Seeking Youtube webplayer to: $newvalue" -Dev_mode
+            if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
+              $YoutubeWebView2_SeekScript = @"
+try {
+  //var state = player.paused();
+if (state) {
+  //console.log('Resuming');
+  //player.play();
+} else {
+   //console.log('Pausing');
+  // player.pause();
+}
+} catch (error) {
+  console.error('An exception occurred toggling player', error);
+  var ErrorObject =
+  {
+    Key: 'Error',
+    Value: Error
+  };
+  window.chrome.webview.postMessage(ErrorObject);
+}
+
+"@
+            }else{
+
+              $YoutubeWebView2_SeekScript = @"
+try {
+  var player = document.getElementById('movie_player');
+  console.log('Seeking Youtube player to $newvalue');
+  player.seekTo($newvalue);
+} catch (error) {
+  console.error('An exception occurred seeking player to $($newvalue)', error);
+  var ErrorObject =
+  {
+    Key: 'Error',
+    Value: Error
+  };
+  window.chrome.webview.postMessage(ErrorObject);
+}
+
+"@
+              $synchash.YoutubeWebView2.ExecuteScriptAsync(
+                $YoutubeWebView2_SeekScript
+              )
+            }
+            $synchash.MediaPlayer_CurrentDuration = $newvalue
+            Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -start
+            $synchash.MediaPlayer_Slider.Value = $newvalue
+            if($synchash.Main_TaskbarItemInfo.ProgressState -ne 'Normal'){
+              $synchash.Main_TaskbarItemInfo.ProgressState = 'Normal'
+            }
+          }
+        }elseif($synchash.vlc.IsPlaying -and $([timespan]::FromMilliseconds($synchash.VLC.Time)).TotalSeconds -ne $newvalue){
+          write-ezlogs -text "| Seek to new value: $($newvalue)"
+          if($thisApp.Config.Verbose_logging){write-ezlogs -text "Updating vlc time: $($synchash.MediaPlayer_Slider.Value * 1000)" -showtime}
+          if($thisApp.Config.Libvlc_Version -eq '4'){
+            $synchash.VLC.setTime($newvalue * 1000)
+          }else{
+            $synchash.VLC.Time = ($newvalue * 1000)
+            $synchash.VLC.SeekTo([timespan]::FromSeconds($newvalue))
+          }
+          $total_time = $synchash.MediaPlayer_CurrentDuration
+          [int]$b = [int]$newvalue
+          [int]$d = $b / 60
+          [int]$hrs = $($([timespan]::FromSeconds($b)).Hours)
+          [int]$mins = $($([timespan]::FromSeconds($b)).Minutes)
+          [int]$secs = $($([timespan]::FromSeconds($b)).Seconds)
+          if($hrs -ge 1){
+            $current_Length = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
+          }else{
+            $hrs = '0'
+            $current_Length = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
+          }
+          if($synchash.VideoView_Current_Length_TextBox){
+            $synchash.VideoView_Current_Length_TextBox.text = $current_Length
+          }
+          if($synchash.VideoView_Total_Length_TextBox -and $synchash.VideoView_Total_Length_TextBox.text -ne $total_time){
+            $synchash.VideoView_Total_Length_TextBox.text = $total_time
+          }
+          if($synchash.Media_Current_Length_TextBox){
+            $synchash.Media_Current_Length_TextBox.DataContext = $current_Length
+          }
+          if($synchash.Media_Total_Length_TextBox -and $synchash.Media_Total_Length_TextBox.text -ne $total_time){
+            $synchash.Media_Total_Length_TextBox.text = $total_time
+          }
+          if($synchash.MiniPlayer_Media_Length_Label){
+            $synchash.MiniPlayer_Media_Length_Label.Content = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
+          }
+        }    
+      }
+    }catch{
+      write-ezlogs "An exception occurred in EditProfile_Command routed event" -showtime -catcherror $_
+    }
+  }
+  $GestureRelay_Command = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.LeftGesture_Command -target $synchash.Window
+  $inputBinding = [System.Windows.Input.KeyBinding]::new()
+  $inputBinding.Command = $GestureRelay_Command
+  $inputBinding.Gesture = [System.Windows.Input.KeyGesture]::new([System.Windows.Input.Key]::Left)
+  [void]$synchash.Window.InputBindings.Add($inputBinding)
+
+  $GestureRelay_Command = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.RightGesture_Command -target $synchash.Window
+  $inputBinding = [System.Windows.Input.KeyBinding]::new()
+  $inputBinding.Command = $GestureRelay_Command
+  $inputBinding.Gesture = [System.Windows.Input.KeyGesture]::new([System.Windows.Input.Key]::Right)
+  [void]$synchash.Window.InputBindings.Add($inputBinding)
+}
+#----------------------------------------------
+#endregion Window InputBindings
 #----------------------------------------------
 
 #----------------------------------------------
@@ -9725,16 +10121,175 @@ try {
   }
 }
 
+[System.Windows.RoutedEventHandler]$MediaPlayer_SliderKeyUp_Command = {
+  param($sender,[System.Windows.Input.KeyEventArgs]$e)
+  try{   
+    #$LeftArrowKeyState = ([KeyStates.MyHelper]::GetAsyncKeyState(0x25) -eq -32767)
+    #$RightArrowKeyState = ([KeyStates.MyHelper]::GetAsyncKeyState(0x27) -eq -32767)
+    if ($e.key -eq 'Left'){
+      write-ezlogs "[TEST] Left Arrow Key pressed: $($e | out-string)" -Warning
+      if($e.Source.value -le 5){
+        $newvalue = 0
+      }else{
+        $newvalue = $e.Source.value - 5
+      }     
+    }elseif($e.key -eq 'Right'){
+      write-ezlogs "[TEST] Right Arrow Key pressed: $($e | out-string)" -Warning
+      $newvalue = $e.Source.value + 5    
+    }
+    if($null -ne $newvalue){
+      $e.Handled = $true
+      $MediaPlayer_SliderMouseOver = ($synchash.MediaPlayer_Slider.IsMouseOver)
+      $Mini_Progress_SliderMouseOver = ($synchash.Mini_Progress_Slider.IsMouseOver)
+      $VideoView_Progress_SliderMouseOver = ($synchash.VideoView_Progress_Slider.IsMouseOver)
+      if(!$synchash.vlc.IsPlaying -or $([string]$synchash.vlc.media.Mrl).StartsWith('dshow://')){
+        write-ezlogs -text ">>>> Keyup event - new value: $($newvalue)"
+        if($thisApp.config.Use_Spicetify -and $synchash.Spicetify -and $synchash.Spotify_Status -ne 'Stopped'){
+          $current_track = $synchash.Spicetify
+          $progress = [timespan]::Parse($synchash.Spicetify.POSITION).TotalSeconds
+        }elseif($synchash.Spotify_WebPlayer_State.current_track.id -and $synchash.Spotify_WebPlayer_State.playbackstate -ne 0){
+          Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop
+          $newvalue = $([timespan]::FromSeconds($($newvalue))).TotalMilliseconds
+          $Spotify_Webview2_SeekScript = @"
+  console.log('Seeking Spotify Track to $($newvalue)');
+  SpotifyWeb.player.seek($($newvalue));
+   console.log('New Position',SpotifyWeb.currState.position);
+"@
+          $synchash.WebView2.ExecuteScriptAsync(
+            $Spotify_Webview2_SeekScript
+          )
+          $synchash.MediaPlayer_CurrentDuration = $newvalue
+          Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -start
+        }elseif($synchash.Spotify_Status -ne 'Stopped' -and $synchash.current_playing_media.url -match 'spotify\:'){
+          $current_track = (Get-CurrentTrack -ApplicationName $thisApp.config.App_Name)
+          $progress = [timespan]::FromMilliseconds($current_track.progress_ms).TotalSeconds
+        }
+        if(!$synchash.Spotify_WebPlayer_State.current_track.id -and $current_track.is_playing -and $progress -ne $newvalue){
+          $synchash.MediaPlayer_Slider.Value = $newvalue
+          if($synchash.Main_TaskbarItemInfo.ProgressState -ne 'Normal'){
+            $synchash.Main_TaskbarItemInfo.ProgressState = 'Normal'
+          }
+          if($thisApp.config.Use_Spicetify -and ((NETSTAT.EXE -an) | Where-Object -FilterScript {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'})){
+            Invoke-RestMethod -Uri "http://127.0.0.1:8974/SETPOSITION?$($newvalue)" -UseBasicParsing
+          }else{
+            $devices = Get-AvailableDevices -ApplicationName $thisApp.config.App_Name
+            $device = $devices | Where-Object -FilterScript {$_.is_active -eq $true}
+            if(!$device){
+              $device = $devices | Select-Object -Last 1
+            }
+            Invoke-SeekPositionCurrentTrack -PositionMs ($newvalue * 1000) -DeviceId $device.id -ApplicationName $thisApp.config.App_Name
+          }
+        }elseif($synchash.WebPlayer_State -ne 0 -and $synchash.Youtube_WebPlayer_title){
+          #TODO: Youtube webplayer seeking
+          Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -stop
+          $newvalue = $([timespan]::FromSeconds($($synchash.MediaPlayer_Slider.Value))).TotalSeconds
+          write-ezlogs -text ">>>> Seeking Youtube webplayer to: $newvalue" -Dev_mode
+          if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
+            $YoutubeWebView2_SeekScript = @"
+try {
+  //var state = player.paused();
+if (state) {
+  //console.log('Resuming');
+  //player.play();
+} else {
+   //console.log('Pausing');
+  // player.pause();
+}
+} catch (error) {
+  console.error('An exception occurred toggling player', error);
+  var ErrorObject =
+  {
+    Key: 'Error',
+    Value: Error
+  };
+  window.chrome.webview.postMessage(ErrorObject);
+}
+
+"@
+          }else{
+
+            $YoutubeWebView2_SeekScript = @"
+try {
+  var player = document.getElementById('movie_player');
+  console.log('Seeking Youtube player to $newvalue');
+  player.seekTo($newvalue);
+} catch (error) {
+  console.error('An exception occurred seeking player to $($newvalue)', error);
+  var ErrorObject =
+  {
+    Key: 'Error',
+    Value: Error
+  };
+  window.chrome.webview.postMessage(ErrorObject);
+}
+
+"@
+            $synchash.YoutubeWebView2.ExecuteScriptAsync(
+              $YoutubeWebView2_SeekScript
+            )
+          }
+          $synchash.MediaPlayer_CurrentDuration = $newvalue
+          Set-WebPlayerTimer -synchash $synchash -thisApp $thisApp -start
+          $synchash.MediaPlayer_Slider.Value = $newvalue
+          if($synchash.Main_TaskbarItemInfo.ProgressState -ne 'Normal'){
+            $synchash.Main_TaskbarItemInfo.ProgressState = 'Normal'
+          }
+        }
+      }elseif($synchash.vlc.IsPlaying -and $([timespan]::FromMilliseconds($synchash.VLC.Time)).TotalSeconds -ne $newvalue){
+        if($thisApp.Config.Verbose_logging){write-ezlogs -text "Updating vlc time: $($synchash.MediaPlayer_Slider.Value * 1000)" -showtime}
+        if($thisApp.Config.Libvlc_Version -eq '4'){
+          $synchash.VLC.setTime($newvalue * 1000)
+        }else{
+          $synchash.VLC.Time = ($newvalue * 1000)
+          $synchash.VLC.SeekTo([timespan]::FromSeconds($newvalue))
+        }
+        $total_time = $synchash.MediaPlayer_CurrentDuration
+        [int]$b = [int]$newvalue
+        [int]$d = $b / 60
+        [int]$hrs = $($([timespan]::FromSeconds($b)).Hours)
+        [int]$mins = $($([timespan]::FromSeconds($b)).Minutes)
+        [int]$secs = $($([timespan]::FromSeconds($b)).Seconds)
+        if($hrs -ge 1){
+          $current_Length = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
+        }else{
+          $hrs = '0'
+          $current_Length = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
+        }
+        if($synchash.VideoView_Current_Length_TextBox){
+          $synchash.VideoView_Current_Length_TextBox.text = $current_Length
+        }
+        if($synchash.VideoView_Total_Length_TextBox -and $synchash.VideoView_Total_Length_TextBox.text -ne $total_time){
+          $synchash.VideoView_Total_Length_TextBox.text = $total_time
+        }
+        if($synchash.Media_Current_Length_TextBox){
+          $synchash.Media_Current_Length_TextBox.DataContext = $current_Length
+        }
+        if($synchash.Media_Total_Length_TextBox -and $synchash.Media_Total_Length_TextBox.text -ne $total_time){
+          $synchash.Media_Total_Length_TextBox.text = $total_time
+        }
+        if($synchash.MiniPlayer_Media_Length_Label){
+          $synchash.MiniPlayer_Media_Length_Label.Content = "$(([string]$hrs).PadLeft(2,'0')):$(([string]$mins).PadLeft(2,'0')):$(([string]$secs).PadLeft(2,'0'))"
+        }
+      }    
+    }
+  }catch{
+    write-ezlogs -text 'An exception occurred in MediaPlayer_SliderMouseUp_Command' -showtime -CatchError $_
+  }
+}
+
 if($synchash.MediaPlayer_Slider){
   $synchash.MediaPlayer_Slider.Maximum = 100
   [Void]$synchash.MediaPlayer_Slider.AddHandler([System.Windows.Controls.Slider]::ValueChangedEvent,$synchash.MediaPlayer_SliderValueChanged_Command)
   [Void]$synchash.MediaPlayer_Slider.AddHandler([System.Windows.Controls.Slider]::PreviewMouseUpEvent,$synchash.MediaPlayer_SliderMouseUp_Command)
+  [Void]$synchash.MediaPlayer_Slider.AddHandler([System.Windows.Controls.Slider]::PreviewKeyUpEvent,$MediaPlayer_SliderKeyUp_Command)
 }
 if($synchash.VideoView_Progress_Slider){
   [Void]$synchash.VideoView_Progress_Slider.AddHandler([System.Windows.Controls.Slider]::PreviewMouseUpEvent,$synchash.MediaPlayer_SliderMouseUp_Command)
+  [Void]$synchash.VideoView_Progress_Slider.AddHandler([System.Windows.Controls.Slider]::PreviewKeyUpEvent,$MediaPlayer_SliderKeyUp_Command)
 }
 if($synchash.Mini_Progress_Slider){
   [Void]$synchash.Mini_Progress_Slider.AddHandler([System.Windows.Controls.Slider]::PreviewMouseUpEvent,$synchash.MediaPlayer_SliderMouseUp_Command)
+  [Void]$synchash.Mini_Progress_Slider.AddHandler([System.Windows.Controls.Slider]::PreviewKeyUpEvent,$MediaPlayer_SliderKeyUp_Command)
 }
 #----------------------------------------------
 #endregion Progress Slider Controls
@@ -11298,7 +11853,7 @@ $synchash.pode_server_scriptblock = {
           $spicetify = ($SignalEvent.data.message | ConvertFrom-Json)
           #$logfile = $using:logfile
           $thisApp = $using:thisApp
-          $synchash = $using:synchash
+          #$synchash = $using:synchash
           $synchash.Spicetify = $spicetify
           write-ezlogs ">>>> Spotify Playing: $($synchash.Spicetify)" -showtime -logtype Spotify -LogLevel 3
         }catch{
@@ -11308,7 +11863,6 @@ $synchash.pode_server_scriptblock = {
     }
   }catch{
     write-ezlogs -text 'An exception occurred in pode_server_scriptblock' -showtime -CatchError $_
-    $thisApp.config.Use_Spicetify = $false
   }
   if($error){
     write-ezlogs -showtime -PrintErrors -ErrorsToPrint $error
@@ -12385,6 +12939,7 @@ try{
         try{
           Open-MiniPlayer -thisApp $thisApp -synchash $synchash -Startup
           #Trick to prerender window without showing it - Set opacity to 0, show to render, then hide
+          #TODO: This 'trick' isnt really needed anymore since using EnsureHandle() provides what we needed
           #$synchash.window.ShowActivated = $false #Prevent window from activating/taking focus while rendering
           #$synchash.window.Opacity = 0
           #$synchash.window.ShowInTaskbar = $false

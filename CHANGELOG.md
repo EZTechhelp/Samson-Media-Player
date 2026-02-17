@@ -2,6 +2,36 @@
 
 ## [Unreleased]
 
+## 1.0.9 - PUBLIC
+> - Branch: Samson
+
+### Added
++ Ability to start playback of all videos from a Youtube channel
+  + Available via context menu option `Play Youtube Channel` on Youtube media
+  + Will start playing the latest uploaded video or random if shuffle is enabled
++ New setting `Save Youtube Playback History` under Settings - Youtube - Youtube Options
+  + Currently only used with new `Play Youtube Channel` feature to assist shuffle playback
+  + Includes `Clear History` button to reset playback history
++ (WIP) Ability to seek playback -/+ 5secs using Left/Right arrow keys respectively
+  + Window must be in focus (video window if playing video, main player UI if no video)
+  + Inputbindings very inconsistent - WIP
+
+### Changes
++ Youtube webplayer no longer attempts to use embed URL on playback
++ Start-SpotifyMedia playback is now halted if Spotify integration is not enabled
++ Improved UI responsiveness for convert media custom window
++ Implemented `Disable_PageVisibility` JS for YT webview2 to prevent 'Are you still watching' prompts
+
+### Fixed
++ Media update timer can become stuck in a loop when media ends using Spicetify 
++ Custom playlists in UI sometimes dont properly clear when deleting all playlists
++ Twitch Live alert setting sometimes doesnt save properly when set from custom playlist
++ PODE runspaces are not properly started or closed when enabling/disabling spicetify
++ Local media with special characters in path name can fail to import when passed via CLI
+
+### Comments
++ Will NOT trigger first time setup when upgrading
+
 ## 1.0.8 - PUBLIC
 > - Branch: Samson
 
@@ -19,7 +49,7 @@
   + Changed height of Samson playlists overlay so its possible to access native YT playlist Button
   + Naturally YT had to move their button directly under mine so will need to make further adjustments
 + Twitch viewer count in custom playlists now updates properly without a manual refresh
-+ Twitch media in the play queue now diplays viewer count
++ Twitch media in the play queue now displays viewer count
 + More adjustments to improve reliability of Spotify playback using Spicetify
   + This is still considered experimental and a PITA, needs a complete redo
 + Updated included uBlock Origin extension to latest version (private builds only)

@@ -1395,6 +1395,21 @@ function Set-AvalonDock {
                   $FloatingWindowControl.Left = $thisApp.Config.VideoWindow_Left
                 }
               }
+              #InputBindings
+              if($Synchash.LeftGesture_Command){
+                $GestureRelay_Command = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.LeftGesture_Command -target $FloatingWindowControl
+                $inputBinding = [System.Windows.Input.KeyBinding]::new()
+                $inputBinding.Command = $GestureRelay_Command
+                $inputBinding.Gesture = [System.Windows.Input.KeyGesture]::new([System.Windows.Input.Key]::Left)
+                [void]$FloatingWindowControl.InputBindings.Add($inputBinding)
+              }
+              if($Synchash.RightGesture_Command){
+                $GestureRelay_Command = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.RightGesture_Command -target $FloatingWindowControl
+                $inputBinding = [System.Windows.Input.KeyBinding]::new()
+                $inputBinding.Command = $GestureRelay_Command
+                $inputBinding.Gesture = [System.Windows.Input.KeyGesture]::new([System.Windows.Input.Key]::Right)
+                [void]$FloatingWindowControl.InputBindings.Add($inputBinding)
+              }
             }elseif($FloatingAnchorable.ContentId -eq 'WebBrowser'){
               $Bookmarks_FlyoutControlWindowElement = [System.WeakReference]::new($synchash.Bookmarks_FlyoutControl).Target
               $Bookmarks_FlyoutControlWindow = Get-VisualParentUp -source $Bookmarks_FlyoutControlWindowElement -type ([System.Windows.Window])

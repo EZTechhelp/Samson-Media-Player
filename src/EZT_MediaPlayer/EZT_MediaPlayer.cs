@@ -4599,6 +4599,8 @@ public class Config
     public bool Spotify_Update { get; set; }
     public string Spotify_Update_Interval { get; set; }
     public bool Youtube_WebPlayer { get; set; }
+    public bool SaveYoutube_History { get; set; }
+    public List<string> YoutubeHistory { get; set; }
     public string Youtube_Update_Interval { get; set; }
     public bool Enable_Sponsorblock { get; set; }
     public string Youtube_Quality { get; set; }

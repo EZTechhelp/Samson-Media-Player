@@ -57,6 +57,9 @@ function Start-Media{
     if($thisApp.TwitchChatReplayEnabled){
       $thisApp.TwitchChatReplayEnabled = $false
     }
+    #TODO: So many YT videos dont support true embed that seems like a waste to even try so forcing non-embed for now. But maybe make this config option?
+    $No_YT_Embed = $true
+
     $Supported_Youtube_Types = 'YoutubePlaylist','YoutubeVideo','YoutubeTV','YoutubeChannel','YoutubeSubscription','YoutubeMusic','YoutubePlaylistItem'
     if(!$start_Paused){
       write-ezlogs ">>>> Updating Now_Playing_Title_Label to loading" -Dev_mode
@@ -1792,20 +1795,12 @@ function Start-Streamlink {
           $p.dispose()
         }
       }
-      $paths = [Environment]::GetEnvironmentVariable('Path') -split ';'
       $paths2 = $env:path -split ';'
       if([system.io.file]::Exists("${env:ProgramFiles(x86)}\Streamlink\bin\streamlink.exe")){
         $streamlinkpath = "${env:ProgramFiles(x86)}\Streamlink\bin\streamlink.exe"
       }elseif([system.io.file]::Exists("$env:ProgramW6432\Streamlink\bin\streamlink.exe")){
         $streamlinkpath = "$env:ProgramW6432\Streamlink\bin\streamlink.exe"
       }
-      <#      if($streamlinkpath -notin $paths2){
-          write-ezlogs ">>>> Adding streamlink to user enviroment path: $streamlinkpath"
-          $env:path += ";$streamlinkpath"
-          if($streamlinkpath -notin $paths){
-          [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$streamlinkpath",[EnvironmentVariableTarget]::User)
-          }
-      }#>
 
       #Streamlink port
       if(-not [string]::IsNullOrEmpty($thisApp.Config.Streamlink_HTTP_Port)){
@@ -1921,7 +1916,6 @@ function Start-Streamlink {
           write-ezlogs "| Streamlink will not attempt to block ADs" -loglevel 2 -logtype Twitch
         }
         #TODO: OLD: client id for nintendo switch, used as a hack/bypass for twitch ads, not likely needed anymore: --twitch-api-header="Client-Id=ue6666qo983tsx6so1t0vnawi233wa"
-        #TODO: Passing twitch token currently broken - need to update - seems a patch is soon to be available from streamlink
         $Twitch_oauth = $Null
         if($TwitchProxies){
           #Dont pass twitch token when using proxy playlists - ignored anyway
@@ -2277,89 +2271,9 @@ function Start-NewMedia {
             $from_path = [LibVLCSharp.Shared.FromType]::FromPath
           }
         }
-        #TODO: Refactor/consolidate into Initialize-VLC
         if(!$synchash.libvlc){
           try{
             Update-LibVLC -thisApp $thisApp -synchash $synchash -force -media_link $Mediaurl
-            <#            if($thisApp.Config.Use_Visualizations -and $thisApp.Config.Use_Visualizations_Video){
-                $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)mp4|(?i)flac|(?i)wav|(?i)h264|(?i)mkv|(?i)webm|(?i)h265|(?i)mpeg|(?i)mpg4|(?i)mpgx|(?i)vob|(?i)3gp|(?i)m2ts|(?i)aac))')
-                }else{
-                $audio_media_pattern = [regex]::new('$(?<=\.((?i)mp3|(?i)flac|(?i)wav|(?i)3gp|(?i)aac))')
-                }
-                $vlcArgs = [System.Collections.Generic.List[String]]::new()
-                [void]($vlcArgs.add('--file-logging'))
-                [void]($vlcArgs.add("--logfile=$($thisapp.config.Vlc_Log_file)"))
-                [void]($vlcArgs.add("--mouse-events"))
-                [void]($vlcArgs.add("--log-verbose=$($thisapp.config.Vlc_Verbose_logging)"))
-                [void]($vlcArgs.add("--osd"))
-                if($thisApp.Config.Libvlc_Global_Gain -is [int]){
-                [void]($vlcArgs.add("--gain=$($thisApp.Config.Libvlc_Global_Gain)"))
-                }else{
-                [void]($vlcArgs.add('--gain=4.0')) #Set gain to 4 which is default that VLC uses but for some reason libvlc does not
-                }
-                [void]($vlcArgs.add("--logmode=text"))
-                if($thisapp.config.Enable_EQ2Pass){
-                [void]($vlcArgs.add("--equalizer-2pass"))
-                }else{
-                $vlc_eq2pass = $null
-                }
-                if($thisApp.Config.Use_Visualizations -and ($Mediaurl -match $audio_media_pattern)){
-                [void]($vlcArgs.add("--video-on-top"))
-                [void]($vlcArgs.add("--spect-show-original"))
-                if([system.io.Directory]::Exists("$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop")){
-                [void]$vlcArgs.add("--audio-visual=projectm")
-                [void]$vlcArgs.add("--projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`"")
-                $Screen = [System.Windows.Forms.Screen]::PrimaryScreen
-                [void]$vlcArgs.add("--projectm-width=$($Screen.Bounds.Width)")
-                [void]$vlcArgs.add("--projectm-height=$($Screen.Bounds.Height)")
-                [void]$vlcArgs.add("--no-video")
-                [void]$vlcArgs.add("--projectm-meshx=$($Screen.Bounds.Width)")
-                [void]$vlcArgs.add("--projectm-meshy=$($Screen.Bounds.Height)")
-                [void]$vlcArgs.add("--effect-list=spectrum")
-                write-ezlogs "| Enabling ProjectM Visualizations: --projectm-preset-path=`"$($thisApp.Config.Current_Folder)\Resources\libvlc\presets\presets_milkdrop`" --projectm-width=$($Screen.Bounds.Width) --projectm-height=$($Screen.Bounds.Height)" -Warning -logtype Libvlc
-                }elseif($thisApp.Config.Current_Visualization -eq 'Spectrum'){
-                [void]($vlcArgs.add("--audio-visual=Visual"))
-                [void]($vlcArgs.add("--effect-list=spectrum"))
-                }else{
-                [void]($vlcArgs.add("--audio-visual=$($thisApp.Config.Current_Visualization)"))
-                [void]($vlcArgs.add("--effect-list=spectrum"))
-                }
-                }else{
-                [void]($vlcArgs.add("--file-caching=1000"))
-                write-ezlogs "| New libvlc instance, no visualization, (file-caching: 1000)" -showtime -loglevel 2 -logtype Libvlc
-                }
-                if(-not [string]::IsNullOrEmpty($thisapp.config.vlc_Arguments)){
-                try{
-                $thisapp.config.vlc_Arguments -split ',' | & { process {
-                if([regex]::Escape($_) -match '--' -and $vlcArgs -notcontains $_){
-                write-ezlogs "| Adding custom Libvlc option: $($_)" -loglevel 2
-                [void]($vlcArgs.add("$($_)"))
-                }else{
-                write-ezlogs "Cannot add custom libvlc option $($_) - it does not meet the required format or is already added!" -warning -loglevel 2 -logtype Libvlc
-                }
-                }}
-                }catch{
-                write-ezlogs "An exception occurred processing custom VLC arguments" -catcherror $_
-                }
-                }
-                [String[]]$libvlc_arguments = $vlcArgs | & { process {
-                if($thisApp.Config.Dev_mode){write-ezlogs "[Start-NewMedia] | Applying Libvlc option: $($_)" -loglevel 2 -logtype Libvlc -Dev_mode}
-                if([regex]::Escape($_) -match '--'){
-                $_
-                }else{
-                write-ezlogs "Cannot apply libvlc option $($_) - it does not meet the required format!" -warning -loglevel 2 -logtype Libvlc
-                }
-                }}
-                if($thisApp.Config.Libvlc_Version -eq '4'){
-                $synchash.libvlc = [LibVLCSharp.LibVLC]::new($libvlc_arguments)
-                }else{
-                $synchash.libvlc = [LibVLCSharp.Shared.LibVLC]::new($libvlc_arguments)
-                }
-                $synchash.libvlc.SetUserAgent("$($thisApp.Config.App_Name) Media Player","HTTP/User/Agent")
-                $startapp = Get-AllStartApps "*$($thisApp.Config.App_name)*"
-                if($startapp.AppID -and $synchash.libvlc){
-                $synchash.libvlc.SetAppId($startapp.AppID,$thisApp.Config.App_Version,"$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico")
-            }#>
           }catch{
             write-ezlogs "An exception occurred disposing and creating a new videoview control" -showtime -catcherror $_
           }
@@ -2448,7 +2362,6 @@ function Start-NewMedia {
           }
         }else{
           $twitch_channel = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase(([System.IO.Path]::GetFileName($Mediaurl)).tolower()).trim()
-          #$twitch_channel = $((Get-Culture).textinfo.totitlecase(([System.IO.Path]::GetFileName($Mediaurl)).tolower()))
           $mediaproperties.title = $twitch_channel
           $url = $Mediaurl
           $hasVideo = $true
@@ -2630,7 +2543,7 @@ function Update-MediaRenderers {
                   if($synchash.VideoView_Cast_Button.items -contains $synchash.VideoView_Cast_rescan){
                     [void]($synchash.VideoView_Cast_Button.items.Remove($synchash.VideoView_Cast_rescan))
                   }
-                  $synchash.MediaRenderers | foreach {
+                  $synchash.MediaRenderers | & { process {
                     try{
                       if($synchash.VideoView_Cast_Button.items.header -notcontains $_.Model){
                         write-ezlogs ">>>> Adding media renderer to list: $($_.Model)" -loglevel 2
@@ -2648,7 +2561,7 @@ function Update-MediaRenderers {
                     }catch{
                       write-ezlogs "An exception occurred adding Media Renderer $($_ | out-string)" -catcherror $_
                     }
-                  }
+                  }}
                   if($synchash.VideoView_Cast_rescan -and $synchash.VideoView_Cast_Button.items -notcontains $synchash.VideoView_Cast_rescan){
                     write-ezlogs ">>>> Moving rescan item to bottom" -Dev_mode
                     [void]($synchash.VideoView_Cast_Button.items.Add($synchash.VideoView_Cast_rescan))
@@ -2731,16 +2644,10 @@ function Start-MediaCast {
       if($ffmpeg_path -notin $paths2){
         write-ezlogs ">>>> Adding FFMPEG to user enviroment path $ffmpeg_path"
         $env:path += ";$ffmpeg_path"
-        <#        if($ffmpeg_path -notin $paths){
-            [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$ffmpeg_path",[EnvironmentVariableTarget]::User)
-        }#>
       }
       if($go2tv_path -notin $paths2){
         write-ezlogs ">>>> Adding go2tv to user enviroment path $go2tv_path"
         $env:path += ";$go2tv_path"
-        <#        if($go2tv_path -notin $paths){
-            [Environment]::SetEnvironmentVariable("Path",[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine) + ";$go2tv_path",[EnvironmentVariableTarget]::User)
-        }#>
       }
       if($Scan){
         write-ezlogs ">>>> Scanning for available DLNA Media Renderers"

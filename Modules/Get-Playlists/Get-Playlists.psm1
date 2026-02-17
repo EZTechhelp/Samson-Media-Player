@@ -1232,8 +1232,12 @@ function Get-Playlists
             if($Startup -or $Full_Refresh -or $Filter_Refresh){
               Update-Playlists -synchash $synchashWeak.Target -thisApp $thisApp -UpdateItemssource -Full_Refresh:$Full_Refresh -Quick_Refresh:$($Quick_Refresh -or $Filter_Refresh)
             }
-          }elseif($synchashWeak.Target.PlayLists_Progress_Ring){
-            Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'PlayLists_Progress_Ring' -Property 'IsActive' -value $false
+          }else{
+            write-ezlogs "No playlists found to process!" -Warning
+            Update-Playlists -synchash $synchashWeak.Target -thisApp $thisApp -UpdateItemssource
+            if($synchashWeak.Target.PlayLists_Progress_Ring){
+              Update-MainWindow -synchash $synchashWeak.Target -thisApp $thisApp -control 'PlayLists_Progress_Ring' -Property 'IsActive' -value $false
+            }
           } 
         }catch{
           write-ezlogs "An exception occurred in Get_Playlists_ScriptBlock" -CatchError $_

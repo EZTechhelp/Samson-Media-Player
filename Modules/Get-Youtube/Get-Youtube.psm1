@@ -244,27 +244,27 @@ function Get-Youtube {
         write-ezlogs ">>>> Using yt-dlp to get info for playlist $playlist - $youtube_id" -showtime -logtype Youtube -loglevel 2
         if($import_browser_auth){
           (yt-dlp -f bestvideo+bestaudio/best -g $playlist --rm-cache-dir -o '*' -j --cookies-from-browser $import_browser_auth) | & { process {
-            try{
-              if(!(Test-URL $_)){
-                lock-object -InputObject $synchash.Videos_toProcess.SyncRoot -ScriptBlock {
-                  [void]$synchash.Videos_toProcess.add(($_ | Convertfrom-json -ErrorAction SilentlyContinue))
+              try{
+                if(!(Test-URL $_)){
+                  lock-object -InputObject $synchash.Videos_toProcess.SyncRoot -ScriptBlock {
+                    [void]$synchash.Videos_toProcess.add(($_ | Convertfrom-json -ErrorAction SilentlyContinue))
+                  }
                 }
+              }catch{
+                write-ezlogs "An exception occurred processing item from yt-dlp: $($_ | out-string)" -catcherror $_
               }
-            }catch{
-              write-ezlogs "An exception occurred processing item from yt-dlp: $($_ | out-string)" -catcherror $_
-            }
           }}
         }else{
           (yt-dlp -f b* -g $playlist --rm-cache-dir -o '*' -j) | & { process {
-            try{
-              if(!(Test-URL $_)){
-                lock-object -InputObject $synchash.Videos_toProcess.SyncRoot -ScriptBlock {
-                  [void]$synchash.Videos_toProcess.add(($_ | Convertfrom-json -ErrorAction SilentlyContinue))
+              try{
+                if(!(Test-URL $_)){
+                  lock-object -InputObject $synchash.Videos_toProcess.SyncRoot -ScriptBlock {
+                    [void]$synchash.Videos_toProcess.add(($_ | Convertfrom-json -ErrorAction SilentlyContinue))
+                  }
                 }
+              }catch{
+                write-ezlogs "An exception occurred processing item from yt-dlp: $($_ | out-string)" -catcherror $_
               }
-            }catch{
-              write-ezlogs "An exception occurred processing item from yt-dlp: $($_ | out-string)" -catcherror $_
-            }
           }}
         }
       }
@@ -1434,6 +1434,13 @@ function Get-YoutubeURL{
       }elseif($youtube_id -match '\&list='){
         $youtube_id = ($youtube_id -split '\&list=')[0]
       }
+      if($youtube_id -and $youtube_type -eq 'YoutubeVideo' -and $APILookup){
+        $video = Get-YouTubeVideo -Id $youtube_id
+        if($video){
+          $Channel = $video.snippet.channelId
+          $ChannelTitle = $video.snippet.channelTitle
+        }
+      }
       if($url -match '\?&autoplay=1'){
         $url = $url -replace '\?&autoplay=1'
         $autoplay = $true
@@ -1475,6 +1482,7 @@ function Get-YoutubeURL{
       'YTVUrl' = $YTVUrl
       'Type' = $youtube_type
       'Channel' = $Channel
+      'ChannelTitle' = $ChannelTitle
       'InvidiousUrl' = $InvidiousUrl
       'PlaylistUrl' = $PlaylistUrl
       'PlaylistEmbedUrl' = $PlaylistEmbedUrl

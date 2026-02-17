@@ -1450,7 +1450,21 @@ function Open-MiniPlayer
     $synchash.MiniPlayer_Viewer.add_closing($Synchash.MiniPlayer_ClosingScriptblock)
     $synchash.MiniPlayer_Viewer.add_closed($Synchash.MiniPlayer_ClosedScriptblock)
     $synchash.MiniPlayer_Viewer.add_ContentRendered($Synchash.MiniPlayer_ContentRenderedScriptblock)
-
+    #InputBindings
+    if($Synchash.LeftGesture_Command){
+      $GestureRelay_Command = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.LeftGesture_Command -target $synchash.MiniPlayer_Viewer
+      $inputBinding = [System.Windows.Input.KeyBinding]::new()
+      $inputBinding.Command = $GestureRelay_Command
+      $inputBinding.Gesture = [System.Windows.Input.KeyGesture]::new([System.Windows.Input.Key]::Left)
+      [void]$synchash.MiniPlayer_Viewer.InputBindings.Add($inputBinding)
+    }
+    if($Synchash.RightGesture_Command){
+      $GestureRelay_Command = New-RelayCommand -synchash $synchash -thisApp $thisApp -scriptblock $Synchash.RightGesture_Command -target $synchash.MiniPlayer_Viewer
+      $inputBinding = [System.Windows.Input.KeyBinding]::new()
+      $inputBinding.Command = $GestureRelay_Command
+      $inputBinding.Gesture = [System.Windows.Input.KeyGesture]::new([System.Windows.Input.Key]::Right)
+      [void]$synchash.MiniPlayer_Viewer.InputBindings.Add($inputBinding)
+    }
     if($synchash.TrayPlayerFlyout){
       $synchash.TrayPlayerFlyout.isOpen = $true
     }
@@ -1466,6 +1480,9 @@ function Open-MiniPlayer
       write-ezlogs "| hiding VideoViewAirControl" -LogLevel 0 -Verboselog:$Verboselog
       $synchash.VideoViewAirControl.Visibility = 'Collapsed'
     }
+    # Allow input to window for TextBoxes, etc
+    [Void][System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($synchash.MiniPlayer_Viewer)
+
     #Register window to installed application ID - set position
     $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($synchash.MiniPlayer_Viewer)
     $WindowHandle = $Window_Helper.EnsureHandle()

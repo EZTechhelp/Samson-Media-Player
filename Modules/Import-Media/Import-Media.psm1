@@ -95,9 +95,14 @@ function Import-Media
           $StartPlaybackList = [System.Collections.Generic.List[Media]]::new()
           $synchash.UpdatedLocalMedia = 0
           try{
-            $Media_Path -split ',' | & { process {
+            if([System.IO.File]::Exists($Media_Path)){
+              $MediatoProcess = $Media_Path
+            }else{
+              $MediatoProcess = $Media_Path -split ','
+            }
+            $MediatoProcess | & { process {
                 try{
-                  if($file = ([System.IO.FileInfo]::new($_) | Where-Object{$_.Extension -match $media_pattern})){
+                  if(($file = [System.IO.FileInfo]::new($_) | Where-Object{$_.Extension -match $media_pattern}) -and $File.length -gt 0){
                     $media = Get-MediaProfile -thisApp $thisApp -synchash $synchash -Media_URL $_
                     $directory = [system.io.path]::GetDirectoryName($_)
                     $PathRoot = [system.io.path]::GetPathRoot($_)

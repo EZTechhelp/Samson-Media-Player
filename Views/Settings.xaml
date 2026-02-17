@@ -1514,7 +1514,25 @@
 								<ToggleButton Name="PlayLink_OnDrop_Button" Width="20" Height="20" Margin="0,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
 									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
 								</ToggleButton>
-							</Grid>
+							</Grid>							
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,0,0,0">
+								<Grid Margin="0,0,0,0">
+									<mah:ToggleSwitch Content="Save Youtube Playback History" Name="SaveYoutube_History_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" Grid.Column="0" HorizontalAlignment="Left" Foreground="#ffffff" IsEnabled="True"/>
+									<ToggleButton Name="SaveYoutube_History_Button" Width="20" Height="20" Margin="0,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+										<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+									</ToggleButton>
+								</Grid>
+								<Button Name='ClearYoutube_History_Button' Grid.Column="0" Style="{StaticResource DetailButtonStyle}" Margin="30,4,0,0" VerticalAlignment="Top" Height="28" IsEnabled="{Binding ElementName=SaveYoutube_History_Toggle, Path=IsOn}" HorizontalAlignment="Left">
+									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
+										<iconPacks:PackIconMaterial Kind="Eraser"
+																	Margin="4 4 2 4"
+																	Width="14"
+																	Height="14"
+																	VerticalAlignment="Center" PresentationOptions:Freeze="True"/>
+										<TextBlock Text="Clear History" Margin="2 4 4 4" VerticalAlignment="Center"/>
+									</VirtualizingStackPanel>
+								</Button>
+							</VirtualizingStackPanel>							
 							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal">
 								<ToggleButton Name="Youtube_Quality_Button" Width="20" Height="20" Margin="0,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
 									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>

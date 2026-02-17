@@ -44,6 +44,7 @@ function Show-CustomWindow{
     [string]$MessageTextHAlign,
     [string]$MarkDownFile,
     $OkActionScriptBlock,
+    $CustomWindowResultTimer,
     $CustomWindow_hash = $CustomWindow_hash,
     [string]$Message_2,
     [ValidateSet('Info','YesNo','OkCancel','Options')]
@@ -83,6 +84,7 @@ function Show-CustomWindow{
       [String]$MessageTextHAlign,
       [string]$MarkDownFile,
       $OKActionScriptBlock,
+      $CustomWindowResultTimer,
       $CustomWindow_hash,
       [string]$Message_2,
       [string]$Type,
@@ -274,7 +276,6 @@ function Show-CustomWindow{
       }else{
         write-ezlogs "Unable to load valid custom XAML window -- cannot continue!" -Warning -AlertUI
       }
-
       #region Custom Options
       if($Options.count -gt 0 -and $CustomWindow_hash.Options_StackPanel){
         $CustomWindow_hash.Options_StackPanel.Margin="10,10,0,5"
@@ -297,7 +298,7 @@ function Show-CustomWindow{
         }}
         $Count = 0
         foreach($Option in $Options){
-          if(!$CustomWindow_hash."$($Option.Name)_$($Option.Type)"){
+          if(!$CustomWindow_hash."$($Option.Name)_$($Option.Type)" -and $Option.Type -ne 'Hidden'){
             $CustomWindow_hash."$($Option.Name)_Label" = [System.Windows.Controls.Textblock]::new()
             $CustomWindow_hash."$($Option.Name)_Label".Name = "$($Option.Name)_Label"
             $CustomWindow_hash."$($Option.Name)_Label".Margin="5,5,5,5"
@@ -470,15 +471,17 @@ function Show-CustomWindow{
       #endregion MouseDown Event
 
       #region Closed Event
-      $CustomWindow_hash.Closed_Event = {
-        param($sender)
-        try{                                  
-          write-ezlogs ">>>> Show-CustomWindow Closed"        
-        }catch{
-          write-ezlogs "An exception occurred closing Show-Weblogin window" -showtime -catcherror $_
+      if($Verboselog){
+        $CustomWindow_hash.Closed_Event = {
+          param($sender)
+          try{                                  
+            write-ezlogs ">>>> Show-CustomWindow Closed"
+          }catch{
+            write-ezlogs "An exception occurred closing Show-Weblogin window" -showtime -catcherror $_
+          }
         }
+        $Null = $CustomWindow_hash.Window.Add_Closed($CustomWindow_hash.Closed_Event)
       }
-      $Null = $CustomWindow_hash.Window.Add_Closed($CustomWindow_hash.Closed_Event)
       #endregion Closed Event
 
       #region Loaded Event 
@@ -521,8 +524,10 @@ function Show-CustomWindow{
           if($Ok_Button){
             $null = Get-EventHandlers -Element $Ok_Button -RoutedEvent ([System.Windows.Controls.Button]::ClickEvent) -RemoveHandlers -VerboseLog:$Verboselog
           }
-          $Null = $sender.Remove_Closed($CustomWindow_hash.Closed_Event)
-          $CustomWindow_hash.Closed_Event = $Null
+          if($CustomWindow_hash.Closed_Event){
+            $Null = $sender.Remove_Closed($CustomWindow_hash.Closed_Event)
+            $CustomWindow_hash.Closed_Event = $Null
+          }
           $CustomWindow_hash.Loaded_Event = $Null
           $CustomWindow_hash.Unloaded_Event = $Null
           if(!$CustomWindow_hash.IsCanceled -and $Options){
@@ -571,13 +576,13 @@ function Show-CustomWindow{
               }elseif($CustomWindow_hash.$_ -is [System.Windows.Controls.TextBox]){
                 [void](Get-EventHandlers -Element $CustomWindow_hash.$_ -RoutedEvent ([System.Windows.Controls.TextBox]::TextChangedEvent) -RemoveHandlers -VerboseLog:$Verboselog)
               }
-              if($sender.FindName($_)){
-                if($Verboselog){write-ezlogs ">>>> Unregistering CustomWindow_hash UI name: $_" -Dev_mode:$Verboselog}
-                $null = $sender.UnRegisterName($_)                
-              }
+              <#              if($sender.FindName($_)){
+                  if($Verboselog){write-ezlogs ">>>> Unregistering CustomWindow_hash UI name: $_" -Dev_mode:$Verboselog}
+                  $null = $sender.UnRegisterName($_)                
+              }#>
               if($_ -ne 'Output'){
                 $CustomWindow_hash.$_ = $Null
-                [void]$CustomWindow_hash.Remove($_)  
+                [void]$CustomWindow_hash.Remove($_)
               }       
           }}
           $hashkeys = $Null
@@ -607,6 +612,10 @@ function Show-CustomWindow{
       [System.Windows.Threading.Dispatcher]::Run()
       if($WaitforOutput){
         return $CustomWindow_hash.output
+      }elseif($CustomWindowResultTimer){
+        write-ezlogs ">>>> Starting CustomWindowResultTimer" -LogLevel 0 -Verboselog:$VerboseLog
+        $CustomWindowResultTimer.tag = $CustomWindow_hash.output
+        $CustomWindowResultTimer.start()   
       }elseif($synchash.CustomWindowResultTimer){
         write-ezlogs ">>>> Starting CustomWindowResultTimer" -LogLevel 0 -Verboselog:$VerboseLog
         $synchash.CustomWindowResultTimer.tag = $CustomWindow_hash.output

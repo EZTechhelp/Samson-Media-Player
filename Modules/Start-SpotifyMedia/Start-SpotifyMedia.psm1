@@ -42,13 +42,13 @@ function Start-SpotifyMedia{
   )
   try{
     $Start_SpotifyMedia_Measure = [system.diagnostics.stopwatch]::StartNew()
-    write-ezlogs "##### Start-SpotifyMedia Executed for $($Media.title)" -loglevel 2 -linesbefore 1   
+    write-ezlogs "##### Start-SpotifyMedia Executed for $($Media.title)" -loglevel 2 -linesbefore 1
     [void](Stop-Runspace -thisApp $thisApp -runspace_name 'Spotify_Play_media' -force)
   }catch{
     write-ezlogs " An exception occurred stopping existing runspace 'Spotify_Play_media'" -showtime -catcherror $_
   }
   try{
-    #Clear various tracking variables  
+    #Clear various tracking variables
     $synchash.Start_media = $null
     $synchash.Last_Played = $Null
     $synchash.VLC_PlaybackCancel = $true
@@ -69,7 +69,7 @@ function Start-SpotifyMedia{
     $synchash.Session_Spotifytype = $Null
     $synchash.Current_Spotify_Deviceid = $null
     if($synchash.Start_media_timer){
-      $synchash.Start_media_timer.stop() 
+      $synchash.Start_media_timer.stop()
     }
     if($thisApp.TwitchChatReplayEnabled){
       $thisApp.TwitchChatReplayEnabled = $false
@@ -116,6 +116,11 @@ function Start-SpotifyMedia{
       $synchash.vlc.stop()
       #$synchash.vlc.media = $Null
     } 
+    if(!$thisApp.Config.Import_Spotify_Media){
+      write-ezlogs "Spotify Integration is not enabled in settings. Cannot continue!" -warning -AlertUI
+      $synchash.Stop_media_timer.start()
+      return
+    }
   }catch{
     write-ezlogs " An exception occurred resetting media or UI states" -showtime -catcherror $_
   }
@@ -484,7 +489,7 @@ function Start-SpotifyMedia{
                 write-ezlogs "An exception occurred in Start-Playback using Invoke-RestMethod for url http://127.0.0.1:8974/PLAYURI?$($playback_url)" -catcherror $_
               }                                          
               while((!$synchash.Spicetify.is_playing -or $synchash.Spicetify.uri -ne $playback_url) -and $waittimer -lt 60 -and !$synchash.Spotify_PlaybackCancel){
-                write-ezlogs "| Waiting for Spotify Playback to begin...Spicetify: $($synchash.Spicetify | out-string)"
+                write-ezlogs "| Waiting for Spotify Playback to begin...Spicetify.state: $($synchash.Spicetify.State)...Spicetify.TITLE: $($synchash.Spicetify.TITLE)...Spicetify.POSITION: $($synchash.Spicetify.POSITION)"
                 if($waittimer -eq 10 -and !(Get-Process Spotify*)){
                   write-ezlogs "Spotify should have started by now, lets restart Spotify" -warning
                   $Spotify_Process = Start-Process $Spotify_Path -WindowStyle Minimized -ArgumentList "--minimized --uri=$playback_url --enable-developer-mode --show-console --remote-debugging-port=9222 --no-default-browser-check" -PassThru

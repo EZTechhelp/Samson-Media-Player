@@ -426,6 +426,16 @@ function Add-TrayMenu
               }
               Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
             }
+            'Save Youtube Playback History' {
+              if($Sender.isChecked){
+                $thisApp.Config.SaveYoutube_History = $false
+                $Sender.isChecked = $false
+              }else{
+                $thisApp.Config.SaveYoutube_History = $true
+                $Sender.isChecked = $true
+              }
+              Write-EZLogs -text "[Quick Settings] >>>> Setting option '$($Sender.Header)' to: $($Sender.isChecked)"
+            }
             'Auto Quality' {
               if($Sender.isChecked){
                 $Sender.isChecked = $false
@@ -1484,6 +1494,15 @@ function Add-TrayMenu
             'IsCheckable' = $True
           }
           $null = $YoutubeSubitems.Add($PlaybackOnDrop)
+          $SaveYoutubeHistory = @{
+            'Header' = "Save Youtube Playback History"
+            'Color' = 'White'
+            'Command' = $synchash.QuickSettings_Command
+            'Enabled' = $true
+            'IsChecked' = $thisApp.Config.SaveYoutube_History
+            'IsCheckable' = $True
+          }
+          $null = $YoutubeSubitems.Add($SaveYoutubeHistory)
           $YoutubeQualitySubitems = [System.Collections.Generic.List[object]]::new()
           'Auto','Best','Medium','Low' | & { process {
               $Quality = @{
@@ -1804,6 +1823,7 @@ function Add-JumpList
                     }elseif(@($Track).count -gt 1){
                       write-ezlogs "Found multiple ($(@($Track).count)) media when attempting to lookup previous played for id $($Last_played)" -warning
                     }else{
+                      write-ezlogs "Unable to find track info last played item: $Last_played - removing from history list" -warning
                       $null = $History_items_toremove.add([double]$index_toget)
                     }
                   }
@@ -1830,7 +1850,7 @@ function Add-JumpList
             lock-object -InputObject $thisApp.config.History_Playlist.SyncRoot -ScriptBlock {
               $History_items_toremove | & { process {
                   [void]$thisApp.config.History_Playlist.Remove([double]$_)
-                  write-ezlogs "Removed invalid or duplicate item index from history $($_)" -warning
+                  #write-ezlogs "Removed invalid or duplicate item index from history $($_)" -warning
               }}
             }
           }catch{

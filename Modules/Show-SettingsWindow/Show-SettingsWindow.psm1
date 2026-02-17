@@ -4239,7 +4239,9 @@ function Show-SettingsWindow{
                 }
                 $Variable_list = Get-Variable -Scope Local | & { process {if ($_.Options -notmatch "ReadOnly|Constant"){$_}}}
                 write-ezlogs ">>>> Starting new PODE Server Runspace for Spicetify" -showtime -logtype Setup -loglevel 2
-                Start-Runspace -scriptblock $synchash.pode_server_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'PODE_SERVER_RUNSPACE' -thisApp $thisApp -synchash $synchash
+                if($synchash.pode_server_scriptblock){
+                  Start-Runspace -scriptblock $synchash.pode_server_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'PODE_SERVER_RUNSPACE' -thisApp $thisApp -synchash $synchash
+                }               
                 $Variable_list = $Null
                 $hashsetup.Spicetify_Status = $true
                 $hashsetup.Spicetify_textblock.text = '[SUCCESS] Successfully applied Spicetify customizations to Spotify! The Spotify app may have opened. Make sure you are logged in with your Spotify account'
@@ -5552,6 +5554,60 @@ function Show-SettingsWindow{
       })
       #----------------------------------------------
       #endregion PlayLink_OnDrop Help
+      #----------------------------------------------
+
+      #----------------------------------------------
+      #region SaveYoutube_History Toggle
+      #----------------------------------------------
+      $SaveYoutube_History_Command = {
+        Param($sender)
+        try{
+          $thisapp.configTemp.SaveYoutube_History = $sender.isOn
+        }catch{
+          write-ezlogs "An exception occurred in SaveYoutube_History_Toggle.add_Toggled" -showtime -catcherror $_
+        }
+      }
+      $hashsetup.SaveYoutube_History_Toggle.add_Toggled($SaveYoutube_History_Command)
+      #----------------------------------------------
+      #endregion SaveYoutube_History Toggle
+      #----------------------------------------------
+
+      #----------------------------------------------
+      #region SaveYoutube_History Help
+      #----------------------------------------------
+      $hashsetup.SaveYoutube_History_Button.add_Click({
+          try{
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\SaveYoutube_History.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open  -Header $hashsetup.SaveYoutube_History_Toggle.Content -clear
+          }catch{
+            write-ezlogs "An exception occurred in SaveYoutube_History_Button.add_Click" -CatchError $_ -enablelogs
+          }
+      })
+      #----------------------------------------------
+      #endregion SaveYoutube_History Help
+      #----------------------------------------------
+
+      #----------------------------------------------
+      #region ClearYoutube_History
+      #----------------------------------------------
+      $hashsetup.ClearYoutube_History_Button.add_Click({
+          try{
+            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
+            $Button_settings.AffirmativeButtonText = "Yes"
+            $Button_settings.NegativeButtonText = "No"
+            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
+            $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Clear Youtube Watch History?","Are you sure you wish to clear all watch history for Youtube? (This will take effect immediately)",$okAndCancel,$button_settings)
+            if($result -eq 'Affirmative'){
+              write-ezlogs "User wished to clear Youtube watch history" -showtime -warning -logtype Setup
+              $thisApp.Config.YoutubeHistory.clear()
+            }else{
+              write-ezlogs "User did not wish to clear Youtube watch history" -showtime -logtype Setup
+            }
+          }catch{
+            write-ezlogs "An exception occurred in ClearYoutube_History_Button.add_Click" -CatchError $_ -enablelogs
+          }
+      })
+      #----------------------------------------------
+      #endregion ClearYoutube_History
       #----------------------------------------------
 
       #----------------------------------------------
@@ -7902,6 +7958,12 @@ function Show-SettingsWindow{
           if($hashsetup.Spicetify_Toggle.isOn){
             try{
               $thisapp.config.Use_Spicetify = $true
+              $existing_Runspace = Get-runspace -name 'PODE_SERVER_RUNSPACE'
+              if(!$existing_Runspace -and $synchash.pode_server_scriptblock){
+                write-ezlogs ">>>> Spicetify enabled, starting PODE_SERVER_RUNSPACE" -logtype Setup
+                $Variable_list = (Get-Variable -Scope Local) | & { process {if ($_.Options -notmatch 'ReadOnly|Constant'){$_}}}
+                Start-Runspace -scriptblock $synchash.pode_server_scriptblock -StartRunspaceJobHandler -Variable_list $Variable_list -runspace_name 'PODE_SERVER_RUNSPACE' -thisApp $thisApp -synchash $synchash
+              }
             }catch{
               write-ezlogs "An exception occurred enabling Spicetify customization" -showtime -catcherror $_
             }
@@ -7924,10 +7986,19 @@ function Show-SettingsWindow{
                 $hashsetup.Spicetify_textblock.FontSize = 14
                 $hashsetup.Spicetify_transitioningControl.content = $hashsetup.Spicetify_textblock
               }
-              Add-Member -InputObject $thisapp.config -Name 'Use_Spicetify' -Value $false -MemberType NoteProperty -Force
+              $thisapp.config.Use_Spicetify = $false
+              #close podeserver
+              try{
+                if((NETSTAT.EXE -an) | Where-Object -FilterScript {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'}){
+                  write-ezlogs -text "| Closing PODE Server with 'http://127.0.0.1:8974/CLOSEPODE'" -LogLevel 2
+                  Invoke-RestMethod -Uri 'http://127.0.0.1:8974/CLOSEPODE' -UseBasicParsing -ErrorAction SilentlyContinue
+                }
+              }catch{
+                write-ezlogs -text 'An exception occurred closing PODE Server' -CatchError $_
+              }
             }catch{
               write-ezlogs 'An error occurred while disabling Spicetify customizations' -showtime -catcherror $_
-              Add-Member -InputObject $thisapp.config -Name 'Use_Spicetify' -Value $false -MemberType NoteProperty -Force
+              $thisapp.config.Use_Spicetify = $false
             }
           }
           #endregion Spicetify
@@ -8700,6 +8771,9 @@ function Show-SettingsWindow{
           Remove-Variable hashsetup
         }catch{
           write-ezlogs "An exception occurred in Settings Window unloaded event" -catcherror $_
+        }finally{
+          $error.Clear()
+          [void][ScriptBlock].GetMethod('ClearScriptBlockCache', [System.Reflection.BindingFlags]'Static,NonPublic').Invoke($null, $null)
         }
       }
       $hashsetup.window.Add_Unloaded($hashsetup.Window_Unloaded_Command)
@@ -9890,6 +9964,14 @@ function Update-Settings {
             $hashsetup.PlayLink_OnDrop_Toggle.isOn = $thisapp.config.PlayLink_OnDrop -eq $true
             #----------------------------------------------
             #endregion PlayLink_OnDrop
+            #----------------------------------------------
+
+            #----------------------------------------------
+            #region SaveYoutube_History
+            #----------------------------------------------
+            $hashsetup.SaveYoutube_History_Toggle.isOn = $thisapp.config.SaveYoutube_History -eq $true
+            #----------------------------------------------
+            #endregion SaveYoutube_History
             #----------------------------------------------
 
             #----------------------------------------------
