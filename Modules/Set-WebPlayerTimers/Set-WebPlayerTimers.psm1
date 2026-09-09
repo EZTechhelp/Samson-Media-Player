@@ -130,7 +130,9 @@ if(lastUpdated !== time && time <= video_data.length_seconds - 15) {
                   $synchash.YoutubeWebView2_Script =  @"
  try{
     //console.log('Checking for player state');
-    var player = document.getElementById('movie_player');
+    if(player == null){
+      var player = document.getElementById('movie_player');
+    }
     var state = player.getPlayerState();
     var videourl = player.getVideoUrl();
    } catch (e) {
@@ -271,6 +273,15 @@ if(lastUpdated !== time && time <= video_data.length_seconds - 15) {
     console.log('Registering Youtube Player state event');
     player.addEventListener("onStateChange", onYouTubePlayerStateChange);
     PlayerStateEvent = true;
+    try {
+      var volume = player.getVolume();
+      if (volume !== $($synchash.Volume_Slider.Value)) {
+        console.log('Setting Youtube player starting volume:',$($synchash.Volume_Slider.Value));
+        player.setVolume($($synchash.Volume_Slider.Value));
+      }
+    } catch (e) {
+     console.log('Exception occurred adding setting youtube player volume to: $($synchash.Volume_Slider.Value)', e);
+    }
    }
   } catch (e) {
    console.log('Exception occurred adding EventListener to youtube player', e);
@@ -538,14 +549,14 @@ var state = getStatePosition();
                     if($queue_index -ne -1){
                       $Current_playing = $Current_playlist_items[$queue_index]
                     }else{
-                      $Current_playing = $Current_playlist_items.where({$_.id -eq $Current_Playing_Id}) | select -Unique
+                      $Current_playing = $Current_playlist_items.where({$_.id -eq $Current_Playing_Id}) | Select-Object -Unique
                     }
                   }
                   if(!$Current_playing){
                     if($thisapp.config.Current_Playlist.values -notcontains $Current_Playing_Id){
                       write-ezlogs '| Item does not seem to be in the queue' -showtime -warning
                       write-ezlogs "| Adding $($Current_Playing_Id) to Play Queue" -showtime
-                      $index = ($thisapp.config.Current_Playlist.keys | measure -Maximum).Maximum
+                      $index = ($thisapp.config.Current_Playlist.keys | Measure-Object -Maximum).Maximum
                       $index++
                       $null = $thisapp.config.Current_Playlist.add($index,$Current_Playing_Id)
                       Get-PlayQueue -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisapp -use_Runspace -Export_Config
@@ -559,7 +570,7 @@ var state = getStatePosition();
                       if($queue_index -ne -1){
                         $Current_playing = $Current_playlist_items[$queue_index]
                       }else{
-                        $Current_playing = $Current_playlist_items.where({$_.id -eq $Current_Playing_Id}) | select -Unique
+                        $Current_playing = $Current_playlist_items.where({$_.id -eq $Current_Playing_Id}) | Select-Object -Unique
                       }
                     }
                     if(!$Current_playing){
@@ -587,7 +598,7 @@ var state = getStatePosition();
                     if($queue_index -ne -1){
                       $Current_playing = $Current_playlist_items[$queue_index]
                     }else{
-                      $Current_playing = $Current_playlist_items.where({$_.id -eq $Current_Playing_Id}) | select -Unique
+                      $Current_playing = $Current_playlist_items.where({$_.id -eq $Current_Playing_Id}) | Select-Object -Unique
                     }
                   }
                   if($synchash.Now_Playing_Title_Label.DataContext -notmatch [regex]::Escape("$($Current_playing.title)")){
@@ -597,7 +608,7 @@ var state = getStatePosition();
                   }
                   try{
                     $Current_playing.FontWeight = 'Bold'
-                    $Current_playing.FontSize = [Double]'13'
+                    $Current_playing.FontSize = [Double]'16'
                     if($synchash.AudioRecorder.isRecording){
                       $current_playing.PlayIconRecord = "RecordRec"
                       $current_playing.PlayIconRecordVisibility = "Visible"
@@ -882,6 +893,7 @@ function Set-YoutubeWebPlayerTimer
     [switch]$Start_Paused,
     [switch]$Stop,
     [switch]$No_YT_Embed,
+    [switch]$PrivateMode,
     [switch]$LogLevel,
     [switch]$Verboselog
   )
@@ -1177,6 +1189,7 @@ function Set-YoutubeWebPlayerTimer
             'Start_Paused' = $Start_Paused
             'Stop' = $Stop
             'No_YT_Embed' = $No_YT_Embed
+            'PrivateMode' = $PrivateMode
             'LogLevel' = $LogLevel
             'Verboselog' = $Verboselog
         })

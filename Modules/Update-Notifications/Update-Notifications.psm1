@@ -596,6 +596,9 @@ function Show-ChildWindow{
       $hashChildWindow.Window.title = $WindowTitle
       if([system.io.file]::Exists($Logo)){
         $hashChildWindow.Logo.Source = $Logo
+        if($hashChildWindow.Logo.Source.CanFreeze){
+          $hashChildWindow.Logo.Source.Freeze()
+        }       
       }else{
         $hashChildWindow.Logo.Source = "$($thisapp.Config.Current_folder)\Resources\Samson_Icon_NoText1.ico" 
       }
@@ -626,7 +629,7 @@ function Show-ChildWindow{
       $imagebrush.ImageSource.freeze()
       $hashChildWindow.Background_TileGrid.Background = $imagebrush      
       $hashChildWindow.Window.Style = $hashChildWindow.Window.TryFindResource('WindowChromeStyle')
-      $hashChildWindow.Window.UpdateDefaultStyle()
+      #$hashChildWindow.Window.UpdateDefaultStyle()
       $hashChildWindow.PageHeader.Content = $WindowTitle     
       if($sendername ){       
         $hashChildWindow.$sendername = $hashChildWindow.Window
@@ -763,68 +766,34 @@ function Show-ChildWindow{
     $hashChildWindow.Ok_Button.add_click({     
         param($Sender)          
         try{  
-          if($sendername -eq 'OpenAI' -and $Prompt){
-            write-ezlogs ">>>> Prompting for OpenAI"
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()        
-            $Result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalInputExternal($hashChildWindow.Window,'Ask Samson a Question?','Ask any question and Samson will have the answer',$Button_Settings)
-            if(-not [string]::IsNullOrEmpty($Result)){ 
-              #TODO: TEST ONLY - MODULE NOT INCLUDED ANYMORE - LEAVING FOR FUTURE
-              Invoke-OpenAI -synchash $synchash -thisApp $thisApp -Prompt $Result
-            }else{
-              write-ezlogs 'No prompt was supplied - aborting' -showtime -warning
-              return
-            }
+          $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
+          $Button_Settings.AffirmativeButtonText = 'Yes'
+          $Button_Settings.NegativeButtonText = 'No'
+          $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
+          if($synchash.App_Update_Status.isUpdate_Available){
+            $message = 'Would you like to download the latest version?'
           }else{
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()
-            $Button_Settings.AffirmativeButtonText = 'Yes'
-            $Button_Settings.NegativeButtonText = 'No'
-            $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative 
-            if($synchash.App_Update_Status.isUpdate_Available){
-              $message = 'Would you like to download the latest version?'
-            }else{
-              $message = 'Would you like to download and re-install the latest version?'
-            }
-            $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashChildWindow.Window,'Download and Install Latest Version',"$message`n`nNOTE: The update system is still work-in-progress",$okandCancel,$Button_Settings)
-            if($result -eq 'Affirmative'){
-              write-ezlogs "User wishes to proceed to download/install updates" -loglevel 2
-              Install-Updates -synchash $synchash -thisApp $thisApp -Download_Destination "$($thisApp.Config.Temp_Folder)\Updates" -Use_Runspace -install_update
-              Update-Notifications  -Level 'INFO' -Message "Downloading the latest build/installer, install/update will continue when finished" -VerboseLog -Message_color 'cyan' -thisApp $thisapp -synchash $synchash -Open_Flyout -MessageFontWeight bold -LevelFontWeight Bold
-              $hashChildWindow.Window.close()
-            }else{
-              write-ezlogs "User said no or chose to cancel" -warning
-            }
+            $message = 'Would you like to download and re-install the latest version?'
           }
-          #New-DialogNotification -synchash $synchash -thisApp $thisApp -Title '[TESTING] Download Latest Version' -Message '[TESTING] Would you like to download the latest version?' -DialogType Confirm -AffirmativeButtonText 'Yes' -NegativeButtonText 'No' -updates           
+          $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashChildWindow.Window,'Download and Install Latest Version',"$message`n`nNOTE: The update system is still work-in-progress",$okandCancel,$Button_Settings)
+          if($result -eq 'Affirmative'){
+            write-ezlogs "User wishes to proceed to download/install updates" -loglevel 2
+            Install-Updates -synchash $synchash -thisApp $thisApp -Download_Destination "$($thisApp.Config.Temp_Folder)\Updates" -Use_Runspace -install_update
+            Update-Notifications  -Level 'INFO' -Message "Downloading the latest build/installer, install/update will continue when finished" -VerboseLog -Message_color 'cyan' -thisApp $thisapp -synchash $synchash -Open_Flyout -MessageFontWeight bold -LevelFontWeight Bold
+            $hashChildWindow.Window.close()
+          }else{
+            write-ezlogs "User said no or chose to cancel" -warning
+          }         
           $this = $Null          
         }catch{
           write-ezlogs "An exception occurred closing Show-ChildWindow window" -showtime -catcherror $_
         }    
     })
 
-    $hashChildWindow.Window.add_ContentRendered({     
-        param($Sender)          
-        try{  
-          if($sendername -eq 'OpenAI' -and $Prompt){
-            write-ezlogs ">>>> Prompting for OpenAI"
-            $Button_Settings = [MahApps.Metro.Controls.Dialogs.MetroDialogSettings]::new()        
-            $Result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalInputExternal($Sender,'Ask Samson a Question?','Ask any question and Samson will have the answer',$Button_Settings)
-            if(-not [string]::IsNullOrEmpty($Result)){ 
-              #TODO: TEST ONLY - MODULE NOT INCLUDED ANYMORE - LEAVING FOR FUTURE
-              Invoke-OpenAI -synchash $synchash -thisApp $thisApp -Prompt $Result
-            }else{
-              write-ezlogs 'No prompt was supplied - aborting' -showtime -warning
-              return
-            }                   
-          }         
-        }catch{
-          write-ezlogs "An exception occurred closing Show-ChildWindow add_Rendered" -showtime -catcherror $_
-        }    
-    })
-
-    $hashChildWindow.Cancel_Button.add_click({     
+    $hashChildWindow.Cancel_Button.add_click({
         param($Sender)          
         try{            
-          $hashChildWindow.Window.close()    
+          $Null = $hashChildWindow.Window.close()    
         }catch{
           write-ezlogs "An exception occurred closing Show-ChildWindow window" -showtime -catcherror $_
         }    
@@ -834,7 +803,7 @@ function Show-ChildWindow{
         param($Sender)          
         try{
           #Register window to installed application ID 
-          $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($Sender)      
+          $Window_Helper = [System.Windows.Interop.WindowInteropHelper]::new($Sender)
           if($thisApp.Config.Installed_AppID){
             $appid = $thisApp.Config.Installed_AppID
           }else{
@@ -844,7 +813,7 @@ function Show-ChildWindow{
             $taskbarinstance = [Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager]::Instance
             write-ezlogs ">>>> Registering Miniplayer window handle: $($Window_Helper.Handle) -- to appid: $appid" -Dev_mode
             $taskbarinstance.SetApplicationIdForSpecificWindow($Window_Helper.Handle,$appid)    
-            Add-Member -InputObject $thisapp.config -Name 'Installed_AppID' -Value $appid -MemberType NoteProperty -Force
+            $thisapp.config.Installed_AppID = $appid
           }
           $Audio_Path = "$($thisApp.Config.Current_Folder)\Resources\Audio\Bitty_Notification.mp3"
           if($markdownfile -match 'About_FirstRun\.md' -and [system.io.file]::Exists($Audio_Path)){          
@@ -855,7 +824,8 @@ function Show-ChildWindow{
             $Floater.Name = "Media_Floater"
             if($Audio_Path -match '.gif' -or $Audio_Path -match '.mp3' -or $Audio_Path -match '.mp4'){ 
               $Media_Element = [System.Windows.Controls.MediaElement]::new() 
-              $Media_Element.UnloadedBehavior = 'Close'  
+              $Media_Element.UnloadedBehavior = 'Close'
+              $Media_Element.Volume = 0.4
               $Media_Element.LoadedBehavior="Manual"  
               $Media_Element.Name = 'Media_Element'     
               $Media_Element.Source = $Audio_Path    
@@ -863,10 +833,9 @@ function Show-ChildWindow{
                   param($Sender) 
                   try{
                     if($hashChildWindow.EditorHelpFlyout.Document.Blocks){
-                      write-ezlogs ">>>> Removing Audio Notification paragraph"
                       $hashChildWindow.EditorHelpFlyout.Document.Blocks.clear()                     
                     }
-                    write-ezlogs ">>>> Disposing notification media"
+                    write-ezlogs ">>>> Media element playback ended...disposing"
                     $this.Stop()
                     $this.tag = $Null
                     $this.close()
@@ -877,7 +846,7 @@ function Show-ChildWindow{
               $Media_Element.add_MediaFailed({
                   param($Sender) 
                   try{
-                    write-ezlogs "An exception occurred in media element $($sender | out-string)" -warning
+                    write-ezlogs "Media element playback failed: $($sender | out-string)" -warning
                     $this.Stop()
                     $this.tag = $Null
                     $this.close()   
@@ -885,7 +854,7 @@ function Show-ChildWindow{
                     write-ezlogs "An exception occurred in Media_Element.add_MediaFailed" -catcherror $_
                   }               
               }) 
-              $Media_Element.Play()                     
+              [void]$Media_Element.Play()                     
               $BlockUIContainer.AddChild($Media_Element) 
             }   
             $floater.AddChild($BlockUIContainer)   
@@ -928,29 +897,24 @@ function Show-ChildWindow{
 
     $hashChildWindow.Window.Add_UnLoaded({     
         param($Sender)    
-        if($sender -eq $hashChildWindow.Window){        
+        if($sender -eq $hashChildWindow.Window){
           try{
-            write-ezlogs "| Disposing ChildWindow application thread" -showtime
+            write-ezlogs "| Disposing ChildWindow application thread" -LogLevel 0 -Verboselog:$Verboselog
             if($hashChildWindow.appContext){
               $hashChildWindow.appContext.ExitThread()
               $hashChildWindow.appContext.dispose()
               $hashChildWindow.appContext = $Null
             }
-            $hashkeys = [System.Collections.ArrayList]::new($hashChildWindow.keys)
-            $hashkeys | & { process {
+            <#            $hashkeys = [System.Collections.ArrayList]::new($hashChildWindow.keys)
+                $hashkeys | & { process {
                 if($hashChildWindow.Window.FindName($_)){
-                  #write-ezlogs ">>>> Unregistering ChildWindow UI name: $_"
-                  $null = $hashChildWindow.Window.UnRegisterName($_)
-                  $hashChildWindow.$_ = $Null
+                $null = $hashChildWindow.Window.UnRegisterName($_)
+                $hashChildWindow.$_ = $Null
                 }        
-            }}
+            }}#>
             $hashChildWindow.Window = $Null
-            $hashkeys = $null
-            write-ezlogs "ChildWindow disposed" -logtype Perf -loglevel 2 -GetMemoryUsage -forceCollection
-            return       
           }catch{
             write-ezlogs "An exception occurred in Show-ChildWindow unloaded event" -showtime -catcherror $_
-            return
           }
         }      
     })  
@@ -967,10 +931,9 @@ function Show-ChildWindow{
             $hashChildWindow.AboutFirstRun_timer = $Null
           }
           if($markdownfile -match 'About_FirstRun\.md' -and (!$thisapp.config.IsRead_AboutFirstRun -or !$thisapp.config.IsRead_SpecialFirstRun)){
-            Add-Member -InputObject $thisapp.config -Name 'IsRead_AboutFirstRun' -Value $true -MemberType NoteProperty -Force
-            Add-Member -InputObject $thisapp.config -Name 'IsRead_SpecialFirstRun' -Value $true -MemberType NoteProperty -Force
+            $thisapp.config.IsRead_AboutFirstRun = $true
+            $thisapp.config.IsRead_SpecialFirstRun = $true
             Export-SerializedXML -InputObject $thisApp.Config -Path $thisapp.Config.Config_Path -isConfig
-            #Export-Clixml -InputObject $thisapp.config -Path $thisApp.Config.Config_Path -Force -Encoding UTF8 
             if($synchash.Window -and $synchash.Window.Visibility -eq 'Hidden' -and $use_runspace){
               $Null = $synchash.Window.Dispatcher.InvokeAsync{
                 $synchash.Window.Show()
@@ -989,8 +952,8 @@ function Show-ChildWindow{
       [System.Windows.Forms.Integration.ElementHost]::EnableModelessKeyboardInterop($hashChildWindow.Window)
       [void][System.Windows.Forms.Application]::EnableVisualStyles()   
       $null = $hashChildWindow.Window.Show()
-      $window_active = $hashChildWindow.Window.Activate()     
-      $hashChildWindow.appContext = New-Object System.Windows.Forms.ApplicationContext 
+      $null = $hashChildWindow.Window.Activate()     
+      $hashChildWindow.appContext = [System.Windows.Forms.ApplicationContext]::new() 
       [void][System.Windows.Forms.Application]::Run($hashChildWindow.appContext)     
     }catch{
       write-ezlogs "An exception in Show-ChildWindow screen show dialog" -showtime -catcherror $_ -AlertUI

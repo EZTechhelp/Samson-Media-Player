@@ -126,7 +126,7 @@ function Skip-Media
         $synchash.Spotify_WebPlayer_State.current_track = $Null
       }                                                          
       $last_played_index = (($thisApp.config.Current_Playlist.GetEnumerator()) | where-Object {$_.value -eq $last_played.mediaid}).name
-      Update-PlayQueue -Remove -ID $last_played.mediaid -thisApp $thisApp -synchash $synchash -UpdateHistory  
+      Update-PlayQueue -Remove -ID $last_played.mediaid -thisApp $thisApp -synchash $synchash -UpdateHistory
       if($thisApp.config.Shuffle_Playback -and $thisApp.config.Current_Playlist.values){
         try{
           write-ezlogs "| Getting random item from queue" -showtime -LogLevel 2
@@ -339,7 +339,7 @@ function Skip-Media
       if(!$next_item -and $Synchash.Current_Playing_Playlist_Source -eq 'YTChannel' -and $last_played.media){
         try{
           write-ezlogs ">>>> No more media was found in the Queue, last played was Youtube channel, attempting to get another video for channel $($last_played.media.channel_id)" -showtime
-          Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $last_played.media.url -linktext $last_played.media.title -media $last_played.media -PlayOnly -StartPlayback -PlayChannel
+          Add-YoutubePlayback -synchash $synchash -thisApp $thisApp -LinkUri $last_played.media.url -linktext $last_played.media.title -media $last_played.media -PlayOnly -StartPlayback -PlayChannel -use_Runspace
           return
         }catch{
           write-ezlogs -text 'An exception occurred executing Add-YoutubePlayback' -showtime -CatchError $_

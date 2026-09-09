@@ -1308,6 +1308,18 @@
 									<ComboBoxItem Content="30 Minutes"/>
 									<ComboBoxItem Content="1 Hour"/>
 								</ComboBox>
+							</VirtualizingStackPanel>
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,5,0,0" IsEnabled="{Binding ElementName=Import_Youtube_Playlists_Toggle, Path=IsOn}">
+								<CheckBox Content="Get My Uploads" Name="Youtube_My_Playlists_Import" Background="Transparent" Foreground="#ffffff" IsEnabled="{Binding ElementName=Youtube_Playlists_Import, Path=IsEnabled}"/>
+								<Button Name="Youtube_My_Playlists_Import_Button" Width="20" Height="20" Margin="9,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green" IsEnabled="{Binding ElementName=Youtube_Playlists_Import, Path=IsEnabled}">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+								</Button>
+							</VirtualizingStackPanel>
+							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,5,0,0" IsEnabled="{Binding ElementName=Import_Youtube_Playlists_Toggle, Path=IsOn}">
+								<CheckBox Content="Get Liked Videos" Name="Import_Youtube_Liked_Checkbox" Background="Transparent" Foreground="#ffffff" IsEnabled="{Binding ElementName=Youtube_Playlists_Import, Path=IsEnabled}"/>
+								<Button Name="Import_Youtube_Liked_Button" Width="20" Height="20" Margin="5,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green" IsEnabled="{Binding ElementName=Youtube_Playlists_Import, Path=IsEnabled}">
+									<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+								</Button>
 							</VirtualizingStackPanel>							
 							<Grid Name="Youtube_Playlists" HorizontalAlignment="Stretch">
 								<Grid.ColumnDefinitions>
@@ -1341,24 +1353,6 @@
 										</Grid>
 									</Button>
 								</VirtualizingStackPanel>
-								<Grid Margin="10,10,0,0" HorizontalAlignment="Center" Grid.Column="1" VerticalAlignment="Center">
-									<Grid.RowDefinitions>
-										<RowDefinition/>
-										<RowDefinition/>
-									</Grid.RowDefinitions>
-									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Grid.Row="0">
-										<CheckBox Content="Get My Uploads" Name="Youtube_My_Playlists_Import" Background="Transparent" Foreground="#ffffff" IsEnabled="{Binding ElementName=Youtube_Playlists_Import, Path=IsEnabled}"/>
-										<Button Name="Youtube_My_Playlists_Import_Button" Width="20" Height="20" Margin="5,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green" IsEnabled="{Binding ElementName=Youtube_Playlists_Import, Path=IsEnabled}">
-											<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
-										</Button>
-									</VirtualizingStackPanel>
-									<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Grid.Row="1">
-										<CheckBox Content="Get My Subscriptions" Name="Youtube_My_Subscriptions_Import" Background="Transparent" Foreground="#ffffff" Visibility="Hidden" IsEnabled="False" Width="0"/>
-										<Button Name="Youtube_My_Subscriptions_Import_Button" Width="20" Height="20" Margin="5,0,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Visibility="Hidden" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green" IsEnabled="{Binding ElementName=Youtube_My_Subscriptions_Import, Path=IsEnabled}">
-											<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
-										</Button>
-									</VirtualizingStackPanel>
-								</Grid>
 							</Grid>
 							<Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Effect="{StaticResource DropShadow}" OpacityMask="{StaticResource SeparatorGradient}" Height="1" VerticalAlignment="Bottom" Margin="0,10,0,0"/>
 							<Grid>
@@ -1474,6 +1468,14 @@
 									</Grid>
 									<Label Name='InvidiousURL_Label' Grid.Column="0" Content="Invidious URL:" VerticalAlignment="Top" Margin="35,2,0,0" Foreground="#ffffff" Visibility="Visible" BorderBrush="Green" BorderThickness="2,0,0,0" HorizontalAlignment="Left"/>
 									<TextBox Name='InvidiousURL_textbox' Height="23" Text="" UndoLimit="0" VerticalAlignment="Top" Visibility="Visible" RenderTransformOrigin="0.502,0.52" Width="163" HorizontalAlignment="Left" IsEnabled="{Binding ElementName=Use_invidious_Toggle, Path=IsOn}"/>									
+								</VirtualizingStackPanel>		
+								<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="30,0,0,0" IsEnabled="{Binding ElementName=Youtube_WebPlayer_Toggle, Path=IsOn}">
+									<Grid Margin="0,0,0,0">
+										<mah:ToggleSwitch Content="Always Play in Private Mode" Name="Youtube_WebPlayer_PrivateMode_Toggle" Margin="30,0,0,0" VerticalAlignment="Top" Grid.Column="0" HorizontalAlignment="Left" Foreground="#ffffff" />
+										<ToggleButton Name="Youtube_WebPlayer_PrivateMode_Help_Button" Width="20" Height="20" Margin="5,5,0,0" Grid.Column="0" VerticalAlignment="Top" HorizontalAlignment="Left" Style="{StaticResource MahApps.Styles.Button.Circle}" Background="Green">
+											<iconPacks:PackIconCoolicons Kind="HelpCircleOutline" PresentationOptions:Freeze="True"/>
+										</ToggleButton>
+									</Grid>								
 								</VirtualizingStackPanel>								
 							</VirtualizingStackPanel>	
 							<VirtualizingStackPanel IsVirtualizing="True" VirtualizationMode="Recycling" Orientation="Horizontal" Margin="0,0,0,0">

@@ -1263,11 +1263,12 @@ $synchash.Initialize_WebPlayer_timer.add_tick({
 $synchash.Initialize_YoutubeWebPlayer_timer = [System.Windows.Threading.DispatcherTimer]::new()
 $synchash.Initialize_YoutubeWebPlayer_timer.add_tick({
     try{
-      Initialize-YoutubeWebPlayer -synchash $synchash -thisApp $thisApp -thisScript $thisScript
-      $this.Stop()
+      Initialize-YoutubeWebPlayer -synchash $synchash -thisApp $thisApp -thisScript $thisScript -PrivateMode:([bool]$this.Tag)
     }catch{
       write-ezlogs -text 'An exception occurred in Initialize_YoutubeWebPlayer_timer' -showtime -CatchError $_
+    }finally{
       $this.Stop()
+      $this.tag = $null
     }
 })
 #----------------------------------------------
@@ -1917,7 +1918,7 @@ $synchash.EditCell_Scriptblock = {
       write-ezlogs -text ">>>> Saving app config: $($thisApp.Config.Config_Path)" -showtime
       Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
       Get-PlayQueue -verboselog:$false -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace
-      Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace
+      Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -SortBy $thisApp.Config.Playlists_SortBy -SortDirection $thisApp.Config.Playlists_SortDirection -thisApp $thisApp -use_Runspace
     }catch{
       write-ezlogs -text "An exception occurred removing media $($media.id) using keyboard event $($e.Key | out-string)" -showtime -CatchError $_
     }
@@ -5179,7 +5180,7 @@ $synchash.PreviewDrop_command = {
         }
       }elseif($item.parent.Header.title){
         $From_Playlist_Name = $item.parent.Header.title
-      }elseif($sender.Name -eq 'PlayQueue_TreeView'){
+      }elseif($sender.Name -in 'PlayQueue_TreeView','VideoView_Queue','PlayQueue_TreeView_Library'){
         $From_Playlist_Name = 'Play Queue'
       }elseif($item.source -eq 'Local' -or $item.source -eq 'Spotify' -or $item.source -eq 'Youtube' -or $item.source -eq 'Twitch'){
         $From_Playlist_Name = 'MediaLibrary'
@@ -5192,7 +5193,7 @@ $synchash.PreviewDrop_command = {
         write-ezlogs -text "d.source.parent $($d.source.parent | Select-Object -Property *)" -showtime -Dev_mode
       }
       write-ezlogs -text "[DragDrop] originalsource $($d.originalsource | out-string)" -Dev_mode
-      if($d.originalsource.datacontext.Name -eq 'Play_Queue' -or $d.originalsource.TemplatedParent.Name -eq 'PlayQueue_TreeView' -or $d.Source.Name -in 'PlayQueue_TreeView_Library','PlayQueue_TreeView'){
+      if($d.originalsource.datacontext.Name -eq 'Play_Queue' -or $d.originalsource.TemplatedParent.Name -in 'PlayQueue_TreeView','VideoView_Queue','PlayQueue_TreeView_Library' -or $d.Source.Name -in 'PlayQueue_TreeView_Library','PlayQueue_TreeView','VideoView_Queue'){
         $to_Playlist_Name = 'Play Queue'
       }elseif($d.originalsource.datacontext.Playlist_name){
         $to_Playlist_Name = $d.originalsource.datacontext.Playlist_name
@@ -5257,7 +5258,7 @@ $synchash.PreviewDrop_command = {
             Update-Playlist -Playlist $From_Playlist_Name -media $media -synchash $synchash -thisApp $thisApp -Remove -no_UIRefresh
           }
           Add-Playlist -Media $media -Playlist $to_Playlist_Name -thisApp $thisApp -synchash $synchash
-          Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -Startup -use_Runspace
+          Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -Startup -SortBy $thisApp.Config.Playlists_SortBy -SortDirection $thisApp.Config.Playlists_SortDirection -use_Runspace
           $d.Handled = $true
         }catch{
           $d.Handled = $true
@@ -5304,7 +5305,7 @@ $synchash.PreviewDrop_command = {
               }
           })
           $Playlist_update_timer.start()
-          Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace
+          Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -SortBy $thisApp.Config.Playlists_SortBy -SortDirection $thisApp.Config.Playlists_SortDirection -thisApp $thisApp -use_Runspace
           return
         }catch{
           $d.Handled = $true
@@ -5530,7 +5531,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
         }else{
           write-ezlogs -text ">>>> Saving app config: $($thisApp.Config.Config_Path)" -showtime
           Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
-          Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -Media_Profile_Directory $thisApp.Config.Media_Profile_Directory -thisApp $thisApp -use_Runspace #-Full_Refresh
+          Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -SortBy $thisApp.Config.Playlists_SortBy -SortDirection $thisApp.Config.Playlists_SortDirection -thisApp $thisApp -use_Runspace #-Full_Refresh
           Get-PlayQueue -verboselog:$false -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace
         }
         $start_media = $Selected_Media | Select-Object -First 1
@@ -5897,7 +5898,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
       }
       write-ezlogs -text ">>>> Saving app config: $($thisApp.Config.Config_Path)" -showtime
       Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
-      Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace #-Full_Refresh
+      Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -SortBy $thisApp.Config.Playlists_SortBy -SortDirection $thisApp.Config.Playlists_SortDirection -thisApp $thisApp -use_Runspace #-Full_Refresh
     }else{
       write-ezlogs -text 'No valid playlist name was provided' -showtime -Warning
     }
@@ -6132,7 +6133,7 @@ $synchash.Add_to_Playlist_timer.add_Tick({
   param($sender)
   try{
     write-ezlogs -text '>>>> Manually refreshing all playlists' -showtime
-    Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -use_Runspace -Full_Refresh
+    Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -SortBy $thisApp.Config.Playlists_SortBy -SortDirection $thisApp.Config.Playlists_SortDirection -thisApp $thisApp -use_Runspace -Full_Refresh
   }catch{
     write-ezlogs -text 'An exception occurred in Refresh_PlaylistCommand' -showtime -CatchError $_
   }
@@ -6468,7 +6469,7 @@ if($synchash.LibraryPlaylistFilterTextBox){
           [Void]$All_Playlists.Remove($playlist_to_remove)
           write-ezlogs -text "Saving updated playlist library to: $($thisApp.config.Playlist_Profile_Directory)\All-Playlists-Cache.xml" -showtime -Warning
           Export-SerializedXML -InputObject $All_Playlists -Path $thisApp.Config.Playlists_Profile_Path -isPlaylist
-          Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -Full_Refresh -use_Runspace
+          Get-Playlists -verboselog:$thisApp.Config.Verbose_logging -synchashWeak ([System.WeakReference]::new($synchash)) -thisApp $thisApp -Full_Refresh -SortBy $thisApp.Config.Playlists_SortBy -SortDirection $thisApp.Config.Playlists_SortDirection -use_Runspace
         }else{
           write-ezlogs -text "Unable to find playlist to remove: $Playlist" -showtime -Warning -AlertUI
         }
@@ -7198,7 +7199,7 @@ if($synchash.LocalMedia_TreeView){
         }
         Set-VideoPlayer -thisApp $thisApp -synchash $synchash -Action Open
       }
-      write-ezlogs -text ">>>> Navigating web browser to: $($url)"
+      write-ezlogs -text ">>>> Navigating Media browser to: $($url)"
       Start-WebNavigation -uri $url -synchash $synchash -WebView2 $synchash.WebBrowser -thisScript $thisScript -thisApp $thisApp
       $synchash.Webbrowseranchorable.isselected = $true
     }catch{
@@ -7707,7 +7708,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
             [Void]$items.Add($Youtube_Actions)
             $BrowseYTChannel = @{
               'Header'    = 'Browse Youtube Channel'
-              'Tooltip'  = 'Go to the Youtube Channel page using the in-app Web Browser'
+              'Tooltip'  = 'Go to the Youtube Channel page using the in-app Media Browser'
               'Command'   = $synchash.FindYoutube_Command
               'Tag'       = $Media_Tag
               'Enabled'   = $true
@@ -7870,7 +7871,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
         if(($e.Source.Name -ne 'YoutubeTable' -and $media.type -notmatch 'Youtube') -and ($media.url -notmatch 'Youtube\.com' -and $media.web_url -notmatch 'youtube\.com' -and $media.url -notmatch 'youtu\.be')){
           $Find_on_Youtube = @{
             'Header'    = 'Find on Youtube'
-            'ToolTip'   = 'Opens the in-app Web Browser to search Youtube.com for selected media'
+            'ToolTip'   = 'Opens the in-app Media Browser to search Youtube.com for selected media'
             'Color'     = 'White'
             'Icon_Color' = '#FFFF0000'
             'Tag'       = $Media_Tag
@@ -7904,7 +7905,7 @@ $synchash.Media_ContextMenu_ScriptBlock = {
           }
           $BrowseTwitchChannel = @{
             'Header'    = 'Browse Twitch Channel'
-            'Tooltip'  = 'Go to the Twitch Channel page using the in-app Web Browser'
+            'Tooltip'  = 'Go to the Twitch Channel page using the in-app Media Browser'
             'Command'   = $synchash.FindYoutube_Command
             'Tag'       = $Media_Tag
             'Enabled'   = $true
@@ -8472,7 +8473,11 @@ if($synchash.PlayQueue_TreeView_Library){
   [Void]$synchash.PlayQueue_TreeView_Library.AddHandler([System.Windows.Controls.DataGrid]::PreviewKeyDownEvent,$synchash.KeyDown_Command)
   [Void]$synchash.PlayQueue_TreeView_Library.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Media_ContextMenu)
 }
-
+if($synchash.VideoView_Queue){
+  [Void]$synchash.VideoView_Queue.AddHandler([System.Windows.Controls.Button]::PreviewMouseDoubleClickEvent,$synchash.PlayMedia_Command)
+  [Void]$synchash.VideoView_Queue.AddHandler([System.Windows.Controls.DataGrid]::PreviewKeyDownEvent,$synchash.KeyDown_Command)
+  [Void]$synchash.VideoView_Queue.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Media_ContextMenu)
+}
 if($synchash.Playlists_TreeView){
   [Void]$synchash.Playlists_TreeView.AddHandler([System.Windows.Controls.Button]::PreviewMouseDoubleClickEvent,$synchash.PlayMedia_Command)
   [Void]$synchash.Playlists_TreeView.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Media_ContextMenu)
@@ -8857,7 +8862,7 @@ $initialize_VLC_Runspace = {
     }elseif([bool]('LibVLCSharp.Shared.Core' -as [Type])){
       $libvlc_Version = 3
     }
-    write-ezlogs -text "#### STARTUP - Initializing new Libvlc - $($libvlc_Version)" -showtime -logtype Libvlc -LogLevel 2 -linesbefore 1
+    write-ezlogs -text "#### STARTUP - Initializing new Libvlc - $($libvlc_Version) - ResetPluginCache: $ResetPluginCache" -showtime -logtype Libvlc -LogLevel 2 -linesbefore 1
     if($libvlc_Version -ge 4 -and $thisApp.config.Libvlc_Version -ne '4'){
       $thisApp.config.Libvlc_Version = '4'
     }elseif($thisApp.config.Libvlc_Version -ne '3'){
@@ -8866,6 +8871,7 @@ $initialize_VLC_Runspace = {
     if($thisApp.Config.Libvlc_Version -eq '4'){
       [void][LibVLCSharp.Core]::Initialize("$($thisApp.Config.Current_folder)\Resources\Libvlc")
       if(![System.IO.File]::Exists("$($thisApp.Config.Current_folder)\Resources\Libvlc\plugins\plugins.dat") -or $ResetPluginCache){
+        Write-EZLogs -text ">>>> Resetting VLC Plugins cache on libvlc initialization" -Warning -logtype Libvlc
         $synchash.libvlc = [LibVLCSharp.LibVLC]::new('--file-logging',"--logfile=$($thisApp.config.Vlc_Log_file)","--log-verbose=$($thisApp.config.Vlc_Verbose_logging)",'--reset-plugins-cache')
       }else{
         $synchash.libvlc = [LibVLCSharp.LibVLC]::new('--file-logging',"--logfile=$($thisApp.config.Vlc_Log_file)","--log-verbose=$($thisApp.config.Vlc_Verbose_logging)")
@@ -8873,6 +8879,7 @@ $initialize_VLC_Runspace = {
     }else{
       [void][LibVLCSharp.Shared.Core]::Initialize("$($thisApp.Config.Current_folder)\Resources\Libvlc")
       if(![System.IO.File]::Exists("$($thisApp.Config.Current_folder)\Resources\Libvlc\plugins\plugins.dat") -or $ResetPluginCache){
+        Write-EZLogs -text ">>>> Resetting VLC Plugins cache on libvlc initialization" -Warning -logtype Libvlc
         $synchash.libvlc = [LibVLCSharp.Shared.LibVLC]::new('--file-logging',"--logfile=$($thisApp.config.Vlc_Log_file)","--log-verbose=$($thisApp.config.Vlc_Verbose_logging)",'--reset-plugins-cache')
       }else{
         $synchash.libvlc = [LibVLCSharp.Shared.LibVLC]::new('--file-logging',"--logfile=$($thisApp.config.Vlc_Log_file)","--log-verbose=$($thisApp.config.Vlc_Verbose_logging)")
@@ -8894,14 +8901,16 @@ $initialize_VLC_Runspace = {
   }finally{
     if($Initialize_VLC_Runspace_Measure){
       $Initialize_VLC_Runspace_Measure.Stop()
-      write-ezlogs -text 'initialize_VLC_Runspace' -PerfTimer $Initialize_VLC_Runspace_Measure -GetMemoryUsage:$thisApp.Config.Memory_perf_measure
+      write-ezlogs -text 'Initialize_VLC_Runspace' -PerfTimer $Initialize_VLC_Runspace_Measure -GetMemoryUsage:$thisApp.Config.Memory_perf_measure
       write-ezlogs -text '| Libvlc_LoadAssemblies' -PerfTimer $libvlc_Assembly_Measure -GetMemoryUsage:$thisApp.Config.Memory_perf_measure
       $Initialize_VLC_Runspace_Measure = $null
       $libvlc_Assembly_Measure = $Null
     }
   }
 }
-Start-Runspace -scriptblock $initialize_VLC_Runspace -StartRunspaceJobHandler -runspace_name 'initialize_VLC_Runspace' -thisApp $thisApp -synchash $synchash -RestrictedRunspace -function_list Write-EZLogs,Get-AllStartApps,Export-SerializedXML
+$Variable_list = Get-Variable -Scope Local -Name 'synchash','ResetPluginCache' -ErrorAction SilentlyContinue
+Start-Runspace -scriptblock $initialize_VLC_Runspace -StartRunspaceJobHandler -runspace_name 'initialize_VLC_Runspace' -thisApp $thisApp -synchash $synchash -RestrictedRunspace -function_list Write-EZLogs,Get-AllStartApps,Export-SerializedXML -Variable_list $Variable_list
+$Variable_list = $Null
 #----------------------------------------------
 #endregion Initialize Vlc Startup
 #----------------------------------------------
@@ -8913,7 +8922,7 @@ if($thisApp.Config.Startup_perf_timer){
   $get_playlists_Startup_Measure = [system.diagnostics.stopwatch]::StartNew()
 }
 $synchashWeak = ([System.WeakReference]::new($synchash))
-Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak $synchashWeak -thisApp $thisApp -Startup -use_Runspace
+Get-Playlists -verboselog:$thisApp.Config.Verbose_Logging -synchashWeak $synchashWeak -thisApp $thisApp -Startup -SortBy $thisApp.Config.Playlists_SortBy -SortDirection $thisApp.Config.Playlists_SortDirection -use_Runspace
 Get-PlayQueue -verboselog:$false -synchashWeak $synchashWeak -thisApp $thisApp -use_Runspace -Import_Playlists_Cache
 if($get_playlists_Startup_Measure){
   $get_playlists_Startup_Measure.Stop()
@@ -11639,11 +11648,11 @@ if($synchash.Volumeknob){
         }
         $synchash.WebBrowserAnchorable.float()
         if($sender.tooltip){
-          $sender.tooltip = 'Dock Web Browser'
+          $sender.tooltip = 'Dock Media Browser'
         }
       }elseif($synchash.WebBrowserAnchorable.isFloating){
         if($sender.tooltip){
-          $sender.tooltip = 'UnDock Web Browser'
+          $sender.tooltip = 'UnDock Media Browser'
         }
         $synchash.WebBrowserAnchorable.dock()
       }

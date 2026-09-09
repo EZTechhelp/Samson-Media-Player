@@ -1024,7 +1024,7 @@ function Get-YoutubeStatus {
           }
           if($internet_Connectivity){
             try{
-              $youtube_playlists = Get-YouTubePlaylists -mine
+              $youtube_playlists = Get-YouTubePlaylists -mine -Liked:$([bool]$thisApp.Config.Import_Youtube_Liked)
             }catch{
               write-ezlogs "An exception occurred retrieving youtube playlists with Get-YoutubePlaylists" -showtime -catcherror $_
             }

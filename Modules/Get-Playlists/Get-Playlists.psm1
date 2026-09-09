@@ -746,24 +746,7 @@ function Get-Playlists
           if(($synchashWeak.Target.all_playlists.count -gt 0 -or $synchashWeak.Target.all_playlists.items.count -gt 0)){
             if($VerboseLog -or $thisApp.Config.Dev_mode){
               $Process_Playlists_Measure = [system.diagnostics.stopwatch]::StartNew()
-            }          
-            <#            $MediaPropertyNames = ([Media].GetProperties()).Name
-                if($SortItems){
-                $synchashWeak.Target.All_Playlists | & { process {
-                if($_.SortItemsBy -and $_.SortItemsBy -in $MediaPropertyNames){
-                write-ezlogs "| Sorting playlists ($($_.title)) items by: $($_.SortItemsBy)"
-                [array]$existingitems = ($_.Playlist_tracks.values | Sort-Object -Property $_.SortItemsBy -Descending:$([bool]$_.SortItemsDirection -eq 'Descending'))
-                $Count = 0
-                [void]$_.Playlist_Tracks.clear()
-                $Playlist = $_
-                $existingitems | & { process {
-                [void]$Playlist.Playlist_Tracks.add($Count,$_)
-                $Count++
-                }}
-                $_ = $Playlist
-                }
-                }}
-            }#>
+            }
             $PlaylistIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\PlaylistMusic.png"
             $HardDiskIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\Material-Harddisk.png"
             $YoutubeIcon = "$($thisApp.Config.Current_Folder)\Resources\Images\Material-Youtube.png"
@@ -1230,7 +1213,7 @@ function Get-Playlists
               $Process_Playlists_Measure.stop()
             }
             if($Startup -or $Full_Refresh -or $Filter_Refresh){
-              Update-Playlists -synchash $synchashWeak.Target -thisApp $thisApp -UpdateItemssource -Full_Refresh:$Full_Refresh -Quick_Refresh:$($Quick_Refresh -or $Filter_Refresh)
+              Update-Playlists -synchash $synchashWeak.Target -thisApp $thisApp -UpdateItemssource -SortBy $SortBy -SortDirection $SortDirection -Full_Refresh:$Full_Refresh -Quick_Refresh:$($Quick_Refresh -or $Filter_Refresh)
             }
           }else{
             write-ezlogs "No playlists found to process!" -Warning

@@ -37,6 +37,7 @@ function Get-MediaProfile
     $Playlist_ID,
     $Media_title,
     $Media_Channel,
+    [switch]$SkipYTHistory,
     $thisApp,
     $synchash,
     [switch]$Use_RunSpace,
@@ -57,6 +58,7 @@ function Get-MediaProfile
       $Playlist_ID = $Playlist_ID,
       $Media_title = $Media_title,
       $Media_Channel = $Media_Channel,
+      [switch]$SkipYTHistory = $SkipYTHistory,
       [switch]$Verboselog = $Verboselog
     )
     if($Verboselog){
@@ -243,21 +245,75 @@ function Get-MediaProfile
           }
           #Is it Youtube history?
           #TODO: Dont really want to be calling an API for this every time, may just need to store more properties in history
-<#          if(!$track -and $thisApp.Config.YoutubeHistory.count -gt 0){
-            $Youtube_id = lock-object -InputObject $thisApp.Config.YoutubeHistory.SyncRoot -ScriptBlock {
-              $index = Get-IndexesOf $thisApp.Config.YoutubeHistory -Value $_
+          if(!$track -and !$SkipYTHistory -and $thisApp.Config.YoutubeHistory.count -gt 0){
+            $YTID = $_
+            $Youtube_Decoded = lock-object -InputObject $thisApp.Config.YoutubeHistory.SyncRoot -ScriptBlock {
+              write-ezlogs ">>>> Checking Youtube History for id: $YTID" -LogLevel 0 -Verboselog:$Verboselog
+              $index = Get-IndexesOf $thisApp.Config.YoutubeHistory -Value $YTID
               if($index -ne $Null -and $index -ne -1){
-                $thisApp.Config.YoutubeHistory[$index]
+                $EncodedString = $thisApp.Config.YoutubeHistory[$index]
+                try{
+                  $bytes = [System.Convert]::FromBase64String($EncodedString)
+                  $Decoded = [System.Text.Encoding]::UTF8.GetString($bytes)
+                  if($Decoded){
+                    return $Decoded
+                  }
+                }catch{
+                  $Decoded = $Null
+                } 
+              }else{
+                write-ezlogs "| Decoding all YoutubeHistory entries" -LogLevel 0 -Verboselog:$Verboselog
+                $thisApp.Config.YoutubeHistory | & { process {
+                    try{
+                      $bytes = [System.Convert]::FromBase64String($_)
+                      $Decoded = [System.Text.Encoding]::UTF8.GetString($bytes)
+                      if($Decoded){                       
+                        $id = ($Decoded -split '-,-')[0]
+                        write-ezlogs "| ID: $id -- Decoded entry: $Decoded" -LogLevel 0 -Verboselog:$Verboselog
+                      }
+                    }catch{
+                      $id = $Null
+                    }                    
+                    if($id -and $id -eq $YTID){
+                      write-ezlogs "| Found id ($YTID) in decoded YT string: $Decoded" -LogLevel 0 -Verboselog:$Verboselog
+                      $Decoded
+                    }
+                }}
               }
             }
-            if($youtube_id){
-              try{
-                $video_info = Get-YouTubeVideo -Id $youtube_id
-              }catch{
-                write-ezlogs "An exception occurred executing Get-YoutubeVideo" -showtime -catcherror $_
-              } 
+            try{
+              if($Youtube_Decoded){
+                $id = ($Youtube_Decoded -split '-,-')[0]
+                if($id){
+                  $lookup = Get-MediaProfile -thisApp $thisApp -synchash $synchash -Media_ID $id -SkipYTHistory
+                }
+                if($lookup){
+                  return $lookup
+                }else{
+                  $url = ($Youtube_Decoded -split '-,-')[1]
+                  $title = ($Youtube_Decoded -split '-,-')[2]
+                  $Artist = ($Youtube_Decoded -split '-,-')[3]
+                  $track = [Media]@{
+                    'title' =  $title
+                    'Artist' = $Artist
+                    'id' = $id
+                    'url' = $url
+                    'Profile_Date_Added' = [DateTime]::Now.ToString()
+                    'Source' = 'Youtube'
+                  }
+                }               
+              }
+            }catch{
+              $track = $Null
             }
-          }#>
+            <#            if($youtube_id){
+                try{
+                $video_info = Get-YouTubeVideo -Id $youtube_id
+                }catch{
+                write-ezlogs "An exception occurred executing Get-YoutubeVideo" -showtime -catcherror $_
+                } 
+            }#>
+          }
           #Is it TOR
           if(!$track -and $synchash.All_Tor_Results.$Property){
             $track = lock-object -InputObject $synchash.All_Tor_Results.SyncRoot -ScriptBlock {

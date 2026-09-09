@@ -1270,6 +1270,12 @@ Function Update-LibVLC
         write-ezlogs "| Setting default global gain for libvlc: 4" -logtype Libvlc
         [void]$vlcArgs.add('--gain=4.0') #Set gain to 4 which is default that VLC uses but for some reason libvlc does not
       }
+      #TODO: Investigate if this is worth doing
+<#      if($thisApp.Config.Audio_OutputModule -eq 'mmdevice'){
+        Write-ezlogs "| Setting mmdevice-backend to wasapi" -logtype Libvlc -loglevel 2
+        [void]$vlcArgs.add('--mmdevice-backend=wasapi')
+        [void]$vlcArgs.add('--mmdevice-passthrough=0')
+      }#>
       #TODO: Add Video Output Module to config
       #Use opengl for windows with tone mapping set to 2 (Reinhard) to properly play HDR video on SDR displays
       #[void]($vlcArgs.add("--vout=glwin32"))

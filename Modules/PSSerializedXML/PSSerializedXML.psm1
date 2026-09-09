@@ -682,11 +682,13 @@ public class Config
     public string Spotify_Update_Interval { get; set; }
     public bool Youtube_WebPlayer { get; set; }
     public bool SaveYoutube_History { get; set; }
+    public bool Youtube_WebPlayer_PrivateMode { get; set; }
     public List<string> YoutubeHistory { get; set; }
     public string Youtube_Update_Interval { get; set; }
     public bool Enable_Sponsorblock { get; set; }
     public string Youtube_Quality { get; set; }
     public bool Import_My_Youtube_Media { get; set; }
+    public bool Import_Youtube_Liked { get; set; }
     public string Twitch_Update_Interval { get; set; }
     public bool Enable_Twitch_Notifications { get; set; }
     public bool Skip_Twitch_Ads { get; set; }
@@ -1672,11 +1674,13 @@ function Export-SerializedXML {
         'Spotify_Update_Interval' = $InputObject.Spotify_Update_Interval
         'Youtube_WebPlayer' = $InputObject.Youtube_WebPlayer
         'SaveYoutube_History' = $InputObject.SaveYoutube_History
+        'Youtube_WebPlayer_PrivateMode' = $InputObject.Youtube_WebPlayer_PrivateMode
         'YoutubeHistory' = $InputObject.YoutubeHistory
         'Youtube_Update_Interval' = $InputObject.Youtube_Update_Interval
         'Enable_Sponsorblock' = $InputObject.Enable_Sponsorblock
         'Youtube_Quality' = $InputObject.Youtube_Quality
         'Import_My_Youtube_Media' = $InputObject.Import_My_Youtube_Media
+        'Import_Youtube_Liked' = $InputObject.Import_Youtube_Liked
         'Twitch_Update_Interval' = $InputObject.Twitch_Update_Interval
         'Enable_Twitch_Notifications' = $InputObject.Enable_Twitch_Notifications
         'Skip_Twitch_Ads' = $InputObject.Skip_Twitch_Ads

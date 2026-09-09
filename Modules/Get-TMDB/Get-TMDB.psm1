@@ -129,10 +129,10 @@ function Get-TMDB {
       Retrieves list of Youtube playlists.
 
       .EXAMPLE
-      Get-YouTubePlaylists
+      Get-TMDB
 
       .EXAMPLE
-      Get-YouTubePlaylists
+      Get-TMDB
   #>
   [CmdletBinding()]
   param (

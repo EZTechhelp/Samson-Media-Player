@@ -246,7 +246,7 @@ function Set-Mute
       0.1.0
 
       .SYNOPSIS
-      Sets/toggles Mute state for media player  
+      Sets/toggles Mute state for media player and updates related UI Elements
 
       .DESCRIPTION
        
@@ -275,7 +275,7 @@ function Set-Mute
       $MuteAction = $true
       if($thisApp.Config.Dev_mode){write-ezlogs ">>>> Current VLC Session $($synchash.vlc | out-string)" -Dev_mode}
       if($synchash.vlc.Mute -or $synchash.Volume_Slider.value -eq 0){
-        write-ezlogs ">>>> VLC mute: $($synchash.vlc.Mute) - Unmuting VLC" -loglevel 2 
+        write-ezlogs ">>>> VLC is muted or slider is 0: $($synchash.vlc.Mute) - Unmuting VLC" -loglevel 0 -Verboselog:$Verboselog
         if($synchash.MuteButton_ToggleButton.isChecked){
           $synchash.MuteButton_ToggleButton.isChecked = $false 
         }
@@ -284,25 +284,21 @@ function Set-Mute
           $synchash.Volume_Slider.value = 1
         }
       }else{
-        write-ezlogs ">>>> VLC mute: $($synchash.vlc.Mute) - Muting VLC" -loglevel 2
+        write-ezlogs ">>>> VLC is not muted: $($synchash.vlc.Mute) - Muting VLC" -loglevel 0 -Verboselog:$Verboselog
         if($synchash.MuteButton_ToggleButton -and !$synchash.MuteButton_ToggleButton.isChecked){
           $synchash.MuteButton_ToggleButton.isChecked = $true
         }
         $synchash.vlc.mute = $true        
       }
-      #$synchash.vlc.ToggleMute()
       if($synchash.VideoView_Mute_Icon){
         if($synchash.vlc.mute){
           $synchash.VideoView_Mute_Icon.kind = 'Volumeoff'
         }elseif($synchash.Volume_Slider.value -ge 75){
-          #$synchash.MuteButton_ToggleButton.isChecked = $false
           $synchash.VideoView_Mute_Icon.kind = 'VolumeHigh'
         }elseif($synchash.Volume_Slider.value -gt 25 -and $synchash.Volume_Slider.value -lt 75){
           $synchash.VideoView_Mute_Icon.kind = 'VolumeMedium'
-          #$synchash.MuteButton_ToggleButton.isChecked = $false
         }elseif($synchash.Volume_Slider.value -le 25 -and $synchash.Volume_Slider.value -gt 0){
           $synchash.VideoView_Mute_Icon.kind = 'VolumeLow'
-          #$synchash.MuteButton_ToggleButton.isChecked = $false
         }elseif($synchash.Volume_Slider.value -le 0){
           $synchash.VideoView_Mute_Icon.kind = 'Volumeoff'
           $synchash.MuteButton_ToggleButton.isChecked = $true
@@ -360,7 +356,7 @@ function Set-Mute
       $synchash.MuteButton_ToggleButton.isChecked = $false
     }elseif((Get-Process Spotify*) -and $thisApp.Config.Import_Spotify_Media -and -not [string]::IsNullOrEmpty($synchash.Spotify_Status) -and $synchash.Spotify_Status -ne 'Stopped'){
       $MuteAction = $true
-      if($thisApp.Config.Use_Spicetify -and $synchash.Spicetify -and ((NETSTAT.EXE -an) | where {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'})){
+      if($thisApp.Config.Use_Spicetify -and $synchash.Spicetify -and ((NETSTAT.EXE -an) | Where-Object {$_ -match '127.0.0.1:8974' -or $_ -match '0.0.0.0:8974'})){
         if($synchash.Spicetify.is_Mute){
           write-ezlogs ">>>> UnMuting Spotify with Spicetify by sending TOGGLEMUTE and SETVOLUME?$($synchash.Volume_Slider.Value) -- Spicetify Volume: $($synchash.Spicetify.volume)" -logtype Spotify
           Invoke-RestMethod -Uri "http://127.0.0.1:8974/TOGGLEMUTE" -UseBasicParsing  
@@ -374,11 +370,11 @@ function Set-Mute
       }else{
         $PlaybackInfo = Get-CurrentPlaybackInfo -ApplicationName $thisapp.config.App_Name
         if($PlaybackInfo.device.volume_percent -ne '0'){
-          write-ezlogs ">>>> Muting Spotify playback by setting playback volume to 0 - current $($PlaybackInfo.device.volume_percent)" -loglevel 2 -logtype Spotify
+          write-ezlogs ">>>> Muting Spotify playback by setting playback volume to 0 - current: $($PlaybackInfo.device.volume_percent)" -loglevel 2 -logtype Spotify
           Set-PlaybackVolume -VolumePercent '0' -ApplicationName $thisapp.config.App_Name 
           $synchash.MuteButton_ToggleButton.isChecked = $true
         }else{
-          write-ezlogs ">>>> Unmuting Spotify playback by setting playback volume to $($synchash.Volume_Slider.Value) - current $($volume)" -loglevel 2 -logtype Spotify
+          write-ezlogs ">>>> Unmuting Spotify playback by setting playback volume to $($synchash.Volume_Slider.Value) - current: $($PlaybackInfo.device.volume_percent)" -loglevel 2 -logtype Spotify
           Set-PlaybackVolume -VolumePercent $($synchash.Volume_Slider.Value) -ApplicationName $thisapp.config.App_Name 
           $synchash.MuteButton_ToggleButton.isChecked = $false
         }
@@ -404,18 +400,140 @@ function Set-Mute
       }
     }
     $thisApp.Config.Media_Muted = $synchash.MuteButton_ToggleButton.isChecked
-    if($synchash.VideoView_Mute_Icon.kind -eq 'Volumeoff'){
-      #write-ezlogs "Audio is Muted" -warning -callpath "$((Get-PSCallStack)[0].Command):$((Get-PSCallStack)[0].InvocationInfo.ScriptLineNumber)" -loglevel 3
-      #$synchash.MuteButton_ToggleButton.isChecked = $true
-    }else{
-      #write-ezlogs "Audio is UnMuted" -warning -callpath "$((Get-PSCallStack)[0].Command):$((Get-PSCallStack)[0].InvocationInfo.ScriptLineNumber)" -loglevel 3
-      #$synchash.MuteButton_ToggleButton.isChecked = $false
-    }
   }catch{
     write-ezlogs "An exception occurred in Set-Mute" -showtime -catcherror $_ -callpath "$((Get-PSCallStack)[0].Command):$((Get-PSCallStack)[0].InvocationInfo.ScriptLineNumber)"
   }
 }
 #---------------------------------------------- 
-#endregion Set-AutoPlay Function
+#endregion Set-Mute Function
 #----------------------------------------------
-Export-ModuleMember -Function @('Set-Shuffle','Set-AutoPlay','Set-Mute','Set-AutoRepeat')
+
+#---------------------------------------------- 
+#region Set-Volume Function
+#----------------------------------------------
+function Set-Volume
+{
+  <#
+      .Name
+      Set-Mute
+
+      .Version 
+      0.1.0
+
+      .SYNOPSIS
+      Sets the volume for for libvlc, webview2 and updates associated UI elements
+
+      .DESCRIPTION
+       
+      .Configurable Variables
+
+      .Requirements
+      - Powershell v3.0 or higher
+      - Module designed for Samson Media Player
+
+      .OUTPUTS
+      System.Management.Automation.PSObject
+
+      .Author
+      EZTechhelp - https://www.eztechhelp.com
+
+      .NOTES
+
+  #>
+  Param (
+    $thisApp,
+    $synchash,
+    $newvalue,
+    [switch]$Verboselog
+  )
+  try{
+    if([string]::IsNullOrEmpty($newvalue)){
+      Write-EZLogs -text "Cannot set volume - no value was provided!" -Warning
+      return
+    }
+    #Set config to current volume value
+    $thisApp.Config.Media_Volume = $newvalue
+    if($synchash.Vlc.isPlaying -or $synchash.Vlc.state -match 'Paused'){
+      if($synchash.vlc.Volume -ne $newvalue){
+        write-ezlogs -text ">>>> Setting vlc volume: $($newvalue)" -LogLevel 0 -Verboselog:$Verboselog
+        if($thisApp.Config.Libvlc_Version -eq '4'){
+          $synchash.vlc.SetVolume($newvalue)
+        }else{
+          $synchash.vlc.Volume = $newvalue
+        }
+      }
+    }
+    #Volume for Webplayers
+    if(($synchash.YoutubeWebView2.CoreWebView2.IsDocumentPlayingAudio -or $synchash.Webview2.CoreWebView2.IsDocumentPlayingAudio) -or ($synchash.WebPlayer_State -ne 0 -and $synchash.Youtube_WebPlayer_title) -or ($synchash.Spotify_WebPlayer_State.current_track -and $synchash.Spotify_WebPlayer_State.playbackstate -ne 0)){
+      if($synchash.Spotify_WebPlayer_State -and $synchash.Spotify_WebPlayer_State.playbackstate -ne 0 -and $synchash.Spotify_WebPlayer_State.current_track.id){
+        $synchash.Webview2_VolumeScript = @"
+   console.log('Setting Spotify Volume to $($newvalue / 100)');
+  SpotifyWeb.player.setVolume($($newvalue / 100))
+"@
+        $synchash.WebView2.ExecuteScriptAsync(
+          $synchash.Webview2_VolumeScript
+        )
+      }else{
+        if($thisApp.Config.Use_invidious -or $synchash.Youtube_WebPlayer_URL -match 'yewtu.be|invidious'){
+          $YoutubeWebView2_VolumeScript = @"
+        var volume = player.volume();
+        console.log('Invidious volume',volume)
+        if(volume !== $($newvalue / 100)){
+          console.log('Setting Invidious volume',$($newvalue / 100))
+          player.volume($($newvalue / 100));
+        }
+"@
+          $synchash.YoutubeWebView2.ExecuteScriptAsync(
+            $YoutubeWebView2_VolumeScript
+          )
+        }elseif($synchash.Youtube_WebPlayer_URL -match 'youtube\.com' -or $synchash.Youtube_WebPlayer_URL -match 'youtu\.be' -or $synchash.WebBrowser_Youtube_URL -match 'youtube\.com' -or $synchash.WebBrowser_Youtube_URL -match 'youtu\.be'){
+          $YoutubeWebView2_VolumeScript = @"
+  var player = document.getElementById('movie_player');
+  console.log('Setting volume',$($newvalue))
+  player.setVolume($($newvalue));
+"@
+
+          if(($synchash.WebBrowser_Youtube_URL -match 'youtube\.com' -or $synchash.WebBrowser_Youtube_URL -match 'youtu\.be') -and $synchash.WebBrowser){
+            $synchash.WebBrowser.ExecuteScriptAsync(
+              $YoutubeWebView2_VolumeScript
+            )
+          }
+          if($synchash.YoutubeWebView2){
+            $synchash.YoutubeWebView2.ExecuteScriptAsync(
+              $YoutubeWebView2_VolumeScript
+            )
+          }
+        }
+      }
+    }elseif($($synchash.WebBrowser.CoreWebView2.IsDocumentPlayingAudio -or $synchash.WebBrowser.CoreWebView2.IsMuted -or -not [string]::IsNullOrEmpty($synchash.Youtube_webplayer_current_Media)) -and ($synchash.WebBrowser_Youtube_URL -match 'youtube\.com' -or $synchash.WebBrowser_Youtube_URL -match 'youtu\.be')){
+      $YoutubeWebView2_VolumeScript = @"
+  var player = document.getElementById('movie_player');
+  console.log('Setting volume',$($newvalue))
+  player.setVolume($($newvalue));
+"@
+      $synchash.WebBrowser.ExecuteScriptAsync(
+        $YoutubeWebView2_VolumeScript
+      )
+    }
+    #Set Mute icons/buttons
+    if($newvalue -ge 75){
+      $synchash.VideoView_Mute_Icon.kind = 'VolumeHigh'
+    }elseif($newvalue -gt 25 -and $newvalue -lt 75){
+      $synchash.VideoView_Mute_Icon.kind = 'VolumeMedium'
+    }elseif($newvalue -le 25 -and $newvalue -gt 0){
+      $synchash.VideoView_Mute_Icon.kind = 'VolumeLow'
+      if(!$synchash.vlc.Mute -and $synchash.MuteButton_ToggleButton.isChecked){
+        $synchash.MuteButton_ToggleButton.isChecked = $false
+      }
+    }elseif($newvalue -le 0){
+      $synchash.VideoView_Mute_Icon.kind = 'Volumeoff'
+      $synchash.MuteButton_ToggleButton.isChecked = $true
+    }
+  }catch{
+    write-ezlogs -text 'An exception occurred in Set-Volume' -CatchError $_ -callpath "$((Get-PSCallStack)[0].Command):$((Get-PSCallStack)[0].InvocationInfo.ScriptLineNumber)"
+  }
+}
+#----------------------------------------------
+#endregion Set-Volume Function
+#----------------------------------------------
+Export-ModuleMember -Function @('Set-Shuffle','Set-AutoPlay','Set-Mute','Set-AutoRepeat','Set-Volume')

@@ -740,7 +740,7 @@ function Set-AvalonDock {
                 'IsCheckable' = $false
               }
               $null = $items.Add($Chat_View)
-            }elseif($e.OriginalSource.Name -eq 'MediaPlayer_Grid' -or $e.OriginalSource.Name -eq 'MediaLibrary_Grid' -or $e.OriginalSource.Text -eq 'Video Player' -or $e.OriginalSource.Text -eq 'Media Library' -or $e.OriginalSource.Text -eq 'Web Browser' -or ($e.OriginalSource.Text -and [string]($e.OriginalSource.Text).StartsWith('Web Browser - ')) -or $e.OriginalSource.Text -eq 'Tor Browser' -or $e.OriginalSource.Name -eq 'VideoViewTransparentBackground' -or $e.OriginalSource.Name -eq 'VideoViewOverlayStackpanel' -or $e.OriginalSource.Name -eq 'VideoViewOverlayStackpanelRight'  -or $e.OriginalSource.Name -eq 'VideoViewOverlayStackpanelLeft' -or $e.OriginalSource.Name -eq 'VideoView_Overlay_Grid'){
+            }elseif($e.OriginalSource.Name -eq 'MediaPlayer_Grid' -or $e.OriginalSource.Name -eq 'MediaLibrary_Grid' -or $e.OriginalSource.Text -eq 'Video Player' -or $e.OriginalSource.Text -eq 'Media Library' -or $e.OriginalSource.Text -eq 'Media Browser' -or ($e.OriginalSource.Text -and [string]($e.OriginalSource.Text).StartsWith('Media Browser - ')) -or $e.OriginalSource.Text -eq 'Tor Browser' -or $e.OriginalSource.Name -eq 'VideoViewTransparentBackground' -or $e.OriginalSource.Name -eq 'VideoViewOverlayStackpanel' -or $e.OriginalSource.Name -eq 'VideoViewOverlayStackpanelRight'  -or $e.OriginalSource.Name -eq 'VideoViewOverlayStackpanelLeft' -or $e.OriginalSource.Name -eq 'VideoView_Overlay_Grid'){
               switch($e.OriginalSource.Name,$e.OriginalSource.Text)
               {
                 { @('Media Library','MediaLibrary_Grid') -contains $_ } {
@@ -761,7 +761,7 @@ function Set-AvalonDock {
                     $Dockheader = 'Undock'
                   }
                 }
-                { $_ -eq 'Web Browser' -or ($_ -and $_.startswith('Web Browser -')) } {
+                { $_ -eq 'Media Browser' -or ($_ -and $_.startswith('Media Browser -')) } {
                   $VideoPlayer = $false
                   $tag = $synchash.WebBrowserAnchorable.contentid
                   if($synchash.WebBrowserAnchorable.isFloating){
@@ -883,9 +883,9 @@ function Set-AvalonDock {
             $null = $synchash.VideoViewOverlayStackpanelLeft.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.AnchorableContextMenu)
             $null = $synchash.VideoView_Overlay_Grid.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.AnchorableContextMenu)
             $null = $synchash.VideoViewTransparentBackground.AddHandler([System.Windows.Controls.Button]::PreviewMouseLeftButtonDownEvent,$synchash.VideoViewMouseLeftButtonDown_command)
-            $null = $synchash.VideoView_Queue.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Media_ContextMenu)
-            $null = $synchash.VideoView_Queue.RemoveHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$synchash.PlayMedia_Command)
-            $null = $synchash.VideoView_Queue.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$synchash.PlayMedia_Command)
+            #$null = $synchash.VideoView_Queue.AddHandler([System.Windows.Controls.Button]::PreviewMouseRightButtonDownEvent,$synchash.Media_ContextMenu)
+            #$null = $synchash.VideoView_Queue.RemoveHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$synchash.PlayMedia_Command)
+            #$null = $synchash.VideoView_Queue.AddHandler([System.Windows.Controls.Button]::MouseDoubleClickEvent,$synchash.PlayMedia_Command)
           }catch{
             write-ezlogs "An exception occurred executing AnchorableContextMenu" -showtime -catcherror $_
           }finally{
@@ -1153,10 +1153,10 @@ function Set-AvalonDock {
               $floatingWindow.title = "$($synchash."$webview2".CoreWebview2.DocumentTitle) - $($thisApp.Config.App_Name) Media Player"
             }elseif($FloatingWindow_contentid -eq 'Webbrowser' -and $synchash.Webbrowser.CoreWebview2.DocumentTitle -and $floatingwindow.Title -ne $synchash.Webbrowser.CoreWebview2.DocumentTitle){
               $floatingwindow.Title = "$($synchash.Webbrowser.CoreWebview2.DocumentTitle) - $($thisApp.Config.App_Name) Media Player"
-              $synchash.WebBrowserAnchorable.Title = "Web Browser - $($synchash.Webbrowser.CoreWebview2.DocumentTitle)"
+              $synchash.WebBrowserAnchorable.Title = "Media Browser - $($synchash.Webbrowser.CoreWebview2.DocumentTitle)"
             }elseif($floatingwindow.Title -ne "$($FloatingWindow_title) - $($thisApp.Config.App_Name) Media Player"){
               $floatingwindow.Title = "$($FloatingWindow_title) - $($thisApp.Config.App_Name) Media Player"
-              $synchash.WebBrowserAnchorable.Title = "Web Browser"
+              $synchash.WebBrowserAnchorable.Title = "Media Browser"
             }
             if($floatingwindow.MinHeight -ne '400'){
               $floatingwindow.MinHeight="400"

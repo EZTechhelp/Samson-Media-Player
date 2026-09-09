@@ -754,13 +754,25 @@
 																				   TextWrapping="Wrap"
 																				   VerticalAlignment="Center"
 																				   Fill="White"
+																				   FontSize="{Binding Path=FontSize, FallbackValue=12}"
 																				   StrokeThickness="2"						   
 																				   Margin="4,2,0,0">
 																			<WpfExtensions:OutlinedTextBlock.CacheMode>
 																				<BitmapCache EnableClearType="False" 
 																							 RenderAtScale="2" 
 																							 SnapsToDevicePixels="True" />
-																			</WpfExtensions:OutlinedTextBlock.CacheMode>					   
+																			</WpfExtensions:OutlinedTextBlock.CacheMode>
+																			<WpfExtensions:OutlinedTextBlock.Style>
+																				<Style TargetType="WpfExtensions:OutlinedTextBlock">
+																					<Setter Property="FontStyle" Value="Normal"/>
+																					<Style.Triggers>
+																						<Trigger Property="FontSize"
+																								 Value="16">
+																							<Setter Property="FontStyle" Value="Italic"/>
+																						</Trigger>
+																					</Style.Triggers>
+																				</Style>
+																			</WpfExtensions:OutlinedTextBlock.Style>																			
 																		</WpfExtensions:OutlinedTextBlock>																		
 <!-- 																		<TextBlock Text="{Binding Path=Display_Name}"  ToolTip="{Binding Path=ToolTip}" >
 																			<TextBlock.CacheMode>
@@ -1081,7 +1093,7 @@
 								<TextBlock.Style>
 									<Style TargetType="TextBlock">
 										<Style.Triggers>
-											<DataTrigger Binding="{Binding Title}" Value="Web Browser">
+											<DataTrigger Binding="{Binding Title}" Value="Media Browser">
 												<Setter Property="Text" Value="{Binding Title}"/>
 												<Setter Property="Visibility" Value="Visible"/>
 											</DataTrigger>
@@ -1430,13 +1442,25 @@
 																				   TextWrapping="Wrap"
 																				   VerticalAlignment="Center"
 																				   Fill="White"
+																				   FontSize="{Binding Path=FontSize, FallbackValue=12}"
 																				   StrokeThickness="2"						   
 																				   Margin="4,2,0,0">
 																			<WpfExtensions:OutlinedTextBlock.CacheMode>
 																				<BitmapCache EnableClearType="False" 
 																							 RenderAtScale="2" 
 																							 SnapsToDevicePixels="True" />
-																			</WpfExtensions:OutlinedTextBlock.CacheMode>					   
+																			</WpfExtensions:OutlinedTextBlock.CacheMode>
+																			<WpfExtensions:OutlinedTextBlock.Style>
+																				<Style TargetType="WpfExtensions:OutlinedTextBlock">
+																					<Setter Property="FontStyle" Value="Normal"/>
+																					<Style.Triggers>
+																						<Trigger Property="FontSize"
+																								 Value="16">
+																							<Setter Property="FontStyle" Value="Italic"/>
+																						</Trigger>
+																					</Style.Triggers>
+																				</Style>
+																			</WpfExtensions:OutlinedTextBlock.Style>																			
 																		</WpfExtensions:OutlinedTextBlock>																		
 																		<WpfExtensions:OutlinedTextBlock Text="{Binding Path=Status}"
 																				   FontStyle="{Binding Path=FontStyle, FallbackValue=Normal}"
@@ -2111,6 +2135,7 @@
 																					<WpfExtensions:OutlinedTextBlock Text="{Binding Path=Display_Name}"
 																						   Stroke="Black"
 																						   FontWeight="Bold"
+																						   FontSize="{Binding Path=FontSize, FallbackValue=12}"
 																						   TextOptions.TextFormattingMode="Display"
 																						   TextOptions.TextHintingMode="Fixed"
 																						   TextWrapping="Wrap"
@@ -2122,7 +2147,18 @@
 																						<BitmapCache EnableClearType="False" 
 																									 RenderAtScale="2" 
 																									 SnapsToDevicePixels="True" />
-																					</WpfExtensions:OutlinedTextBlock.CacheMode>					   
+																					</WpfExtensions:OutlinedTextBlock.CacheMode>
+																					<WpfExtensions:OutlinedTextBlock.Style>
+																						<Style TargetType="WpfExtensions:OutlinedTextBlock">
+																							<Setter Property="FontStyle" Value="Normal"/>
+																							<Style.Triggers>
+																								<Trigger Property="FontSize"
+																										 Value="16">
+																									<Setter Property="FontStyle" Value="Italic"/>
+																								</Trigger>
+																							</Style.Triggers>
+																						</Style>
+																					</WpfExtensions:OutlinedTextBlock.Style>																					
 																				</WpfExtensions:OutlinedTextBlock>																					
 <!-- 																					<TextBlock Text="{Binding Path=Status}" FontStyle="{Binding Path=FontStyle}" Foreground="{Binding Path=FontColor}" FontWeight="{Binding Path=FontWeight}" FontSize="{Binding Path=FontSize}" Margin="5,3,0,0"/> -->
 																					<WpfExtensions:OutlinedTextBlock Text="{Binding Path=Status}"
@@ -2227,7 +2263,7 @@
 								</mah:MetroTabControl>
 							</Grid>
 						</docklayout:LayoutAnchorable>
-						<docklayout:LayoutAnchorable x:Name="WebBrowserAnchorable" ContentId="WebBrowser" Title="Web Browser" CanClose="False" CanFloat="True" CanMove="True" CanShowOnHover="True" CanAutoHide="False" CanHide="false">
+						<docklayout:LayoutAnchorable x:Name="WebBrowserAnchorable" ContentId="WebBrowser" Title="Media Browser" CanClose="False" CanFloat="True" CanMove="True" CanShowOnHover="True" CanAutoHide="False" CanHide="false">
 							<Grid Name="WebBrowserGrid" Background="black" VerticalAlignment="stretch" HorizontalAlignment="stretch" Tag="True" Opacity="1">
 								<Grid.RowDefinitions>
 									<RowDefinition Height="0" MaxHeight="40">
@@ -3487,7 +3523,7 @@
 													VerticalAlignment="Center"/>
 					</VirtualizingStackPanel>
 				</Button>
-				<Button Name='Web_Button' Uid="WebBrowser" ToolTip="Web Browser" FontSize="12" FontWeight="Bold" Height="22" Background="Transparent" Style="{StaticResource FilterButtonStyle}" IsEnabled="True" >
+				<Button Name='Web_Button' Uid="WebBrowser" ToolTip="Media Browser" FontSize="12" FontWeight="Bold" Height="22" Background="Transparent" Style="{StaticResource FilterButtonStyle}" IsEnabled="True" >
 					<VirtualizingStackPanel IsVirtualizing="True" Orientation="Horizontal">
 						<iconPacks:PackIconMaterial Kind="Web"
 													Margin="2 2 2 0"

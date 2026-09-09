@@ -329,13 +329,12 @@ function Update-MediaTimer{
               }
             }
           }                 
-          if($Current_playing -and $Current_playing.FontWeight -ne 'Bold'){
+          if($Current_playing -and ($Current_playing.FontWeight -ne 'Bold' -or $Current_playing.FontSize -ne [Double]'16')){
             if(-not [string]::IsNullOrEmpty($Current_playing.title)){
               $Current_playing.FontWeight = 'Bold'
               #$Current_playing.BorderBrush = 'LightGreen'
               #$Current_playing.BorderThickness = '1'
-              $Current_playing.FontSize = [Double]'13' 
-              $Current_playing.FontStyle = 'Italic'          
+              $Current_playing.FontSize = [Double]'16'
               if($synchashWeak.Target.AudioRecorder.isRecording){
                 $current_playing.PlayIconRecord = "RecordRec"
                 $current_playing.PlayIconRecordVisibility = "Visible"
@@ -448,7 +447,7 @@ function Update-MediaTimer{
               $Current_playing = $Current_playlist_items.where({$_.id -eq $synchashWeak.Target.Current_playing_media.id}) | Select-Object -Unique
             }            
           }
-          if($Current_playing -and $Current_playing.FontWeight -ne 'Bold'){
+          if($Current_playing -and ($Current_playing.FontWeight -ne 'Bold' -or $Current_playing.FontSize -ne [Double]'16')){
             if($synchashWeak.Target.PlayQueue_TreeView.itemssource.NeedsRefresh){
               $synchashWeak.Target.PlayQueue_TreeView.itemssource.refresh()
             }elseif($synchashWeak.Target.PlayQueue_TreeView.items.NeedsRefresh){
@@ -458,7 +457,7 @@ function Update-MediaTimer{
               $Current_playing.FontWeight = 'Bold'
               #$Current_playing.BorderBrush = 'LightGreen'
               #$Current_playing.BorderThickness = '1'
-              $Current_playing.FontSize = [Double]'13' 
+              $Current_playing.FontSize = [Double]'16'
               if($synchashWeak.Target.AudioRecorder.isRecording){
                 $current_playing.PlayIconRecord = "RecordRec"
                 $current_playing.PlayIconRecordVisibility = "Visible"
@@ -549,7 +548,7 @@ function Update-MediaTimer{
             Skip-Media -thisApp $thisApp -synchash $synchashWeak.Target
           }else{
             Get-PlayQueue -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace
-            Get-Playlists -synchashWeak $synchashWeak -thisApp $thisapp -use_Runspace
+            Get-Playlists -synchashWeak $synchashWeak -thisApp $thisapp -SortBy $thisApp.Config.Playlists_SortBy -SortDirection $thisApp.Config.Playlists_SortDirection -use_Runspace
             write-ezlogs '| No other media is queued to play due to Auto Playback disabled' -showtime
             if(Get-Process -Name 'Spotify*' -ErrorAction SilentlyContinue){Get-Process -Name 'Spotify*' | Stop-Process -Force -ErrorAction SilentlyContinue} 
             $synchashWeak.Target.Spotify_Status = 'Stopped'

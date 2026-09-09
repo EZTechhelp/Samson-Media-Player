@@ -64,7 +64,7 @@ function Get-SpotifyAccessToken {
       try {
         Write-ezlogs '| Sending request to refresh access token.' -showtime -logtype Spotify
         $CurrentTime = Get-Date
-        $Response = Invoke-WebRequest -Uri $Uri -Method $Method -Body $Body -UseBasicParsing
+        $ResponseContent = Invoke-RestMethod -Uri $Uri -Method $Method -Body $Body -ContentType 'application/x-www-form-urlencoded' -UseBasicParsing
       }
       catch {
         # Don't throw error if Refresh token is revoked or authentication failed
@@ -74,8 +74,8 @@ function Get-SpotifyAccessToken {
       }
 
       # STEP 3 : Parse and save response
-      if ($Response.Content) {
-        $ResponseContent = $Response.Content | ConvertFrom-Json
+      if ($ResponseContent.access_token) {
+        #$ResponseContent = $Response.Content | ConvertFrom-Json
         $Token = @{
           access_token  = $ResponseContent.access_token
           token_type    = $ResponseContent.token_type
@@ -108,7 +108,9 @@ function Get-SpotifyAccessToken {
   # ------------------------------ Authorization Code retrieval ------------------------------
   # STEP 1 : Prepare
   try{
-    Add-Type -AssemblyName System.Web
+    if(![bool]('System.Web.HttpUtility' -as [type])){
+      Add-Type -AssemblyName System.Web
+    }   
     $RedirectUri = [string]$Application.RedirectUri
     $EncodedRedirectUri = [System.Web.HTTPUtility]::UrlEncode($RedirectUri)
     $EncodedScopes = @( # requesting all existing scopes
@@ -289,7 +291,7 @@ function Get-SpotifyAccessToken {
     try{
       Write-Verbose 'Send request to get access token.'
       $CurrentTime = Get-Date
-      $Response = Invoke-WebRequest -Uri $Uri -Method $Method -Body $Body -UseBasicParsing
+      $ResponseContent = Invoke-RestMethod -Uri $Uri -Method $Method -Body $Body -ContentType 'application/x-www-form-urlencoded' -UseBasicParsing
     }catch{
       write-ezlogs "Error occured during request of access token : $($PSItem[0].ToString())" -showtime -CatchError $_
       return $false
@@ -297,16 +299,18 @@ function Get-SpotifyAccessToken {
     
     try{
       # STEP 3 : Parse and save response
-      $ResponseContent = $Response.Content | ConvertFrom-Json
-
-      $Token = @{
-        access_token  = $ResponseContent.access_token
-        token_type    = $ResponseContent.token_type
-        scope         = $ResponseContent.scope
-        expires       = $CurrentTime.AddSeconds($ResponseContent.expires_in).ToString('u')
-        refresh_token = $ResponseContent.refresh_token
+      if($ResponseContent.access_token){
+        $Token = @{
+          access_token  = $ResponseContent.access_token
+          token_type    = $ResponseContent.token_type
+          scope         = $ResponseContent.scope
+          expires       = $CurrentTime.AddSeconds($ResponseContent.expires_in).ToString('u')
+          refresh_token = $ResponseContent.refresh_token
+        }
+        Set-SpotifyApplication -Name $ApplicationName -Token $Token
+      }else{
+        write-ezlogs "Did not receive access_token, cannot continue!" -showtime -warning -logtype Spotify
       }
-      Set-SpotifyApplication -Name $ApplicationName -Token $Token 
       if($MahDialog_hash.Window){
         $MahDialog_hash.window.Dispatcher.Invoke("Normal",[action]{ $MahDialog_hash.window.close() })
       }   

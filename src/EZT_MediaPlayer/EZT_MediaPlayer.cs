@@ -4116,8 +4116,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            livestatus = value;
-            RaisedOnPropertyChanged("Live_Status");
+            if ((livestatus != value) || (livestatus != null && !livestatus.Equals(value)))
+            {
+                livestatus = value;
+                RaisedOnPropertyChanged("Live_Status");
+            }
         }
     }
     public string Stream_title { get; set; }
@@ -4131,8 +4134,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            statusmsg = value;
-            RaisedOnPropertyChanged("Status_Msg");
+            if ((statusmsg != value) || (statusmsg != null && !statusmsg.Equals(value)))
+            {
+                statusmsg = value;
+                RaisedOnPropertyChanged("Status_Msg");
+            }
         }
     }
     private string status;
@@ -4144,8 +4150,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            status = value;
-            RaisedOnPropertyChanged("Status");
+            if ((status != value) || (status != null && !status.Equals(value)))
+            {
+                status = value;
+                RaisedOnPropertyChanged("Status");
+            }
         }
     }
     private int viewer_count;
@@ -4157,8 +4166,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            viewer_count = value;
-            RaisedOnPropertyChanged("Viewer_Count");
+            if ((viewer_count != value) || (viewer_count != null && !viewer_count.Equals(value)))
+            {
+                viewer_count = value;
+                RaisedOnPropertyChanged("Viewer_Count");
+            }
         }
     }
     public string Image { get; set; }
@@ -4171,8 +4183,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            fontstyle = value;
-            RaisedOnPropertyChanged("FontStyle");
+            if ((fontstyle != value) || (fontstyle != null && !fontstyle.Equals(value)))
+            {
+                fontstyle = value;
+                RaisedOnPropertyChanged("FontStyle");
+            }
         }
     }
     private string fontcolor;
@@ -4184,8 +4199,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            fontcolor = value;
-            RaisedOnPropertyChanged("FontColor");
+            if ((fontcolor != value) || (fontcolor != null && !fontcolor.Equals(value)))
+            {
+                fontcolor = value;
+                RaisedOnPropertyChanged("FontColor");
+            }
         }
     }
     private string fontweight;
@@ -4197,8 +4215,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            fontweight = value;
-            RaisedOnPropertyChanged("FontWeight");
+            if ((fontweight != value) || (fontweight != null && !fontweight.Equals(value)))
+            {
+                fontweight = value;
+                RaisedOnPropertyChanged("FontWeight");
+            }
         }
     }
     private string fontsize;
@@ -4210,8 +4231,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            fontsize = value;
-            RaisedOnPropertyChanged("FontSize");
+            if ((fontsize != value) || (fontsize != null && !fontsize.Equals(value)))
+            {
+                fontsize = value;
+                RaisedOnPropertyChanged("FontSize");
+            }
         }
     }
     public string Margin { get; set; }
@@ -4224,8 +4248,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            tooltip = value;
-            RaisedOnPropertyChanged("ToolTip");
+            if ((tooltip != value) || (tooltip != null && !tooltip.Equals(value)))
+            {
+                tooltip = value;
+                RaisedOnPropertyChanged("ToolTip");
+            }
         }
     }
     private string statusfontStyle;
@@ -4237,8 +4264,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            statusfontStyle = value;
-            RaisedOnPropertyChanged("Status_FontStyle");
+            if ((statusfontStyle != value) || (statusfontStyle != null && !statusfontStyle.Equals(value)))
+            {
+                statusfontStyle = value;
+                RaisedOnPropertyChanged("Status_FontStyle");
+            }
         }
     }
     private string statusfontcolor;
@@ -4250,8 +4280,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            statusfontcolor = value;
-            RaisedOnPropertyChanged("Status_FontColor");
+            if ((statusfontcolor != value) || (statusfontcolor != null && !statusfontcolor.Equals(value)))
+            {
+                statusfontcolor = value;
+                RaisedOnPropertyChanged("Status_FontColor");
+            }
         }
     }
     private string statusfontweight;
@@ -4263,8 +4296,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            statusfontweight = value;
-            RaisedOnPropertyChanged("Status_FontWeight");
+            if ((statusfontweight != value) || (statusfontweight != null && !statusfontweight.Equals(value)))
+            {
+                statusfontweight = value;
+                RaisedOnPropertyChanged("Status_FontWeight");
+            }
         }
     }
     private string statusfontsize;
@@ -4276,8 +4312,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            statusfontsize = value;
-            RaisedOnPropertyChanged("Status_FontSize");
+            if ((statusfontsize != value) || (statusfontsize != null && !statusfontsize.Equals(value)))
+            {
+                statusfontsize = value;
+                RaisedOnPropertyChanged("Status_FontSize");
+            }
         }
     }
     private string borderbrush;
@@ -4289,8 +4328,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            borderbrush = value;
-            RaisedOnPropertyChanged("BorderBrush");
+            if ((borderbrush != value) || (borderbrush != null && !borderbrush.Equals(value)))
+            {
+                borderbrush = value;
+                RaisedOnPropertyChanged("BorderBrush");
+            }
         }
     }
     private string borderthickness;
@@ -4302,8 +4344,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            borderthickness = value;
-            RaisedOnPropertyChanged("BorderThickness");
+            if ((borderthickness != value) || (borderthickness != null && !borderthickness.Equals(value)))
+            {
+                borderthickness = value;
+                RaisedOnPropertyChanged("BorderThickness");
+            }
         }
     }
     private string numbervisibility;
@@ -4315,8 +4360,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            numbervisibility = value;
-            RaisedOnPropertyChanged("NumberVisibility");
+            if ((numbervisibility != value) || (numbervisibility != null && !numbervisibility.Equals(value)))
+            {
+                numbervisibility = value;
+                RaisedOnPropertyChanged("NumberVisibility");
+            }
         }
     }
     private string numberfontsize;
@@ -4328,8 +4376,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            numberfontsize = value;
-            RaisedOnPropertyChanged("NumberFontSize");
+            if ((numberfontsize != value) || (numberfontsize != null && !numberfontsize.Equals(value)))
+            {
+                numberfontsize = value;
+                RaisedOnPropertyChanged("NumberFontSize");
+            }
         }
     }
     public bool AllowDrop { get; set; }
@@ -4359,8 +4410,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            current_progress_secs = value;
-            RaisedOnPropertyChanged("Current_Progress_Secs");
+            if ((current_progress_secs != value) || (current_progress_secs != null && !current_progress_secs.Equals(value)))
+            {
+                current_progress_secs = value;
+                RaisedOnPropertyChanged("Current_Progress_Secs");
+            }
         }
     }
     public int Track { get; set; }
@@ -4376,8 +4430,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            duration = value;
-            RaisedOnPropertyChanged("Duration");
+            if ((duration != value) || (duration != null && !duration.Equals(value)))
+            {
+                duration = value;
+                RaisedOnPropertyChanged("Duration");
+            }
         }
     }
     public string Size { get; set; }
@@ -4391,8 +4448,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            displayname = value;
-            RaisedOnPropertyChanged("Display_Name");
+            if ((displayname != value) || (displayname != null && !displayname.Equals(value)))
+            {
+                displayname = value;
+                RaisedOnPropertyChanged("Display_Name");
+            }
         }
     }
     private int timesplayed;
@@ -4404,8 +4464,11 @@ public class Media : INotifyPropertyChanged
         }
         set
         {
-            timesplayed = value;
-            RaisedOnPropertyChanged("TimesPlayed");
+            if ((timesplayed != value) || (timesplayed != null && !timesplayed.Equals(value)))
+            {
+                timesplayed = value;
+                RaisedOnPropertyChanged("TimesPlayed");
+            }
         }
     }
     public Nullable<System.DateTime> LastPlayed { get; set; }
@@ -4600,11 +4663,13 @@ public class Config
     public string Spotify_Update_Interval { get; set; }
     public bool Youtube_WebPlayer { get; set; }
     public bool SaveYoutube_History { get; set; }
+    public bool Youtube_WebPlayer_PrivateMode { get; set; }
     public List<string> YoutubeHistory { get; set; }
     public string Youtube_Update_Interval { get; set; }
     public bool Enable_Sponsorblock { get; set; }
     public string Youtube_Quality { get; set; }
     public bool Import_My_Youtube_Media { get; set; }
+    public bool Import_Youtube_Liked { get; set; }
     public string Twitch_Update_Interval { get; set; }
     public bool Enable_Twitch_Notifications { get; set; }
     public bool Skip_Twitch_Ads { get; set; }
@@ -4733,8 +4798,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            number = value;
-            RaisedOnPropertyChanged("Number");
+            if ((number != value) || (number != null && !number.Equals(value)))
+            {
+                number = value;
+                RaisedOnPropertyChanged("Number");
+            }
         }
     }
     public string Title { get; set; }
@@ -4747,8 +4815,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            displayname = value;
-            RaisedOnPropertyChanged("Display_Name");
+            if ((displayname != value) || (displayname != null && !displayname.Equals(value)))
+            {
+                displayname = value;
+                RaisedOnPropertyChanged("Display_Name");
+            }
         }
     }
     private string statusmsg;
@@ -4760,8 +4831,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            statusmsg = value;
-            RaisedOnPropertyChanged("Status_Msg");
+            if ((statusmsg != value) || (statusmsg != null && !statusmsg.Equals(value)))
+            {
+                statusmsg = value;
+                RaisedOnPropertyChanged("Status_Msg");
+            }
         }
     }
     private string status;
@@ -4773,8 +4847,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            status = value;
-            RaisedOnPropertyChanged("Status");
+            if ((status != value) || (status != null && !status.Equals(value)))
+            {
+                status = value;
+                RaisedOnPropertyChanged("Status");
+            }
         }
     }
     public int Viewer_Count { get; set; }
@@ -4791,8 +4868,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            PlaylistTracks = value;
-            RaisedOnPropertyChanged("Playlist_Tracks");
+            if ((PlaylistTracks != value) || (PlaylistTracks != null && !PlaylistTracks.Equals(value)))
+            {
+                PlaylistTracks = value;
+                RaisedOnPropertyChanged("Playlist_Tracks");
+            }
         }
     }
     public string Source { get; set; }
@@ -4806,8 +4886,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            fontstyle = value;
-            RaisedOnPropertyChanged("FontStyle");
+            if ((fontstyle != value) || (fontstyle != null && !fontstyle.Equals(value)))
+            {
+                fontstyle = value;
+                RaisedOnPropertyChanged("FontStyle");
+            }
         }
     }
     private string fontcolor;
@@ -4819,8 +4902,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            fontcolor = value;
-            RaisedOnPropertyChanged("FontColor");
+            if ((fontcolor != value) || (fontcolor != null && !fontcolor.Equals(value)))
+            {
+                fontcolor = value;
+                RaisedOnPropertyChanged("FontColor");
+            }
         }
     }
     private string fontweight;
@@ -4832,8 +4918,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            fontweight = value;
-            RaisedOnPropertyChanged("FontWeight");
+            if ((fontweight != value) || (fontweight != null && !fontweight.Equals(value)))
+            {
+                fontweight = value;
+                RaisedOnPropertyChanged("FontWeight");
+            }
         }
     }
     private string fontsize;
@@ -4845,8 +4934,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            fontsize = value;
-            RaisedOnPropertyChanged("FontSize");
+            if ((fontsize != value) || (fontsize != null && !fontsize.Equals(value)))
+            {
+                fontsize = value;
+                RaisedOnPropertyChanged("FontSize");
+            }
         }
     }
     public string Margin { get; set; }
@@ -4859,8 +4951,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            tooltip = value;
-            RaisedOnPropertyChanged("ToolTip");
+            if ((tooltip != value) || (tooltip != null && !tooltip.Equals(value)))
+            {
+                tooltip = value;
+                RaisedOnPropertyChanged("ToolTip");
+            }
         }
     }
     private string statusfontStyle;
@@ -4872,8 +4967,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            statusfontStyle = value;
-            RaisedOnPropertyChanged("Status_FontStyle");
+            if ((statusfontStyle != value) || (statusfontStyle != null && !statusfontStyle.Equals(value)))
+            {
+                statusfontStyle = value;
+                RaisedOnPropertyChanged("Status_FontStyle");
+            }
         }
     }
     private string statusfontcolor;
@@ -4885,8 +4983,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            statusfontcolor = value;
-            RaisedOnPropertyChanged("Status_FontColor");
+            if ((statusfontcolor != value) || (statusfontcolor != null && !statusfontcolor.Equals(value)))
+            {
+                statusfontcolor = value;
+                RaisedOnPropertyChanged("Status_FontColor");
+            }
         }
     }
     private string statusfontweight;
@@ -4898,8 +4999,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            statusfontweight = value;
-            RaisedOnPropertyChanged("Status_FontWeight");
+            if ((statusfontweight != value) || (statusfontweight != null && !statusfontweight.Equals(value)))
+            {
+                statusfontweight = value;
+                RaisedOnPropertyChanged("Status_FontWeight");
+            }
         }
     }
     private string statusfontsize;
@@ -4911,8 +5015,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            statusfontsize = value;
-            RaisedOnPropertyChanged("Status_FontSize");
+            if ((statusfontsize != value) || (statusfontsize != null && !statusfontsize.Equals(value)))
+            {
+                statusfontsize = value;
+                RaisedOnPropertyChanged("Status_FontSize");
+            }
         }
     }
     private string borderbrush;
@@ -4924,8 +5031,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            borderbrush = value;
-            RaisedOnPropertyChanged("BorderBrush");
+            if ((borderbrush != value) || (borderbrush != null && !borderbrush.Equals(value)))
+            {
+                borderbrush = value;
+                RaisedOnPropertyChanged("BorderBrush");
+            }
         }
     }
     private string borderthickness;
@@ -4937,8 +5047,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            borderthickness = value;
-            RaisedOnPropertyChanged("BorderThickness");
+            if ((borderthickness != value) || (borderthickness != null && !borderthickness.Equals(value)))
+            {
+                borderthickness = value;
+                RaisedOnPropertyChanged("BorderThickness");
+            }
         }
     }
     private string numbervisibility;
@@ -4950,8 +5063,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            numbervisibility = value;
-            RaisedOnPropertyChanged("NumberVisibility");
+            if ((numbervisibility != value) || (numbervisibility != null && !numbervisibility.Equals(value)))
+            {
+                numbervisibility = value;
+                RaisedOnPropertyChanged("NumberVisibility");
+            }
         }
     }
     private string numberfontsize;
@@ -4963,8 +5079,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            numberfontsize = value;
-            RaisedOnPropertyChanged("NumberFontSize");
+            if ((numberfontsize != value) || (numberfontsize != null && !numberfontsize.Equals(value)))
+            {
+                numberfontsize = value;
+                RaisedOnPropertyChanged("NumberFontSize");
+            }
         }
     }
     public bool AllowDrop { get; set; }
@@ -4982,8 +5101,11 @@ public class Playlist : INotifyPropertyChanged
         }
         set
         {
-            isexpanded = value;
-            RaisedOnPropertyChanged("IsExpanded");
+            if ((isexpanded != value) || (isexpanded != null && !isexpanded.Equals(value)))
+            {
+                isexpanded = value;
+                RaisedOnPropertyChanged("IsExpanded");
+            }
         }
     }
 }

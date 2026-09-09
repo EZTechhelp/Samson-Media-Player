@@ -2,6 +2,43 @@
 
 ## [Unreleased]
 
+## 1.0.10 - PUBLIC
+> - Branch: Samson
+
+### Added
++ Ability to play Youtube videos in Private Mode (Webplayer)
+  + Forces videos to play in a non-logged in YT web instance
+  + Playback progress and history are disabled
+  + Option added to `Settings - Youtube - Youtube Options - Always Play in Private Mode`
+  + Option added to context menu in Media Browser - `Play with Samson (Private)`
++ Ability to get LIKED videos from Youtube API when importing
+  + Option added to `Settings - Youtube - Youtube Importing - Get Liked Videos`
+
+### Changes
++ Webview2 instances are now prevented from running first run setup
++ Lowered volume of some custom notifications (applies only to private builds)
++ Optimized data class setter properties to prevent extra `PropertyChanged` event triggers
++ Improved history tracking when using `Play Youtube Channel`
++ The font and style for the current playing item in the queue is changed to better stand out
++ Refactored volume change event and consolidated into new Set-Volume function
++ Playback history can now remember and playback non-library/playlist youtube videos (Requires enabling Youtube History)
++ Renamed `Web Browser` to `Media Browser`
++ Various logging, code and comment cleanup and refactoring 
+
+### Fixed
++ Icons for Webview2 custom menu items sometimes disappear or display corrupted
++ Main player UI sometimes remains visible when switching to mini-player skin
++ Errors can occur when setting thumbnails with invalid paths
++ Main volume value doesn't save properly if Web browser webview2 is active
++ Youtube webplayer starting volume does not update to currently set/saved media volume
++ Playback with `Play Youtube Channel` and auto-play can repeatedly play the same videos
++ Passing the `-ResetPluginCache` argument does not cause LIBVLC to reset its plugin cache
++ Custom playlists sometimes do not sort correctly when refreshing
++ Custom right-click menu not working for Spotify Web Browser
+
+### Comments
++ Will NOT trigger first time setup when upgrading
+
 ## 1.0.9 - PUBLIC
 > - Branch: Samson
 

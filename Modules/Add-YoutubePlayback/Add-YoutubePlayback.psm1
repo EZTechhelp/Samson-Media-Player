@@ -43,6 +43,7 @@ function Add-YoutubePlayback
     [string]$AddtoPlaylist,
     [string]$LinkUri,
     [string]$linktext,
+    [switch]$PrivateMode,
     [switch]$Startup,
     [string]$PlaylistPosition,
     $PlaylistPositionTargetMedia,
@@ -63,6 +64,7 @@ function Add-YoutubePlayback
         [string]$AddtoPlaylist,
         [string]$LinkUri,
         [string]$linktext,
+        [switch]$PrivateMode,
         [switch]$Startup,
         [string]$PlaylistPosition,
         $PlaylistPositionTargetMedia,
@@ -111,7 +113,18 @@ function Add-YoutubePlayback
               }}
               if($thisApp.Config.SaveYoutube_History){
                 $thisApp.Config.YoutubeHistory | & { process {
-                    if($_ -notin $History){
+                    try{
+                      $bytes = [System.Convert]::FromBase64String($_)
+                      $Decoded = [System.Text.Encoding]::UTF8.GetString($bytes)
+                      if($Decoded){
+                        $id = ($Decoded -split '-,-')[0]
+                      }
+                    }catch{
+                      $id = $Null
+                    }                    
+                    if($id -and $id -notin $History){
+                      [void]$History.add($id)
+                    }elseif(!$id -and $_ -notin $history){
                       [void]$History.add($_)
                     }
                 }}
@@ -227,9 +240,15 @@ function Add-YoutubePlayback
             write-ezlogs "| Adding track '$title' to temporary media queue"
             $Null = $synchash.Temporary_Media.add($media)
           }
-          if($thisApp.Config.SaveYoutube_History -and $thisApp.Config.YoutubeHistory -notcontains $youtube_id){
+          try{
+            $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($youtube_id)-,-$($url)-,-$($title)-,-$($channel_title)")
+            $encodedid = [System.Convert]::ToBase64String($encodedBytes)
+          }catch{
+            $encodedid = $Null
+          }
+          if($thisApp.Config.SaveYoutube_History -and $encodedid -and $thisApp.Config.YoutubeHistory -notcontains $encodedid){
             write-ezlogs "| Adding track '$title' with id '$youtube_id' to Youtube history"
-            $Null = $thisApp.Config.YoutubeHistory.add($youtube_id)
+            $Null = $thisApp.Config.YoutubeHistory.add($encodedid)
           }
           Update-PlayQueue -synchash $synchash -thisApp $thisApp -Add -media @($media) -Use_RunSpace -RefreshQueue
         }elseif($AddtoPlaylist -and $media){
@@ -241,7 +260,7 @@ function Add-YoutubePlayback
             Write-ezlogs ">>>> Starting Youtube channel playback of video: $($media.title) - URL: $($media.url) - Channel: $($channel_title) - Channel_ID: $($channel_id)"
             $synchash.Current_Playing_Playlist_Source = 'YTChannel'
           }
-          Start-Media -Media $media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification -use_WebPlayer:$thisapp.config.Youtube_WebPlayer
+          Start-Media -Media $media -thisApp $thisApp -synchashWeak ([System.WeakReference]::new($synchash)) -Show_notification -use_WebPlayer:$thisapp.config.Youtube_WebPlayer -PrivateMode:$PrivateMode
         }
       }else{
         write-ezlogs "Can't start youtube media, missing youtube_id $($youtube_id) or LinkUri $($LinkUri)" -warning
@@ -251,7 +270,7 @@ function Add-YoutubePlayback
     if($use_Runspace){
       Start-Runspace -scriptblock $Add_YoutubePlayback_ScriptBlock -StartRunspaceJobHandler -arguments $PSBoundParameters -runspace_name "Add_YoutubePlayback_RUNSPACE" -thisApp $thisApp -synchash $synchash -ApartmentState STA
     }else{
-      Invoke-Command -ScriptBlock $Add_YoutubePlayback_ScriptBlock -ArgumentList $thisApp,$synchash,$Media,$PlayOnly,$PlayChannel,$StartPlayback,$AddtoQueue,$youtube_id,$AddtoPlaylist,$LinkUri,$linktext,$Startup,$PlaylistPosition,$PlaylistPositionTargetMedia,$use_Runspace,$Verboselog
+      Invoke-Command -ScriptBlock $Add_YoutubePlayback_ScriptBlock -ArgumentList $thisApp,$synchash,$Media,$PlayOnly,$PlayChannel,$StartPlayback,$AddtoQueue,$youtube_id,$AddtoPlaylist,$LinkUri,$linktext,$PrivateMode,$Startup,$PlaylistPosition,$PlaylistPositionTargetMedia,$use_Runspace,$Verboselog
     }
   }catch{
     write-ezlogs "An exception occurred in Add-YoutubePlayback" -catcherror $_

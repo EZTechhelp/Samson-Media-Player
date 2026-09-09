@@ -355,7 +355,7 @@ function Invoke-YoutubeImport
   )
   try{
     try{
-      $youtube_playlists = Get-YouTubePlaylists -mine
+      $youtube_playlists = Get-YouTubePlaylists -mine -Liked:$([bool]$thisApp.Config.Import_Youtube_Liked)
     }catch{
       write-ezlogs "An exception occurred retrieving youtube playlists with Get-YoutubePlaylists" -showtime -catcherror $_
     }
@@ -5346,6 +5346,36 @@ function Show-SettingsWindow{
       #----------------------------------------------
 
       #----------------------------------------------
+      #region Youtube_WebPlayer_PrivateMode Toggle
+      #----------------------------------------------
+      $hashsetup.Youtube_WebPlayer_PrivateMode_Toggle_Command = {
+        Param($sender)
+        try{
+          $thisapp.configTemp.Youtube_WebPlayer_PrivateMode = [bool]$($sender.isOn)
+        }catch{
+          write-ezlogs "An exception occurred in Youtube_WebPlayer_PrivateMode_Toggle event" -showtime -catcherror $_
+        }
+      }
+      $hashsetup.Youtube_WebPlayer_PrivateMode_Toggle.add_Toggled($hashsetup.Youtube_WebPlayer_PrivateMode_Toggle_Command)
+      #----------------------------------------------
+      #endregion Youtube_WebPlayer_PrivateMode Toggle
+      #----------------------------------------------
+
+      #----------------------------------------------
+      #region Youtube_WebPlayer_PrivateMode Help
+      #----------------------------------------------
+      $hashsetup.Youtube_WebPlayer_PrivateMode_Help_Button.add_Click({
+          try{
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_PrivateMode_Webplayer.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open  -Header $hashsetup.Youtube_WebPlayer_PrivateMode_Toggle.Content -clear
+          }catch{
+            write-ezlogs "An exception occurred in Youtube_WebPlayer_PrivateMode_Help_Button.add_Click" -CatchError $_ -enablelogs
+          }
+      })
+      #----------------------------------------------
+      #endregion Youtube_WebPlayer_PrivateMode Help
+      #----------------------------------------------
+
+      #----------------------------------------------
       #region InvidiousURL Textbox
       #----------------------------------------------
       $hashsetup.InvidiousURL_textbox_Command = {
@@ -5417,11 +5447,10 @@ function Show-SettingsWindow{
               }elseif($hashsetup.Youtube_Update_Interval_ComboBox.Selecteditem.Content -match 'Hour'){
                 $interval = [TimeSpan]::FromHours("$(($hashsetup.Youtube_Update_Interval_ComboBox.Selecteditem.Content -replace 'Hour', '').trim())")
               }
-              Add-Member -InputObject $thisapp.configTemp -Name 'Youtube_Update_Interval' -Value $interval -MemberType NoteProperty -Force
-            }
-            else{
+              $thisapp.configTemp.Youtube_Update_Interval = $interval
+            }else{
               $hashsetup.Youtube_Update_Interval_Label.BorderBrush = 'Red'
-              Add-Member -InputObject $thisapp.configTemp -Name 'Youtube_Update_Interval' -Value '' -MemberType NoteProperty -Force
+              $thisapp.configTemp.Youtube_Update_Interval = ''
             }
           }catch{
             write-ezlogs "An exception occurred in Youtube_Update_Interval_ComboBox event" -CatchError $_ -showtime
@@ -5468,11 +5497,10 @@ function Show-SettingsWindow{
       $hashsetup.Sponsorblock_ActionType_ComboBox.add_SelectionChanged({
           try{
             if($hashsetup.Sponsorblock_ActionType_ComboBox.SelectedIndex -ne -1){
-              Add-Member -InputObject $thisapp.configTemp -Name 'Sponsorblock_ActionType' -Value $hashsetup.Sponsorblock_ActionType_ComboBox.Selecteditem.Content -MemberType NoteProperty -Force
-            }
-            else{
+              $thisapp.configTemp.Sponsorblock_ActionType = $hashsetup.Sponsorblock_ActionType_ComboBox.Selecteditem.Content
+            }else{
               $hashsetup.Youtube_Update_Interval_Label.BorderBrush = 'Red'
-              Add-Member -InputObject $thisapp.configTemp -Name 'Sponsorblock_ActionType' -Value '' -MemberType NoteProperty -Force
+              $thisapp.configTemp.Sponsorblock_ActionType = ''
             }
           }catch{
             write-ezlogs "An exception occurred in Sponsorblock_ActionType_ComboBox event" -CatchError $_ -showtime
@@ -5595,10 +5623,11 @@ function Show-SettingsWindow{
             $Button_settings.AffirmativeButtonText = "Yes"
             $Button_settings.NegativeButtonText = "No"
             $okandCancel = [MahApps.Metro.Controls.Dialogs.MessageDialogStyle]::AffirmativeAndNegative
-            $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Clear Youtube Watch History?","Are you sure you wish to clear all watch history for Youtube? (This will take effect immediately)",$okAndCancel,$button_settings)
+            $result = [MahApps.Metro.Controls.Dialogs.DialogManager]::ShowModalMessageExternal($hashsetup.Window,"Clear Youtube Watch History?","Are you sure you wish to clear all watch history for Youtube? (This will also save all settings immediately)",$okAndCancel,$button_settings)
             if($result -eq 'Affirmative'){
               write-ezlogs "User wished to clear Youtube watch history" -showtime -warning -logtype Setup
               $thisApp.Config.YoutubeHistory.clear()
+              Export-SerializedXML -InputObject $thisApp.Config -Path $thisApp.Config.Config_Path -isConfig
             }else{
               write-ezlogs "User did not wish to clear Youtube watch history" -showtime -logtype Setup
             }
@@ -5627,10 +5656,9 @@ function Show-SettingsWindow{
               }else{
                 $hashsetup.Youtube_Quality_Label.BorderBrush = 'Red'
               }
-              Add-Member -InputObject $thisapp.configTemp -Name 'Youtube_Quality' -Value $($hashsetup.Youtube_Quality_ComboBox.selecteditem) -MemberType NoteProperty -Force
-            }
-            else{
-              Add-Member -InputObject $thisapp.configTemp -Name 'Youtube_Quality' -Value 'Auto' -MemberType NoteProperty -Force
+              $thisapp.configTemp.Youtube_Quality = $($hashsetup.Youtube_Quality_ComboBox.selecteditem)
+            }else{
+              $thisapp.configTemp.Youtube_Quality = 'Auto'
               $hashsetup.Youtube_Quality_Label.BorderBrush = 'Gray'
             }
           }catch{
@@ -6196,7 +6224,7 @@ function Show-SettingsWindow{
       #----------------------------------------------
       $hashsetup.Youtube_My_Playlists_Import.add_Checked({
           try{
-            Add-Member -InputObject $thisapp.configTemp -Name "Import_My_Youtube_Media" -Value $true -MemberType NoteProperty -Force -ErrorAction SilentlyContinue
+            $thisapp.configTemp.Import_My_Youtube_Media = $true
           }catch{
             write-ezlogs "An exception occured in Youtube_My_Playlists_Import.add_Checked event" -showtime -catcherror $_
           }
@@ -6210,7 +6238,7 @@ function Show-SettingsWindow{
       #----------------------------------------------
       $hashsetup.Youtube_My_Playlists_Import.add_UnChecked({
           try{
-            Add-Member -InputObject $thisapp.configTemp -Name "Import_My_Youtube_Media" -Value $false -MemberType NoteProperty -Force -ErrorAction SilentlyContinue
+            $thisapp.configTemp.Import_My_Youtube_Media = $false
           }catch{
             write-ezlogs "An exception occured in Youtube_My_Playlists_Import.add_UnChecked event" -showtime -catcherror $_
           }
@@ -6234,53 +6262,45 @@ function Show-SettingsWindow{
       #----------------------------------------------
 
       #----------------------------------------------
-      #region Youtube_My_Subscriptions_Import_Checked
+      #region Import_Youtube_Liked_Checkbox Checked
       #----------------------------------------------
-      $hashsetup.Youtube_My_Subscriptions_Import.add_Checked({
+      $hashsetup.Import_Youtube_Liked_Checkbox.add_Checked({
           try{
-            Add-Member -InputObject $thisapp.configTemp -Name "Import_My_Youtube_Subscriptions" -Value $true -MemberType NoteProperty -Force -ErrorAction SilentlyContinue
+            $thisapp.configTemp.Import_Youtube_Liked = $true
           }catch{
-            write-ezlogs "An exception occured in Youtube_My_Subscriptions_Import.add_Checked event" -showtime -catcherror $_
+            write-ezlogs "An exception occured in Import_Youtube_Liked_Checkbox.add_Checked event" -showtime -catcherror $_
           }
       })
       #----------------------------------------------
-      #endregion Youtube_My_Subscriptions_Import_Checked
+      #endregion Import_Youtube_Liked_Checkbox Checked
       #----------------------------------------------
 
       #----------------------------------------------
-      #region Youtube_My_Subscriptions_Import_UnChecked
+      #region Import_Youtube_Liked_Checkbox UnChecked
       #----------------------------------------------
-      $hashsetup.Youtube_My_Subscriptions_Import.add_UnChecked({
+      $hashsetup.Import_Youtube_Liked_Checkbox.add_UnChecked({
           try{
-            Add-Member -InputObject $thisapp.configTemp -Name "Import_My_Youtube_Subscriptions" -Value $false -MemberType NoteProperty -Force -ErrorAction SilentlyContinue
+            $thisapp.configTemp.Import_Youtube_Liked = $false
           }catch{
-            write-ezlogs "An exception occured in Youtube_My_Subscriptions_Import.add_UnChecked event" -showtime -catcherror $_
+            write-ezlogs "An exception occured in Import_Youtube_Liked_Checkbox.add_UnChecked event" -showtime -catcherror $_
           }
       })
       #----------------------------------------------
-      #endregion Youtube_My_Subscriptions_Import_UnChecked
+      #endregion Import_Youtube_Liked_Checkbox UnChecked
       #----------------------------------------------
 
       #----------------------------------------------
-      #region Youtube_My_Subscriptions_Import_Button
+      #region Import_Youtube_Liked_Button
       #----------------------------------------------
-      $hashsetup.Youtube_My_Subscriptions_Import_Button.add_click({
+      $hashsetup.Import_Youtube_Liked_Button.add_click({
           try{
-            if($hashsetup.EditorHelpFlyout.Document.Blocks){
-              $hashsetup.EditorHelpFlyout.Document.Blocks.Clear()
-            }
-            $hashsetup.Editor_Help_Flyout.isOpen = $true
-            $hashsetup.Editor_Help_Flyout.header = $hashsetup.Youtube_My_Subscriptions_Import.content
-
-            update-EditorHelp -content "Check this if you also wish to import Youtube Channels you have Subscribed to on Youtube" -RichTextBoxControl $hashsetup.EditorHelpFlyout
-            update-EditorHelp -content "IMPORTANT" -FontWeight bold -color orange -RichTextBoxControl $hashsetup.EditorHelpFlyout
-            update-EditorHelp -content "This needs to be documented with the help system...DID HE FORGET?!"  -color orange -RichTextBoxControl $hashsetup.EditorHelpFlyout
+            update-EditorHelp -MarkDownFile "$($thisApp.Config.Current_Folder)\Resources\Docs\Settings\Youtube_Liked.md" -MarkDownControl $hashsetup.MarkdownScrollViewer -open -clear -Header $hashsetup.Import_Youtube_Liked_Checkbox.content
           }catch{
-            write-ezlogs "An exception occurred in Youtube_My_Subscriptions_Import_Button.add_click event" -CatchError $_ -enablelogs
+            write-ezlogs "An exception occurred in Import_Youtube_Liked_Button.add_click event" -CatchError $_ -enablelogs
           }
       })
       #----------------------------------------------
-      #endregion Youtube_My_Subscriptions_Import_Button
+      #endregion Import_Youtube_Liked_Button
       #----------------------------------------------
 
       #----------------------------------------------
@@ -6562,7 +6582,7 @@ function Show-SettingsWindow{
                 }
               }
             }
-            Add-Member -InputObject $thisapp.configTemp -Name 'Use_Twitch_TTVLOL' -Value $false -MemberType NoteProperty -Force
+            $thisapp.configTemp.Use_Twitch_TTVLOL = $false
           }
         }catch{
           write-ezlogs "An exception occurred in Twitch_TTVLOL_Toggle event" -CatchError $_ -showtime
@@ -6682,7 +6702,7 @@ function Show-SettingsWindow{
                 }
               }
             }
-            Add-Member -InputObject $thisapp.configTemp -Name 'Use_Twitch_luminous' -Value $false -MemberType NoteProperty -Force
+            $thisapp.configTemp.Use_Twitch_luminous = $false
           }
         }catch{
           write-ezlogs "An exception occurred in Twitch_luminous_Toggle event" -CatchError $_ -showtime
@@ -6825,11 +6845,10 @@ function Show-SettingsWindow{
               }else{
                 $hashsetup.Twitch_Quality_Label.BorderBrush = 'Red'
               }
-              Add-Member -InputObject $thisapp.configTemp -Name 'Twitch_Quality' -Value $($hashsetup.Twitch_Quality_ComboBox.selecteditem) -MemberType NoteProperty -Force
-            }
-            else{
+              $thisapp.configTemp.Twitch_Quality = $($hashsetup.Twitch_Quality_ComboBox.selecteditem)
+            }else{
               $hashsetup.Twitch_Quality_Label.BorderBrush = 'LightGreen'
-              Add-Member -InputObject $thisapp.configTemp -Name 'Twitch_Quality' -Value 'Best' -MemberType NoteProperty -Force
+              $thisapp.configTemp.Twitch_Quality = 'Best'
             }
           }catch{
             write-ezlogs "An exception occurred in Twitch_Quality_ComboBox.add_SelectionChanged" -CatchError $_ -enablelogs
@@ -6859,10 +6878,9 @@ function Show-SettingsWindow{
       $hashsetup.Streamlink_Interface_ComboBox.add_SelectionChanged({
           try{
             if($hashsetup.Streamlink_Interface_ComboBox.Selectedindex -ne -1){
-              Add-Member -InputObject $thisapp.configTemp -Name 'Streamlink_Interface' -Value $($hashsetup.Streamlink_Interface_ComboBox.selecteditem) -MemberType NoteProperty -Force
-            }
-            else{
-              Add-Member -InputObject $thisapp.configTemp -Name 'Streamlink_Interface' -Value 'Any' -MemberType NoteProperty -Force
+              $thisapp.configTemp.Streamlink_Interface = $($hashsetup.Streamlink_Interface_ComboBox.selecteditem)
+            }else{
+              $thisapp.configTemp.Streamlink_Interface = 'Any'
             }
           }catch{
             write-ezlogs "An exception occurred in Streamlink_Interface_ComboBox.add_SelectionChanged" -CatchError $_ -enablelogs
@@ -6879,11 +6897,10 @@ function Show-SettingsWindow{
           try{
             if(-not [string]::IsNullOrEmpty($this.text)){
               $hashsetup.Streamlink_Arguments_Label.BorderBrush = 'LightGreen'
-              Add-Member -InputObject $thisapp.configTemp -Name 'Streamlink_Arguments' -Value $($this.text) -MemberType NoteProperty -Force
-            }
-            else{
+              $thisapp.configTemp.Streamlink_Arguments = $($this.text)
+            }else{
               $hashsetup.Streamlink_Arguments_Label.BorderBrush = 'Red'
-              Add-Member -InputObject $thisapp.configTemp -Name 'Streamlink_Arguments' -Value $null -MemberType NoteProperty -Force
+              $thisapp.configTemp.Streamlink_Arguments = $null
             }
           }catch{
             write-ezlogs "An exception occurred in Streamlink_Arguments_textbox.add_textChanged" -CatchError $_ -enablelogs
@@ -9855,6 +9872,10 @@ function Update-Settings {
               $hashsetup.Youtube_WebPlayer_Toggle.isOn = $false
               $hashsetup.Use_invidious_Toggle.IsEnabled = $false
             }
+            #PrivateMode
+            if($hashsetup.Youtube_WebPlayer_PrivateMode_Toggle){
+              $hashsetup.Youtube_WebPlayer_PrivateMode_Toggle.isOn = [bool]($thisApp.Config.Youtube_WebPlayer_PrivateMode)
+            }           
             #----------------------------------------------
             #endregion Youtube WebPlayer
             #----------------------------------------------
@@ -10235,11 +10256,11 @@ function Update-Settings {
             #----------------------------------------------
 
             #----------------------------------------------
-            #region Youtube_My_Subscriptions
+            #region Import_Youtube_Liked
             #----------------------------------------------
-            $hashsetup.Youtube_My_Subscriptions_Import.isChecked = $thisApp.Config.Import_My_Youtube_Subscriptions -eq $true
+            $hashsetup.Import_Youtube_Liked_Checkbox.isChecked = $thisApp.Config.Import_Youtube_Liked -eq $true
             #----------------------------------------------
-            #endregion Youtube_My_Subscriptions
+            #endregion Import_Youtube_Liked
             #----------------------------------------------
           }catch{
             write-ezlogs "An exception occurred in YoutubeMedia_Settings_Scriptblock" -catcherror $_

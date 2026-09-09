@@ -42,27 +42,25 @@ function Get-YouTubePlaylistItems {
   #>
   [CmdletBinding()]
   param (
-    [Parameter(ParameterSetName = 'PlaylistById')]
     [string[]] $Id,
-    [Parameter(ParameterSetName = 'LikedVideos')]
     [switch] $Liked,   
-    [Parameter(ParameterSetName = 'DislikedVideos')]
     [switch] $Disliked,
-    [Parameter(ParameterSetName = 'DislikedVideos')]
+    [switch] $Verboselog,
     $PlaylistInfo
   )
   $results_output = [System.Collections.Generic.List[Object]]::new()
-  if($PSCmdlet.ParameterSetName -eq 'PlaylistById'){
+  if($Id){
     $Parts = 'contentDetails,id,snippet,status'
     $Uri = 'https://youtube.googleapis.com/youtube/v3/playlistItems?part={0}&maxResults=50' -f $Parts
     $type = 'playlistId'
-    $id = $ID
     $Uri += '&{0}={1}' -f $type,($ID -join ',')
-    #write-ezlogs $uri
+  }elseif($Liked){
+    $Parts = 'contentDetails,id,localizations,player,snippet,status'
+    $Uri = 'https://youtube.googleapis.com/youtube/v3/videos?part={0}&maxResults=50&myRating=like' -f $Parts
+  }else{
+    $Parts = 'contentDetails,id,snippet,status'
+    $Uri = 'https://youtube.googleapis.com/youtube/v3/videos?part={0}&maxResults=50' -f $Parts
   }
-
-  if ($PSCmdlet.ParameterSetName -eq 'LikedVideos') { $Uri += '&myRating=liked' }
-  if ($PSCmdlet.ParameterSetName -eq 'DislikedVideos') { $Uri += '&myRating=disliked' }
   try{
     $access_Token = (Get-AccessToken -Name $thisApp.Config.App_name) 
   }catch{
@@ -87,10 +85,11 @@ function Get-YouTubePlaylistItems {
     }
   }
   if($access_Token.Authorization){  
-    if($PSCmdlet.ParameterSetName -eq 'PlaylistById' -and !$PlaylistInfo){
+    if($Id -and !$PlaylistInfo){
       try{
         $Playlistparts = 'contentDetails,id,localizations,player,snippet,status'
         $playlistURL = 'https://youtube.googleapis.com/youtube/v3/playlists?part={0}&maxResults=50&id={1}' -f $Playlistparts,(("$ID").trim())
+        write-ezlogs ">>>> Calling Youtube API for Playist id $Id -- URI: $playlistURL" -LogLevel 0 -Verboselog:$VerboseLog
         $req=[System.Net.HTTPWebRequest]::Create($playlistURL)
         $req.Method='GET'
         $headers = [System.Net.WebHeaderCollection]::new()
@@ -104,7 +103,7 @@ function Get-YouTubePlaylistItems {
         $headers.Clear()
         $PlaylistInfo = $playlistlookup.items
       }catch{
-        write-ezlogs "An exception occurred getting playlist info with url $playlistURL" -showtime -catcherror $_
+        write-ezlogs "An exception occurred getting playlist info with url: $playlistURL" -showtime -catcherror $_
       }finally{
         if($response){
           $response.Dispose()
@@ -125,14 +124,15 @@ function Get-YouTubePlaylistItems {
       $result = @{nextPageToken = 1 }   
       While ($result.nextPageToken){ 
         try{
-          $req=[System.Net.HTTPWebRequest]::Create($Uri);
+          write-ezlogs ">>>> Calling Youtube API: $Uri" -LogLevel 0 -Verboselog:$VerboseLog
+          $req=[System.Net.HTTPWebRequest]::Create($Uri)
           $req.Method='GET'
           $headers = [System.Net.WebHeaderCollection]::new()
           $headers.add('Authorization',$access_Token.Authorization)
           $req.Headers = $headers              
           $response = $req.GetResponse()
-          $strm=$response.GetResponseStream();
-          $sr=New-Object System.IO.Streamreader($strm);
+          $strm=$response.GetResponseStream()
+          $sr=[System.IO.Streamreader]::new($strm)
           $output=$sr.ReadToEnd()
           $result = $output | convertfrom-json   
         }catch{
@@ -156,9 +156,17 @@ function Get-YouTubePlaylistItems {
           break
         }             
         if($result.nextPageToken){
-          $Uri = 'https://youtube.googleapis.com/youtube/v3/playlistItems?part={0}&maxResults=50&{1}={2}&pageToken={3}' -f $Parts,$type,(($ID | out-string).trim()),$result.nextPageToken
+          if($ID){
+            $Uri = 'https://youtube.googleapis.com/youtube/v3/playlistItems?part={0}&maxResults=50&{1}={2}&pageToken={3}' -f $Parts,$type,(($ID | out-string).trim()),$result.nextPageToken
+          }elseif($Liked){
+            $Uri = 'https://youtube.googleapis.com/youtube/v3/videos?part={0}&maxResults=50&myRating=like&pageToken={1}' -f $Parts,$result.nextPageToken
+          }
         }else{
-          $Uri = 'https://youtube.googleapis.com/youtube/v3/playlistItems?part={0}&maxResults=50&{1}={2}' -f $Parts,$type,(($ID | out-string).trim())
+          if($ID){
+            $Uri = 'https://youtube.googleapis.com/youtube/v3/playlistItems?part={0}&maxResults=50&{1}={2}' -f $Parts,$type,(($ID | out-string).trim())
+          }elseif($Liked){
+            $Uri = 'https://youtube.googleapis.com/youtube/v3/videos?part={0}&maxResults=50&myRating=like' -f $Parts
+          }
         }
         if($result.items){
           foreach($item in $result.items){
@@ -203,9 +211,17 @@ function Get-YouTubePlaylistItems {
               $output=$sr.ReadToEnd()
               $result = $output | convertfrom-json
               if($result.nextPageToken){
-                $Uri = 'https://youtube.googleapis.com/youtube/v3/playlistItems?part={0}&maxResults=50&{1}={2}&pageToken={3}' -f $Parts,$type,(($ID | out-string).trim()),$result.nextPageToken
+                if($ID){
+                  $Uri = 'https://youtube.googleapis.com/youtube/v3/playlistItems?part={0}&maxResults=50&{1}={2}&pageToken={3}' -f $Parts,$type,(($ID | out-string).trim()),$result.nextPageToken
+                }elseif($Liked){
+                  $Uri = 'https://youtube.googleapis.com/youtube/v3/videos?part={0}&maxResults=50&myRating=like&pageToken={1}' -f $Parts,$result.nextPageToken
+                }
               }else{
-                $Uri = 'https://youtube.googleapis.com/youtube/v3/playlistItems?part={0}&maxResults=50&{1}={2}' -f $Parts,$type,(($ID | out-string).trim())
+                if($ID){
+                  $Uri = 'https://youtube.googleapis.com/youtube/v3/playlistItems?part={0}&maxResults=50&{1}={2}' -f $Parts,$type,(($ID | out-string).trim())
+                }elseif($Liked){
+                  $Uri = 'https://youtube.googleapis.com/youtube/v3/videos?part={0}&maxResults=50&myRating=like' -f $Parts
+                }
               }
               if($result.items){
                 foreach($item in $result.items){

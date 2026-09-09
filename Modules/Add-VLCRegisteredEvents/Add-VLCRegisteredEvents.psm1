@@ -97,7 +97,7 @@ function Add-VLCRegisteredEvents
             write-ezlogs "[VLC_Playing_EVENT] | GetCallStack: $($existingjob_check.Debugger.GetCallStack() | out-string)" -showtime -logtype Libvlc -Dev_mode
           }
         }
-        write-ezlogs "[VLC_Playing_EVENT] >>>> Received VLC Playing Event -- Current Volume: $($synchash.vlc.Volume) -- Mute: $($synchash.vlc.mute)" -logtype Libvlc
+        write-ezlogs "[VLC_Playing_EVENT] >>>> VLC Playing Event -- Current Volume: $($synchash.vlc.Volume) -- Saved Volume: $($thisapp.Config.Media_Volume) -- Mute: $($synchash.vlc.mute)" -logtype Libvlc
         write-ezlogs "[VLC_Playing_EVENT] | State: $($synchash.vlc.media.State) -- Mrl: $($synchash.vlc.media.Mrl) -- IsParsed: $($synchash.vlc.media.IsParsed)" -logtype Libvlc -LogLevel 0 -Verboselog:$Verboselog
         #Set Volume
         if(-not [string]::IsNullOrEmpty($synchash.Volume_Slider.value)){

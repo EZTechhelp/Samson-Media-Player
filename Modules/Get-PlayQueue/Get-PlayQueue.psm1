@@ -343,10 +343,22 @@ function Update-PlayQueue
               if($MediatoUpdate -is [Media]){
                 $UpdateTimesPlayed = [int]($MediatoUpdate.TimesPlayed) + 1
                 $LastPlayed = [DateTime]::now
-                write-ezlogs "Updating play count for $($MediatoUpdate.title) from $($MediatoUpdate.TimesPlayed) to $($UpdateTimesPlayed) and LastPlayed to $LastPlayed"
+                write-ezlogs "[Update-PlayQueue] | Updating play count for $($MediatoUpdate.title) from $($MediatoUpdate.TimesPlayed) to $($UpdateTimesPlayed) and LastPlayed to $LastPlayed"
                 $MediatoUpdate.TimesPlayed = $UpdateTimesPlayed
                 $MediatoUpdate.LastPlayed = $LastPlayed
               }
+            }
+            try{
+              if($MediatoUpdate.source -eq 'Youtube'){
+                $encodedBytes = [System.Text.Encoding]::UTF8.GetBytes("$($i)-,-$($MediatoUpdate.url)-,-$($MediatoUpdate.title)-,-$($MediatoUpdate.artist)")
+                $encodedid = [System.Convert]::ToBase64String($encodedBytes)
+              }
+            }catch{
+              $encodedid = $Null
+            }
+            if($thisApp.Config.SaveYoutube_History -and $encodedid -and $thisApp.Config.YoutubeHistory -notcontains $encodedid){
+              write-ezlogs "[Update-PlayQueue] | Adding track '$($MediatoUpdate.title)' with id '$i' to Youtube history"
+              $Null = $thisApp.Config.YoutubeHistory.add($encodedid)
             }
           }
           if($synchash.jumplist){

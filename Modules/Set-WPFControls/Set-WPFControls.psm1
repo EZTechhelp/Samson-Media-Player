@@ -1366,6 +1366,9 @@ function Open-MiniPlayer
             write-ezlogs "[ContentRendered] >>>> Moving main window to same monitor as mini-player - X location: $X - Miniplayer Device: $($MiniplayerMonitor.DeviceName) - MainPlayerMonitor Device: $($MainPlayerMonitor.DeviceName)"
             #$synchash.Window.Left = $X
             Set-Window -WindowHandle $MainWindow_Helper.Handle -X $X -Y ($MiniplayerMonitor.WorkingArea.Bottom / 2)
+            if($synchash.Window.isVisible){
+              Update-MainWindow -synchash $synchash -thisApp $thisApp -Hide
+            }
           }
         }
         if($thisApp.Config.Mini_Always_On_Top -or $synchash.TempParam_Overlay){
@@ -1401,6 +1404,9 @@ function Open-MiniPlayer
             write-ezlogs "[LocationChanged] >>>> Moving main window to same monitor as mini-player - X location: $X - Miniplayer Device: $($MiniplayerMonitor.DeviceName) - MainPlayerMonitor Device: $($MainPlayerMonitor.DeviceName)"
             #$synchash.Window.Left = $X
             Set-Window -WindowHandle $MainWindow_Helper.Handle -X $X -Y ($MiniplayerMonitor.WorkingArea.Bottom / 2)
+            if($synchash.Window.isVisible){
+              Update-MainWindow -synchash $synchash -thisApp $thisApp -Hide
+            }
           }
         }
       }catch{
@@ -1906,6 +1912,12 @@ function Update-MainPlayer {
                 if(-not [string]::IsNullOrEmpty($thisApp.Config.Audio_OutputModule)){
                   Write-ezlogs "[UPDATE-MAINPLAYER] | Setting Audio Output module to: $($thisApp.Config.Audio_OutputModule)" -logtype Libvlc -loglevel 2
                   $setouput = $synchash.vlc.SetAudioOutput($thisApp.Config.Audio_OutputModule)
+                  #TODO: Investigate if this is worth doing
+<#                  if($thisApp.Config.Audio_OutputModule -eq 'mmdevice'){
+                    Write-ezlogs "[UPDATE-MAINPLAYER] | Setting mmdevice-backend to wasapi" -logtype Libvlc -loglevel 2
+                    $synchash.VLC.Media.AddOption(':mmdevice-backend=wasapi')
+                    $synchash.VLC.Media.AddOption(':mmdevice-passthrough=0')
+                  }#>
                 }
                 if($setouput){
                   Write-ezlogs "[UPDATE-MAINPLAYER] | Successfully set audio output module to $($thisApp.Config.Audio_OutputModule)" -logtype Libvlc -loglevel 2
@@ -1938,7 +1950,10 @@ function Update-MainPlayer {
                 }
                 #Set Volume
                 if(-not [string]::IsNullOrEmpty($synchash.Volume_Slider.value)){
-                  $thisapp.Config.Media_Volume = $synchash.Volume_Slider.value
+                  if($thisapp.Config.Media_Volume -ne $synchash.Volume_Slider.value){
+                    write-ezlogs "[UPDATE-MAINPLAYER] | Saving current volume -- Slider Value: $($synchash.Volume_Slider.value) -- Current Saved: $($thisapp.Config.Media_Volume)" -logtype Libvlc
+                    $thisapp.Config.Media_Volume = $synchash.Volume_Slider.value
+                  }              
                   if($synchash.vlc -and $synchash.vlc.Volume -ne $synchash.Volume_Slider.value){
                     write-ezlogs "[UPDATE-MAINPLAYER] | Setting vlc volume to Volume_Slider Value: $($synchash.Volume_Slider.value)" -logtype Libvlc
                     if($thisApp.Config.Libvlc_Version -eq '4'){
@@ -2652,7 +2667,7 @@ function Update-MediaState {
             if($synchash.systemmediaplayer.SystemMediaTransportControls.IsEnabled){
               Update-MediaTransportControls -synchash $synchash -thisApp $thisApp -Media $synchash.Current_playing_media -thumbnail $Thumbnail
             }
-            if($synchash.MediaView_Image -and $Thumbnail){
+            if($synchash.MediaView_Image -and [system.io.file]::Exists($thumbnail)){
               try{
                 $synchash.MediaView_Image.Source = $Thumbnail
               }catch{
@@ -2900,6 +2915,11 @@ function Add-WPFMenu {
           if(-not [string]::IsNullOrEmpty($item.ToolTip)){
             $menuItem.ToolTip = $item.ToolTip
           }
+          if(-not [string]::IsNullOrEmpty($item.FontSize)){
+            $menuItem.FontSize = [Double]$item.FontSize
+          }else{
+            $menuItem.FontSize = [Double]'12'
+          }        
           $menuItem.Foreground = $item.color
           if(-not [string]::IsNullOrEmpty($item.BackGround)){
             $menuItem.BackGround = $item.BackGround
@@ -3005,6 +3025,11 @@ function Add-WPFMenu {
                 }else{
                   $SubmenuItem.Foreground = $subitem.color
                 }
+                if(-not [string]::IsNullOrEmpty($subitem.FontSize)){
+                  $SubmenuItem.FontSize = [Double]$subitem.FontSize
+                }else{
+                  $SubmenuItem.FontSize = [Double]'12'
+                }
                 if(-not [string]::IsNullOrEmpty($subitem.tag)){
                   $SubmenuItem.tag = $subitem.tag
                 }
@@ -3101,6 +3126,11 @@ function Add-WPFMenu {
                         $SubmenuItem_lvl2.Foreground = $sourceWindow.Window.TryFindResource($subitem_lvl2.ForegroundStyle)
                       }else{
                         $SubmenuItem_lvl2.Foreground = $subitem_lvl2.color
+                      }
+                      if(-not [string]::IsNullOrEmpty($subitem_lvl2.FontSize)){
+                        $SubmenuItem_lvl2.FontSize = [Double]$subitem_lvl2.FontSize
+                      }else{
+                        $SubmenuItem_lvl2.FontSize = [Double]'12'
                       }
                       if(-not [string]::IsNullOrEmpty($subitem_lvl2.tag)){
                         $SubmenuItem_lvl2.tag = $subitem_lvl2.tag
@@ -3200,6 +3230,11 @@ function Add-WPFMenu {
                               $SubmenuItem_lvl3.Foreground = $sourceWindow.Window.TryFindResource($subitem_lvl3.ForegroundStyle)
                             }else{
                               $SubmenuItem_lvl3.Foreground = $subitem_lvl3.color
+                            }
+                            if(-not [string]::IsNullOrEmpty($subitem_lvl3.FontSize)){
+                              $SubmenuItem_lvl3.FontSize = [Double]$subitem_lvl3.FontSize
+                            }else{
+                              $SubmenuItem_lvl3.FontSize = [Double]'12'
                             }
                             if(-not [string]::IsNullOrEmpty($subitem_lvl2.tag)){
                               $SubmenuItem_lvl3.tag = $subitem_lvl3.tag

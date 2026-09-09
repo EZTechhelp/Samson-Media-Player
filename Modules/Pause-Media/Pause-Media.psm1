@@ -219,8 +219,7 @@ function Pause-Media
             $Current_playing.FontWeight           = 'Bold'
             #$Current_playing.BorderBrush = 'LightGreen'
             #$Current_playing.BorderThickness = '1'
-            $Current_playing.FontSize             = '16'
-            $Current_playing.FontStyle            = 'Italic'
+            $Current_playing.FontSize             = [Double]'16'
             if($synchash.AudioRecorder.isRecording){
               $current_playing.PlayIconRecord           = "RecordRec"
               $current_playing.PlayIconRecordVisibility = "Visible"
@@ -268,8 +267,8 @@ function Pause-Media
         $thisApp.Config.Current_Playing_Media = $synchash.Current_playing_media
       }
       if($current_playing.PlayIconVisibility -eq 'Visible' -and $current_playing.PlayIconRepeat -eq 'Forever' -or ($current_playing.PlayIconRecordVisibility -eq "Visible" -and $current_playing.PlayIconRecordRepeat -eq 'Forever')){
-        $Current_playing.FontWeight       = 'Bold'
-        #$Current_playing.FontSize = '16'
+        $Current_playing.FontWeight = 'Bold'
+        $Current_playing.FontSize = [Double]'16'
         if($synchash.AudioRecorder.isRecording){
           $current_playing.PlayIconRecord           = "RecordRec"
           $current_playing.PlayIconRecordVisibility = "Visible"
@@ -393,7 +392,7 @@ function Pause-Media
       if($current_playing.PlayIconRepeat -eq '1x' -or ($current_playing.PlayIconRecordRepeat -eq '1x' -and $synchash.AudioRecorder.isRecording)){
         $Current_playing                  = $synchash.PlayQueue_TreeView.Items | Where-Object {$_.id -eq $synchash.Current_playing_media.id} | Select-Object -Unique
         $Current_playing.FontWeight       = 'Bold'
-        #$Current_playing.FontSize = '16'
+        $Current_playing.FontSize = [Double]'16'
         if($synchash.AudioRecorder.isRecording){
           $current_playing.PlayIconRecord           = "RecordRec"
           $current_playing.PlayIconRecordVisibility = "Visible"
@@ -593,8 +592,8 @@ try {
         $synchash.Now_Playing_Label.DataContext = ($synchash.Now_Playing_Label.DataContext) -replace 'PLAYING', 'PAUSED'
         $Current_playing  = $synchash.PlayQueue_TreeView.Items | Where-Object {$_.id -eq $synchash.Current_playing_media.id} | Select-Object -Unique
         if($current_playing.PlayIconVisibility -eq 'Visible' -and $current_playing.PlayIconRepeat -eq 'Forever' -or ($current_playing.PlayIconRecordVisibility -eq "Visible" -and $current_playing.PlayIconRecordRepeat -eq 'Forever')){
-          $Current_playing.FontWeight       = 'Bold'
-          #$Current_playing.FontSize = '16'
+          $Current_playing.FontWeight = 'Bold'
+          $Current_playing.FontSize = [Double]'16'
           if($synchash.AudioRecorder.isRecording){
             $current_playing.PlayIconRecord           = "RecordRec"
             $current_playing.PlayIconRecordVisibility = "Visible"
@@ -679,7 +678,7 @@ try {
         #Get-Playlists -verboselog:$false -synchash $synchash -thisApp $thisapp -all_playlists $all_playlists
         $Current_playing                  = $synchash.PlayQueue_TreeView.Items | Where-Object  {$_.id -eq $synchash.Current_playing_media.id} | Select-Object -Unique
         $Current_playing.FontWeight       = 'Bold'
-        #$Current_playing.FontSize = '16'
+        $Current_playing.FontSize = [Double]'16'
         if($synchash.AudioRecorder.isRecording){
           $current_playing.PlayIconRecord           = "RecordRec"
           $current_playing.PlayIconRecordVisibility = "Visible"

@@ -1284,7 +1284,7 @@ function Add-TrayMenu
           }
           $null = $items.Add($Open_MediaLibrary)
           $Open_WebBrowser = @{
-            'Header' = "Web Browser"
+            'Header' = "Media Browser"
             'Color' = 'White'
             'Icon_Color' = 'WhiteSmoke'
             'Tag' = 'WebBrowser'

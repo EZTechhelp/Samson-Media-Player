@@ -42,18 +42,17 @@ function Get-YouTubePlaylists {
   #>
   [CmdletBinding()]
   param (
-    [Parameter(ParameterSetName = 'Mine')]
     [switch] $mine,
-    [Parameter(ParameterSetName = 'Id')]
+    [switch] $Liked,
     [string] $id
   )
   $results_output = [System.Collections.Generic.List[Object]]::new()
-  if($PSCmdlet.ParameterSetName -eq 'Mine'){
+  if($mine){
     $Parts = 'contentDetails,id,localizations,player,snippet,status'
     $Uri = 'https://youtube.googleapis.com/youtube/v3/playlists?part={0}&maxResults=50&mine=true' -f $Parts
-  }elseif($PSCmdlet.ParameterSetName -eq 'id'){
+  }elseif($id){
     $Parts = 'contentDetails,id,localizations,player,snippet,status'
-    $Uri = 'https://youtube.googleapis.com/youtube/v3/playlists?part={0}&maxResults=50&channelId={1}' -f $Parts,$id
+    $Uri = 'https://youtube.googleapis.com/youtube/v3/playlists?part={0}&maxResults=50&id={1}' -f $Parts,(("$ID").trim())
   }
   $access_token = Get-secret -name YoutubeAccessToken  -Vault $($thisApp.Config.App_name) -ErrorAction SilentlyContinue
   $refresh_access_token = Get-secret -name Youtuberefresh_token  -Vault $($thisApp.Config.App_name) -ErrorAction SilentlyContinue
@@ -69,9 +68,6 @@ function Get-YouTubePlaylists {
       write-ezlogs "[Get-YouTubePlaylists] An exception occurred getting Secret YoutubeAccessToken" -showtime -catcherror $_
     }
   }
-<#  $Header =  @{
-    Authorization = 'Bearer {0}' -f $access_token
-  }#>
   if($access_Token){    
     try{   
       $result = @{nextPageToken = 1 }   
@@ -82,8 +78,8 @@ function Get-YouTubePlaylists {
         $headers.add('Authorization',"Bearer $access_token")
         $req.Headers = $headers              
         $response = $req.GetResponse()
-        $strm=$response.GetResponseStream();
-        $sr=New-Object System.IO.Streamreader($strm);
+        $strm=$response.GetResponseStream()
+        $sr=[System.IO.Streamreader]::new($strm)
         $output=$sr.ReadToEnd()
         $result = $output | convertfrom-json  
         $headers.Clear()
@@ -91,9 +87,17 @@ function Get-YouTubePlaylists {
         $strm.Dispose()
         $sr.Dispose()
         if($result.nextPageToken){
-          $Uri = 'https://youtube.googleapis.com/youtube/v3/playlists?part={0}&maxResults=50&mine=true&pageToken={1}' -f $Parts,$result.nextPageToken
+          if($mine){
+            $Uri = 'https://youtube.googleapis.com/youtube/v3/playlists?part={0}&maxResults=50&mine=true&pageToken={1}' -f $Parts,$result.nextPageToken
+          }elseif($id){
+            $Uri = 'https://youtube.googleapis.com/youtube/v3/playlists?part={0}&maxResults=50&id={1}&pageToken={2}' -f $Parts,(("$ID").trim()),$result.nextPageToken
+          }          
         }else{
-          $Uri = 'https://youtube.googleapis.com/youtube/v3/playlists?part={0}&maxResults=50&mine=true' -f $Parts
+          if($mine){
+            $Uri = 'https://youtube.googleapis.com/youtube/v3/playlists?part={0}&maxResults=50&mine=true' -f $Parts
+          }elseif($id){
+            $Uri = 'https://youtube.googleapis.com/youtube/v3/playlists?part={0}&maxResults=50&id={1}' -f $Parts,(("$ID").trim())
+          }
         }
         if($result.items){
           foreach($item in $result.items){
@@ -106,6 +110,13 @@ function Get-YouTubePlaylists {
       }
     }catch{
       write-ezlogs "[Get-YouTubePlaylists] An exception occurred invoking url $Uri" -showtime -catcherror $_
+    }
+    if($Liked){
+      Get-YouTubePlaylists -id "LL" | & { process {
+          if($results_output -notcontains $_){           
+            $null = $results_output.add($_)
+          }
+      }}
     }
     if(!$Result){
       write-ezlogs "[Get-YouTubePlaylists] No Youtube playlists were found!" -showtime -warning -logtype Youtube

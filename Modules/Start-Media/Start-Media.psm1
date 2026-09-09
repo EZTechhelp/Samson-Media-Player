@@ -46,6 +46,7 @@ function Start-Media{
     [switch]$Use_Streamlink,
     [switch]$ForceUseYTDLP = $thisApp.Config.ForceUse_YTDLP,
     [switch]$use_WebPlayer = $thisapp.config.Youtube_WebPlayer,
+    [switch]$PrivateMode,
     [switch]$Show_notifications = $thisApp.Config.Show_notifications,
     $memory_stream,
     [switch]$Verboselog
@@ -269,6 +270,7 @@ function Start-Media{
         [switch]$Use_Streamlink = $Use_Streamlink,
         [switch]$ForceUseYTDLP = $ForceUseYTDLP,
         [switch]$use_WebPlayer = $use_WebPlayer,
+        [switch]$PrivateMode = $PrivateMode,
         [switch]$Show_notifications = $Show_notifications,
         $memory_stream = $memory_stream,
         [switch]$Verboselog = $Verboselog
@@ -423,6 +425,9 @@ function Start-Media{
         $mediaType = 'Youtube'
         write-ezlogs "| Using Youtube Web Player" -showtime
         if($synchashWeak.Target.YoutubeWebView2 -eq $null -or $synchashWeak.Target.YoutubeWebView2.CoreWebView2 -eq $null){
+          if($PrivateMode){
+            $synchashWeak.Target.Initialize_YoutubeWebPlayer_timer.tag = $true
+          }
           $synchashWeak.Target.Initialize_YoutubeWebPlayer_timer.start()
         }
         if($media.title){
@@ -451,19 +456,7 @@ function Start-Media{
           [Uri]$vlcurl = $youtube.YTVUrl
           write-ezlogs "| YoutubeTV URL for playback: $($vlcurl)" -loglevel 2
         }elseif($youtube.playlist_id){
-          <#          if($playlist_id){
-              $Playlist_items = Get-YouTubePlaylistItems -Id $playlist_id
-              if($PlaylistIndex){
-              $Index = $PlaylistIndex -1
-              }else{
-              $Index = 0
-              }
-              $Playlistitem = $Playlist_items[$Index]
-          }#>
           if((($thisApp.Config.Use_invidious -or $Use_invidious) -and (Test-ValidPath -Type URL $thisApp.Config.InvidiousURL))){
-            #[Uri]$vlcurl = "https://yewtu.be/embed/videoseries?list=$($youtube.playlist_id)"
-            #[Uri]$vlcurl = "https://invidious.nerdvpn.de/embed/videoseries?list=$($youtube.playlist_id)"
-            #[Uri]$vlcurl = "https://invidious.jing.rocks/embed/videoseries?list=$($youtube.playlist_id)"
             [Uri]$vlcurl = "$($thisApp.Config.InvidiousURL)/embed/videoseries?list=$($youtube.playlist_id)"
           }else{
             if($No_YT_Embed -or $youtube.id){
@@ -474,9 +467,6 @@ function Start-Media{
           }
         }elseif($youtube.id){
           if((($thisApp.Config.Use_invidious -or $Use_invidious) -and (Test-ValidPath -Type URL $thisApp.Config.InvidiousURL))){
-            #[Uri]$vlcurl = "https://yewtu.be/embed/$($youtube.id)"
-            #[Uri]$vlcurl = "https://invidious.nerdvpn.de/embed/$($youtube.id)"
-            #[Uri]$vlcurl = "https://invidious.jing.rocks/embed/$($youtube.id)"
             [Uri]$vlcurl = "$($thisApp.Config.InvidiousURL)/embed/$($youtube.id)"
             write-ezlogs "| Youtube invidious URL for playback: $($vlcurl)" -loglevel 2
           }else{
@@ -2544,23 +2534,23 @@ function Update-MediaRenderers {
                     [void]($synchash.VideoView_Cast_Button.items.Remove($synchash.VideoView_Cast_rescan))
                   }
                   $synchash.MediaRenderers | & { process {
-                    try{
-                      if($synchash.VideoView_Cast_Button.items.header -notcontains $_.Model){
-                        write-ezlogs ">>>> Adding media renderer to list: $($_.Model)" -loglevel 2
-                        $Menuitem = [System.Windows.Controls.MenuItem]::new()
-                        $Menuitem.IsCheckable = $true
-                        $Menuitem.Header = $_.Model
-                        $Menuitem.Tag = $_.url
-                        $Menuitem.HorizontalAlignment = 'Left'
-                        $Menuitem.VerticalAlignment="Center"
-                        $Menuitem.Style = $synchash.Window.TryFindResource("TrayDropDownMenuitemStyle")
-                        [void]($Menuitem.RemoveHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Synchash.CastMedia_Command))
-                        [void]($Menuitem.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Synchash.CastMedia_Command))
-                        [void]($synchash.VideoView_Cast_Button.items.add($Menuitem))
+                      try{
+                        if($synchash.VideoView_Cast_Button.items.header -notcontains $_.Model){
+                          write-ezlogs ">>>> Adding media renderer to list: $($_.Model)" -loglevel 2
+                          $Menuitem = [System.Windows.Controls.MenuItem]::new()
+                          $Menuitem.IsCheckable = $true
+                          $Menuitem.Header = $_.Model
+                          $Menuitem.Tag = $_.url
+                          $Menuitem.HorizontalAlignment = 'Left'
+                          $Menuitem.VerticalAlignment="Center"
+                          $Menuitem.Style = $synchash.Window.TryFindResource("TrayDropDownMenuitemStyle")
+                          [void]($Menuitem.RemoveHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Synchash.CastMedia_Command))
+                          [void]($Menuitem.AddHandler([System.Windows.Controls.MenuItem]::ClickEvent,$Synchash.CastMedia_Command))
+                          [void]($synchash.VideoView_Cast_Button.items.add($Menuitem))
+                        }
+                      }catch{
+                        write-ezlogs "An exception occurred adding Media Renderer $($_ | out-string)" -catcherror $_
                       }
-                    }catch{
-                      write-ezlogs "An exception occurred adding Media Renderer $($_ | out-string)" -catcherror $_
-                    }
                   }}
                   if($synchash.VideoView_Cast_rescan -and $synchash.VideoView_Cast_Button.items -notcontains $synchash.VideoView_Cast_rescan){
                     write-ezlogs ">>>> Moving rescan item to bottom" -Dev_mode

@@ -170,7 +170,7 @@ function Show-WebLogin{
       }else{
         write-ezlogs ">>>> Initializing Dialog_WebView2" -showtime -logtype Webview2
         $WebView2Options = [Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions]::new()
-        $WebView2Options.AdditionalBrowserArguments = '--autoplay-policy=no-user-gesture-required --Disable-features=HardwareMediaKeyHandling,OverscrollHistoryNavigation,msExperimentalScrolling'
+        $WebView2Options.AdditionalBrowserArguments = '--no-first-run --autoplay-policy=no-user-gesture-required --Disable-features=HardwareMediaKeyHandling,OverscrollHistoryNavigation,msExperimentalScrolling,msSmartScreenProtection'
         $WebView2Options.IsCustomCrashReportingEnabled = $true
         if(-not [string]::IsNullOrEmpty($WebView2Options.AreBrowserExtensionsEnabled)){
           Write-EZLogs '>>>> Enabling browser extension support for Dialog_WebView2' -logtype Webview2
@@ -188,10 +188,7 @@ function Show-WebLogin{
               $MahDialog_hash.Dialog_WebView2.EnsureCoreWebView2Async($MahDialog_hash.WebView2Env.Result)     
             }
           )
-        }
-        <#        $MahDialog_hash.WebView2Env.GetAwaiter().OnCompleted(
-            [Action]{$MahDialog_hash.Dialog_WebView2.EnsureCoreWebView2Async( $MahDialog_hash.WebView2Env.Result )}
-        )#>      
+        }    
       }
       write-ezlogs "| Opening URL $($WebView2_URL) - Webview2 folder: $($thisApp.config.Temp_Folder)\$Webview2_Path" -showtime -logtype Webview2
       #endregion Initialize Webview2  
